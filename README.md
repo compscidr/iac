@@ -33,4 +33,15 @@ To destroy:
 to make the destroy plan and `terraform apply terraform.tfplan`
 
 ## Ansible
+Ansible automatically runes as part of the terraform script, but this guide
+was used to update the terraform to work together:
 https://www.digitalocean.com/community/tutorials/how-to-use-ansible-with-terraform-for-configuration-management
+
+## Todo:
+- Use terraform to setup dns entries for www.jasonernst.com, jasonernst.com and
+point them to the new compute resources
+- Setup nginx-proxy and letsencrypt containers to aid in getting https setup.
+Previous with saltstack I used this approach: https://github.com/compscidr/machine-configurations/blob/master/pillar/website-containers.sls
+- Setup the docker container for the goblog with a pinned release version
+- Setup any other containers if necessary (mysql perhaps)
+- Determine if we can migrate away from the local .db file for storing posts
