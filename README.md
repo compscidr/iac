@@ -2,6 +2,7 @@
 
 ## Preqreqs:
 - terraform 0.13.1 on the local deploy machine
+- ansible (installed from apt on the local machine)
 
 Terraform is used to deploy resources on digital ocean. Then once the resources
 are deployed, ansible is used to configure them.

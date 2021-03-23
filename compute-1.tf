@@ -21,11 +21,9 @@ resource "digitalocean_droplet" "compute" {
     }
   }
 
-  # todo: enable this when we have local ansible and ansible galaxy setup
-  # along with the ansible docker role
-  # provisioner "local-exec" {
-  #  command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u root -i '${self.ipv4_address},' --private-key ${var.pvt_key} -e 'pub_key=${var.pub_key}' apache-install.yml"
-  # }
+  provisioner "local-exec" {
+    command = "ansible-galaxy install nickjj.docker && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u root -i '${self.ipv4_address},' --private-key ${var.pvt_key} -e 'pub_key=${var.pub_key}' playbook.yml"
+  }
 }
 
 output "droplet_ip_addresses" {
