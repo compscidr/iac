@@ -31,6 +31,26 @@ resource "local_file" "ansible_inventory" {
   filename = format("%s/%s", abspath(path.root), "inventory.yml")
 }
 
+# assuming we're only working with a single compute for now
+resource "digitalocean_domain" "default" {
+  name = "jasonernst.com"
+  ip_address = digitalocean_droplet.compute[0].ipv4_address
+}
+
+resource "digitalocean_record" "CNAME-www" {
+  domain = digitalocean_domain.default.name
+  type = "CNAME"
+  name = "www"
+  value = "@"
+}
+
+resource "digitalocean_record" "txt" {
+  domain = digitalocean_domain.default.name
+  type = "TXT"
+  name = "@"
+  value = "keybase-site-verification=YuSsvhu0S_6Oy2jZeTSr9ZojN-hYTcSl4HlWTvYxZBw"
+}
+
 output "droplet_ip_addresses" {
   value = {
     for droplet in digitalocean_droplet.compute:
