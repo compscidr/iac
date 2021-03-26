@@ -41,7 +41,7 @@
         ansible_python_interpreter: "/usr/bin/env python3-docker"
       docker_container:
         name: www.jasonernst.com
-        image: compscidr/goblog:v0.1.2
+        image: compscidr/goblog:v0.1.11
         volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/uploads
         mounts:
           - source: /opt/goblog/prod/test.db

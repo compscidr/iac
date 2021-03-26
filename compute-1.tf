@@ -4,6 +4,7 @@ resource "digitalocean_droplet" "compute" {
   name = "compute-${count.index}"
   region = "sfo2"
   size = "s-1vcpu-1gb"
+  ipv6 = true
   private_networking = true
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
@@ -37,6 +38,13 @@ resource "digitalocean_domain" "default" {
   ip_address = digitalocean_droplet.compute[0].ipv4_address
 }
 
+resource "digitalocean_record" "AAAA" {
+  domain = digitalocean_domain.default.name
+  type = "AAAA"
+  name = "@"
+  value = digitalocean_droplet.compute[0].ipv6_address
+}
+
 resource "digitalocean_record" "CNAME-www" {
   domain = digitalocean_domain.default.name
   type = "CNAME"
@@ -49,6 +57,20 @@ resource "digitalocean_record" "txt" {
   type = "TXT"
   name = "@"
   value = "keybase-site-verification=YuSsvhu0S_6Oy2jZeTSr9ZojN-hYTcSl4HlWTvYxZBw"
+}
+
+resource "digitalocean_record" "A-home" {
+  domain = digitalocean_domain.default.name
+  type = "A"
+  name = "home"
+  value = "24.6.50.83"
+}
+
+resource "digitalocean_record" "AAAA-home" {
+  domain = digitalocean_domain.default.name
+  type = "AAAA"
+  name = "home"
+  value = "2601:646:ca00:f9b0:5e09:5ca:caeb:8f27"
 }
 
 output "droplet_ip_addresses" {
