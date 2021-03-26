@@ -31,3 +31,25 @@
         cache_valid_time: 86400
   roles:
     - common
+
+- hosts: www.jasonernst.com
+  roles:
+    - web
+  tasks:
+    - name: pull and run the app container for www.jasonernst.com
+      vars:
+        ansible_python_interpreter: "/usr/bin/env python3-docker"
+      docker_container:
+        name: www.jasonernst.com
+        image: compscidr/goblog:v0.1.2
+        volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/uploads",/opt/goblog/prod/.env:/go/src/github.com/compscidr/goblog/.env"
+        mounts:
+          - source: "/opt/goblog/prod/test.db"
+            target: "/go/src/github.com/compscidr/goblog/test.db"
+            type: bind
+        network_mode: bridge
+        env:
+          VIRTUAL_HOST: "www.jasonernst.com,jasonernst.com"
+          VIRTUAL_PORT: "7000"
+          LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
+          LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
