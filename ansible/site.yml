@@ -42,10 +42,13 @@
       docker_container:
         name: www.jasonernst.com
         image: compscidr/goblog:v0.1.2
-        volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/uploads",/opt/goblog/prod/.env:/go/src/github.com/compscidr/goblog/.env"
+        volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/uploads
         mounts:
-          - source: "/opt/goblog/prod/test.db"
-            target: "/go/src/github.com/compscidr/goblog/test.db"
+          - source: /opt/goblog/prod/test.db
+            target: /go/src/github.com/compscidr/goblog/test.db
+            type: bind
+          - source: /opt/goblog/prod/.env
+            target: /go/src/github.com/compscidr/goblog/.env
             type: bind
         network_mode: bridge
         env:
