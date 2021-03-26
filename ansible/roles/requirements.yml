@@ -1,0 +1,6 @@
+# from galaxy
+- name: nickjj.docker
+- name: diodonfrost.terraform
+
+# from github
+- src: https://github.com/webarchitect609/ansible-role-jet-brains-toolbox

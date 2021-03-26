@@ -1,0 +1,9 @@
+all:
+  hosts:
+    # this is where ungrouped hosts would go
+  children:
+    compute:
+      hosts:
+        %{ for droplet in droplets ~}
+        ${droplet.ipv4_address}:
+        %{ endfor ~}

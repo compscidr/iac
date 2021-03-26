@@ -1,0 +1,119 @@
+# programming languages (c/c++, java/ python, go)
+- name: install development tools
+  become: yes
+  apt:
+    pkg:
+    - build-essential
+    - cmake
+    - autoconf
+    - python3-dev
+    - python3-pip
+    - virtualenv
+    - python3-setuptools
+    - golang
+    - openjdk-11-jdk
+    - git
+
+# ansible and terraform
+- name: install deploy tools
+  become: yes
+  apt:
+    pkg:
+      - ansible
+
+- name: install terraform
+  include_role:
+    name: diodonfrost.terraform
+    apply:
+      become: yes
+
+# github cli
+- name: add git cli GPG apt key
+  become: yes
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: C99B11DEB97541F0
+
+- name: add github cli repository
+  become: yes
+  apt_repository:
+    repo: >
+      deb [arch=amd64] https://cli.github.com/packages
+      {{ansible_distribution_release}} main
+    state: present
+
+- name: update apt and install gh
+  become: yes
+  apt: update_cache=yes name=gh state=latest
+
+- name: setup default git configuration
+  become_user: jason
+  git_config:
+    name="{{ item.name }}"
+    scope=global
+    value="{{ item.value }}"
+  with_items:
+    - {name: "user.name",  value: "Jason Ernst" }
+    - {name: "user.email", value: "ernstjason1@gmail.com" }
+    - {name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
+
+# nano
+- name: install nano rc
+  become_user: jason
+  copy:
+    src: files/.nanorc
+    dest: ~/.nanorc
+    owner: jason
+    group: jason
+
+# better terminal + tmux
+- name: install command line apt packages (fish, powerline, tmux)
+  become: yes
+  apt:
+    pkg:
+    - fish
+    - powerline
+    - tmux
+
+- name: tmux config
+  become_user: jason
+  git: repo=https://github.com/gpakosz/.tmux.git dest=~/.tmux
+
+- name: tmux link
+  become_user: jason
+  file:
+    src: ~/.tmux/.tmux.conf
+    dest: ~/.tmux.conf
+    state: link
+    owner: jason
+    group: jason
+
+- name: tmux config local
+  become_user: jason
+  copy:
+    src: files/.tmux.conf.local
+    dest: ~/.tmux.conf.local
+    owner: jason
+    group: jason
+
+- name: install oh-my-fish
+  git: >
+    repo=https://github.com/oh-my-fish/oh-my-fish.git
+    dest=~/.local/share/omf-install update=yes
+  become: yes
+  become_user: jason
+
+- name: install oh-my-fish themes and plugins
+  command: >
+    fish -c "~/.local/share/omf-install/bin/install --noninteractive --yes"
+  args:
+    creates: ~/.local/share/omf/themes/default/
+  become: yes
+  become_user: jason
+
+- name: install bob the fish theme
+  command: fish -c "omf install bobthefish"
+  args:
+    creates: ~/.local/share/omf/themes/bobthefish/
+  become: yes
+  become_user: jason

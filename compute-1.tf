@@ -20,10 +20,15 @@ resource "digitalocean_droplet" "compute" {
       timeout = "2m"
     }
   }
+}
 
-  provisioner "local-exec" {
-    command = "ansible-galaxy install nickjj.docker && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u root -i '${self.ipv4_address},' --private-key ${var.pvt_key} -e 'pub_key=${var.pub_key}' playbook.yml"
-  }
+# https://www.digitalocean.com/community/tutorials/how-to-create-reusable-infrastructure-with-terraform-modules-and-templates
+# https://coffay.haus/pages/terraform+ansible/
+resource "local_file" "ansible_inventory" {
+  content = templatefile("inventory.tmpl", {
+      droplets = digitalocean_droplet.compute,
+  })
+  filename = format("%s/%s", abspath(path.root), "inventory.yml")
 }
 
 output "droplet_ip_addresses" {

@@ -1,7 +1,0 @@
-- become: yes
-  hosts: all
-  name: www.jasonernst.com
-
-  roles:
-    - role: "nickjj.docker"
-      tags: ["docker"]
