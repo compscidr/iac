@@ -56,3 +56,18 @@
           VIRTUAL_PORT: "7000"
           LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
           LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
+
+- hosts: home_server
+  pre_tasks:
+    - name: update apt cache if needed
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+  roles:
+    - common
+
+- hosts: home
+  gather_facts: yes
+  roles:
+    - internal-lan
