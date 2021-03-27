@@ -62,7 +62,7 @@
         ansible_python_interpreter: "/usr/bin/env python3-docker"
       docker_container:
         name: ombi
-        image: linuxserver/ombi
+        image: linuxserver/ombi:development-version-v4.0.1275
         pull: true
         volumes:
           - "/etc/ombi:/config:rw"
