@@ -66,6 +66,7 @@
         cache_valid_time: 86400
   roles:
     - common
+    - home_server
 
 - hosts: home
   gather_facts: true

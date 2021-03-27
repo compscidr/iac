@@ -1,0 +1,4 @@
+- name: install plex server
+  become: true
+  apt:
+    deb: https://downloads.plex.tv/plex-media-server-new/1.22.1.4228-724c56e62/debian/plexmediaserver_1.22.1.4228-724c56e62_amd64.deb
