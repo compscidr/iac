@@ -1,3 +1,5 @@
+[![ansible lint](https://github.com/compscidr/iac/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/compscidr/iac/actions/workflows/ansible-lint.yml)
+[![ansible lint rules](https://img.shields.io/badge/Ansible--lint-rules%20table-blue.svg)](https://ansible-lint.readthedocs.io/en/latest/default_rules.html)
 # Infrastructure as Code
 There are several goals of this project
 1. a friction-less way to get back to normal after a fresh install of an OS for
