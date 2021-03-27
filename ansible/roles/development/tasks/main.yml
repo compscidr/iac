@@ -1,22 +1,22 @@
 # programming languages (c/c++, java/ python, go)
 - name: install development tools
-  become: yes
+  become: true
   apt:
     pkg:
-    - build-essential
-    - cmake
-    - autoconf
-    - python3-dev
-    - python3-pip
-    - virtualenv
-    - python3-setuptools
-    - golang
-    - openjdk-11-jdk
-    - git
+      - build-essential
+      - cmake
+      - autoconf
+      - python3-dev
+      - python3-pip
+      - python3-venv
+      - python3-setuptools
+      - golang
+      - openjdk-11-jdk
+      - git
 
 # ansible and terraform
 - name: install deploy tools
-  become: yes
+  become: true
   apt:
     pkg:
       - ansible
@@ -25,26 +25,24 @@
   include_role:
     name: diodonfrost.terraform
     apply:
-      become: yes
+      become: true
 
 # github cli
 - name: add git cli GPG apt key
-  become: yes
+  become: true
   apt_key:
     keyserver: keyserver.ubuntu.com
     id: C99B11DEB97541F0
 
 - name: add github cli repository
-  become: yes
+  become: true
   apt_repository:
-    repo: >
-      deb [arch=amd64] https://cli.github.com/packages
-      {{ansible_distribution_release}} main
+    repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
     state: present
 
 - name: update apt and install gh
-  become: yes
-  apt: update_cache=yes name=gh state=latest
+  become: true
+  apt: update_cache=yes name=gh state=1.7.0
 
 - name: setup default git configuration
   become_user: jason
@@ -53,9 +51,9 @@
     scope=global
     value="{{ item.value }}"
   with_items:
-    - {name: "user.name",  value: "Jason Ernst" }
-    - {name: "user.email", value: "ernstjason1@gmail.com" }
-    - {name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
+    - {name:"user.name", value:"Jason Ernst"}
+    - {name:"user.email", value:"ernstjason1@gmail.com"}
+    - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
 
 # nano
 - name: install nano rc
@@ -63,21 +61,26 @@
   copy:
     src: files/.nanorc
     dest: ~/.nanorc
+    mode: '644'
     owner: jason
     group: jason
 
 # better terminal + tmux
 - name: install command line apt packages (fish, powerline, tmux)
-  become: yes
+  become: true
   apt:
     pkg:
-    - fish
-    - powerline
-    - tmux
+      - fish
+      - powerline
+      - tmux
 
 - name: tmux config
   become_user: jason
-  git: repo=https://github.com/gpakosz/.tmux.git dest=~/.tmux
+  git:
+    repo: https://github.com/gpakosz/.tmux.git
+    dest: ~/.tmux
+    version: 3bfec1a25a8a66dd251d37f4efcd6a0e9f30a6da
+
 
 - name: tmux link
   become_user: jason
@@ -93,14 +96,18 @@
   copy:
     src: files/.tmux.conf.local
     dest: ~/.tmux.conf.local
+    mode: '644'
     owner: jason
     group: jason
 
 - name: install oh-my-fish
-  git: >
-    repo=https://github.com/oh-my-fish/oh-my-fish.git
-    dest=~/.local/share/omf-install update=yes
-  become: yes
+  git:
+    repo: https://github.com/oh-my-fish/oh-my-fish.git
+    dest: ~/.local/share/omf-install
+    update: true
+    version: 0b1396ad7962073fa25615bf03c43b53eddc2d56
+
+  become: true
   become_user: jason
 
 - name: install oh-my-fish themes and plugins
@@ -108,12 +115,12 @@
     fish -c "~/.local/share/omf-install/bin/install --noninteractive --yes"
   args:
     creates: ~/.local/share/omf/themes/default/
-  become: yes
+  become: true
   become_user: jason
 
 - name: install bob the fish theme
   command: fish -c "omf install bobthefish"
   args:
     creates: ~/.local/share/omf/themes/bobthefish/
-  become: yes
+  become: true
   become_user: jason

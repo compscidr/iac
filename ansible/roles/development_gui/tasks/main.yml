@@ -1,34 +1,34 @@
 - name: install gui development tools
-  become: yes
+  become: true
   apt:
     pkg:
     - wireshark
 
 - name: Ensure group wireshark exists
-  become: yes
+  become: true
   group:
     name: wireshark
     state: present
 
 - name: adding jason to group wireshark
-  become: yes
+  become: true
   user:
     name: jason
     groups: wireshark
     append: yes
 
 - name: install zoom
-  become: yes
+  become: true
   apt:
     deb: https://zoom.us/client/latest/zoom_amd64.deb
 
 - name: install keybase
-  become: yes
+  become: true
   apt:
     deb: https://prerelease.keybase.io/keybase_amd64.deb
 
 - name: install chrome browser
-  become: yes
+  become: true
   apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
@@ -36,28 +36,28 @@
   include_role:
     name: ansible-role-jet-brains-toolbox
     apply:
-      become: yes
+      become: true
 
 - name: install slack
-  become: yes
+  become: true
   apt:
     deb: https://downloads.slack-edge.com/linux_releases/slack-desktop-4.14.0-amd64.deb
 
 - name: Install spotify apt keys
-  become: yes
+  become: true
   apt_key:
     keyserver: keyserver.ubuntu.com
     id: 8FD3D9A8D3800305A9FFF259D1742AD60D811D58
     state: present
 
 - name: Install spotify apt repo
-  become: yes
+  become: true
   apt_repository:
     repo: deb http://repository.spotify.com stable non-free
     state: present
 
 - name: Install spotify
-  become: yes
+  become: true
   apt: update_cache=yes name=spotify-client state=latest
   register: apt_res
   until: apt_res is success
@@ -65,6 +65,6 @@
   delay: 60
 
 - name: install atom editor
-  become: yes
+  become: true
   apt:
     deb: https://atom.io/download/deb

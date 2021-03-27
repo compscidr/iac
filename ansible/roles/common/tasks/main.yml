@@ -1,46 +1,46 @@
 ---
 - name: install various tools
-  become: yes
+  become: true
   apt:
     pkg:
-    - apt-transport-https
-    - ca-certificates
-    - software-properties-common
-    - curl                    # command line http tool
-    - wget                    # command line http tool
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+      - curl                    # command line http tool
+      - wget                    # command line http tool
 
 - name: install network tools
-  become: yes
+  become: true
   apt:
     pkg:
-    - arp-scan                # for ip <-> mac map search
-    - dnsutils                # dig
-    - ethtool                 # gets info like link speed
-    - iftop                   # network top
-    - iotop                   # disk top
-    - net-tools               # ifconfig, netstat, arp
-    - nmap                    # determine open ports
-    - traceroute              # traceroute
-    - nbtscan                 # netbios scanner
-    - speedtest-cli           # bandwidth debugging
-    - sshuttle                # forward ssh through tunnel
-    - whois                   # whois
-    - sqlite3                 # good db for integration tests
-    - socat                   # sort of like nc but doesn't hang
+      - arp-scan                # for ip <-> mac map search
+      - dnsutils                # dig
+      - ethtool                 # gets info like link speed
+      - iftop                   # network top
+      - iotop                   # disk top
+      - net-tools               # ifconfig, netstat, arp
+      - nmap                    # determine open ports
+      - traceroute              # traceroute
+      - nbtscan                 # netbios scanner
+      - speedtest-cli           # bandwidth debugging
+      - sshuttle                # forward ssh through tunnel
+      - whois                   # whois
+      - sqlite3                 # good db for integration tests
+      - socat                   # sort of like nc but doesn't hang
 
 # https://github.com/nickjj/ansible-docker
 - name: Ensure docker is installed on the target system
   include_role:
     name: nickjj.docker
     apply:
-      become: yes
+      become: true
 
 - name: adding jason to group docker
-  become: yes
+  become: true
   user:
     name: jason
     groups: docker
-    append: yes
+    append: true
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
 # and https://github.com/cpmills1975/ansible-gpg-import-module
@@ -59,6 +59,7 @@
   copy:
     src: files/gpg/mygpgkey_pub.gpg
     dest: ~/.gpg/mygpgkey_pub.gpg
+    mode: '0600'
     owner: jason
     group: jason
 
@@ -67,6 +68,7 @@
   copy:
     src: files/gpg/mygpgkey_sec.gpg
     dest: ~/.gpg/mygpgkey_sec.gpg
+    mode: '0600'
     owner: jason
     group: jason
 
@@ -90,6 +92,7 @@
   copy:
     src: files/ssh/id_rsa
     dest: ~/.ssh/id_rsa
+    mode: '0600'
     owner: jason
     group: jason
 
@@ -98,5 +101,6 @@
   copy:
     src: files/ssh/id_rsa.pub
     dest: ~/.ssh/id_rsa.pub
+    mode: '0644'
     owner: jason
     group: jason

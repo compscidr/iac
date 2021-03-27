@@ -1,6 +1,7 @@
+# https://www.middlewareinventory.com/blog/ansible-update-etc-hosts-file-across-all-hosts/
 - name: Update the /etc/hosts file with node name
   tags: etchostsupdate
-  become: yes
+  become: true
   lineinfile:
     path: "/etc/hosts"
     regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"

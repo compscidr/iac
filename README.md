@@ -27,7 +27,7 @@ ansible playbooks to the IP (either locally or public)
   - `wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py`
   - verify it is there with `ansible-doc -t module gpg`
   - todo: see if we can get this work with dependencies so we don't need to do this manually
-  - install requirements: `ansible-galaxy install -r ansible/roles/requirements.yml`
+  - install requirements: `ansible-galaxy install -r ansible/requirements.yml`
 - Ensure the .vault_pass file exists (its on keybase):
   - https://www.digitalocean.com/community/tutorials/how-to-use-vault-to-protect-sensitive-ansible-data-on-ubuntu-16-04
 

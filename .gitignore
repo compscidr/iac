@@ -41,3 +41,4 @@ terraform.tfplan
 playbook.retry
 .vault_pass
 inventory.yml
+.venv

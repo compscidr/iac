@@ -4,30 +4,30 @@
 - hosts: development
   pre_tasks:
     - name: update apt cache if needed
-      become: yes
+      become: true
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 86400
   roles:
     - common
     - development
 
-- hosts: development-gui
+- hosts: development_gui
   pre_tasks:
     - name: update apt cache if needed
-      become: yes
+      become: true
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 86400
   roles:
-    - development-gui
+    - development_gui
 
 - hosts: compute
   pre_tasks:
     - name: update apt cache if needed
-      become: yes
+      become: true
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 86400
   roles:
     - common
@@ -60,14 +60,14 @@
 - hosts: home_server
   pre_tasks:
     - name: update apt cache if needed
-      become: yes
+      become: true
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 86400
   roles:
     - common
 
 - hosts: home
-  gather_facts: yes
+  gather_facts: true
   roles:
-    - internal-lan
+    - internal_lan
