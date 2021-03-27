@@ -81,10 +81,7 @@ To setup a particular host:
 `ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit <host>`
 
 ## Todo:
-- Use terraform to setup dns entries for www.jasonernst.com, jasonernst.com and
-point them to the new compute resources
-- Setup nginx-proxy and letsencrypt containers to aid in getting https setup.
-Previous with saltstack I used this approach: https://github.com/compscidr/machine-configurations/blob/master/pillar/website-containers.sls
+- setup local dns on lan (so we can reach devices by hostname instead of ip)
+- nordvpn for only torrent traffic on ubuntu-server
 - Setup the docker container for the goblog with a pinned release version
-- Setup any other containers if necessary (mysql perhaps)
 - Determine if we can migrate away from the local .db file for storing posts
