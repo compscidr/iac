@@ -51,6 +51,7 @@
             target: /go/src/github.com/compscidr/goblog/.env
             type: bind
         network_mode: bridge
+        restart_policy: unless-stopped
         env:
           VIRTUAL_HOST: "www.jasonernst.com,jasonernst.com"
           VIRTUAL_PORT: "7000"

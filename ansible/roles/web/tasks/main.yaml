@@ -7,6 +7,7 @@
     published_ports: 80:80,443:443
     volumes: conf:/etc/nginx/conf.d,vhost:/etc/nginx/vhost.d,html:/usr/share/nginx/html,dhparam:/etc/nginx/dhparam,certs:/etc/nginx/certs:ro,/var/run/docker.sock:/tmp/docker.sock:ro
     network_mode: bridge
+    restart_policy: unless-stopped
 
 - name: pull and run the lets encypt companion to the proxy
   vars:
@@ -17,6 +18,7 @@
     volumes: certs:/etc/nginx/certs:rw,/var/run/docker.sock:/var/run/docker.sock:ro
     volumes_from: nginx-proxy
     network_mode: bridge
+    restart_policy: unless-stopped
 
 # todo: move this perhaps to a db role so that websites without dbs don't need it
 - name: pull and run the mysql db
@@ -28,3 +30,4 @@
     env:
       MYSQL_ROOT_PASSWORD: rootpassword
     network_mode: bridge
+    restart_policy: unless-stopped
