@@ -80,8 +80,17 @@ For instance to setup the development machines:
 To setup a particular host:
 `ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit <host>`
 
+### Common commands
+Deploy to ubuntu-server:
+`ansible-playbook -i ansible/inventories/production/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit ubuntu-server`
+
+Deploy to entire lan:
+
+
 ## Todo:
 - setup local dns on lan (so we can reach devices by hostname instead of ip)
+  - opendns? https://superuser.com/questions/45789/running-dns-locally-for-home-network
+  - pihole? https://pi-hole.net/
 - nordvpn for only torrent traffic on ubuntu-server
 - Setup the docker container for the goblog with a pinned release version
 - Determine if we can migrate away from the local .db file for storing posts

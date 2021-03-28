@@ -3,7 +3,88 @@
   apt:
     deb: https://downloads.plex.tv/plex-media-server-new/1.22.1.4228-724c56e62/debian/plexmediaserver_1.22.1.4228-724c56e62_amd64.deb
 
-- name: Create Ombi Directories
+- name: pull and run docker-transmission from behing vpn
+  tags: transmission
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: transmission
+    image: haugene/transmission-openvpn:latest
+    volumes: /storage/downloads:/data
+    capabilities:
+      - NET_ADMIN
+    env:
+      PUID: "1000"
+      PGID: "1000"
+      OPENVPN_PROVIDER: NORDVPN
+      OPENVPN_USERNAME: "ernstjason1@gmail.com"
+      OPENVPN_PASSWORD: "rusU57hy"
+      NORDVPN_COUNTRY: US
+      NORDVPN_CATEGORY: legacy_p2p
+      LOCAL_NETWORK: 10.0.0.0/24
+      CREATE_TUN_DEVICE: "true"
+      TZ: America/Los_Angeles
+    restart_policy: unless-stopped
+    published_ports: 9091:9091
+
+- name: Create Sonarr Directories
+  tags: sonarr
+  become: true
   file:
-    path: /etc/ombi
+    path: /etc/sonarr
     state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Sonarr
+  tags: sonarr
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: sonarr
+    image: linuxserver/sonarr
+    pull: true
+    volumes:
+      - "/storage/tv:/tv:rw"
+      - "/storage/downloads:/downloads:rw"
+      - "/etc/sonarr:/config:rw"
+    ports:
+      - "8989:8989"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 1g
+
+- name: Create Radarr Directories
+  tags: radarr
+  become: true
+  file:
+    path: /etc/radarr
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Radarr
+  tags: radarr
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: radarr
+    image: linuxserver/radarr
+    pull: true
+    volumes:
+      - "/storage/movies:/movies:rw"
+      - "/storage/downloads:/downloads:rw"
+      - "/etc/radarr:/config:rw"
+    ports:
+      - "7878:7878"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 1g
