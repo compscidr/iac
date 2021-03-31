@@ -98,3 +98,7 @@
   gather_facts: true
   roles:
     - internal_lan
+
+- hosts: ubuntu-server, ubuntu-desktop
+  roles:
+    - mining

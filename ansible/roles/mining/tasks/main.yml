@@ -1,0 +1,11 @@
+- name: lolMiner install
+  tags: mining
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: lolminer
+    image: compscidr/lolminer-docker:0.1
+    pull: true
+    restart_policy: unless-stopped
+    devices:
+      - "/dev/dri:/dev/dri"
