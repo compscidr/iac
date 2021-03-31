@@ -56,6 +56,26 @@
     - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
     - {name:"pull.rebase", value:"false"}
 
+# yarn: https://linuxize.com/post/how-to-install-yarn-on-ubuntu-20-04/
+- name: add yarn GPG
+  tags: yarn
+  become: true
+  apt_key:
+    keyserver: https://dl.yarnpkg.com/debian/pubkey.gpg
+    id: 72ECF46A56B4AD39C907BBB71646B01B86E50310
+
+- name: add yarn repo
+  become: true
+  tags: yarn
+  apt_repository:
+    repo: "deb https://dl.yarnpkg.com/debian/ stable main"
+    state: present
+
+- name: update apt and install yarn
+  become: true
+  tags: yarn
+  apt: update_cache=yes name=yarn
+
 # nano
 - name: install nano rc
   become_user: jason
