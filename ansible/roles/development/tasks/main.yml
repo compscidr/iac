@@ -54,6 +54,7 @@
     - {name:"user.name", value:"Jason Ernst"}
     - {name:"user.email", value:"ernstjason1@gmail.com"}
     - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
+    - {name:"pull.rebase", value:"false"}
 
 # nano
 - name: install nano rc
