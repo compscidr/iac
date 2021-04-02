@@ -13,6 +13,7 @@
       - golang
       - openjdk-11-jdk
       - git
+      - npm
 
 # ansible and terraform
 - name: install deploy tools
@@ -42,7 +43,7 @@
 
 - name: update apt and install gh
   become: true
-  apt: update_cache=yes name=gh state=1.7.0
+  apt: update_cache=yes name=gh state=latest
 
 - name: setup default git configuration
   become_user: jason
@@ -74,7 +75,7 @@
 - name: update apt and install yarn
   become: true
   tags: yarn
-  apt: update_cache=yes name=yarn
+  apt: update_cache=yes name=yarn state=latest
 
 # nano
 - name: install nano rc
@@ -145,3 +146,10 @@
     creates: ~/.local/share/omf/themes/bobthefish/
   become: true
   become_user: jason
+
+# bloomrpc
+- name: install bloomrpc
+  become: true
+  tags: bloomrpc
+  apt:
+    deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
