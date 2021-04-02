@@ -43,11 +43,11 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: sonarr
-    image: linuxserver/sonarr
+    image: linuxserver/sonarr:version-3.0.6.1196
     pull: true
     volumes:
       - "/storage/tv:/tv:rw"
-      - "/storage/downloads:/downloads:rw"
+      - "/storage/downloads:/data:rw"
       - "/etc/sonarr:/config:rw"
     ports:
       - "8989:8989"
@@ -78,7 +78,7 @@
     pull: true
     volumes:
       - "/storage/movies:/movies:rw"
-      - "/storage/downloads:/downloads:rw"
+      - "/storage/downloads:/data:rw"
       - "/etc/radarr:/config:rw"
     ports:
       - "7878:7878"
