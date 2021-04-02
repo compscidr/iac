@@ -88,3 +88,23 @@
       PGID: "1000"
     restart_policy: unless-stopped
     memory: 1g
+
+- name: Github Actions Runner
+  tags: gh-actions
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: github-runner
+    image: myoung34/github-runner:latest
+    pull: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/tmp/github-runner-your-repo:/tmp/github-runner"
+    env:
+      #ACCESS_TOKEN: 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    # todo: encrypt this before push
+      ACCESS_TOKEN: "{{ github_access_token }}"
+      RUNNER_NAME: home.jasonernst.com
+      RUNNER_WORKDIR: /tmp/github-runner
+      RUNNER_GROUP: default
+      REPO_URL: https://github.com/compscidr/grape-networking-java
+      ORG_RUNNER: "false"
