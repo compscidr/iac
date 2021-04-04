@@ -14,6 +14,15 @@
       - openjdk-11-jdk
       - git
       - npm
+      - adb
+      - android-sdk-platform-tools-common
+
+- name: adding jason to group plugdev for adb
+  become: true
+  user:
+    name: jason
+    groups: plugdev
+    append: yes
 
 # ansible and terraform
 - name: install deploy tools
@@ -45,17 +54,17 @@
   become: true
   apt: update_cache=yes name=gh state=latest
 
-- name: setup default git configuration
-  become_user: jason
-  git_config:
-    name="{{ item.name }}"
-    scope=global
-    value="{{ item.value }}"
-  with_items:
-    - {name:"user.name", value:"Jason Ernst"}
-    - {name:"user.email", value:"ernstjason1@gmail.com"}
-    - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
-    - {name:"pull.rebase", value:"false"}
+# - name: setup default git configuration
+#   become_user: jason
+#   git_config:
+#     name="{{ item.name }}"
+#     scope=global
+#     value="{{ item.value }}"
+#   with_items:
+#     - {name:"user.name", value:"Jason Ernst"}
+#     - {name:"user.email", value:"ernstjason1@gmail.com"}
+#     - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
+#    - {name:"pull.rebase", value:"false"}
 
 # yarn: https://linuxize.com/post/how-to-install-yarn-on-ubuntu-20-04/
 - name: add yarn GPG

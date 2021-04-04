@@ -109,3 +109,17 @@
       RUNNER_GROUP: default
       REPO_URL: https://github.com/compscidr/grape-networking-java
       ORG_RUNNER: "false"
+
+- name: install adb
+  become: true
+  apt:
+    pkg:
+      - adb
+      - android-sdk-platform-tools-common
+
+- name: adding jason to group plugdev for adb
+  become: true
+  user:
+    name: jason
+    groups: plugdev
+    append: yes
