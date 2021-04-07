@@ -83,7 +83,7 @@
         restart_policy: unless-stopped
         memory: "1g"
 
-- hosts: home_server
+- hosts: ubuntu-server
   pre_tasks:
     - name: update apt cache if needed
       become: true
