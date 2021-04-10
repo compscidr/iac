@@ -35,6 +35,19 @@
     apply:
       become: true
 
+- name: Add the user 'jason'
+  become: true
+  ansible.builtin.user:
+    name: jason
+    comment: Jason Ernst
+
+- name: adding jason to group sudo
+  become: true
+  user:
+    name: jason
+    groups: sudo
+    append: true
+
 - name: adding jason to group docker
   become: true
   user:

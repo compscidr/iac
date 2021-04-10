@@ -58,6 +58,13 @@
           LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
           LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
+    - name: Adds a crontab entry to to backup website
+      ansible.builtin.cron:
+        name: "backup www.jasonernst.com"
+        minute: "0"
+        hour: "3"
+        job: "rsync -av --delete /opt/goblog/prod/ home.jasonernst.com:/storage/backup/www.jasonernst.com/"
+
     - name: Create Ombi Directories
       file:
         path: /etc/ombi

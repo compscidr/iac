@@ -86,6 +86,8 @@ Deploy to ubuntu-server:
 
 Deploy to entire lan:
 
+Deploy to www.jasonernst.com:
+`ansible-playbook -i ansible/inventories/production/hosts.yml ansible/site.yml -u root --vault-password-file=.vault_pass --limit www.jasonernst.com`
 
 ## Todo:
 - setup local dns on lan (so we can reach devices by hostname instead of ip)
