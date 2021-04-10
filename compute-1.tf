@@ -1,9 +1,10 @@
+# size chart: https://developers.digitalocean.com/documentation/changelog/api-v2/new-size-slugs-for-droplet-plan-changes/
 resource "digitalocean_droplet" "compute" {
   count = 1
   image = "ubuntu-20-10-x64"
   name = "compute-${count.index}"
   region = "sfo2"
-  size = "s-1vcpu-1gb"
+  size = "s-1vcpu-2gb"
   ipv6 = true
   private_networking = true
   ssh_keys = [
