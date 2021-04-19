@@ -16,6 +16,8 @@
       - npm
       - adb
       - android-sdk-platform-tools-common
+      - linux-tools-common
+      - linux-tools-generic
 
 - name: adding jason to group plugdev for adb
   become: true
