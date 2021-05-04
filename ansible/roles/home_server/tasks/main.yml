@@ -38,6 +38,36 @@
     owner: root
     group: root
 
+- name: Create Jacket Directories
+  tags: jackett
+  become: true
+  file:
+    path: /etc/jackett
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Jackett Docker Container
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: jackett
+    image: linuxserver/jackett:latest
+    pull: true
+    volumes:
+      - "/etc/jackett:/config:rw"
+      - "/storage/downloads:/downloads:rw"
+    ports:
+      - "9117:9117"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+      AUTO_UPDATE: "true"
+    restart_policy: unless-stopped
+    memory: "1g"
+
 - name: Sonarr
   tags: sonarr
   vars:
@@ -58,6 +88,8 @@
       PGID: "1000"
     restart_policy: unless-stopped
     memory: 1g
+    links:
+      - "jackett: ubuntu-server"
 
 - name: Create Radarr Directories
   tags: radarr
@@ -89,6 +121,8 @@
       PGID: "1000"
     restart_policy: unless-stopped
     memory: 1g
+    links:
+      - "jackett: ubuntu-server"
 
 # https://github.com/myoung34/docker-github-actions-runner
 - name: Github Actions Runner
