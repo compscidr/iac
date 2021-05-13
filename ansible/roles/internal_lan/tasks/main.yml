@@ -1,13 +1,13 @@
-# https://www.middlewareinventory.com/blog/ansible-update-etc-hosts-file-across-all-hosts/
-# - name: Update the /etc/hosts file with node name
-#   tags: etchostsupdate
-#   become: true
-#   lineinfile:
-#     path: "/etc/hosts"
-#     regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
-#     line: "{{ hostvars[item]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
-#     state: present
-#     backup: yes
-#   register: etchostsupdate
-#   when: ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}"
-#   with_items: "{{groups['home']}}"
+# https://serverfault.com/a/832850
+- name: Update the /etc/hosts file with node name
+  tags: etchostsupdate
+  become: true
+  lineinfile:
+    path: "/etc/hosts"
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
+    state: present
+    backup: yes
+  register: etchostsupdate
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{groups['home']}}"
