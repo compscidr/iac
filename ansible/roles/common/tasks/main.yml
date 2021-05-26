@@ -27,6 +27,7 @@
       - whois                   # whois
       - sqlite3                 # good db for integration tests
       - socat                   # sort of like nc but doesn't hang
+      - sshfs                   # ssh mounts
 
 # https://github.com/nickjj/ansible-docker
 - name: Ensure docker is installed on the target system
@@ -117,3 +118,30 @@
     mode: '0644'
     owner: jason
     group: jason
+
+- name: Create /root/.ssh/config file if it does not exist
+  become: true
+  file:
+    path: /root/.ssh/config
+    state: present
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: root ssh id_rsa
+  become: true
+  copy:
+    src: files/ssh/id_rsa
+    dest: /root/.ssh./id_rsa
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: root ssh id_rsa.pub
+  become: true
+  copy:
+    src: files/ssh/id_rsa.pub
+    dest: /root/.ssh/id_rsa.pub
+    mode: '0644'
+    owner: root
+    group: root

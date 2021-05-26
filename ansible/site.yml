@@ -106,6 +106,10 @@
   roles:
     - internal_lan
 
-- hosts: ubuntu-server, ubuntu-desktop
+- hosts: ubuntu-server, ubuntu-desktop, ubuntu-desktop-beast
   roles:
     - mining
+
+- hosts: ubuntu-desktop
+  roles:
+    - chia

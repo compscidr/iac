@@ -24,3 +24,16 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:
     - all
+
+- name: Update the ssh/config with each of the node name entries
+  tags: sshconfigupdate
+  blockinfile:
+    path: "/root/.ssh/config"
+    block: |
+      Host {{ item }}
+        Hostname {{ item }}
+        User jason
+        IdentityFile ~/.ssh/github_id_rsa
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+  with_inventory_hostnames:
+    - all
