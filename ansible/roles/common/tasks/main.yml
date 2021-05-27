@@ -119,11 +119,29 @@
     owner: jason
     group: jason
 
+- name: ssh github_id_rsa
+  become_user: jason
+  copy:
+    src: files/ssh/github_id_rsa
+    dest: ~/.ssh/github_id_rsa
+    mode: '0600'
+    owner: jason
+    group: jason
+
+- name: ssh github_id_rsa.pub
+  become_user: jason
+  copy:
+    src: files/ssh/github_id_rsa.pub
+    dest: ~/.ssh/github_id_rsa.pub
+    mode: '0644'
+    owner: jason
+    group: jason
+
 - name: Create /root/.ssh/config file if it does not exist
   become: true
   file:
     path: /root/.ssh/config
-    state: present
+    state: touch
     mode: '0600'
     owner: root
     group: root
@@ -132,7 +150,7 @@
   become: true
   copy:
     src: files/ssh/id_rsa
-    dest: /root/.ssh./id_rsa
+    dest: /root/.ssh/id_rsa
     mode: '0600'
     owner: root
     group: root
@@ -142,6 +160,24 @@
   copy:
     src: files/ssh/id_rsa.pub
     dest: /root/.ssh/id_rsa.pub
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: ssh github_id_rsa
+  become: true
+  copy:
+    src: files/ssh/github_id_rsa
+    dest: /root/.ssh/github_id_rsa
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: ssh github_id_rsa.pub
+  become: true
+  copy:
+    src: files/ssh/github_id_rsa.pub
+    dest: /root/.ssh/github_id_rsa.pub
     mode: '0644'
     owner: root
     group: root

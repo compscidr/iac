@@ -1,6 +1,16 @@
 ---
 # file: site.yml
 # sets up configuration and software across all environments
+- hosts: all
+  pre_tasks:
+    - name: update apt cache if needed
+      become: true
+      apt:
+        update_cache: true
+        cache_valid_time: 86400
+  roles:
+    - common
+
 - hosts: development
   pre_tasks:
     - name: update apt cache if needed

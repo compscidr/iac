@@ -27,6 +27,7 @@
 
 - name: Update the ssh/config with each of the node name entries
   tags: sshconfigupdate
+  become: true
   blockinfile:
     path: "/root/.ssh/config"
     block: |
@@ -37,3 +38,11 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:
     - all
+
+- name: chmod 600 /root/.ssh/config
+  become: true
+  ansible.builtin.file:
+    path: /root/.ssh/config
+    owner: root
+    group: root
+    mode: '0600'

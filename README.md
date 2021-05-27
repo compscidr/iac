@@ -89,6 +89,10 @@ Deploy to entire lan:
 Deploy to www.jasonernst.com:
 `ansible-playbook -i ansible/inventories/production/hosts.yml ansible/site.yml -u root --vault-password-file=.vault_pass --limit www.jasonernst.com`
 
+## Encrypting new secrets:
+Note, this will clobber the original file with an encrypted version, so make a copy first.
+`ansible-vault encrypt --vault-password-file .vault_pass <file>`
+
 ## Todo:
 - setup local dns on lan (so we can reach devices by hostname instead of ip)
   - opendns? https://superuser.com/questions/45789/running-dns-locally-for-home-network
