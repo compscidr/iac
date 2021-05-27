@@ -120,6 +120,6 @@
   roles:
     - mining
 
-- hosts: ubuntu-desktop
+- hosts: ubuntu-server, ubuntu-desktop, jason-ubuntu-laptop
   roles:
     - chia
