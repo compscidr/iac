@@ -74,7 +74,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: sonarr
-    image: linuxserver/sonarr:version-3.0.6.1196
+    image: linuxserver/sonarr:version-3.0.6.1265
     pull: true
     volumes:
       - "/storage/tv:/tv:rw"
@@ -107,7 +107,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: radarr
-    image: linuxserver/radarr
+    image: linuxserver/radarr:version-3.2.2.5080
     pull: true
     volumes:
       - "/storage/movies:/movies:rw"
