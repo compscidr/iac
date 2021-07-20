@@ -41,7 +41,7 @@
 - name: install slack
   become: true
   apt:
-    deb: https://downloads.slack-edge.com/linux_releases/slack-desktop-4.14.0-amd64.deb
+    deb: https://downloads.slack-edge.com/linux_releases/slack-desktop-4.17.0-amd64.deb
 
 - name: Install spotify apt keys
   become: true
