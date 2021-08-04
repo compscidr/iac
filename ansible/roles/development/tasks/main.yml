@@ -164,3 +164,23 @@
   tags: bloomrpc
   apt:
     deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
+
+# balena cli
+- name: install balena cli
+  become: true
+  tags: balena
+  ansible.builtin.unarchive:
+    src: https://github.com/balena-io/balena-cli/releases/download/v12.44.29/balena-cli-v12.44.29-linux-x64-standalone.zip
+    dest: /opt
+    remote_src: yes
+
+# add /opt/balana-cli to path
+- name: add balena to to path
+  become: true
+  tags: balena
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    backrefs: yes
+    regexp: 'PATH=(["]*)((?!.*?/opt/balana-cli).*?)(["]*)$'
+    line: 'PATH=\1\2:/opt/balana-cli\3'
