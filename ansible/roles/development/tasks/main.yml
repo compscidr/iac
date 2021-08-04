@@ -182,5 +182,5 @@
     dest: /etc/environment
     state: present
     backrefs: yes
-    regexp: 'PATH=(["]*)((?!.*?/opt/balana-cli).*?)(["]*)$'
-    line: 'PATH=\1\2:/opt/balana-cli\3'
+    regexp: 'PATH=(["]*)((?!.*?/opt/balena-cli).*?)(["]*)$'
+    line: 'PATH=\1\2:/opt/balena-cli\3'
