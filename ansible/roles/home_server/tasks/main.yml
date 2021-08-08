@@ -147,6 +147,23 @@
       REPO_URL: https://github.com/compscidr/grape-networking-java
       LABELS: "self-hosted"
       ORG_RUNNER: "false"
+    links:
+      - "android-emulator"
+
+# https://github.com/google/android-emulator-container-scripts
+- name: Android Emulator
+  tags: android-emulator
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: android-emulator
+    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.2
+    pull: true
+    restart_policy: unless-stopped
+    devices:
+      - "/dev/kvm"
+    ports:
+      - "5555:5555"
 
 - name: install adb
   become: true
