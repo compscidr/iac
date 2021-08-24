@@ -69,3 +69,10 @@
   become: true
   apt:
     deb: https://atom.io/download/deb
+
+- name: install texmaker
+  tags: latex
+  become: true
+  apt:
+    pkg:
+      - texmaker
