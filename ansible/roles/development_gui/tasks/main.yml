@@ -76,3 +76,6 @@
   apt:
     pkg:
       - texmaker
+      - fonts-font-awesome
+      - texlive-fonts-recommended
+      - texlive-fonts-extra
