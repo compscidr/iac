@@ -43,12 +43,22 @@
     env:
       ENABLE_IPV6: "true"
 
+- name: Copy .env to the host
+  tags: website
+  become: true
+  copy:
+    src: conf/prod.env
+    dest: /opt/goblog/prod/.env
+    mode: '644'
+    owner: root
+    group: root
+
 # todo: move this perhaps to a db role so that websites without dbs don't need it
 - name: pull and run the mysql db
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
-    name: mysql
+    name: db
     image: mysql
     env:
       MYSQL_ROOT_PASSWORD: rootpassword
