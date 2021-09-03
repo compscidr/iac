@@ -25,22 +25,22 @@
     path: ~/chia-plots-tmp
     state: directory
 
-- name: chiaPlotter install
-  tags: plotting
-  become: true
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
-    name: chia-plotter
-    image: compscidr/chia-plotter-docker:0.2
-    pull: true
-    restart_policy: unless-stopped
-    volumes:
-      - /root/.ssh:/root/.ssh
-      - /etc/hosts:/etc/hosts
-      - /home/jason/chia-plots-tmp:/tmp
-    env:
-      FARMER_KEY: "a9c6b0c8abef42313ca57338d0f112f5bf0d40cef0c1f7de3e8b0140c488c4cde58b38b8869bd42617b49811a95e4130"
-      POOL_KEY: "b1eec16b3a2ce1d15937f0c076995a42a9c5435730d4d28010febc75075a392f6919d167c278095b10153cec9a9ec77f"
-      SYNC_HOST: "ubuntu-desktop-beast"
-      SYNC_PATH: "/plots"
+# - name: chiaPlotter install
+#   tags: plotting
+#   become: true
+#   vars:
+#     ansible_python_interpreter: "/usr/bin/env python3-docker"
+#   docker_container:
+#     name: chia-plotter
+#     image: compscidr/chia-plotter-docker:0.2
+#     pull: true
+#     restart_policy: unless-stopped
+#     volumes:
+#       - /root/.ssh:/root/.ssh
+#       - /etc/hosts:/etc/hosts
+#       - /home/jason/chia-plots-tmp:/tmp
+#     env:
+#       FARMER_KEY: "a9c6b0c8abef42313ca57338d0f112f5bf0d40cef0c1f7de3e8b0140c488c4cde58b38b8869bd42617b49811a95e4130"
+#       POOL_KEY: "b1eec16b3a2ce1d15937f0c076995a42a9c5435730d4d28010febc75075a392f6919d167c278095b10153cec9a9ec77f"
+#       SYNC_HOST: "ubuntu-desktop-beast"
+#       SYNC_PATH: "/plots"
