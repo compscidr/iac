@@ -55,13 +55,13 @@
 
 # todo: move this perhaps to a db role so that websites without dbs don't need it
 - name: pull and run the mysql db
+  tags: db
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: db
     image: mysql
-    env:
-      MYSQL_ROOT_PASSWORD: rootpassword
+    env_file: /opt/goblog/prod/.env
     network_mode: bridge
     restart_policy: unless-stopped
 
@@ -71,8 +71,8 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.24
-    volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/uploads
+    image: compscidr/goblog:v0.1.26
+    volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/prod/test.db
         target: /go/src/github.com/compscidr/goblog/test.db
