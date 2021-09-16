@@ -15,6 +15,7 @@
     capabilities:
       - NET_ADMIN
     env:
+      TRANSMISSION_WEB_UI: "transmission-web-control"
       PUID: "1000"
       PGID: "1000"
       OPENVPN_PROVIDER: NORDVPN
