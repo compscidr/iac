@@ -23,6 +23,12 @@
   apt:
     deb: https://zoom.us/client/latest/zoom_amd64.deb
 
+- name: install discord
+  tags: discord
+  become: true
+  apt:
+    deb: https://discordapp.com/api/download?platform=linux&format=deb
+
 - name: install keybase
   become: true
   apt:
