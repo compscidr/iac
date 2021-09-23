@@ -12,6 +12,7 @@
     - common
 
 - hosts: development
+  tags: development
   pre_tasks:
     - name: update apt cache if needed
       become: true
@@ -23,6 +24,7 @@
     - development
 
 - hosts: development_gui
+  tags: development_gui
   pre_tasks:
     - name: update apt cache if needed
       become: true
