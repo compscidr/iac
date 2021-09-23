@@ -155,7 +155,7 @@
 - name: install bob the fish theme
   command: fish -c "omf install bobthefish"
   args:
-    creates: ~/.local/share/omf/themes/bobthefish/
+    creates: /home/jason/.local/share/omf/themes/bobthefish/
   become: true
   become_user: jason
 
@@ -174,10 +174,13 @@
 
 - name: install forgit for fish
   command: fish -c "omf install https://github.com/wfxr/forgit"
+  args:
+    creates: /home/jason/.local/share/omf/pkg/fo
   become: true
   become_user: jason
 
 # bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
+# and forgit: https://github.com/wfxr/forgit
 - name: Update bashrc fzf
   lineinfile:
     dest: /home/jason/.bashrc
@@ -186,6 +189,7 @@
   with_items:
     - "source /usr/share/doc/fzf/examples/key-bindings.bash"
     - "source /usr/share/doc/fzf/examples/completion.bash"
+    - "source <(curl -sSL git.io/forgit)"
 
 # bloomrpc
 - name: install bloomrpc

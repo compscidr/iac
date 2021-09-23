@@ -148,9 +148,9 @@
 
 - name: Create /root/.ssh/config file if it does not exist
   become: true
-  file:
-    path: /root/.ssh/config
-    state: touch
+  copy:
+    src: files/ssh/config
+    dest: /root/.ssh/config
     mode: '0600'
     owner: root
     group: root
