@@ -159,7 +159,20 @@
   become: true
   become_user: jason
 
-- name: install fzf for fish
+- name: Create fish functions directory
+  become_user: jason
+  file:
+    path: /home/jason/.config/fish/functions
+    state: directory
+
+- name: Add fish keybindings for fzf
+  lineinfile:
+    dest: /home/jason/.config/fish/functions/fish_user_key_bindings.fish
+    owner: jason
+    create: yes
+    line: "fzf_key_bindings"
+
+- name: install forgit for fish
   command: fish -c "omf install https://github.com/wfxr/forgit"
   become: true
   become_user: jason
