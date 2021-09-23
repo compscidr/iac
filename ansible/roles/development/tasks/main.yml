@@ -116,7 +116,6 @@
     dest: ~/.tmux
     version: 3bfec1a25a8a66dd251d37f4efcd6a0e9f30a6da
 
-
 - name: tmux link
   become_user: jason
   file:
@@ -159,6 +158,21 @@
     creates: ~/.local/share/omf/themes/bobthefish/
   become: true
   become_user: jason
+
+- name: install fzf for fish
+  command: fish -c "omf install https://github.com/wfxr/forgit"
+  become: true
+  become_user: jason
+
+# bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
+- name: Update bashrc fzf
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - "source /usr/share/doc/fzf/examples/key-bindings.bash"
+    - "source /usr/share/doc/fzf/examples/completion.bash"
 
 # bloomrpc
 - name: install bloomrpc
