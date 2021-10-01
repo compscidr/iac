@@ -217,3 +217,16 @@
     backrefs: yes
     regexp: 'PATH=(["]*)((?!.*?/opt/balena-cli).*?)(["]*)$'
     line: 'PATH=\1\2:/opt/balena-cli\3'
+
+- name: add zig repository
+  tags: zig
+  become: true
+  apt_repository:
+    repo: "deb [trusted=yes] https://apt.fury.io/compscidr/ /"
+    state: present
+    update_cache: true
+
+- name: update apt and install zig
+  tags: zig
+  become: true
+  apt: update_cache=yes name=zig state=latest
