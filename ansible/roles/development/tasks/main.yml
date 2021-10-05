@@ -191,6 +191,17 @@
     - "source /usr/share/doc/fzf/examples/completion.bash"
     - "source <(curl -sSL git.io/forgit)"
 
+# bashrc updates for DEBEMAIL and DEBFULLNAME
+- name: Update bashrc fzf
+  tags: debmaintainer
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - 'DEBEMAIL="ernstjason1@gmail.com"'
+    - 'DEBFULLNAME="Jason Ernst"'
+
 # bloomrpc
 - name: install bloomrpc
   become: true
