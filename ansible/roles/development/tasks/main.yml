@@ -204,6 +204,17 @@
     - "source /usr/share/doc/fzf/examples/completion.bash"
     - "source <(curl -sSL git.io/forgit)"
 
+# bashrc updates for DEBEMAIL and DEBFULLNAME
+- name: Update bashrc debmaintainer
+  tags: debmaintainer
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - 'DEBEMAIL="ernstjason1@gmail.com"'
+    - 'DEBFULLNAME="Jason Ernst"'
+
 # balena cli
 - name: install balena cli
   become: true
@@ -223,3 +234,16 @@
     backrefs: yes
     regexp: 'PATH=(["]*)((?!.*?/opt/balena-cli).*?)(["]*)$'
     line: 'PATH=\1\2:/opt/balena-cli\3'
+
+- name: add zig repository
+  tags: zig
+  become: true
+  apt_repository:
+    repo: "deb [trusted=yes] https://apt.fury.io/compscidr/ /"
+    state: present
+    update_cache: true
+
+- name: update apt and install zig
+  tags: zig
+  become: true
+  apt: update_cache=yes name=zig state=latest

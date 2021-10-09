@@ -60,6 +60,7 @@
 # and https://github.com/cpmills1975/ansible-gpg-import-module
 # and https://github.com/brandonkal/ansible-gpg
 - name: Create gpg directory if it does not exist
+  tags: gpg
   become_user: jason
   file:
     path: ~/.gpg
@@ -70,6 +71,7 @@
 
 - name: gpg pub key copy
   become_user: jason
+  tags: gpg
   copy:
     src: files/gpg/mygpgkey_pub.gpg
     dest: ~/.gpg/mygpgkey_pub.gpg
@@ -78,6 +80,7 @@
     group: jason
 
 - name: gpg priv key copy
+  tags: gpg
   become_user: jason
   copy:
     src: files/gpg/mygpgkey_sec.gpg
@@ -87,12 +90,14 @@
     group: jason
 
 - name: import Public GPG Key from file
+  tags: gpg
   become_user: jason
   gpg:
     key_file: ~/.gpg/mygpgkey_pub.gpg
     key_id: ernstjason1@gmail.com
 
 - name: import private GPG Key from file
+  tags: gpg
   become_user: jason
   gpg:
     key_file: ~/.gpg/mygpgkey_sec.gpg
