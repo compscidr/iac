@@ -37,7 +37,7 @@ ansible playbooks to the IP (either locally or public)
 - ssh installed and ssh access via key from deploy machine (ie: authorized keys
   contains public key of deploy machine):
 ```
-sudo apt install ssh
+sudo apt install ssh ssh-import-id
 ssh-import-id gh:compscidr
 ```
 You'll probably want to test it works (and accept the ssh key) - with:
