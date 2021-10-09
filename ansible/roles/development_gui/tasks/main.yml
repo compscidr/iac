@@ -85,3 +85,10 @@
       - fonts-font-awesome
       - texlive-fonts-recommended
       - texlive-fonts-extra
+
+# bloomrpc
+- name: install bloomrpc
+  become: true
+  tags: bloomrpc
+  apt:
+    deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb

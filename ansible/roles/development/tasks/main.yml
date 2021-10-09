@@ -16,10 +16,23 @@
       - npm
       - adb
       - android-sdk-platform-tools-common
-      - linux-tools-common
-      - linux-tools-generic
       - fzf
       - unzip
+
+- name: install ubuntu-specific development tools (perf)
+  become: true
+  apt:
+    pkg:
+      - linux-tools-common
+      - linux-tools-generic
+  when: ansible_distribution == 'Ubuntu'
+
+- name: install debian-specific development tools (perf)
+  become: true
+  apt:
+    pkg:
+      - linux-perf
+  when: ansible_distribution == 'Debian'
 
 - name: adding jason to group plugdev for adb
   become: true
@@ -190,13 +203,6 @@
     - "source /usr/share/doc/fzf/examples/key-bindings.bash"
     - "source /usr/share/doc/fzf/examples/completion.bash"
     - "source <(curl -sSL git.io/forgit)"
-
-# bloomrpc
-- name: install bloomrpc
-  become: true
-  tags: bloomrpc
-  apt:
-    deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
 
 # balena cli
 - name: install balena cli
