@@ -21,7 +21,8 @@ Everything is made to work via setting two environment variables. The DO_PAT
 is the digital ocean API token. The pvt_key is set to the key which should be
 rolled out to the deployed resources.
 
-- Ansible (available in apt on Ubuntu >= 20.04)
+- Ansible (>=3.2)
+  - via ppa:ansible/ansible because default ubuntu only has 2.8 or something
 - A `/etc/hosts` or `/etc/ansible/hosts` entry which maps the host from the
 ansible playbooks to the IP (either locally or public)
 - Install the gpg module on ansible machine:
@@ -37,7 +38,7 @@ ansible playbooks to the IP (either locally or public)
 - ssh installed and ssh access via key from deploy machine (ie: authorized keys
   contains public key of deploy machine):
 ```
-sudo apt install ssh ssh-import-id
+sudo apt install ssh
 ssh-import-id gh:compscidr
 ```
 You'll probably want to test it works (and accept the ssh key) - with:

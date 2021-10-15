@@ -41,8 +41,22 @@
     groups: plugdev
     append: yes
 
+- name: add ansible GPG
+  tags: ansible
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367
+
+- name: Add ansible PPA
+  become: true
+  tags: ansible
+  ansible.builtin.apt_repository:
+    repo: ppa:ansible/ansible
+
 # ansible and terraform
 - name: install deploy tools
+  tags: ansible
   become: true
   apt:
     pkg:

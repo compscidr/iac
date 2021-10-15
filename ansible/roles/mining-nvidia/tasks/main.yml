@@ -1,0 +1,16 @@
+- name: lolMiner install
+  tags: mining
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: lolminer
+    image: compscidr/lolminer-docker:nvidia-1.33
+    pull: true
+    restart_policy: unless-stopped
+    device_requests:
+      - driver: nvidia
+        count: -1
+        capabilities:
+          - gpu
+    env:
+      MACHINE: "{{inventory_hostname}}"
