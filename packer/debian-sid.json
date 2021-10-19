@@ -9,9 +9,12 @@
     {
       "type": "virtualbox-iso",
       "guest_os_type": "Debian_64",
-      "disk_size": 12288,
+      "disk_size": 100000,
+      "cpus": 2,
+      "memory": 4096,
       "hard_drive_interface": "sata",
       "hard_drive_nonrotational": "true",
+      "hard_drive_discard": "true",
       "sata_port_count": "5",
       "iso_url": "http://ftp.debian.org/debian/dists/sid/main/installer-amd64/current/images/netboot/mini.iso",
       "iso_checksum": "md5:9d197756250b57c5af4848925debe3fd",
