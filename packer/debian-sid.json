@@ -1,0 +1,23 @@
+{
+  "variables": {
+    "fullname": "Jason Ernst",
+    "username": "jason",
+    "password": "{{ env `PACKER_PASSWORD` }}"
+  },
+
+  "builders": [
+    "type": "virtualbox-iso",
+    "guest_os_type": "Debian_64",
+    "disk_size": 100000,
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "scripts": [
+        
+      ],
+      "execute_command": "echo '{{user `password`}}' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+    }
+  ],
+}
