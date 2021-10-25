@@ -10,7 +10,6 @@
       - python3-pip
       - python3-venv
       - python3-setuptools
-      - golang
       - openjdk-11-jdk
       - git
       - npm
@@ -282,3 +281,32 @@
   tags: zig
   become: true
   apt: update_cache=yes name=zig state=latest
+
+# golang
+- name: add go GPG
+  tags: go
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 52B59B1571A79DBC054901C0F6BC817356A3D45E
+
+- name: add go repository
+  tags: go
+  become: true
+  ansible.builtin.apt_repository:
+    repo: ppa:longsleep/golang-backports
+
+- name: update apt and install go
+  tags: go
+  become: true
+  apt: update_cache=yes name=golang-go state=latest
+
+- name: Update bashrc go
+  tags: go
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - "export GOPATH=$HOME/go"
+    - "export PATH=$PATH:$GOROOT/bin:$GOPATH/bin"
