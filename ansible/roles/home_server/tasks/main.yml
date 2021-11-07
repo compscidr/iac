@@ -91,7 +91,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: sonarr
-    image: linuxserver/sonarr:version-3.0.6.1265
+    image: linuxserver/sonarr:version-3.0.6.1342
     pull: true
     volumes:
       - "/storage/tv:/tv:rw"
