@@ -11,3 +11,16 @@
       - "/dev/dri:/dev/dri"
     env:
       MACHINE: "{{inventory_hostname}}"
+
+- name: Deploy Livepeer Transcoder
+  tags: livepeer
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: livepeer
+    image: livepeer/go-livepeer:master
+    pull: true
+    restart_policy: unless-stopped
+    command: livepeer -transcoder -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935
+    volumes:
+      - "/root/.ethereum:/root/.ethereum"

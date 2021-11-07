@@ -130,7 +130,7 @@
   tags: ethereum
   copy:
     src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
-    dest: ~/.ethereum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: /root/.ethereum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
     mode: '0600'
 
 - name: Deploy Ethereum Fullnode Docker Container
@@ -146,5 +146,34 @@
       - 30303:30303
       - 8545:8545
     command: --http --http.addr 0.0.0.0
+    volumes:
+      - "/root/.ethereum:/root/.ethereum"
+
+- name: Create Livepeer Directories
+  tags: livepeer
+  file:
+    path: /root/.lpData/mainnet/keystore
+    state: directory
+
+- name: Copy Ethereum Wallet to Livepeer
+  tags: livepeer
+  copy:
+    src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: /root/.lpData/mainnet/keystoreUTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    mode: '0600'
+
+- name: Deploy Livepeer Orchestrator / Transcoder
+  tags: livepeer
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: livepeer
+    image: livepeer/go-livepeer:master
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 30303:30303
+      - 8545:8545
+    command: livepeer -network mainnet -ethUrl http://localhost:8545 -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -transcoder -pricePerUnit 995 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }}
     volumes:
       - "/root/.ethereum:/root/.ethereum"
