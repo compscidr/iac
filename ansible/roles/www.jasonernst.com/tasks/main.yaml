@@ -119,3 +119,32 @@
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
     restart_policy: unless-stopped
     memory: "1g"
+
+- name: Create Ethereum Directories
+  tags: ethereum
+  file:
+    path: /root/.ethereum/keystore
+    state: directory
+
+- name: Copy Ethereum Wallet to Fullnode
+  tags: ethereum
+  copy:
+    src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: ~/.ethereum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    mode: '0600'
+
+- name: Deploy Ethereum Fullnode Docker Container
+  tags: ethereum
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: ethereum
+    image: ethereum/client-go
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 30303:30303
+      - 8545:8545
+    command: --http --http.addr 0.0.0.0
+    volumes:
+      - "/root/.ethereum:/root/.ethereum"

@@ -46,7 +46,7 @@
 
 - hosts: www.jasonernst.com
   roles:
-    - web
+    - www.jasonernst.com
 
 - hosts: ubuntu-server
   pre_tasks:
