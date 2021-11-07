@@ -81,12 +81,13 @@
     repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     state: present
 
-- name: install packer
-  tags: packer
+- name: install vagrant and packer
+  tags: packer, vagrant
   become: true
   apt:
     pkg:
       - packer
+      - vagrant
 
 # github cli
 - name: add git cli GPG apt key

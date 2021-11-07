@@ -1,24 +1,11 @@
 # Packer
-Using this to generate VM images that are consistent without having to go
-through the install process.
+It turns out I don't actually need to use packer much beyond just a default
+box that is available online, however this setup currently has a default
+debian image with a blank customization script if I ever do want to go down
+that route.
 
-Source: https://github.com/glisignoli/packer-debian-sid
+https://dev.to/mattdark/a-custom-vagrant-box-with-packer-13ke
 
-Goal is to get it to the stage where I can just run ansible on it like any
-other host.
-
-To make it easy, I'd like it to be on a bridge network so that it appears as if
-it is any other machine on the lan (and thus gets an IP address that can be
-reached by ansible from any other ansible ready machine).
-
-It must also have ssh setup, and the ssh keys imported so that ansible may run.
-
-The easiest way I've done this is via the github ssh key import.
-
-After that, everything else is ready to rock.
-
-To build the image:
-`PACKER_PASSWORD=<insert password> packer build debian-sid.json`
-
-Start it up in virtualbox, get the IP address, add it to the ansible inventories
-and then run ansible.
+Instead, the repo where I want to use a vagrant dev environment has a
+Vagrantfile and an ansible playbook which installs all the required tools
+when the machine is created.
