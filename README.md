@@ -83,7 +83,7 @@ To setup a particular host:
 
 ### Common commands
 Deploy to ubuntu-server:
-`ansible-playbook -i ansible/inventories/production/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit ubuntu-server`
+`ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit ubuntu-server`
 
 Deploy to entire lan:
 
