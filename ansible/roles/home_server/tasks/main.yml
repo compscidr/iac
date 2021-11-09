@@ -141,74 +141,48 @@
     links:
       - "jackett: ubuntu-server"
 
-# https://github.com/myoung34/docker-github-actions-runner
-- name: Github Actions Runner Grape
-  tags: gh-actions
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
-    name: github-runner-grape-networking
-    image: myoung34/github-runner:latest
-    pull: true
-    volumes:
-      - "/dev/bus/usb:/dev/bus/usb"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/tmp/github-runner-grape:/tmp/github-runner"
-    restart_policy: unless-stopped
-    privileged: true
-    env:
-      ACCESS_TOKEN: "{{ github_access_token_grape }}"
-      RUNNER_NAME: home.jasonernst.com
-      RUNNER_WORKDIR: /tmp/github-runner
-      RUNNER_GROUP: default
-      REPO_URL: https://github.com/compscidr/grape-networking-java
-      LABELS: "self-hosted"
-      ORG_RUNNER: "false"
-    links:
-      - "android-emulator"
+# https://github.com/google/android-emulator-container-scripts
+# - name: Deploy Android Emulator
+#   tags: android-emulator
+#   vars:
+#     ansible_python_interpreter: "/usr/bin/env python3-docker"
+#   docker_container:
+#     name: android-emulator
+#     image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
+#     pull: true
+#     restart_policy: unless-stopped
+#     devices:
+#       - "/dev/kvm"
+#     ports:
+#       - "5555:5555"
+#     env:
+#       EMULATOR_ARGS: "-gpu swiftshader_indirect"
 
 # https://github.com/myoung34/docker-github-actions-runner
-# - name: Github Actions Runner AWM
+# - name: Deploy Github Actions Runner
 #   tags: gh-actions
 #   vars:
 #     ansible_python_interpreter: "/usr/bin/env python3-docker"
 #   docker_container:
-#     name: github-runner-awm
+#     name: gh-actions
 #     image: myoung34/github-runner:latest
 #     pull: true
 #     volumes:
 #       - "/dev/bus/usb:/dev/bus/usb"
 #       - "/var/run/docker.sock:/var/run/docker.sock"
-#       - "/tmp/github-runner-awm:/tmp/github-runner"
+#       - "/tmp/github-runner-grape:/tmp/github-runner"
 #     restart_policy: unless-stopped
 #     privileged: true
 #     env:
-#       ACCESS_TOKEN: "{{ github_access_token_awm }}"
+#       ACCESS_TOKEN: "{{ github_access_token_grape }}"
 #       RUNNER_NAME: home.jasonernst.com
 #       RUNNER_WORKDIR: /tmp/github-runner
 #       RUNNER_GROUP: default
-#       REPO_URL: https://github.com/compscidr/awm
+#       REPO_URL: https://github.com/compscidr/grape-networking-java
 #       LABELS: "self-hosted"
 #       ORG_RUNNER: "false"
 #     links:
 #       - "android-emulator"
-
-# https://github.com/google/android-emulator-container-scripts
-- name: Android Emulator
-  tags: android-emulator
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
-    name: android-emulator
-    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
-    pull: true
-    restart_policy: unless-stopped
-    devices:
-      - "/dev/kvm"
-    ports:
-      - "5555:5555"
-    env:
-      EMULATOR_ARGS: "-gpu swiftshader_indirect"
 
 - name: install adb
   become: true
