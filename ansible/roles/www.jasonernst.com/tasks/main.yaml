@@ -146,7 +146,7 @@
     ports:
       - 8935:8935
       - 7935:7935
-    command: -network mainnet -ethUrl https://mainnet.infura.io/v3/{{ infura_secret }} -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 995 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }} -monitor
+    command: -network mainnet -ethUrl https://mainnet.infura.io/v3/{{ infura_secret }} -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 995 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }} -monitor --cliAddr 0.0.0.0:7935
     volumes:
       - "/root/.lpData:/root/.lpData"
     etc_hosts:
