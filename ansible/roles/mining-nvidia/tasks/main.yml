@@ -15,6 +15,8 @@
     env:
       MACHINE: "{{inventory_hostname}}"
 
+# note: this requires the host to have the nvenv nvidia patch if it is a consumer
+# nvidia card: https://github.com/keylase/nvidia-patch
 - name: Deploy Livepeer Transcoder
   tags: livepeer
   vars:
@@ -24,6 +26,11 @@
     image: livepeer/go-livepeer:master
     pull: true
     restart_policy: unless-stopped
-    command: livepeer -transcoder -nvidia 0 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935
+    device_requests:
+      - driver: nvidia
+        count: -1
+        capabilities:
+          - gpu
+    command: -transcoder -nvidia 0 -orchSecret {{ orchSecret }} -orchAddr jasonernst.com:8935 -monitor
     volumes:
       - "/root/.ethereum:/root/.ethereum"

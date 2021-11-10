@@ -21,6 +21,6 @@
     image: livepeer/go-livepeer:master
     pull: true
     restart_policy: unless-stopped
-    command: livepeer -transcoder -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935
+    command: -transcoder -orchSecret {{ orchSecret }} -orchAddr jasonernst.com:8935 -monitor
     volumes:
       - "/root/.ethereum:/root/.ethereum"

@@ -31,6 +31,7 @@
     restart_policy: unless-stopped
 
 - name: pull and run the lets encypt companion to the proxy
+  tags: letsencrypt
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
@@ -120,35 +121,6 @@
     restart_policy: unless-stopped
     memory: "1g"
 
-- name: Create Ethereum Directories
-  tags: ethereum
-  file:
-    path: /root/.ethereum/keystore
-    state: directory
-
-- name: Copy Ethereum Wallet to Fullnode
-  tags: ethereum
-  copy:
-    src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
-    dest: /root/.ethereum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
-    mode: '0600'
-
-- name: Deploy Ethereum Fullnode Docker Container
-  tags: ethereum
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  community.docker.docker_container:
-    name: ethereum
-    image: ethereum/client-go
-    pull: true
-    restart_policy: unless-stopped
-    ports:
-      - 30303:30303
-      - 8545:8545
-    command: --http --http.addr 0.0.0.0
-    volumes:
-      - "/root/.ethereum:/root/.ethereum"
-
 - name: Create Livepeer Directories
   tags: livepeer
   file:
@@ -159,10 +131,10 @@
   tags: livepeer
   copy:
     src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
-    dest: /root/.lpData/mainnet/keystoreUTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: /root/.lpData/mainnet/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
     mode: '0600'
 
-- name: Deploy Livepeer Orchestrator / Transcoder
+- name: Deploy Livepeer Orchestrator (with optional transcoder running too)
   tags: livepeer
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
@@ -172,8 +144,56 @@
     pull: true
     restart_policy: unless-stopped
     ports:
-      - 30303:30303
-      - 8545:8545
-    command: livepeer -network mainnet -ethUrl http://localhost:8545 -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -transcoder -pricePerUnit 995 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }}
+      - 8935:8935
+      - 7935:7935
+    command: -network mainnet -ethUrl https://mainnet.infura.io/v3/{{ infura_secret }} -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 995 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }} -monitor
+    volumes:
+      - "/root/.lpData:/root/.lpData"
+    etc_hosts:
+      lp.jasonernst.com: 127.0.0.1
+      jasonernst.com: 172.17.0.1
+
+- name: Create Prometheus Directories
+  tags: prometheus
+  file:
+    path: /etc/prometheus
+    state: directory
+
+# https://forum.livepeer.org/t/guide-transcoder-monitoring-with-prometheus-grafana/1225
+- name: Copy Prometheus Config
+  tags: prometheus
+  copy:
+    src: files/prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0600'
+
+- name: Deploy Prometheus
+  tags: prometheus
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: prometheus
+    image: prom/prometheus
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 9000:9000
+      - 9090:9090
     volumes:
       - "/root/.ethereum:/root/.ethereum"
+
+# access with: ssh -L 3000:localhost:3000 -N jasonernst.com
+# and then localhost:3000
+- name: Deploy Grafana
+  tags: grafana
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: grafana
+    image: grafana/grafana-oss
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 3000:3000
+    volumes:
+      - "grafana-storage:/var/lib/grafana"
