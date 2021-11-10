@@ -165,7 +165,7 @@
   copy:
     src: files/prometheus.yml
     dest: /etc/prometheus/prometheus.yml
-    mode: '0600'
+    mode: '0644'
 
 - name: Deploy Prometheus
   tags: prometheus
@@ -180,7 +180,9 @@
       - 9000:9000
       - 9090:9090
     volumes:
-      - "/root/.ethereum:/root/.ethereum"
+      - "/etc/prometheus/:/etc/prometheus"
+    links:
+      livepeer
 
 # access with: ssh -L 3000:localhost:3000 -N jasonernst.com
 # and then localhost:3000
