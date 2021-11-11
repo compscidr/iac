@@ -1,3 +1,31 @@
+# https://serverfault.com/a/832850
+- name: Update the /etc/hosts file with node name
+  tags: etchostsupdate
+  become: true
+  lineinfile:
+    path: "/etc/hosts"
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
+    state: present
+    backup: yes
+  register: etchostsupdate
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{groups['home']}}"
+
+- name: Update the ssh/config with each of the node name entries
+  tags: sshconfigupdate
+  blockinfile:
+    path: "/home/jason/.ssh/config"
+    block: |
+      Host {{ item }}
+        ProxyJump home.jasonernst.com
+        Hostname {{ item }}
+        User jason
+        IdentityFile ~/.ssh/github_id_rsa
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+  with_inventory_hostnames:
+    - all
+
 - name: Create nginx directory on host
   tags: proxy
   become: true
