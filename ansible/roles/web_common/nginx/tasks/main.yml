@@ -1,0 +1,37 @@
+- name: Create nginx directory on host
+  tags: nginx
+  become: true
+  file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Copy nginx config to host
+  tags: nginx
+  become: true
+  copy:
+    src: proxy.conf
+    dest: /etc/nginx/conf.d
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy Nginx Reverse Proxy
+  tags: nginx
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: nginx-proxy
+    image: jwilder/nginx-proxy
+    published_ports: 80:80,443:443
+    volumes:
+      - /etc/nginx/conf.d:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    network_mode: bridge
+    restart_policy: unless-stopped

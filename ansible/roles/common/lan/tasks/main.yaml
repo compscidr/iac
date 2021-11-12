@@ -1,0 +1,27 @@
+- name: Update the ssh/config with each of the lan node name entries
+  tags: ssh
+  blockinfile:
+    create: yes
+    path: "/home/jason/.ssh/config"
+    block: |
+      Host {{ item }}
+      Hostname {{ item }}
+      User jason
+      IdentityFile ~/.ssh/github_id_rsa
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+  with_inventory_hostnames:
+    - lan
+
+- name: Update the ssh/config with each of the wan node name entries
+  tags: ssh
+  blockinfile:
+    create: yes
+    path: "/home/jason/.ssh/config"
+    block: |
+      Host {{ item }}
+      Hostname {{ item }}
+      User jason
+      IdentityFile ~/.ssh/id_rsa
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+  with_inventory_hostnames:
+    - all, !lan

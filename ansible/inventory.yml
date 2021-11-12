@@ -1,0 +1,48 @@
+all:
+#  hosts:
+# this is where ungrouped hosts would go
+  children:
+    lan:
+      hosts:
+        ubuntu-server:
+          ansible_host: 10.0.0.218
+        ubuntu-desktop-beast:
+          ansible_host: 10.0.0.89
+        ubuntu-desktop:
+          ansible_host: 10.0.0.111
+        jason-ubuntu-laptop:
+          ansible_host: 10.0.0.17
+        ubuntu-work-laptop:
+          ansible_host: 10.0.0.103
+    development:
+      hosts:
+        ubuntu-server:
+        ubuntu-desktop-beast:
+        ubuntu-desktop:
+        jason-ubuntu-laptop:
+        ubuntu-work-laptop:
+    development_gui:
+      hosts:
+        ubuntu-desktop:
+        ubuntu-desktop-beast:
+        jason-ubuntu-laptop:
+        ubuntu-work-laptop:
+    amd:
+      hosts:
+        ubuntu-desktop:
+        ubuntu-server:
+    nvidia:
+      hosts:
+        ubuntu-desktop-beast:
+    home_jasonernst_com:
+      hosts:
+        ubuntu-server:
+    www_jasonernst_com:
+      hosts:
+        www.jasonernst.com:
+    lp_jasonernst_com:
+      hosts:
+        lp.jasonernst.com:
+    ombi_jasonernst_com:
+      hosts:
+        ombi.jasonernst.com:

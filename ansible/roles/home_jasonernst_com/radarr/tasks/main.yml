@@ -1,0 +1,32 @@
+- name: Create Radarr Directories
+  tags: radarr
+  become: true
+  file:
+    path: /etc/radarr
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Deploy Radarr
+  tags: radarr
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: radarr
+    image: linuxserver/radarr:version-3.2.2.5080
+    pull: true
+    volumes:
+      - "/storage/movies:/movies:rw"
+      - "/storage/downloads:/data:rw"
+      - "/etc/radarr:/config:rw"
+    ports:
+      - "7878:7878"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 1g
+    links:
+      - "jackett: ubuntu-server"

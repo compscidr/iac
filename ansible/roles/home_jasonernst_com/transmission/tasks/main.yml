@@ -1,0 +1,25 @@
+# runs transmission behind nordvpn
+- name: Deploy Transmission
+  tags: transmission
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: transmission
+    image: haugene/transmission-openvpn:latest
+    volumes: /storage/downloads:/data
+    capabilities:
+      - NET_ADMIN
+    env:
+      TRANSMISSION_WEB_UI: "transmission-web-control"
+      PUID: "1000"
+      PGID: "1000"
+      OPENVPN_PROVIDER: NORDVPN
+      OPENVPN_USERNAME: "{{ nordvpn_user }}"
+      OPENVPN_PASSWORD: "{{ nordvpn_password }}"
+      NORDVPN_COUNTRY: US
+      NORDVPN_CATEGORY: legacy_p2p
+      LOCAL_NETWORK: 10.0.0.0/24
+      CREATE_TUN_DEVICE: "true"
+      TZ: America/Los_Angeles
+    restart_policy: unless-stopped
+    published_ports: 9091:9091

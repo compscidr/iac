@@ -1,0 +1,30 @@
+- name: Create Prometheus Directories
+  tags: prometheus
+  file:
+    path: /etc/prometheus
+    state: directory
+
+# https://forum.livepeer.org/t/guide-transcoder-monitoring-with-prometheus-grafana/1225
+- name: Copy Prometheus Config
+  tags: prometheus
+  copy:
+    src: files/prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0644'
+
+- name: Deploy Prometheus
+  tags: prometheus
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: prometheus
+    image: prom/prometheus
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 9000:9000
+      - 9090:9090
+    volumes:
+      - "/etc/prometheus/:/etc/prometheus"
+    links:
+      livepeer

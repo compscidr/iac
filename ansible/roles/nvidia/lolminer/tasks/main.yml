@@ -1,0 +1,18 @@
+- name: Deploy lolminer for Nvidia GPU
+  tags: mining
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: lolminer
+    image: compscidr/lolminer-docker:nvidia-1.35
+    pull: true
+    restart_policy: unless-stopped
+    device_requests:
+      - driver: nvidia
+        count: -1
+        capabilities:
+          - gpu
+    ports:
+      - 4069:4069
+    env:
+      MACHINE: "{{inventory_hostname}}"

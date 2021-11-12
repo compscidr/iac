@@ -1,0 +1,88 @@
+---
+- name: install various tools
+  become: true
+  apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+      - curl                    # command line http tool
+      - wget                    # command line http tool
+      - unzip
+      - git
+
+- name: install network tools
+  become: true
+  apt:
+    pkg:
+      - arp-scan                # for ip <-> mac map search
+      - dnsutils                # dig
+      - ethtool                 # gets info like link speed
+      - iftop                   # network top
+      - iotop                   # disk top
+      - net-tools               # ifconfig, netstat, arp
+      - nmap                    # determine open ports
+      - traceroute              # traceroute
+      - nbtscan                 # netbios scanner
+      - speedtest-cli           # bandwidth debugging
+      - sshuttle                # forward ssh through tunnel
+      - whois                   # whois
+      - sqlite3                 # good db for integration tests
+      - socat                   # sort of like nc but doesn't hang
+      - sshfs                   # ssh mounts
+
+- name: ensure python is python3 in ubuntu 20.04
+  become: true
+  apt:
+    pkg:
+      - python-is-python3
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+
+# https://github.com/nickjj/ansible-docker
+- name: Ensure docker is installed on the target system
+  tags: docker
+  include_role:
+    name: nickjj.docker
+    apply:
+      become: true
+
+- name: adding jason to group docker
+  tags: docker
+  become: true
+  user:
+    name: jason
+    groups: docker
+    append: true
+
+# github cli
+- name: add git cli GPG apt key
+  tags: git
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: C99B11DEB97541F0
+
+- name: add github cli repository
+  tags: git
+  become: true
+  apt_repository:
+    repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
+    state: present
+
+- name: update apt and install gh
+  tags: git
+  become: true
+  apt: update_cache=yes name=gh state=latest
+
+- name: setup default git configuration
+  tags: git
+  become_user: jason
+  git_config:
+    name="{{ item.name }}"
+    value="{{ item.value }}"
+    scope=global
+  with_items:
+    - { name: "user.name", value: "Jason Ernst" }
+    - { name: "user.email", value: "ernstjason1@gmail.com" }
+    - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }
+    - { name: "pull.rebase", value: "false" }

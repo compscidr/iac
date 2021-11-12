@@ -1,0 +1,22 @@
+- name: install cpp development tools
+  become: true
+  apt:
+    pkg:
+      - build-essential
+      - cmake
+      - autoconf
+
+- name: install ubuntu-specific development tools (perf)
+  become: true
+  apt:
+    pkg:
+      - linux-tools-common
+      - linux-tools-generic
+  when: ansible_distribution == 'Ubuntu'
+
+- name: install debian-specific development tools (perf)
+  become: true
+  apt:
+    pkg:
+      - linux-perf
+  when: ansible_distribution == 'Debian'

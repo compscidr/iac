@@ -1,0 +1,9 @@
+# python dev tools
+- name: install python development tools
+  become: true
+  apt:
+    pkg:
+      - python3-dev
+      - python3-pip
+      - python3-venv
+      - python3-setuptools

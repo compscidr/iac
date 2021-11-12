@@ -1,0 +1,50 @@
+- name: Copy .env to the host
+  tags: website
+  become: true
+  copy:
+    src: prod.env
+    dest: /opt/goblog/prod/.env
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy www.jasonernst.com
+  tags: website
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: www.jasonernst.com
+    image: compscidr/goblog:v0.1.26
+    volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+    mounts:
+      - source: /opt/goblog/prod/test.db
+        target: /go/src/github.com/compscidr/goblog/test.db
+        type: bind
+      - source: /opt/goblog/prod/.env
+        target: /go/src/github.com/compscidr/goblog/.env
+        type: bind
+    network_mode: bridge
+    restart_policy: unless-stopped
+    env:
+      VIRTUAL_HOST: "www.jasonernst.com,jasonernst.com"
+      VIRTUAL_PORT: "7000"
+      LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
+      LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
+
+- name: Deploy mysql db
+  tags: db
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: db
+    image: mysql
+    env_file: /opt/goblog/prod/.env
+    network_mode: bridge
+    restart_policy: unless-stopped
+
+- name: Adds a crontab entry to to backup website
+  ansible.builtin.cron:
+    name: "backup www.jasonernst.com"
+    minute: "0"
+    hour: "3"
+    job: "rsync -av --delete /opt/goblog/prod/ ubuntu-server:/storage/backup/www.jasonernst.com/"

@@ -1,0 +1,73 @@
+# balena cli
+- name: install balena cli
+  become: true
+  tags: balena
+  ansible.builtin.unarchive:
+    src: https://github.com/balena-io/balena-cli/releases/download/v12.44.29/balena-cli-v12.44.29-linux-x64-standalone.zip
+    dest: /opt
+    remote_src: yes
+
+# add /opt/balana-cli to path
+- name: add balena to to path
+  become: true
+  tags: balena
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    backrefs: yes
+    regexp: 'PATH=(["]*)((?!.*?/opt/balena-cli).*?)(["]*)$'
+    line: 'PATH=\1\2:/opt/balena-cli\3'
+
+- name: add ansible GPG
+  tags: ansible
+  become: true
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367
+
+- name: Add ansible PPA
+  become: true
+  tags: ansible
+  ansible.builtin.apt_repository:
+    repo: ppa:ansible/ansible
+
+- name: install terraform
+  include_role:
+    name: diodonfrost.terraform
+    apply:
+      become: true
+
+- name: Add packer GPG
+  tags: packer
+  become: true
+  apt_key:
+    keyserver: https://apt.releases.hashicorp.com/gpg
+    id: E8A032E094D8EB4EA189D270DA418C88A3219F7B
+
+- name: Add packer apt repository
+  become: true
+  tags: packer
+  apt_repository:
+    repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+
+- name: install ansible, vagrant and packer
+  tags: packer, vagrant
+  become: true
+  apt:
+    pkg:
+      - packer
+      - vagrant
+      - ansible
+      - ansible-lint
+
+# bashrc updates for DEBEMAIL and DEBFULLNAME (for building deb packages)
+- name: Update bashrc debmaintainer
+  tags: debmaintainer
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - 'DEBEMAIL="ernstjason1@gmail.com"'
+    - 'DEBFULLNAME="Jason Ernst"'

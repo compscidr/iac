@@ -1,0 +1,15 @@
+# access with: ssh -L 3000:localhost:3000 -N jasonernst.com
+# and then localhost:3000
+- name: Deploy Grafana
+  tags: grafana
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: grafana
+    image: grafana/grafana-oss
+    pull: true
+    restart_policy: unless-stopped
+    ports:
+      - 3000:3000
+    volumes:
+      - "grafana-storage:/var/lib/grafana"

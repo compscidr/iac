@@ -3,12 +3,13 @@
 - Ansible (>=3.2)
   - via ppa:ansible/ansible because default ubuntu only has 2.8 or something
 
+- Install requirements: `ansible-galaxy install -r ansible/requirements.yml`
+
 - Install the gpg module on ansible machine:
   - `mkdir -p ~/.ansible/plugins/modules`
   - `wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py`
   - verify it is there with `ansible-doc -t module gpg`
   - todo: see if we can get this work with dependencies so we don't need to do this manually
-  - install requirements: `ansible-galaxy install -r ansible/requirements.yml`
 
 - Ensure the .vault_pass file exists (its on keybase):
   - https://www.digitalocean.com/community/tutorials/how-to-use-vault-to-protect-sensitive-ansible-data-on-ubuntu-16-04
@@ -22,6 +23,25 @@ ssh-import-id gh:compscidr
 ```
 You'll probably want to test it works (and accept the ssh key) - with:
 `ssh <target-host>`
+
+## Deploying to all machines
+`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --vault-password-file=.vault_pass`
+
+## Deploying to just www.jasonernst.com
+`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --vault-password-file=.vault_pass --limit www.jasonernst.com`
+
+# Checking for problems
+`ansible-playbook -i inventory.yml playbook.yml --check -vvvv`
+
+# Linting
+`ansible-lint inventory.yml playbook.yml`
+
+
+Note: deploying for the first time to a machine which only has root (ie: digital ocean)
+may require running with `-u root` and not `--ask-become-pass`
+
+###### old
+
 
 ## Inventories:
 Since we have separate inventories for different classes of hosts

@@ -1,0 +1,31 @@
+- name: install atom editor
+  become: true
+  apt:
+    deb: https://atom.io/download/deb
+
+# vscode
+- name: add microsoft GPG
+  tags: vscode
+  become: true
+  apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+
+- name: add microsoft package repository
+  tags: vscode
+  become: true
+  apt_repository:
+    repo: "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/code stable main"
+    state: present
+    filename: vscode
+
+- name: update apt and install vscode
+  tags: vscode
+  become: true
+  apt: update_cache=yes name=code state=latest
+
+- name: Ensure jetbrains toolbox is installed on the target system
+  include_role:
+    name: ansible-role-jet-brains-toolbox
+    apply:
+      become: true

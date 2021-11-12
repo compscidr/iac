@@ -1,0 +1,32 @@
+- name: Create Sonarr Directories
+  tags: sonarr
+  become: true
+  file:
+    path: /etc/sonarr
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Deploy Sonarr
+  tags: sonarr
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: sonarr
+    image: linuxserver/sonarr:version-3.0.6.1342
+    pull: true
+    volumes:
+      - "/storage/tv:/tv:rw"
+      - "/storage/downloads:/data:rw"
+      - "/etc/sonarr:/config:rw"
+    ports:
+      - "8989:8989"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 1g
+    links:
+      - "jackett: ubuntu-server"

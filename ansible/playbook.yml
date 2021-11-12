@@ -1,0 +1,78 @@
+---
+- name: Common Tasks for all Hosts
+  hosts: all
+  pre_tasks:
+    - name: update apt cache if needed
+      become: true
+      apt:
+        update_cache: true
+        cache_valid_time: 86400
+  roles:
+    - common/user
+    - common/ssh
+    - common/software
+
+- name: Tasks for LAN Hosts
+  hosts: lan
+  roles:
+    - common/lan
+
+- name: Tasks for WAN hosts
+  hosts: all, !lan
+  roles:
+    - common/wan
+
+- name: Non-GUI Development Software
+  hosts: development
+  roles:
+    - development/shell
+    - development/ops
+    - development/cpp
+    - development/android
+    - development/python3
+    - development/golang
+    - development/node
+    - development/ziglang
+
+- name: Development Software for GUIs
+  hosts: development-gui
+  roles:
+    - development-gui/ides
+    - development-gui/tools
+
+- name: Services for home.jasonernst.com
+  hosts: home_jasonernst_com
+  roles:
+    - home_jasonernst_com/plex
+    - home_jasonernst_com/transmission
+    - home_jasonernst_com/flaresolver
+    - home_jasonernst_com/jackett
+    - home_jasonernst_com/sonarr
+    - home_jasonernst_com/radarr
+
+- name: Services for www.jasonernst.com
+  hosts: www_jasonernst_com
+  roles:
+    - web_common/nginx
+    - web_common/letsencrypt
+    - www_jasonernst_com/goblog
+
+- name: Services for ombi.jasonernst.com
+  hosts: www_jasonernst_com
+  roles:
+    # enable these when ombi moves to its own server
+    #- web_common/nginx
+    #- web_common/letsencrypt
+    - ombi_jasonernst_com/ombi
+
+- name: AMD GPU related tasks
+  hosts: amd
+  roles:
+    - amd/lolminer
+    - amd/livepeer
+
+- name: Nvidia GPU related tasks
+  hosts: nvidia
+  roles:
+    - nvidia/lolminer
+    - nvidia/livepeer

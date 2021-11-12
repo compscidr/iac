@@ -1,0 +1,73 @@
+---
+- name: Install Sudo
+  become: true
+  apt:
+    pkg:
+      - sudo
+
+- name: Add the user 'jason'
+  tags: user
+  become: true
+  ansible.builtin.user:
+    name: jason
+    comment: Jason Ernst
+
+- name: adding jason to group sudo
+  tags: user
+  become: true
+  user:
+    name: jason
+    groups: sudo
+    append: true
+
+# pgp keys see: https://github.com/netson/ansible-gpg-key
+# and https://github.com/cpmills1975/ansible-gpg-import-module
+# and https://github.com/brandonkal/ansible-gpg
+- name: Create gpg directory if it does not exist
+  tags: gpg
+  become_user: jason
+  file:
+    path: ~/.gpg
+    state: directory
+    mode: '0755'
+    owner: jason
+    group: jason
+
+- name: gpg pub key copy
+  become_user: jason
+  tags: gpg
+  copy:
+    src: files/gpg/mygpgkey_pub.gpg
+    dest: ~/.gpg/mygpgkey_pub.gpg
+    mode: '0600'
+    owner: jason
+    group: jason
+  register: gpg_pub_key
+
+- name: gpg priv key copy
+  tags: gpg
+  become_user: jason
+  copy:
+    src: files/gpg/mygpgkey_sec.gpg
+    dest: ~/.gpg/mygpgkey_sec.gpg
+    mode: '0600'
+    owner: jason
+    group: jason
+  register: gpg_priv_key
+
+- name: import Public GPG Key from file
+  tags: gpg
+  become_user: jason
+  gpg:
+    key_file: ~/.gpg/mygpgkey_pub.gpg
+    key_id: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
+  when: gpg_pub_key.changed
+
+- name: import private GPG Key from file
+  tags: gpg
+  become_user: jason
+  gpg:
+    key_file: ~/.gpg/mygpgkey_sec.gpg
+    key_id: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
+    key_type: private
+  when: gpg_priv_key.changed

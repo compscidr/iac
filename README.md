@@ -31,7 +31,7 @@ Used to provision software, services and configuration to local machines and clo
   - plex, radarr, sonarr to ubuntu-server
 - /etc/hosts files
 - ssh keys
-- .ssh/config
+- .ssh/config mapping identities to hosts and jumpboxes where necessary
 
 - [home.jasonernst.com](home.jasonernst.com) pointed to ubuntu-server configured as an ssh jump box into the lan
 

@@ -1,0 +1,13 @@
+- name: Deploy LetsEncrypt companion to the proxy
+  tags: letsencrypt
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: letsencrypt
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes: certs:/etc/nginx/certs:rw,/var/run/docker.sock:/var/run/docker.sock:ro
+    volumes_from: nginx-proxy
+    network_mode: bridge
+    restart_policy: unless-stopped
+    env:
+      ENABLE_IPV6: "true"

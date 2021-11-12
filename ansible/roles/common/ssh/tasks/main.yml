@@ -1,0 +1,63 @@
+- name: Create ssh directory if it does not exist
+  tags: ssh
+  become_user: jason
+  file:
+    path: ~/.ssh
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
+# enables the target to ssh into other machines I've deployed via ssh key
+# ie: no password required
+- name: ssh id_rsa
+  tags: ssh
+  become_user: jason
+  copy:
+    src: id_rsa
+    dest: ~/.ssh/id_rsa
+    mode: '0600'
+    owner: jason
+    group: jason
+
+- name: ssh id_rsa.pub
+  become_user: jason
+  tags: ssh
+  copy:
+    src: id_rsa.pub
+    dest: ~/.ssh/id_rsa.pub
+    mode: '0644'
+    owner: jason
+    group: jason
+
+- name: ssh github_id_rsa
+  become_user: jason
+  tags: ssh
+  copy:
+    src: github_id_rsa
+    dest: ~/.ssh/github_id_rsa
+    mode: '0600'
+    owner: jason
+    group: jason
+
+- name: ssh github_id_rsa.pub
+  become_user: jason
+  tags: ssh
+  copy:
+    src: github_id_rsa.pub
+    dest: ~/.ssh/github_id_rsa.pub
+    mode: '0644'
+    owner: jason
+    group: jason
+
+- name: Add github to ssh/config
+  tags: ssh
+  blockinfile:
+    create: yes
+    path: "/home/jason/.ssh/config"
+    block: |
+      Host github
+      Hostname github.com
+      User git
+      IdentityFile ~/.ssh/github_id_rsa
+    marker: "# {mark} ANSIBLE MANAGED BLOCK github"
