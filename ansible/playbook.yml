@@ -1,12 +1,14 @@
 ---
-- name: Common Tasks for all Hosts
-  hosts: all
+- hosts: all
   pre_tasks:
-    - name: update apt cache if needed
+    - name: Update Apt Cache, if needed
       become: true
       apt:
         update_cache: true
         cache_valid_time: 86400
+
+- name: Common Tasks for all Hosts
+  hosts: all
   roles:
     - common/user
     - common/ssh
