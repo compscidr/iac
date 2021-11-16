@@ -1,0 +1,26 @@
+- name: Create Livepeer Directories
+  tags: livepeer
+  file:
+    path: /home/jason/.lpData/mainnet/keystore
+    state: directory
+
+- name: Copy Ethereum Wallet to Livepeer
+  tags: livepeer
+  copy:
+    src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: /home/jason/.lpData/mainnet/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    mode: '0600'
+
+- name: Deploy Livepeer Transcoder without GPU
+  tags: livepeer
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: livepeer
+    image: livepeer/go-livepeer:master
+    pull: true
+    restart_policy: unless-stopped
+    command: -transcoder -network mainnet -ethUrl http://ubuntu-desktop-beast:8545 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935 -monitor --cliAddr 0.0.0.0:7935 -reward=false -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb --ethPassword {{ ethPassword }}
+    network_mode: host
+    volumes:
+      - "/home/jason/.lpData:/root/.lpData"

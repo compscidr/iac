@@ -1,11 +1,11 @@
 ---
 - hosts: all
   pre_tasks:
-    - name: Update Apt Cache, if needed
+    - name: Update Apt Cache
       become: true
       apt:
         update_cache: true
-        cache_valid_time: 86400
+        cache_valid_time: 3600
 
 - name: Common Tasks for all Hosts
   hosts: all
@@ -59,6 +59,13 @@
     - web_common/letsencrypt
     - www_jasonernst_com/goblog
 
+- name: Services for lp.jasonernst.com
+  hosts: lp_jasonernst_com
+  roles:
+    - lp_jasonernst_com/grafana
+    - livepeer/orchestrator
+    - lp_jasonernst_com/prometheus
+
 - name: Services for ombi.jasonernst.com
   hosts: www_jasonernst_com
   roles:
@@ -70,11 +77,19 @@
 - name: AMD GPU related tasks
   hosts: amd
   roles:
-    - amd/lolminer
-    - amd/livepeer
+    - lolminer/amd
+    - livepeer/transcoder_cpu
 
 - name: Nvidia GPU related tasks
   hosts: nvidia
   roles:
-    - nvidia/lolminer
-    - nvidia/livepeer
+    - lolminer/nvidia
+    - livepeer/transcoder_gpu
+
+# this is the only computer that seems to be fast enough to keep up to the network
+# tried previously on ubuntu-desktop and ubuntu-server, but no dice.
+- name: Ethereum
+  tags: ethereum
+  hosts: ubuntu-desktop-beast
+  roles:
+    - ethereum/fullnode

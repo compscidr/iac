@@ -1,5 +1,72 @@
+# https://gist.github.com/drmalex07/c0f9304deea566842490
+- name: Copy Secure Tunnel Service File
+  become: true
+  tags: prometheus
+  copy:
+    src: files/secure-tunnel@.service
+    dest: /etc/systemd/system/secure-tunnel@.service
+    mode: '0600'
+
+# note: for this to work the first time, you'll need to do an ssh first and
+# accept the key
+- name: Copy lolminer API Tunnel
+  become: true
+  tags: prometheus
+  copy:
+    src: files/secure-tunnel@ubuntu-desktop-beast-lolminer
+    dest: /etc/default/secure-tunnel@ubuntu-desktop-beast-lolminer
+    mode: '0644'
+
+# note: for this to work the first time, you'll need to do an ssh first and
+# accept the key
+- name: Copy lolminer API Tunnel
+  become: true
+  tags: prometheus
+  copy:
+    src: files/secure-tunnel@ubuntu-desktop-lolminer
+    dest: /etc/default/secure-tunnel@ubuntu-desktop-lolminer
+    mode: '0644'
+
+# note: for this to work the first time, you'll need to do an ssh first and
+# accept the key
+- name: Copy lolminer API Tunnel
+  become: true
+  tags: prometheus
+  copy:
+    src: files/secure-tunnel@ubuntu-server
+    dest: /etc/default/secure-tunnel@ubuntu-server
+    mode: '0644'
+
+- name: Enable Secure-Tunnel Ubuntu Desktop Beast Lolminer
+  become: true
+  tags: prometheus
+  ansible.builtin.systemd:
+    name: secure-tunnel@ubuntu-desktop-beast-lolminer
+    enabled: yes
+    state: started
+    masked: no
+
+- name: Enable Secure-Tunnel Ubuntu Desktop Lolminer
+  become: true
+  tags: prometheus
+  ansible.builtin.systemd:
+    name: secure-tunnel@ubuntu-desktop-lolminer
+    enabled: yes
+    state: started
+    masked: no
+
+- name: Enable Secure-Tunnel Ubuntu Server Lolminer
+  become: true
+  tags: prometheus
+  ansible.builtin.systemd:
+    name: secure-tunnel@ubuntu-server
+    enabled: yes
+    state: started
+    masked: no
+
 - name: Create Prometheus Directories
   tags: prometheus
+  become: true
   file:
     path: /etc/prometheus
     state: directory
@@ -7,6 +74,7 @@
 # https://forum.livepeer.org/t/guide-transcoder-monitoring-with-prometheus-grafana/1225
 - name: Copy Prometheus Config
   tags: prometheus
+  become: true
   copy:
     src: files/prometheus.yml
     dest: /etc/prometheus/prometheus.yml
@@ -21,10 +89,38 @@
     image: prom/prometheus
     pull: true
     restart_policy: unless-stopped
-    ports:
-      - 9000:9000
-      - 9090:9090
+    network_mode: host
     volumes:
+      - "grafana-storage:/prometheus"
       - "/etc/prometheus/:/etc/prometheus"
-    links:
-      livepeer
+
+
+- name: Create Miner Exporter Directories
+  tags: prometheus
+  become: true
+  file:
+    path: /etc/lighttpd
+    state: directory
+
+- name: Copy Miner Exporter Files
+  tags: prometheus
+  become: true
+  copy:
+    src: files/lighttpd.conf
+    dest: /etc/lighttpd/lighttpd.conf
+    mode: '0644'
+
+- name: Deploy Miner Exporter
+  tags: prometheus
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: mining-exporter
+    image: compscidr/mining-exporter
+    pull: true
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - "/etc/lighttpd:/etc/lighttpd"
+    env:
+      RIGS: "rig1=( lolminer localhost 4069 ) rig2=( lolminer localhost 4070 ) rig3=( lolminer localhost 4071 )"

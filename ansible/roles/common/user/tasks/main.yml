@@ -9,16 +9,13 @@
   tags: user
   become: true
   ansible.builtin.user:
-    name: jason
-    comment: Jason Ernst
-
-- name: adding jason to group sudo
-  tags: user
-  become: true
-  user:
-    name: jason
+    name: "jason"
+    comment: "Jason Ernst"
+    shell: /bin/bash
+    append: yes
     groups: sudo
-    append: true
+    skeleton: "/etc/skel"
+    create_home: yes
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
 # and https://github.com/cpmills1975/ansible-gpg-import-module
