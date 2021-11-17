@@ -41,6 +41,7 @@
 
 # note: can't run as both transcoder and orchestrator at same time
 # if you want to use orch secret and allow other transcoders to register
+# also note: if the price per pixel > 1200 the perf test won't run
 - name: Deploy Livepeer Orchestrator
   tags: livepeer
   vars:
@@ -50,7 +51,7 @@
     image: livepeer/go-livepeer:master
     pull: true
     restart_policy: unless-stopped
-    command: -network mainnet -ethUrl http://localhost:8545 -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 2000 -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} --ethPassword {{ ethPassword }} -monitor --cliAddr 0.0.0.0:7935
+    command: -network mainnet -ethUrl http://localhost:8545 -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 995 -pixelsPerUnit 1 -autoAdjustPrice=false -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }} -ethPassword {{ ethPassword }} -monitor -cliAddr 0.0.0.0:7935
     volumes:
       - "/home/jason/.lpData:/root/.lpData"
     network_mode: host

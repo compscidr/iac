@@ -27,7 +27,7 @@
         count: -1
         capabilities:
           - gpu
-    command: -transcoder -network mainnet -ethUrl http://ubuntu-desktop-beast:8545 -nvidia 0 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935 -monitor --cliAddr 0.0.0.0:7935 -reward=false -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb --ethPassword {{ ethPassword }}
+    command: -transcoder -network mainnet -ethUrl http://ubuntu-desktop-beast:8545 -nvidia 0 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935 -monitor --cliAddr 0.0.0.0:7935 -reward=false -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -ethPassword {{ ethPassword }}
     network_mode: host
     volumes:
       - "/home/jason/.lpData:/root/.lpData"
