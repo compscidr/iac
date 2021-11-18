@@ -62,8 +62,8 @@
   hosts: www_jasonernst_com
   roles:
     # enable these when ombi moves to its own server
-    #- web_common/nginx
-    #- web_common/letsencrypt
+    # - web_common/nginx
+    # - web_common/letsencrypt
     - ombi_jasonernst_com/ombi
 
 - name: AMD GPU related tasks

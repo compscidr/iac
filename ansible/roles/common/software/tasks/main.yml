@@ -4,7 +4,7 @@
   apt:
     update_cache: true
     cache_valid_time: 3600
-    
+
 - name: install various tools
   become: true
   apt:
@@ -78,7 +78,10 @@
 - name: update apt and install gh
   tags: git
   become: true
-  apt: update_cache=yes name=gh state=latest
+  apt:
+    update_cache: true
+    name: gh
+    state: present
 
 - name: setup default git configuration
   tags: git
@@ -88,7 +91,7 @@
     value="{{ item.value }}"
     scope=global
   with_items:
-    - { name: "user.name", value: "Jason Ernst" }
-    - { name: "user.email", value: "ernstjason1@gmail.com" }
-    - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }
-    - { name: "pull.rebase", value: "false" }
+    - {name:"user.name", value:"Jason Ernst"}
+    - {name:"user.email", value:"ernstjason1@gmail.com"}
+    - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
+    - {name:"pull.rebase", value:"false"}
