@@ -12,6 +12,7 @@ local devices, and use a common set of expectations for all devices in my fleet
 Used to provision cloud resources (currently on digital ocean):
 - compute
 - dns entries
+
 [Read more](terraform/README.md)
 
 ## Ansible
