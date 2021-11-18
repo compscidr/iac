@@ -43,6 +43,7 @@
     - home_jasonernst_com/jackett
     - home_jasonernst_com/sonarr
     - home_jasonernst_com/radarr
+    - gh_actions
 
 - name: Services for www.jasonernst.com
   hosts: www_jasonernst_com
