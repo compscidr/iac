@@ -17,6 +17,9 @@ jobs:
       env:
         VAULT_PASS: ${{secrets.VAULT_PASS}}
 
+    - name: Check in another step
+      run: 'ls -la $GITHUB_WORKSPACE'
+
     - name: Lint Ansible Playbook
       # replace "master" with any valid ref
       uses: ansible/ansible-lint-action@master
