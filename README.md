@@ -12,8 +12,7 @@ local devices, and use a common set of expectations for all devices in my fleet
 Used to provision cloud resources (currently on digital ocean):
 - compute
 - dns entries
-
-[Read more](ansible/Readme.md)
+[Read more](terraform/README.md)
 
 ## Ansible
 Used to provision software, services and configuration to local machines and cloud resources
@@ -34,6 +33,8 @@ Used to provision software, services and configuration to local machines and clo
 - .ssh/config mapping identities to hosts and jumpboxes where necessary
 
 - [home.jasonernst.com](home.jasonernst.com) pointed to ubuntu-server configured as an ssh jump box into the lan
+
+[Read more](ansible/README.md)
 
 ## Packer
 Used for a clean and consistent debian virtualbox environment to generate debian packages since most of my systems are ubuntu. Currently not needed because I can accomplish the same thing with a pre-built debian vagrant box. Would be useful if
