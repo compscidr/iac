@@ -36,33 +36,11 @@ You'll probably want to test it works (and accept the ssh key) - with:
 # Linting
 `ansible-lint inventory.yml playbook.yml`
 
+## Encrypting new secrets:
+`ansible-vault encrypt <file>`
+
+## Decrypted encrypted secrets:
+`ansible-vault decrypt <file>`
 
 Note: deploying for the first time to a machine which only has root (ie: digital ocean)
 may require running with `-u root` and not `--ask-become-pass`
-
-###### old
-
-
-## Inventories:
-Since we have separate inventories for different classes of hosts
-(production, staging, development), we need to pass the appropriate inventory
-file with `-i` when we run.
-
-For instance to setup the development machines:
-`ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass`
-
-To setup a particular host:
-`ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit <host>`
-
-### Common commands
-Deploy to ubuntu-server:
-`ansible-playbook -i ansible/inventories/development/hosts.yml ansible/site.yml --ask-become-pass --vault-password-file=.vault_pass --limit ubuntu-server`
-
-Deploy to entire lan:
-
-Deploy to www.jasonernst.com:
-`ansible-playbook -i ansible/inventories/production/hosts.yml ansible/site.yml -u root --vault-password-file=.vault_pass --limit www.jasonernst.com`
-
-## Encrypting new secrets:
-Note, this will clobber the original file with an encrypted version, so make a copy first.
-`ansible-vault encrypt --vault-password-file .vault_pass <file>`
