@@ -24,6 +24,9 @@ jobs:
         #   playbook_1.yml
         #   playbook_2.yml
         targets: ansible
+        override-deps: |
+          ansible==2.11.6
+          ansible-lint==5.2.1
         # [optional]
         # Arguments to override a package and its version to be set explicitly.
         # Must follow the example syntax.
