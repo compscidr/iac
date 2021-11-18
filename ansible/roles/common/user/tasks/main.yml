@@ -10,12 +10,14 @@
   become: true
   ansible.builtin.user:
     name: "jason"
+    password: "{{vault_password|password_hash('sha512')}}"
     comment: "Jason Ernst"
     shell: /bin/bash
     append: yes
     groups: sudo
     skeleton: "/etc/skel"
     create_home: yes
+    update_password: always
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
 # and https://github.com/cpmills1975/ansible-gpg-import-module
