@@ -11,6 +11,12 @@ jobs:
     # Important: This sets up your GITHUB_WORKSPACE environment variable
     - uses: actions/checkout@v2
 
+    - name: Prep Vault Secret
+      run: 'echo "$VAULT_PASS" > ~/.vault_pass'
+      shell: bash
+      env:
+        VAULT_PASS: ${{secrets.VAULT_PASS}}
+
     - name: Lint Ansible Playbook
       # replace "master" with any valid ref
       uses: ansible/ansible-lint-action@master

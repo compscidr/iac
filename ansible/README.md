@@ -11,7 +11,7 @@
   - verify it is there with `ansible-doc -t module gpg`
   - todo: see if we can get this work with dependencies so we don't need to do this manually
 
-- Ensure the .vault_pass file exists (its on keybase):
+- Ensure the `.vault_pass` file exists in the ansible directory (its on keybase):
   - https://www.digitalocean.com/community/tutorials/how-to-use-vault-to-protect-sensitive-ansible-data-on-ubuntu-16-04
 
 ## Prerequisites on the ansible target machine (for non-terraform machines)
@@ -25,10 +25,10 @@ You'll probably want to test it works (and accept the ssh key) - with:
 `ssh <target-host>`
 
 ## Deploying to all machines
-`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --vault-password-file=.vault_pass`
+`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass`
 
 ## Deploying to just www.jasonernst.com
-`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --vault-password-file=.vault_pass --limit www.jasonernst.com`
+`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --limit www.jasonernst.com`
 
 # Checking for problems
 `ansible-playbook -i inventory.yml playbook.yml --check -vvvv`
