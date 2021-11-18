@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Prep Vault Secret
-      run: 'echo "$VAULT_PASS" > ~/.vault_pass'
+      run: 'echo "$VAULT_PASS" > $HOME/.vault_pass'
       shell: bash
       env:
         VAULT_PASS: ${{secrets.VAULT_PASS}}
