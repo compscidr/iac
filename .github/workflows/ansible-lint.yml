@@ -16,5 +16,5 @@ jobs:
       with:
         python-version: "3.8"
         cache: 'pip'
-    - run: pip install ansible-core==2.11.6 ansible-line==5.2.1
+    - run: pip install ansible-core==2.11.6 ansible-lint==5.2.1
     - run: ansible-lint ansible
