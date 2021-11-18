@@ -4,7 +4,7 @@
   become: true
   apt:
     pkg:
-    - wireshark
+      - wireshark
 
 - name: Ensure group wireshark exists
   become: true
@@ -19,7 +19,7 @@
   user:
     name: jason
     groups: wireshark
-    append: yes
+    append: true
 
 # bloomrpc
 - name: install bloomrpc
@@ -68,11 +68,10 @@
 - name: Install spotify
   tags: spotify
   become: true
-  apt: update_cache=yes name=spotify-client state=latest
-  register: apt_res
-  until: apt_res is success
-  retries: 5
-  delay: 60
+  apt:
+    update_cache: true
+    name: spotify-client
+    state: present
 
 # texmaker
 - name: install texmaker

@@ -12,4 +12,4 @@
     ports:
       - 4069:4069
     env:
-      MACHINE: "{{inventory_hostname}}"
+      MACHINE: "{{ inventory_hostname }}"

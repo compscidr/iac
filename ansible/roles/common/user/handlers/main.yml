@@ -1,0 +1,14 @@
+- name: Import Public GPG Key
+  tags: gpg
+  become_user: jason
+  gpg:
+    key_file: ~/.gpg/mygpgkey_pub.gpg
+    key_id: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1"
+
+- name: Import Private PGP Key
+  tags: gpg
+  become_user: jason
+  gpg:
+    key_file: ~/.gpg/mygpgkey_sec.gpg
+    key_id: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1"
+    key_type: private

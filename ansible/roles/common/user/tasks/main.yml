@@ -10,13 +10,13 @@
   become: true
   ansible.builtin.user:
     name: "jason"
-    password: "{{vault_password|password_hash('sha512')}}"
+    password: "{{ vault_password|password_hash('sha512') }}"
     comment: "Jason Ernst"
     shell: /bin/bash
-    append: yes
+    append: true
     groups: sudo
     skeleton: "/etc/skel"
-    create_home: yes
+    create_home: true
     update_password: always
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
@@ -32,7 +32,7 @@
     owner: jason
     group: jason
 
-- name: gpg pub key copy
+- name: Copy Public GPG Key
   become_user: jason
   tags: gpg
   copy:
@@ -41,9 +41,10 @@
     mode: '0600'
     owner: jason
     group: jason
-  register: gpg_pub_key
+  notify:
+    - Import Public GPG Key
 
-- name: gpg priv key copy
+- name: Copy Private GPG Key
   tags: gpg
   become_user: jason
   copy:
@@ -52,21 +53,5 @@
     mode: '0600'
     owner: jason
     group: jason
-  register: gpg_priv_key
-
-- name: import Public GPG Key from file
-  tags: gpg
-  become_user: jason
-  gpg:
-    key_file: ~/.gpg/mygpgkey_pub.gpg
-    key_id: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
-  when: gpg_pub_key.changed
-
-- name: import private GPG Key from file
-  tags: gpg
-  become_user: jason
-  gpg:
-    key_file: ~/.gpg/mygpgkey_sec.gpg
-    key_id: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
-    key_type: private
-  when: gpg_priv_key.changed
+  notify:
+    - Import Private PGP Key

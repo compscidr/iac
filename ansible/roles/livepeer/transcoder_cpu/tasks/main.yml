@@ -1,6 +1,7 @@
 - name: Create Livepeer Directories
   tags: livepeer
   file:
+    mode: '0600'
     path: /home/jason/.lpData/mainnet/keystore
     state: directory
 
@@ -20,7 +21,9 @@
     image: livepeer/go-livepeer:master
     pull: true
     restart_policy: unless-stopped
-    command: -transcoder -network mainnet -ethUrl http://ubuntu-desktop-beast:8545 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935 -monitor --cliAddr 0.0.0.0:7935 -reward=false -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb --ethPassword {{ ethPassword }}
+    command: >
+      -transcoder -network mainnet -ethUrl http://ubuntu-desktop-beast:8545 -orchSecret {{ orchSecret }} -orchAddr lp.jasonernst.com:8935
+      -monitor --cliAddr 0.0.0.0:7935 -reward=false -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb --ethPassword {{ ethPassword }}
     network_mode: host
     volumes:
       - "/home/jason/.lpData:/root/.lpData"

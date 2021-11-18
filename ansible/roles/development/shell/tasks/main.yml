@@ -76,14 +76,16 @@
 - name: Create fish functions directory
   become_user: jason
   file:
+    mode: '755'
     path: /home/jason/.config/fish/functions
     state: directory
 
 - name: Add fish keybindings for fzf
   lineinfile:
+    mode: '755'
     dest: /home/jason/.config/fish/functions/fish_user_key_bindings.fish
     owner: jason
-    create: yes
+    create: true
     line: "fzf_key_bindings"
 
 - name: install forgit for fish

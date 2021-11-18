@@ -22,7 +22,16 @@
 - name: update apt and install vscode
   tags: vscode
   become: true
-  apt: update_cache=yes name=code state=latest
+  apt:
+    update_cache: true
+    name: code
+    state: present
+
+- name: Remove duplicate microsoft package repository
+  become: true
+  file:
+    path: /etc/apt/sources.list.d/ackages_microsoft_com_repos_code.list
+    state: absent
 
 - name: Ensure jetbrains toolbox is installed on the target system
   include_role:

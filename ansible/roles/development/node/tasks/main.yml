@@ -22,4 +22,7 @@
 - name: update apt and install yarn
   become: true
   tags: yarn
-  apt: update_cache=yes name=yarn state=latest
+  apt:
+    update_cache: true
+    name: yarn
+    state: present

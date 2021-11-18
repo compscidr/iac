@@ -1,6 +1,5 @@
+ungrouped: {}
 all:
-#  hosts:
-# this is where ungrouped hosts would go
   children:
     lan:
       hosts:

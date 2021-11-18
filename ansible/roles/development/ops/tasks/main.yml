@@ -5,7 +5,7 @@
   ansible.builtin.unarchive:
     src: https://github.com/balena-io/balena-cli/releases/download/v12.44.29/balena-cli-v12.44.29-linux-x64-standalone.zip
     dest: /opt
-    remote_src: yes
+    remote_src: true
 
 # add /opt/balana-cli to path
 - name: add balena to to path
@@ -14,7 +14,7 @@
   lineinfile:
     dest: /etc/environment
     state: present
-    backrefs: yes
+    backrefs: true
     regexp: 'PATH=(["]*)((?!.*?/opt/balena-cli).*?)(["]*)$'
     line: 'PATH=\1\2:/opt/balena-cli\3'
 
@@ -51,15 +51,29 @@
     repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     state: present
 
-- name: install ansible, vagrant and packer
-  tags: packer, vagrant
+- name: Install Ansible, Vagrant and Packer
+  tags: packer, vagrant, ansible
   become: true
   apt:
     pkg:
       - packer
       - vagrant
       - ansible
+
+- name: Remove ansible-lint apt package if present
+  become: true
+  tags: ansible
+  apt:
+    pkg:
       - ansible-lint
+    state: absent
+
+- name: Install Ansible Linters via PiP
+  tags: ansible
+  ansible.builtin.pip:
+    name:
+      - ansible-lint==5.2.1
+      - yamllint==1.26.3
 
 # bashrc updates for DEBEMAIL and DEBFULLNAME (for building deb packages)
 - name: Update bashrc debmaintainer

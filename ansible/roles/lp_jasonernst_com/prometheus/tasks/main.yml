@@ -42,32 +42,33 @@
   tags: prometheus
   ansible.builtin.systemd:
     name: secure-tunnel@ubuntu-desktop-beast-lolminer
-    enabled: yes
+    enabled: true
     state: started
-    masked: no
+    masked: false
 
 - name: Enable Secure-Tunnel Ubuntu Desktop Lolminer
   become: true
   tags: prometheus
   ansible.builtin.systemd:
     name: secure-tunnel@ubuntu-desktop-lolminer
-    enabled: yes
+    enabled: true
     state: started
-    masked: no
+    masked: false
 
 - name: Enable Secure-Tunnel Ubuntu Server Lolminer
   become: true
   tags: prometheus
   ansible.builtin.systemd:
     name: secure-tunnel@ubuntu-server
-    enabled: yes
+    enabled: true
     state: started
-    masked: no
+    masked: false
 
 - name: Create Prometheus Directories
   tags: prometheus
   become: true
   file:
+    mode: '755'
     path: /etc/prometheus
     state: directory
 
@@ -99,6 +100,7 @@
   tags: prometheus
   become: true
   file:
+    mode: '755'
     path: /etc/lighttpd
     state: directory
 

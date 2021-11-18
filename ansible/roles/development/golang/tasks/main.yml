@@ -15,7 +15,10 @@
 - name: update apt and install go
   tags: go
   become: true
-  apt: update_cache=yes name=golang-go state=latest
+  apt:
+    update_cache: true
+    name: golang-go
+    state: present
 
 - name: Update bashrc go
   tags: go

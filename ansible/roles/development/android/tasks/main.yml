@@ -11,4 +11,4 @@
   user:
     name: jason
     groups: plugdev
-    append: yes
+    append: true
