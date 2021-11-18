@@ -16,5 +16,9 @@ jobs:
       with:
         python-version: "3.8"
         cache: 'pip'
+    - run: 'echo "$VAULT_PASS" > $GITHUB_WORKSPACE/.vault_pass && printf "[defaults]\n\tvault_password_file = $GITHUB_WORKSPACE/.vault_pass\n" > ansible.cfg && cat ansible.cfg'
+      shell: bash
+      env:
+        VAULT_PASS: ${{secrets.VAULT_PASS}}
     - run: pip install ansible-core==2.11.6 ansible-lint==5.2.1
     - run: ansible-lint ansible
