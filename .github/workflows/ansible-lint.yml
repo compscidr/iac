@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Prep Vault Secret
-      run: 'echo "$VAULT_PASS" > .vault_pass && echo "[default]\n\tvault_password_file =/home/runner/work/iac/iac/.vault_pass" > ansible.cfg'
+      run: 'echo "$VAULT_PASS" > .vault_pass && echo "[defaults]\n\tvault_password_file =/home/runner/work/iac/iac/.vault_pass" > ansible.cfg'
       shell: bash
       env:
         VAULT_PASS: ${{secrets.VAULT_PASS}}
