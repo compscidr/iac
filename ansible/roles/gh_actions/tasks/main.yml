@@ -31,7 +31,7 @@
     restart_policy: unless-stopped
     privileged: true
     env:
-      ACCESS_TOKEN: "{{ gh_grape }}"
+      ACCESS_TOKEN: "{{ gh_pat }}"
       RUNNER_NAME_PREFIX: grape
       RUNNER_WORKDIR: /tmp/grape
       RUNNER_GROUP: default
@@ -41,3 +41,29 @@
       ORG_NAME: "grape-networking"
     links:
       - "android-emulator"
+
+- name: Deploy Github Actions individual repo runners
+  tags: gh-actions
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: "{{ item.name }}"
+    image: myoung34/github-runner:latest
+    pull: true
+    volumes:
+      - "/dev/bus/usb:/dev/bus/usb"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/tmp/grape:/tmp/grape"
+    restart_policy: unless-stopped
+    privileged: true
+    env:
+      ACCESS_TOKEN: "{{ gh_pat }}"
+      RUNNER_NAME_PREFIX: "{{ item.name }}"
+      RUNNER_WORKDIR: "/tmp/{{ item.name }}"
+      RUNNER_GROUP: default
+      REPO_URL: "https://github.com/{{ item.repo }}"
+      LABELS: "self-hosted"
+    links:
+      - "android-emulator"
+  loop:
+    - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }
