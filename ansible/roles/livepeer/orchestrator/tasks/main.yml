@@ -29,7 +29,7 @@
 - name: Create Livepeer Directories
   tags: livepeer
   file:
-    mode: '0600'
+    mode: '0700'
     path: /home/jason/.lpData/mainnet/keystore
     state: directory
 
