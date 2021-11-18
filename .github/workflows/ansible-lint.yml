@@ -11,16 +11,18 @@ jobs:
     # Important: This sets up your GITHUB_WORKSPACE environment variable
     - uses: actions/checkout@v2
 
+    - run: 'echo "$VAULT_PASS" > $GITHUB_WORKSPACE/.vault_pass && printf "[defaults]\n\tvault_password_file = $GITHUB_WORKSPACE/.vault_pass\n" > ansible.cfg && cat ansible.cfg && touch requirements.txt'
+      shell: bash
+      env:
+        VAULT_PASS: ${{secrets.VAULT_PASS}}
+    
     - name: Install Ansible
       uses: actions/setup-python@v2
       with:
         python-version: "3.8"
         cache: 'pip'
     - run: pip install ansible-core==2.11.6 ansible-lint==5.2.1
-    - run: 'echo "$VAULT_PASS" > $GITHUB_WORKSPACE/.vault_pass && printf "[defaults]\n\tvault_password_file = $GITHUB_WORKSPACE/.vault_pass\n" > ansible.cfg && cat ansible.cfg'
-      shell: bash
-      env:
-        VAULT_PASS: ${{secrets.VAULT_PASS}}
+    
     - run: ansible-galaxy install -r ansible/meta/requirements.yml
     - run: mkdir -p ~/.ansible/plugins/modules && wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py
     - run: ansible-lint ansible/playbook.yml
