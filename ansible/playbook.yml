@@ -27,6 +27,7 @@
     - development/golang
     - development/node
     - development/ziglang
+    - tunnels
 
 - name: Development Software for GUIs
   hosts: development-gui
