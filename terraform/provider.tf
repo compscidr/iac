@@ -4,17 +4,22 @@ terraform {
       source = "digitalocean/digitalocean"
       version = "2.16.0"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.0"
+    }
   }
 }
 
-variable "do_token" {}
-variable "pvt_key" {}
-variable "pub_key" {}
-
-provider "digitalocean" {
-  token = var.do_token
+module "ssh-key" {
+  source          = "clouddrove/ssh-key/digitalocean"
+  version         = "0.15.0"
+  key_path        = "~/.ssh/id_rsa.pub"
+  key_name        = "devops"
+  enable_ssh_key  = true
 }
 
-data "digitalocean_ssh_key" "terraform" {
-  name = "terraform"
+# Configure the AWS Provider
+provider "aws" {
+  region = "us-west-1" # n. california
 }

@@ -101,7 +101,7 @@
   become_user: jason
   tags: aws
   copy:
-    src: files/aws-credentials
+    src: files/aws/credentials
     dest: ~/.aws/credentials
     mode: '0600'
     owner: jason
@@ -111,8 +111,44 @@
   become_user: jason
   tags: aws
   copy:
-    src: files/config
+    src: files/aws/config
     dest: ~/.aws/config
     mode: '0600'
     owner: jason
     group: jason
+
+- name: Install dotcl (digital ocean ctl)
+  become: true
+  tags: doctl
+  ansible.builtin.unarchive:
+    src: https://github.com/digitalocean/doctl/releases/download/v1.66.0/doctl-1.66.0-linux-amd64.tar.gz
+    dest: /usr/local/bin
+    remote_src: true
+
+- name: Create doctl config directory
+  tags: doctl
+  become_user: jason
+  file:
+    path: ~/.config/doctl
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
+- name: Copy doctl config file
+  become_user: jason
+  tags: doctl
+  copy:
+    src: files/doctl/config.yaml
+    dest: ~/.config/doctl/config.yaml
+    mode: '0600'
+    owner: jason
+    group: jason
+
+# bashrc updates DIGITALOCEAN_TOKEN
+- name: Update bashrc DIGITALOCEAN_TOKEN
+  tags: doctl
+  lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "export DIGITALOCEAN_TOKEN={{ do_token }}"
