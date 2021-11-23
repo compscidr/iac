@@ -28,7 +28,7 @@
   file:
     path: ~/.gpg
     state: directory
-    mode: '0755'
+    mode: '0700'
     owner: jason
     group: jason
 
