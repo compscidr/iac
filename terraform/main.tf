@@ -12,11 +12,13 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
   size = "s-1vcpu-2gb"
   ipv6 = true
   vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
+  ssh_keys = [28506911]
 }
 
 resource "aws_instance" "lp-jasonernst-com" {
   ami = "ami-053ac55bdcfe96e85"
   instance_type = "t2.micro"
+  key_name = aws_key_pair.aws_devops.key_name
 }
 
 resource "digitalocean_domain" "default" {

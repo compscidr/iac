@@ -17,13 +17,19 @@ To show state:
 `terraform show terraform.tfstate`
 
 To destroy:
-`terraform plan -destroy -out=terraform.tfplan \
-      -var "do_token=${DO_PAT}" \
-      -var "pvt_key=$HOME/.ssh/id_rsa" \
-      -var "pub_key=$HOME/.ssh/id_rsa.pub"`
+`terraform plan -destroy -out=terraform.tfplan`
 
 to make the destroy plan and `terraform apply terraform.tfplan`
 
 Ansible automatically runs as part of the terraform script, but this guide
 was used to update the terraform to work together:
 https://www.digitalocean.com/community/tutorials/how-to-use-ansible-with-terraform-for-configuration-management
+
+## Prep for ansible
+For DigitalOcean, you'll want to do an `ssh root@newnode`
+For aws, `ssh ubuntu@newnode`
+
+Then for ansible:
+`ansible-playbook playbook.yml -i inventory.yml -u root --limit www.jasonernst.com --tags user,ssh`
+and
+`ansible-playbook playbook.yml -i inventory.yml -u ubuntu --limit lp.jasonernst.com --tags user,ssh`

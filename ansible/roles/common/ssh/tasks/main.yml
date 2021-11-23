@@ -1,8 +1,8 @@
 - name: Create ssh directory if it does not exist
   tags: ssh
-  become_user: jason
+  become: true
   file:
-    path: ~/.ssh
+    path: /home/jason/.ssh
     state: directory
     mode: '0700'
     owner: jason
@@ -12,49 +12,52 @@
 # ie: no password required
 - name: ssh id_rsa
   tags: ssh
-  become_user: jason
+  become: true
   copy:
     src: id_rsa
-    dest: ~/.ssh/id_rsa
+    dest: /home/jason/.ssh/id_rsa
     mode: '0600'
     owner: jason
     group: jason
 
 - name: ssh id_rsa.pub
-  become_user: jason
+  become: true
   tags: ssh
   copy:
     src: id_rsa.pub
-    dest: ~/.ssh/id_rsa.pub
+    dest: /home/jason/.ssh/id_rsa.pub
     mode: '0644'
     owner: jason
     group: jason
 
 - name: ssh github_id_rsa
-  become_user: jason
+  become: true
   tags: ssh
   copy:
     src: github_id_rsa
-    dest: ~/.ssh/github_id_rsa
+    dest: /home/jason/.ssh/github_id_rsa
     mode: '0600'
     owner: jason
     group: jason
 
 - name: ssh github_id_rsa.pub
-  become_user: jason
+  become: true
   tags: ssh
   copy:
     src: github_id_rsa.pub
-    dest: ~/.ssh/github_id_rsa.pub
+    dest: /home/jason/.ssh/github_id_rsa.pub
     mode: '0644'
     owner: jason
     group: jason
 
 - name: Add github to ssh/config
+  become: true
   tags: ssh
   blockinfile:
     create: true
     mode: '0600'
+    owner: jason
+    group: jason
     path: "/home/jason/.ssh/config"
     block: |
       Host github

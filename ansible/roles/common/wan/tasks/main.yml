@@ -1,8 +1,11 @@
 - name: Update the ssh/config with each of the lan node name entries
   tags: ssh
+  become: true
   blockinfile:
     create: true
     mode: '0600'
+    owner: jason
+    group: jason
     path: "/home/jason/.ssh/config"
     block: |
       Host {{ item }}
@@ -16,9 +19,12 @@
 
 - name: Add github to ssh/config
   tags: ssh
+  become: true
   blockinfile:
     create: true
     mode: '0600'
+    owner: jason
+    group: jason
     path: "/home/jason/.ssh/config"
     block: |
       Host home.jasonernst.com

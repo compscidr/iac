@@ -83,6 +83,7 @@
     name: gh
     state: present
 
+# don't lint-fix this or it will break the task
 - name: setup default git configuration
   tags: git
   become_user: jason
@@ -91,7 +92,7 @@
     value="{{ item.value }}"
     scope=global
   with_items:
-    - {name:"user.name", value:"Jason Ernst"}
-    - {name:"user.email", value:"ernstjason1@gmail.com"}
-    - {name:"user.signingkey", value:"BDD9823CA1EA5636114208E86CD8B581B5FA61E1"}
-    - {name:"pull.rebase", value:"false"}
+    - { name: "user.name", value: "Jason Ernst" }
+    - { name: "user.email", value: "ernstjason1@gmail.com" }
+    - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }
+    - { name: "pull.rebase", value: "false" }
