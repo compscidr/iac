@@ -51,14 +51,15 @@
     repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     state: present
 
-- name: Install Ansible, Vagrant and Packer
-  tags: packer, vagrant, ansible
+- name: Install Ansible, Vagrant, Packer and AWS CLI
+  tags: packer, vagrant, ansible, aws
   become: true
   apt:
     pkg:
       - packer
       - vagrant
       - ansible
+      - awscli
 
 - name: Remove ansible-lint apt package if present
   become: true
@@ -85,3 +86,33 @@
   with_items:
     - 'DEBEMAIL="ernstjason1@gmail.com"'
     - 'DEBFULLNAME="Jason Ernst"'
+
+- name: Create AWS config directory
+  tags: aws
+  become_user: jason
+  file:
+    path: ~/.aws
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
+- name: Copy AWS credentials file
+  become_user: jason
+  tags: aws
+  copy:
+    src: files/aws-credentials
+    dest: ~/.aws/credentials
+    mode: '0600'
+    owner: jason
+    group: jason
+
+- name: Copy AWS config file
+  become_user: jason
+  tags: aws
+  copy:
+    src: files/config
+    dest: ~/.aws/config
+    mode: '0600'
+    owner: jason
+    group: jason
