@@ -1,3 +1,13 @@
+- name: Create /opt/goblog directory on host
+  tags: website
+  become: true
+  file:
+    path: /opt/goblog/prod
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
 - name: Copy .env to the host
   tags: website
   become: true

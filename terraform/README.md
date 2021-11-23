@@ -26,10 +26,10 @@ was used to update the terraform to work together:
 https://www.digitalocean.com/community/tutorials/how-to-use-ansible-with-terraform-for-configuration-management
 
 ## Prep for ansible
-For DigitalOcean, you'll want to do an `ssh root@newnode`
-For aws, `ssh ubuntu@newnode`
+For DigitalOcean, you'll want to do an `ssh root@www.jasonernst.com` and for aws, `ssh ubuntu@lp.jasonernst.com`.
+You'll likely have to clear out any old ssh keys before using ansible.
 
 Then for ansible:
-`ansible-playbook playbook.yml -i inventory.yml -u root --limit www.jasonernst.com --tags user,ssh`
+`ansible-playbook playbook.yml -i inventory.yml -u root --limit www.jasonernst.com --tags user`
 and
-`ansible-playbook playbook.yml -i inventory.yml -u ubuntu --limit lp.jasonernst.com --tags user,ssh`
+`ansible-playbook playbook.yml -i inventory.yml -u ubuntu --limit lp.jasonernst.com --tags user`

@@ -4,6 +4,7 @@
   apt:
     pkg:
       - sudo
+      - ssh-import-id
 
 - name: Add the user 'jason'
   tags: user
@@ -18,6 +19,26 @@
     skeleton: "/etc/skel"
     create_home: true
     update_password: always
+
+- name: Create ssh directory if it does not exist
+  tags: user
+  become: true
+  file:
+    path: /home/jason/.ssh
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
+- name: Import SSH authorized key
+  tags: user
+  become: true
+  copy:
+    src: files/ssh/authorized_keys
+    dest: /home/jason/.ssh/authorized_keys
+    mode: '0600'
+    owner: jason
+    group: jason
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
 # and https://github.com/cpmills1975/ansible-gpg-import-module

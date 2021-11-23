@@ -1,4 +1,5 @@
 - name: Create Ombi Directories
+  become: true
   file:
     mode: '755'
     path: /etc/ombi
