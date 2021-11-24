@@ -9,9 +9,10 @@ local devices, and use a common set of expectations for all devices in my fleet
 3. a minimal amount of secret management by encrypting secrets
 
 ## Terraform
-Used to provision cloud resources (currently on digital ocean):
+Used to provision cloud resources (currently on digital ocean and terraform):
 - compute
 - dns entries
+- todo: firewall / vpc configs
 
 [Read more](terraform/README.md)
 
