@@ -15,10 +15,14 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
   ssh_keys = [28506911]
 }
 
-resource "aws_instance" "lp-jasonernst-com" {
-  ami = "ami-053ac55bdcfe96e85"
-  instance_type = "t2.micro"
-  key_name = aws_key_pair.aws_devops.key_name
+resource "digitalocean_droplet" "lp-jasonernst-com" {
+  image = "ubuntu-20-04-x64"
+  name = "lp-jasonernst-com"
+  region = "sfo2"
+  size = "s-1vcpu-2gb"
+  ipv6 = true
+  vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
+  ssh_keys = [28506911]
 }
 
 resource "digitalocean_domain" "default" {
@@ -65,7 +69,7 @@ resource "digitalocean_record" "CNAME-lp" {
   domain = digitalocean_domain.default.name
   type = "A"
   name = "lp"
-  value = aws_instance.lp-jasonernst-com.public_ip
+  value = digitalocean_droplet.lp-jasonernst-com.ipv4_address
 }
 
 output "droplet_ip_addresses" {
