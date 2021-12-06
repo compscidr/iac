@@ -1,5 +1,6 @@
 ---
 - name: Install Sudo
+  tags: user
   become: true
   apt:
     pkg:
