@@ -75,6 +75,7 @@
     name:
       - ansible-lint==5.2.1
       - yamllint==1.26.3
+      - ruamel_yaml==0.11.14
 
 # bashrc updates for DEBEMAIL and DEBFULLNAME (for building deb packages)
 - name: Update bashrc debmaintainer
