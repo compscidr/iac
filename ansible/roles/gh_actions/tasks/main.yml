@@ -5,7 +5,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: android-emulator
-    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
+    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
     pull: true
     restart_policy: unless-stopped
     devices:
