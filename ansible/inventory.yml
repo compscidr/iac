@@ -5,8 +5,12 @@ all:
       hosts:
         ubuntu-server:
           ansible_host: 10.0.0.218
+# Used in case this is run from outside of the home network
+#          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
         ubuntu-desktop-beast:
           ansible_host: 10.0.0.89
+# Used in case this is run from outside of the home network
+#          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
         ubuntu-desktop:
           ansible_host: 10.0.0.111
         jason-ubuntu-laptop:
