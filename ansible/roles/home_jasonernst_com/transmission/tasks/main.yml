@@ -23,3 +23,5 @@
       TZ: America/Los_Angeles
     restart_policy: unless-stopped
     published_ports: 9091:9091
+    ports:
+      - "9091:9091"

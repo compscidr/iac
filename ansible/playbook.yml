@@ -61,7 +61,7 @@
     - lp_jasonernst_com/prometheus
 
 - name: Services for ombi.jasonernst.com
-  hosts: www_jasonernst_com
+  hosts: ombi_jasonernst_com
   roles:
     # enable these when ombi moves to its own server
     # - web_common/nginx
