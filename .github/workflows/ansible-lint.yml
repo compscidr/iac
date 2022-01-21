@@ -21,7 +21,7 @@ jobs:
       with:
         python-version: "3.8"
         cache: 'pip'
-    - run: pip install "ansible-core==2.12.1 ansible-lint==5.2.1 rich>=10.0.0,<11.0.0" # https://github.com/ansible-community/ansible-lint/issues/1795
+    - run: pip install ansible-core==2.12.1 ansible-lint==5.2.1 rich~=10.0.0 # https://github.com/ansible-community/ansible-lint/issues/1795
     
     - run: ansible-galaxy install -r ansible/meta/requirements.yml
     - run: mkdir -p ~/.ansible/plugins/modules && wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py
