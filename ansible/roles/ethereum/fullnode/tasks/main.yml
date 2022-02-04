@@ -16,6 +16,6 @@
     pull: true
     restart_policy: unless-stopped
     network_mode: host
-    command: --http --http.addr 0.0.0.0 --http.vhosts=*
+    command: --http --http.addr 0.0.0.0 --http.vhosts=* --syncmode "light"
     volumes:
       - "~/.ethereum:/root/.ethereum"
