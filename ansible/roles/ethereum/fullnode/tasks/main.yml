@@ -5,6 +5,23 @@
     dest: ~/.ethereum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
     mode: '0600'
 
+- name: Create arbitrum directory if it does not exist
+  tags: arbitrum
+  become: true
+  file:
+    path: /home/jason/.arbitrum
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
+- name: Copy Arbitrum Wallet to Fullnode
+  tags: arbitrum
+  copy:
+    src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: ~/.arbitrum/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    mode: '0600'
+
 - name: Deploy Ethereum Fullnode Docker Container
   tags: ethereum
   vars:
@@ -19,3 +36,18 @@
     command: --http --http.addr 0.0.0.0 --http.vhosts=* --syncmode "light"
     volumes:
       - "~/.ethereum:/root/.ethereum"
+
+- name: Deploy Arbitrum Node Container
+  tags: arbitrum
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: arbitrum
+    hostname: arbitrum
+    image: offchainlabs/arb-node:v1.2.0-9214e38
+    pull: true
+    restart_policy: unless-stopped
+    network_mode: host
+    command: --l1.url http://localhost:8545
+    volumes:
+      - "~/.arbitrum:/home/user/.arbitrum/mainnet"
