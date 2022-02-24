@@ -97,3 +97,28 @@
   become: true
   apt:
     deb: https://discordapp.com/api/download?platform=linux&format=deb
+
+# signal:
+- name: Install signal apt keys
+  tags: signal
+  become: true
+  apt_key:
+    keyserver: https://updates.signal.org/desktop/apt/keys.asc
+    id: DBA36B5181D0C816F630E889D980A17457F6FB06
+    state: present
+
+# doesn't have anything other than a xenial (16.04) release :(
+- name: Install signal apt repo
+  tags: signal
+  become: true
+  apt_repository:
+    repo: "deb https://updates.signal.org/desktop/apt xenial main"
+    state: present
+
+- name: Install signal
+  tags: signal
+  become: true
+  apt:
+    update_cache: true
+    name: signal-desktop
+    state: present

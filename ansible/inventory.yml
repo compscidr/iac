@@ -24,7 +24,7 @@ all:
         ubuntu-desktop:
         jason-ubuntu-laptop:
         ubuntu-work-laptop:
-    development_gui:
+    development-gui:
       hosts:
         ubuntu-desktop:
         ubuntu-desktop-beast:
