@@ -27,6 +27,7 @@
     - development/golang
     - development/node
     - development/ziglang
+    - development/ruby
     - tunnels
 
 - name: Development Software for GUIs

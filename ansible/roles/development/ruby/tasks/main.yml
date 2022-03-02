@@ -1,0 +1,7 @@
+- name: update apt and install ruby
+  tags: ruby
+  become: true
+  apt:
+    update_cache: true
+    name: ruby
+    state: present
