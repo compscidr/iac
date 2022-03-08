@@ -13,7 +13,7 @@
     ports:
       - "5555:5555"
     env:
-      EMULATOR_ARGS: "-gpu swiftshader_indirect"
+      EMULATOR_ARGS: "-gpu swiftshader_indirect -read-only"
 
 # https://github.com/myoung34/docker-github-actions-runner
 - name: Deploy Github Actions Runner
