@@ -4,7 +4,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: lolminer
-    image: compscidr/lolminer-docker:amd-1.35
+    image: compscidr/lolminer-docker:amd-1.46a
     pull: true
     restart_policy: unless-stopped
     devices:
