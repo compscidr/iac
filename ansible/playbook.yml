@@ -83,8 +83,9 @@
 
 # this is the only computer that seems to be fast enough to keep up to the network
 # tried previously on ubuntu-desktop and ubuntu-server, but no dice.
-- name: Ethereum
-  tags: ethereum
-  hosts: ubuntu-desktop-beast
-  roles:
-    - ethereum/fullnode
+# disabled because using an external service now
+# - name: Ethereum
+#   tags: ethereum
+#   hosts: ubuntu-desktop-beast
+#   roles:
+#     - ethereum/fullnode
