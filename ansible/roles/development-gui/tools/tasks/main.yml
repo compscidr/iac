@@ -122,3 +122,30 @@
     update_cache: true
     name: signal-desktop
     state: present
+
+# telegram:
+- name: Download and install telegram
+  tags: telegram
+  become: true
+  ansible.builtin.unarchive:
+    src: https://updates.tdesktop.com/tlinux/tsetup.3.5.2.tar.xz
+    dest: /opt/
+    remote_src: yes
+
+- name: Telegram icon
+  tags: telegram
+  ansible.builtin.copy:
+    src: files/telegram128.png
+    dest: /opt/Telegram/telegram128.png
+
+- name: Telegram app shortcut
+  become: true
+  tags: telegram
+  ansible.builtin.copy:
+    src: files/telegram.desktop
+    dest: /usr/share/applications/telegram.desktop
+
+- name: Update desktop applications
+  become: true
+  tags: telegram
+  ansible.builtin.command: update-desktop-database /usr/share/applications
