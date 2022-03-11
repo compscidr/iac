@@ -2,7 +2,7 @@ terraform {
   required_providers {
     digitalocean = {
       source = "digitalocean/digitalocean"
-      version = "2.17.1"
+      version = "2.18.0"
     }
     aws = {
       source  = "hashicorp/aws"
