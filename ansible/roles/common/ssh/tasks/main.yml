@@ -60,7 +60,7 @@
     group: jason
     path: "/home/jason/.ssh/config"
     block: |
-      Host github
+      Host github.com
       Hostname github.com
       User git
       IdentityFile ~/.ssh/github_id_rsa
