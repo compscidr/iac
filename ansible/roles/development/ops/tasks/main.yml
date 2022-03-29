@@ -73,9 +73,9 @@
   tags: ansible
   ansible.builtin.pip:
     name:
-      - ansible-lint==5.2.1
+      - ansible-lint==6.0.2
       - yamllint==1.26.3
-      - ruamel_yaml==0.11.14
+      - ruamel_yaml==0.17.21
 
 # bashrc updates for DEBEMAIL and DEBFULLNAME (for building deb packages)
 - name: Update bashrc debmaintainer
