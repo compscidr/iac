@@ -4,12 +4,12 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: lolminer
-    image: compscidr/lolminer-docker:amd-1.46a
+    image: compscidr/lolminer-docker:amd-1.47-c11.4.2
     pull: true
     restart_policy: unless-stopped
     devices:
       - "/dev/dri:/dev/dri"
     ports:
       - 4069:4069
-    env:
-      MACHINE: "{{ inventory_hostname }}"
+    entrypoint: /lolminer/lolMiner --coin ETH --pool eth.2miners.com --port 2020 --user 0x74ba897f65f04008d8eff364efcc54b0a20e17eb.{{ inventory_hostname }} --apihost 0.0.0.0 --apiport 4069
+    init: true
