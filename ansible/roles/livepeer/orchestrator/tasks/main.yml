@@ -78,7 +78,7 @@
     restart_policy: unless-stopped
     command: >
       -network arbitrum-one-mainnet -ethUrl {{ alchmey_url }} -ethAcctAddr 0x74ba897f65f04008d8eff364efcc54b0a20e17eb -orchestrator -pricePerUnit 995
-      -pixelsPerUnit 1 -autoAdjustPrice=false -serviceAddr lp.jasonernst.com:8935 -reward=false -orchSecret {{ orchSecret }}
+      -pixelsPerUnit 1 -autoAdjustPrice=false -serviceAddr lp.jasonernst.com:8935 -reward=true -orchSecret {{ orchSecret }}
       -ethPassword {{ ethPassword }} -monitor -cliAddr 0.0.0.0:7935 -blockPollingInterval 8
     volumes:
       - "/home/jason/.lpData:/root/.lpData"
