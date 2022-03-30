@@ -3,7 +3,7 @@
   tags: transmission
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: transmission
     image: haugene/transmission-openvpn:latest
     volumes: /storage/downloads:/data

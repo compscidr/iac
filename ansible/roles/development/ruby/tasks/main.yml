@@ -1,7 +1,7 @@
 - name: update apt and install ruby
   tags: ruby
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: ruby
     state: present
@@ -9,21 +9,21 @@
 - name: Create ruby gems folder
   tags: ruby
   become_user: jason
-  file:
+  ansible.builtin.file:
     mode: '755'
     path: /home/jason/ruby/gems/2.7.0
     state: directory
 
 - name: Set ruby env variable for gems
   tags: ruby
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.profile
     line: export GEM_HOME=/home/jason/ruby/gems/2.7.0
     state: present
 
 - name: Set ruby env variable for gems bins
   tags: ruby
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.profile
     line: export PATH="$PATH:/home/jason/ruby/gems/2.7.0/bin"
     state: present

@@ -1,5 +1,5 @@
 - name: Install Plex Server
   become: true
   tags: plex
-  apt:
+  ansible.builtin.apt:
     deb: https://plex.tv/downloads/latest/5?channel=16&build=linux-x86_64&distro=debian&X-Plex-Token=ufQyX1dzPEHk94ALHcQR

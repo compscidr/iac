@@ -51,6 +51,20 @@ resource "digitalocean_record" "CNAME-ombi" {
   value = "@"
 }
 
+resource "digitalocean_record" "CNAME-staging" {
+  domain = digitalocean_domain.default.name
+  type = "CNAME"
+  name = "staging"
+  value = "@"
+}
+
+resource "digitalocean_record" "CNAME-dev" {
+  domain = digitalocean_domain.default.name
+  type = "CNAME"
+  name = "dev"
+  value = "@"
+}
+
 resource "digitalocean_record" "txt" {
   domain = digitalocean_domain.default.name
   type = "TXT"

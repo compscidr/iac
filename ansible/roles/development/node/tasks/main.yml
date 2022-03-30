@@ -1,6 +1,6 @@
 - name: install node development tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - npm
 
@@ -8,21 +8,21 @@
 - name: add yarn GPG
   tags: yarn
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: https://dl.yarnpkg.com/debian/pubkey.gpg
     id: 72ECF46A56B4AD39C907BBB71646B01B86E50310
 
 - name: add yarn repo
   become: true
   tags: yarn
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb https://dl.yarnpkg.com/debian/ stable main"
     state: present
 
 - name: update apt and install yarn
   become: true
   tags: yarn
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: yarn
     state: present

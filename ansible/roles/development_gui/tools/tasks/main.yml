@@ -2,21 +2,21 @@
 - name: install wireshark
   tags: wireshark
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - wireshark
 
 - name: Ensure group wireshark exists
   become: true
   tags: wireshark
-  group:
+  ansible.builtin.group:
     name: wireshark
     state: present
 
 - name: adding jason to group wireshark
   become: true
   tags: wireshark
-  user:
+  ansible.builtin.user:
     name: jason
     groups: wireshark
     append: true
@@ -25,50 +25,50 @@
 - name: install bloomrpc
   become: true
   tags: bloomrpc
-  apt:
+  ansible.builtin.apt:
     deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
 
 # keybase
 - name: install keybase
   tags: keybase
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: https://prerelease.keybase.io/keybase_amd64.deb
 
 # chrome
 - name: install chrome browser
   tags: chrome
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
 # slack
 - name: install slack
   tags: slack
   become: true
-  apt:
-    deb: https://downloads.slack-edge.com/releases/linux/4.21.1/prod/x64/slack-desktop-4.21.1-amd64.deb
+  ansible.builtin.apt:
+    deb: https://downloads.slack-edge.com/releases/linux/4.24.0/prod/x64/slack-desktop-4.24.0-amd64.deb
 
 # spotify
 - name: Install spotify apt keys
   tags: spotify
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
-    id: 8FD3D9A8D3800305A9FFF259D1742AD60D811D58
+    id: F9A211976ED662F00E59361E5E3C45D7B312C643
     state: present
 
 - name: Install spotify apt repo
   tags: spotify
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: deb http://repository.spotify.com stable non-free
     state: present
 
 - name: Install spotify
   tags: spotify
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: spotify-client
     state: present
@@ -77,7 +77,7 @@
 - name: install texmaker
   tags: latex
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - texmaker
       - fonts-font-awesome
@@ -88,21 +88,21 @@
 - name: install zoom
   tags: zoom
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: https://zoom.us/client/latest/zoom_amd64.deb
 
 # discord
 - name: install discord
   tags: discord
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: https://discordapp.com/api/download?platform=linux&format=deb
 
 # signal:
 - name: Install signal apt keys
   tags: signal
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: https://updates.signal.org/desktop/apt/keys.asc
     id: DBA36B5181D0C816F630E889D980A17457F6FB06
     state: present
@@ -111,14 +111,14 @@
 - name: Install signal apt repo
   tags: signal
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb https://updates.signal.org/desktop/apt xenial main"
     state: present
 
 - name: Install signal
   tags: signal
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: signal-desktop
     state: present
@@ -130,13 +130,14 @@
   ansible.builtin.unarchive:
     src: https://updates.tdesktop.com/tlinux/tsetup.3.5.2.tar.xz
     dest: /opt/
-    remote_src: yes
+    remote_src: true
 
 - name: Telegram icon
   tags: telegram
   ansible.builtin.copy:
     src: files/telegram128.png
     dest: /opt/Telegram/telegram128.png
+    mode: '0600'
 
 - name: Telegram app shortcut
   become: true
@@ -144,8 +145,11 @@
   ansible.builtin.copy:
     src: files/telegram.desktop
     dest: /usr/share/applications/telegram.desktop
+    mode: '0600'
+  register: telegram
 
-- name: Update desktop applications
+- name: Update desktop applications  # noqa no-handler
   become: true
   tags: telegram
   ansible.builtin.command: update-desktop-database /usr/share/applications
+  when: telegram.changed

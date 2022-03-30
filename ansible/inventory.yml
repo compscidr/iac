@@ -16,7 +16,7 @@ all:
         jason-ubuntu-laptop:
           ansible_host: 10.0.0.17
         ubuntu-work-laptop:
-          ansible_host: 10.0.0.103
+          ansible_host: 127.0.0.1
     development:
       hosts:
         ubuntu-server:
@@ -24,7 +24,7 @@ all:
         ubuntu-desktop:
         jason-ubuntu-laptop:
         ubuntu-work-laptop:
-    development-gui:
+    development_gui:
       hosts:
         ubuntu-desktop:
         ubuntu-desktop-beast:

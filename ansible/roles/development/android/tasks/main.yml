@@ -1,6 +1,6 @@
 - name: install android / java tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - openjdk-11-jdk
       - adb
@@ -8,7 +8,7 @@
 
 - name: adding jason to group plugdev for adb
   become: true
-  user:
+  ansible.builtin.user:
     name: jason
     groups: plugdev
     append: true

@@ -2,7 +2,7 @@
 - name: Copy Secure Tunnel Service File
   become: true
   tags: tunnel
-  copy:
+  ansible.builtin.copy:
     src: files/secure-tunnel@.service
     dest: /etc/systemd/system/secure-tunnel@.service
     mode: '0600'
@@ -12,7 +12,7 @@
 - name: Copy lp.jasonernst.com Tunnel
   become: true
   tags: tunnel
-  copy:
+  ansible.builtin.copy:
     src: files/secure-tunnel@lp-jasonernst-com
     dest: /etc/default/secure-tunnel@lp-jasonernst-com
     mode: '0644'

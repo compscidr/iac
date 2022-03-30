@@ -1,7 +1,7 @@
 # from galaxy
 roles:
-- name: nickjj.docker
-- name: diodonfrost.terraform
+- name: nickjj.docker  # noqa yaml
+- name: diodonfrost.terraform  # noqa yaml
 
 # from github
 - src: https://github.com/webarchitect609/ansible-role-jet-brains-toolbox

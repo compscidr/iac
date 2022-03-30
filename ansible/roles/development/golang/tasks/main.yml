@@ -2,7 +2,7 @@
 - name: add go GPG
   tags: go
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 52B59B1571A79DBC054901C0F6BC817356A3D45E
 
@@ -15,14 +15,14 @@
 - name: update apt and install go
   tags: go
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: golang-go
     state: present
 
 - name: Update bashrc go
   tags: go
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "{{ item }}"
