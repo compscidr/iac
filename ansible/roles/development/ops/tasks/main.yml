@@ -11,7 +11,7 @@
 - name: add balena to to path
   become: true
   tags: balena
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/environment
     state: present
     backrefs: true
@@ -21,7 +21,7 @@
 - name: add ansible GPG
   tags: ansible
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367
 
@@ -32,7 +32,7 @@
     repo: ppa:ansible/ansible
 
 - name: install terraform
-  include_role:
+  ansible.builtin.include_role:
     name: diodonfrost.terraform
     apply:
       become: true
@@ -40,21 +40,21 @@
 - name: Add packer GPG
   tags: packer
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: https://apt.releases.hashicorp.com/gpg
     id: E8A032E094D8EB4EA189D270DA418C88A3219F7B
 
 - name: Add packer apt repository
   become: true
   tags: packer
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     state: present
 
 - name: Install Ansible, Vagrant, Packer and AWS CLI
   tags: packer, vagrant, ansible, aws
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - packer
       - vagrant
@@ -64,7 +64,7 @@
 - name: Remove ansible-lint apt package if present
   become: true
   tags: ansible
-  apt:
+  ansible.builtin.apt:
     pkg:
       - ansible-lint
     state: absent
@@ -80,7 +80,7 @@
 # bashrc updates for DEBEMAIL and DEBFULLNAME (for building deb packages)
 - name: Update bashrc debmaintainer
   tags: debmaintainer
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "{{ item }}"
@@ -91,7 +91,7 @@
 - name: Create AWS config directory
   tags: aws
   become_user: jason
-  file:
+  ansible.builtin.file:
     path: ~/.aws
     state: directory
     mode: '0700'
@@ -101,7 +101,7 @@
 - name: Copy AWS credentials file
   become_user: jason
   tags: aws
-  copy:
+  ansible.builtin.copy:
     src: files/aws/credentials
     dest: ~/.aws/credentials
     mode: '0600'
@@ -111,7 +111,7 @@
 - name: Copy AWS config file
   become_user: jason
   tags: aws
-  copy:
+  ansible.builtin.copy:
     src: files/aws/config
     dest: ~/.aws/config
     mode: '0600'
@@ -129,7 +129,7 @@
 - name: Create doctl config directory
   tags: doctl
   become_user: jason
-  file:
+  ansible.builtin.file:
     path: ~/.config/doctl
     state: directory
     mode: '0700'
@@ -139,7 +139,7 @@
 - name: Copy doctl config file
   become_user: jason
   tags: doctl
-  copy:
+  ansible.builtin.copy:
     src: files/doctl/config.yaml
     dest: ~/.config/doctl/config.yaml
     mode: '0600'
@@ -149,7 +149,7 @@
 # bashrc updates DIGITALOCEAN_TOKEN
 - name: Update bashrc DIGITALOCEAN_TOKEN
   tags: doctl
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "export DIGITALOCEAN_TOKEN={{ do_token }}"

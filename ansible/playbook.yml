@@ -31,10 +31,10 @@
     - tunnels
 
 - name: Development Software for GUIs
-  hosts: development-gui
+  hosts: development_gui
   roles:
-    - development-gui/ides
-    - development-gui/tools
+    - development_gui/ides
+    - development_gui/tools
 
 - name: Services for home.jasonernst.com
   hosts: home_jasonernst_com

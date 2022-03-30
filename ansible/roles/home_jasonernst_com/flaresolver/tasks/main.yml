@@ -2,7 +2,7 @@
   tags: flaresolver
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: flaresolver
     image: ghcr.io/flaresolverr/flaresolverr:latest
     pull: true

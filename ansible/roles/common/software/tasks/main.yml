@@ -1,14 +1,14 @@
 ---
 - name: Update Apt Cache
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     upgrade: true
     cache_valid_time: 3600
 
 - name: install various tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - apt-transport-https
       - ca-certificates
@@ -20,7 +20,7 @@
 
 - name: install network tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - arp-scan                # for ip <-> mac map search
       - dnsutils                # dig
@@ -40,7 +40,7 @@
 
 - name: ensure python is python3 in ubuntu 20.04
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - python-is-python3
   when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
@@ -48,7 +48,7 @@
 # https://github.com/nickjj/ansible-docker
 - name: Ensure docker is installed on the target system
   tags: docker
-  include_role:
+  ansible.builtin.include_role:
     name: nickjj.docker
     apply:
       become: true
@@ -56,7 +56,7 @@
 - name: adding jason to group docker
   tags: docker
   become: true
-  user:
+  ansible.builtin.user:
     name: jason
     groups: docker
     append: true
@@ -65,21 +65,21 @@
 - name: add git cli GPG apt key
   tags: git
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: C99B11DEB97541F0
 
 - name: add github cli repository
   tags: git
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
     state: present
 
 - name: update apt and install gh
   tags: git
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: gh
     state: present
@@ -88,12 +88,12 @@
 - name: setup default git configuration
   tags: git
   become_user: jason
-  git_config:
+  ansible.builtin.git_config:
     name="{{ item.name }}"
     value="{{ item.value }}"
     scope=global
   with_items:
-    - { name: "user.name", value: "Jason Ernst" }
-    - { name: "user.email", value: "ernstjason1@gmail.com" }
-    - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }
-    - { name: "pull.rebase", value: "false" }
+    - { name: "user.name", value: "Jason Ernst" }  # noqa yaml
+    - { name: "user.email", value: "ernstjason1@gmail.com" }  # noqa yaml
+    - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }  # noqa yaml
+    - { name: "pull.rebase", value: "false" }  # noqa yaml

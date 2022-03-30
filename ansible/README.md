@@ -3,7 +3,7 @@
 - Ansible (>=3.2)
   - via ppa:ansible/ansible because default ubuntu only has 2.8 or something
 
-- Install requirements: `ansible-galaxy install -r ansible/meta/requirements.yml`
+- Install requirements: `ansible-galaxy install -r meta/requirements.yml`
 
 - Install the gpg module on ansible machine:
   - `mkdir -p ~/.ansible/plugins/modules`

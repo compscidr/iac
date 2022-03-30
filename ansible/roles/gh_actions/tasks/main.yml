@@ -66,4 +66,4 @@
     links:
       - "android-emulator"
   loop:
-    - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }
+    - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml

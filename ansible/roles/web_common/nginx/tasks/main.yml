@@ -1,7 +1,7 @@
 - name: Create nginx directory on host
   tags: nginx
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/conf.d
     state: directory
     mode: '755'
@@ -11,7 +11,7 @@
 - name: Copy nginx config to host
   tags: nginx
   become: true
-  copy:
+  ansible.builtin.copy:
     src: proxy.conf
     dest: /etc/nginx/conf.d
     mode: '644'
@@ -22,7 +22,7 @@
   tags: nginx
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
     published_ports: 80:80,443:443

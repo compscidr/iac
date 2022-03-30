@@ -1,7 +1,7 @@
 - name: Update the ssh/config with each of the lan node name entries
   tags: ssh
   become: true
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: '0600'
     owner: jason
@@ -20,7 +20,7 @@
 - name: Add github to ssh/config
   tags: ssh
   become: true
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: '0600'
     owner: jason

@@ -1,7 +1,7 @@
 - name: Create /opt/goblog directory on host
   tags: website
   become: true
-  file:
+  ansible.builtin.file:
     path: /opt/goblog/prod
     state: directory
     mode: '755'
@@ -11,7 +11,7 @@
 - name: Copy .env to the host
   tags: website
   become: true
-  copy:
+  ansible.builtin.copy:
     src: prod.env
     dest: /opt/goblog/prod/.env
     mode: '644'
@@ -22,7 +22,7 @@
   tags: website
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: www.jasonernst.com
     image: compscidr/goblog:v0.1.26
     volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
@@ -45,7 +45,7 @@
   tags: db
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: db
     image: mysql
     env_file: /opt/goblog/prod/.env

@@ -1,20 +1,20 @@
 - name: install atom editor
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: https://atom.io/download/deb
 
 # vscode
 - name: add microsoft GPG
   tags: vscode
   become: true
-  apt_key:
+  ansible.builtin.apt_key:
     url: https://packages.microsoft.com/keys/microsoft.asc
     state: present
 
 - name: add microsoft package repository
   tags: vscode
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/code stable main"
     state: present
     filename: vscode
@@ -22,19 +22,19 @@
 - name: update apt and install vscode
   tags: vscode
   become: true
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     name: code
     state: present
 
 - name: Remove duplicate microsoft package repository
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/apt/sources.list.d/ackages_microsoft_com_repos_code.list
     state: absent
 
 - name: Ensure jetbrains toolbox is installed on the target system
-  include_role:
+  ansible.builtin.include_role:
     name: ansible-role-jet-brains-toolbox
     apply:
       become: true

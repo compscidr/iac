@@ -1,7 +1,7 @@
 - name: Create Radarr Directories
   tags: radarr
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/radarr
     state: directory
     mode: '755'
@@ -12,7 +12,7 @@
   tags: radarr
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: radarr
     image: linuxserver/radarr:version-3.2.2.5080
     pull: true

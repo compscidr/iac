@@ -1,6 +1,6 @@
 - name: Update the ssh/config with each of the lan node name entries
   tags: ssh
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: '0600'
     path: "/home/jason/.ssh/config"
@@ -15,7 +15,7 @@
 
 - name: Update the ssh/config with each of the wan node name entries
   tags: ssh
-  blockinfile:
+  ansible.builtin.blockinfile:
     create: true
     mode: '0600'
     path: "/home/jason/.ssh/config"

@@ -1,8 +1,8 @@
 # https://gist.github.com/drmalex07/c0f9304deea566842490
 - name: Copy Secure Tunnel Service File
-  become: true
   tags: prometheus
-  copy:
+  become: true
+  ansible.builtin.copy:
     src: files/secure-tunnel@.service
     dest: /etc/systemd/system/secure-tunnel@.service
     mode: '0600'
@@ -12,7 +12,7 @@
 - name: Copy lolminer API Tunnel
   become: true
   tags: prometheus
-  copy:
+  ansible.builtin.copy:
     src: files/secure-tunnel@ubuntu-desktop-beast-lolminer
     dest: /etc/default/secure-tunnel@ubuntu-desktop-beast-lolminer
     mode: '0644'
@@ -22,7 +22,7 @@
 - name: Copy lolminer API Tunnel
   become: true
   tags: prometheus
-  copy:
+  ansible.builtin.copy:
     src: files/secure-tunnel@ubuntu-desktop-lolminer
     dest: /etc/default/secure-tunnel@ubuntu-desktop-lolminer
     mode: '0644'
@@ -32,7 +32,7 @@
 - name: Copy lolminer API Tunnel
   become: true
   tags: prometheus
-  copy:
+  ansible.builtin.copy:
     src: files/secure-tunnel@ubuntu-server
     dest: /etc/default/secure-tunnel@ubuntu-server
     mode: '0644'
@@ -67,7 +67,7 @@
 - name: Create Prometheus Directories
   tags: prometheus
   become: true
-  file:
+  ansible.builtin.file:
     mode: '755'
     path: /etc/prometheus
     state: directory
@@ -76,7 +76,7 @@
 - name: Copy Prometheus Config
   tags: prometheus
   become: true
-  copy:
+  ansible.builtin.copy:
     src: files/prometheus.yml
     dest: /etc/prometheus/prometheus.yml
     mode: '0644'
@@ -99,7 +99,7 @@
 - name: Create Miner Exporter Directories
   tags: prometheus
   become: true
-  file:
+  ansible.builtin.file:
     mode: '755'
     path: /etc/lighttpd
     state: directory
@@ -107,7 +107,7 @@
 - name: Copy Miner Exporter Files
   tags: prometheus
   become: true
-  copy:
+  ansible.builtin.copy:
     src: files/lighttpd.conf
     dest: /etc/lighttpd/lighttpd.conf
     mode: '0644'

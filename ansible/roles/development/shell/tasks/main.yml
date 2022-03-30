@@ -1,13 +1,13 @@
 - name: install shell tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - fzf
 
 # nano
 - name: install nano rc
   become_user: jason
-  copy:
+  ansible.builtin.copy:
     src: files/.nanorc
     dest: ~/.nanorc
     mode: '644'
@@ -17,7 +17,7 @@
 # better terminal + tmux
 - name: install command line apt packages (fish, powerline, tmux)
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - fish
       - powerline
@@ -25,14 +25,14 @@
 
 - name: tmux config
   become_user: jason
-  git:
+  ansible.builtin.git:
     repo: https://github.com/gpakosz/.tmux.git
     dest: ~/.tmux
     version: 3bfec1a25a8a66dd251d37f4efcd6a0e9f30a6da
 
 - name: tmux link
   become_user: jason
-  file:
+  ansible.builtin.file:
     src: ~/.tmux/.tmux.conf
     dest: ~/.tmux.conf
     state: link
@@ -41,7 +41,7 @@
 
 - name: tmux config local
   become_user: jason
-  copy:
+  ansible.builtin.copy:
     src: files/.tmux.conf.local
     dest: ~/.tmux.conf.local
     mode: '644'
@@ -49,17 +49,16 @@
     group: jason
 
 - name: install oh-my-fish
-  git:
+  ansible.builtin.git:
     repo: https://github.com/oh-my-fish/oh-my-fish.git
     dest: ~/.local/share/omf-install
     update: true
     version: 0b1396ad7962073fa25615bf03c43b53eddc2d56
-
   become: true
   become_user: jason
 
 - name: install oh-my-fish themes and plugins
-  command: >
+  ansible.builtin.command: >
     fish -c "~/.local/share/omf-install/bin/install --noninteractive --yes"
   args:
     creates: ~/.local/share/omf/themes/default/
@@ -67,7 +66,7 @@
   become_user: jason
 
 - name: install bob the fish theme
-  command: fish -c "omf install bobthefish"
+  ansible.builtin.command: fish -c "omf install bobthefish"
   args:
     creates: /home/jason/.local/share/omf/themes/bobthefish/
   become: true
@@ -75,13 +74,13 @@
 
 - name: Create fish functions directory
   become_user: jason
-  file:
+  ansible.builtin.file:
     mode: '755'
     path: /home/jason/.config/fish/functions
     state: directory
 
 - name: Add fish keybindings for fzf
-  lineinfile:
+  ansible.builtin.lineinfile:
     mode: '755'
     dest: /home/jason/.config/fish/functions/fish_user_key_bindings.fish
     owner: jason
@@ -89,7 +88,7 @@
     line: "fzf_key_bindings"
 
 - name: install forgit for fish
-  command: fish -c "omf install https://github.com/wfxr/forgit"
+  ansible.builtin.command: fish -c "omf install https://github.com/wfxr/forgit"
   args:
     creates: /home/jason/.local/share/omf/pkg/fo
   become: true
@@ -98,7 +97,7 @@
 # bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
 # and forgit: https://github.com/wfxr/forgit
 - name: Update bashrc fzf
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "{{ item }}"

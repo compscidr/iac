@@ -2,7 +2,7 @@
 - name: Install Sudo
   tags: user
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - sudo
       - ssh-import-id
@@ -24,7 +24,7 @@
 - name: Create ssh directory if it does not exist
   tags: user
   become: true
-  file:
+  ansible.builtin.file:
     path: /home/jason/.ssh
     state: directory
     mode: '0700'
@@ -34,7 +34,7 @@
 - name: Import SSH authorized key
   tags: user
   become: true
-  copy:
+  ansible.builtin.copy:
     src: files/ssh/authorized_keys
     dest: /home/jason/.ssh/authorized_keys
     mode: '0600'
@@ -47,7 +47,7 @@
 - name: Create gpg directory if it does not exist
   tags: gpg
   become_user: jason
-  file:
+  ansible.builtin.file:
     path: ~/.gpg
     state: directory
     mode: '0700'
@@ -57,7 +57,7 @@
 - name: Copy Public GPG Key
   become_user: jason
   tags: gpg
-  copy:
+  ansible.builtin.copy:
     src: files/gpg/mygpgkey_pub.gpg
     dest: ~/.gpg/mygpgkey_pub.gpg
     mode: '0600'
@@ -69,7 +69,7 @@
 - name: Copy Private GPG Key
   tags: gpg
   become_user: jason
-  copy:
+  ansible.builtin.copy:
     src: files/gpg/mygpgkey_sec.gpg
     dest: ~/.gpg/mygpgkey_sec.gpg
     mode: '0600'

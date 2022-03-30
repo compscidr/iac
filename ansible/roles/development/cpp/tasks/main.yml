@@ -1,6 +1,6 @@
 - name: install cpp development tools
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - build-essential
       - cmake
@@ -8,7 +8,7 @@
 
 - name: install ubuntu-specific development tools (perf)
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - linux-tools-common
       - linux-tools-generic
@@ -16,7 +16,7 @@
 
 - name: install debian-specific development tools (perf)
   become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - linux-perf
   when: ansible_distribution == 'Debian'

@@ -1,7 +1,7 @@
 - name: Create Sonarr Directories
   tags: sonarr
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/sonarr
     state: directory
     mode: '755'
@@ -12,7 +12,7 @@
   tags: sonarr
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
+  community.docker.docker_container:
     name: sonarr
     image: linuxserver/sonarr:version-3.0.6.1342
     pull: true
