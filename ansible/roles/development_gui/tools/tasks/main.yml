@@ -1,3 +1,10 @@
+- name: Create new File context menu
+  tags: UI
+  ansible.builtin.file:
+    path: "/home/jason/Templates/Empty Document"
+    state: touch
+    mode: '0600'
+
 # wireshark
 - name: install wireshark
   tags: wireshark
