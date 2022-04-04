@@ -21,12 +21,12 @@ Used to provision software, services and configuration to local machines and clo
 - apt packages for non-gui development (ie common to headless and non-headless)
 - apt packages for gui only (don't install on headless setups)
 - docker containers
-  - nginx proxy to [www.jasonernst.com](www.jasonernst.com)
-  - letsencrypt to [www.jasonernst.com](www.jasonernst.com)
-  - goblog to [www.jasonernst.com](www.jasonernst.com)
+  - nginx proxy to [www.jasonernst.com](https://www.jasonernst.com)
+  - letsencrypt to [www.jasonernst.com](https://www.jasonernst.com)
+  - goblog to [www.jasonernst.com](https://www.jasonernst.com)
   - prometheus and grafana locally on lp.jasonernst.com accessible via ssh tunnel
-  - ombi to [ombi.jasonernst.com](ombi.jasonernst.com)
-  - livepeer orchestrator to [lp.jasonernst.com](lp.jasonernst.com)
+  - ombi to [ombi.jasonernst.com](https://ombi.jasonernst.com)
+  - livepeer orchestrator to `lp.jasonernst.com`
   - amd lolminer, livepeer transcoder to ubuntu-server, ubuntu-desktop
   - nvidia lolminer, livepeer transcoder to ubuntu-desktop-beast
   - plex, radarr, sonarr to ubuntu-server
@@ -34,7 +34,7 @@ Used to provision software, services and configuration to local machines and clo
 - ssh keys
 - .ssh/config mapping identities to hosts and jumpboxes where necessary
 
-- [home.jasonernst.com](home.jasonernst.com) pointed to ubuntu-server configured as an ssh jump box into the lan
+- `home.jasonernst.com` pointed to ubuntu-server configured as an ssh jump box into the lan
 
 [Read more](ansible/README.md)
 
