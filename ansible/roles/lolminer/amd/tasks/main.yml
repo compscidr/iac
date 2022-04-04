@@ -14,4 +14,5 @@
     entrypoint: |
       /lolminer/lolMiner --coin ETH --pool eth.2miners.com --port 2020
       --user 0x74ba897f65f04008d8eff364efcc54b0a20e17eb.{{ inventory_hostname }} --apihost 0.0.0.0 --apiport 4069
+      --watchdog exit --tstop 92
     init: true
