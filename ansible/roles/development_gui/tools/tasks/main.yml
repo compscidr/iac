@@ -160,3 +160,22 @@
   tags: telegram
   ansible.builtin.command: update-desktop-database /usr/share/applications
   when: telegram.changed
+
+- name: Postman
+  tags: postman
+  become: true
+  ansible.builtin.unarchive:
+    src: https://dl.pstmn.io/download/latest/linux64
+    dest: /opt/
+    remote_src: true
+
+- name: Postman symlink
+  tags: postman
+  become: true
+  ansible.builtin.file:
+    src: /opt/Postman/Postman
+    dest: /usr/local/bin/postman
+    owner: root
+    group: root
+    state: link
+    mode: '0755'
