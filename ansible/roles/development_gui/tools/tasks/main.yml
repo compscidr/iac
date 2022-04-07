@@ -179,3 +179,10 @@
     group: root
     state: link
     mode: '0755'
+
+- name: Install Gimp
+  tags: gimp
+  become: true
+  ansible.builtin.apt:
+    name: gimp
+    state: present
