@@ -14,7 +14,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: radarr
-    image: linuxserver/radarr:version-3.2.2.5080
+    image: linuxserver/radarr:latest
     pull: true
     volumes:
       - "/storage/movies:/movies:rw"
