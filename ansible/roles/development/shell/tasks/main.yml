@@ -96,6 +96,7 @@
 
 # bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
 # and forgit: https://github.com/wfxr/forgit
+# and docker, docker-compose buildkit
 - name: Update bashrc fzf
   ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
@@ -105,3 +106,5 @@
     - "source /usr/share/doc/fzf/examples/key-bindings.bash"
     - "source /usr/share/doc/fzf/examples/completion.bash"
     - "source <(curl -sSL git.io/forgit)"
+    - "export COMPOSE_DOCKER_CLI_BUILD=1"
+    - "export DOCKER_BUILDKIT=1"
