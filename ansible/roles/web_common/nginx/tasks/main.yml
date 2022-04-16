@@ -18,6 +18,16 @@
     owner: root
     group: root
 
+- name: Enable IPv6 for docker daemon
+  become: true
+  tags: docker
+  ansible.builtin.copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+    mode: '644'
+    owner: root
+    group: root
+
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
   vars:
@@ -25,6 +35,7 @@
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
+    default_host_ip: ""
     published_ports: 80:80,443:443
     volumes:
       - /etc/nginx/conf.d:/etc/nginx/conf.d
@@ -35,3 +46,5 @@
       - /var/run/docker.sock:/tmp/docker.sock:ro
     network_mode: bridge
     restart_policy: unless-stopped
+    env:
+      ENABLE_IPV6: "true"
