@@ -52,11 +52,11 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.26
+    image: compscidr/goblog:v0.1.28
     volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
-      - source: /opt/goblog/prod/test.db
-        target: /go/src/github.com/compscidr/goblog/test.db
+      - source: /opt/goblog/prod/database.db
+        target: /go/src/github.com/compscidr/database.db
         type: bind
       - source: /opt/goblog/prod/.env
         target: /go/src/github.com/compscidr/goblog/.env
@@ -75,11 +75,11 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.1.26
+    image: compscidr/goblog:v0.1.28
     volumes: /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
-      - source: /opt/goblog/staging/test.db
-        target: /go/src/github.com/compscidr/goblog/test.db
+      - source: /opt/goblog/staging/database.db
+        target: /go/src/github.com/compscidr/database.db
         type: bind
       - source: /opt/goblog/staging/.env
         target: /go/src/github.com/compscidr/goblog/.env
