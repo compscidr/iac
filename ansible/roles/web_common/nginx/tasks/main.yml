@@ -48,3 +48,4 @@
     restart_policy: unless-stopped
     env:
       ENABLE_IPV6: "true"
+      DEFAULT_HOST: "jasonernst.com"
