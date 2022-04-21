@@ -25,6 +25,9 @@
     src: /opt/goblog/prod/
     dest: /opt/goblog/staging
     remote_src: true
+    mode: '644'
+    owner: root
+    group: root
 
 - name: Copy .env to prod host
   tags: website
