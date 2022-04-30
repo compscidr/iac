@@ -5,7 +5,7 @@ all:
       hosts:
         ubuntu-server:
           ansible_host: 10.0.0.218
-          max_temp: 92
+          max_temp: 91
 # Used in case this is run from outside of the home network
 #          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
         ubuntu-desktop-beast:
