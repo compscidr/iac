@@ -5,6 +5,14 @@
       - build-essential
       - cmake
       - autoconf
+      - strace
+      - ltrace
+      - valgrind
+      - hotspot
+      - heaptrack
+      - clang-format
+      - clang-tidy
+      - pkg-config
 
 - name: install ubuntu-specific development tools (perf)
   become: true
