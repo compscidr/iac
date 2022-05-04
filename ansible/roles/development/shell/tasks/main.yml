@@ -16,6 +16,7 @@
 
 # better terminal + tmux
 - name: install command line apt packages (fish, powerline, tmux, byobu)
+  tags: terminal
   become: true
   ansible.builtin.apt:
     pkg:
