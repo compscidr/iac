@@ -15,13 +15,14 @@
     group: jason
 
 # better terminal + tmux
-- name: install command line apt packages (fish, powerline, tmux)
+- name: install command line apt packages (fish, powerline, tmux, byobu)
   become: true
   ansible.builtin.apt:
     pkg:
       - fish
       - powerline
       - tmux
+      - byobu
 
 - name: tmux config
   become_user: jason
