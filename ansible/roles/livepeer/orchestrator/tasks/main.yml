@@ -73,7 +73,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: livepeer
-    image: livepeer/go-livepeer:0.5.28-71267f44
+    image: livepeer/go-livepeer:0.5.30-dd41f107
     pull: true
     restart_policy: unless-stopped
     command: >
