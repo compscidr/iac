@@ -27,7 +27,6 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/tmp/grape:/tmp/grape"
     restart_policy: unless-stopped
     privileged: true
     env:
@@ -70,7 +69,6 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/tmp/grape:/tmp/grape"
     restart_policy: unless-stopped
     privileged: true
     env:
