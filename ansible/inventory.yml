@@ -15,7 +15,7 @@ all:
 #          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
         ubuntu-desktop:
           ansible_host: 10.0.0.111
-          max_temp: 91
+          max_temp: 90
         jason-ubuntu-laptop:
           ansible_host: 10.0.0.17
         ubuntu-work-laptop:
