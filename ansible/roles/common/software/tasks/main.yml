@@ -17,6 +17,7 @@
       - wget                    # command line http tool
       - unzip
       - git
+      - apt-show-versions
 
 - name: install network tools
   become: true
