@@ -18,7 +18,7 @@ all:
           max_temp: 90
         jason-ubuntu-laptop:
           ansible_host: 10.0.0.17
-        ubuntu-work-laptop:
+        jason-work-ubuntu:
           ansible_host: 127.0.0.1
     development:
       hosts:
@@ -26,13 +26,13 @@ all:
         ubuntu-desktop-beast:
         ubuntu-desktop:
         jason-ubuntu-laptop:
-        ubuntu-work-laptop:
+        jason-work-ubuntu:
     development_gui:
       hosts:
         ubuntu-desktop:
         ubuntu-desktop-beast:
         jason-ubuntu-laptop:
-        ubuntu-work-laptop:
+        jason-work-ubuntu:
     amd:
       hosts:
         ubuntu-desktop:

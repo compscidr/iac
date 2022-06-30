@@ -99,14 +99,31 @@
 # bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
 # and forgit: https://github.com/wfxr/forgit
 # and docker, docker-compose buildkit
-- name: Update bashrc fzf
+- name: Update bashrc for various tools
   ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "{{ item }}"
   with_items:
     - "source /usr/share/doc/fzf/examples/key-bindings.bash"
-    - "source /usr/share/doc/fzf/examples/completion.bash"
     - "source <(curl -sSL git.io/forgit)"
     - "export COMPOSE_DOCKER_CLI_BUILD=1"
     - "export DOCKER_BUILDKIT=1"
+
+- name: Update bashrc for various tools Ubuntu 20.04
+  ansible.builtin.lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - "source /usr/share/doc/fzf/examples/completion.bash"
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+
+- name: Update bashrc for various tools Ubuntu 22.04
+  ansible.builtin.lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+  with_items:
+    - "source /usr/share/bash-completion/completions/fzf"
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'jammy'
