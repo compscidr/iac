@@ -71,12 +71,12 @@
     id: C99B11DEB97541F0
 
 - name: add github cli repository
- tags: git
- become: true
- ansible.builtin.apt_repository:
-   repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
-   state: present
- when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+  tags: git
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
 
 - name: update apt and install gh
   tags: git
@@ -90,7 +90,7 @@
 - name: setup default git configuration
   tags: git
   become_user: jason
-  ansible.builtin.git_config:
+  community.general.git_config:
     name="{{ item.name }}"
     value="{{ item.value }}"
     scope=global
