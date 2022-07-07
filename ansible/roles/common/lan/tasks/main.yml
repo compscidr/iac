@@ -27,3 +27,14 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:
     - all, !lan
+
+- name: Update /etc/hosts with each of the lan node name entries
+  become: true
+  tags: hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
+    state: present
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{ groups['lan'] }}"
