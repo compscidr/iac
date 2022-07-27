@@ -1,0 +1,42 @@
+- name: Create Rust Directories
+  tags: rust
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Copy Rust config to host
+  tags: rust
+  become: true
+  ansible.builtin.copy:
+    src: rust.env
+    dest: /etc/rust/rust.env
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy Rust
+  tags: rust
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: rust
+    image: didstopia/rust-server
+    pull: true
+    volumes:
+      - "/etc/rust:/steamcmd/rust:rw"
+    env_file: /etc/rust/rust.env
+    ports:
+      - "8080:8080"
+      - "28015:28015"
+      - "28015:28015/udp"
+      - "28016:28016"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 10g
