@@ -1,3 +1,26 @@
+- name: Install nvidia apt key
+  tags: nvidia
+  become: true
+  ansible.builtin.apt:
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '20.04'
+
+- name: Install nvidia apt repo
+  tags: nvidia
+  become: true
+  ansible.builtin.apt_repository:
+    repo: deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '20.04'
+
+- name: Install cuda
+  tags: nvidia
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name: cuda
+    state: present
+
 - name: Deploy lolminer for Nvidia GPU
   tags: mining
   vars:
