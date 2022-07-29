@@ -82,3 +82,27 @@
       - "android-emulator-hello-java"
   loop:
     - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml
+
+# https://github.com/myoung34/docker-github-actions-runner
+- name: Deploy GH actions for bump
+  tags: gh-actions
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_container:
+    name: bump-gh-actions
+    image: myoung34/github-runner:latest
+    pull: true
+    volumes:
+      - "/dev/bus/usb:/dev/bus/usb"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    restart_policy: unless-stopped
+    privileged: true
+    env:
+      ACCESS_TOKEN: "{{ gh_pat }}"
+      RUNNER_NAME_PREFIX: bump
+      RUNNER_WORKDIR: /tmp/bump
+      RUNNER_GROUP: default
+      REPO_URL: https://github.com/BumpApp/hop-poc
+      LABELS: "self-hosted"
+      RUNNER_SCOPE: "org"
+      ORG_NAME: "BumpApp"
