@@ -1,19 +1,19 @@
 # https://github.com/google/android-emulator-container-scripts
-- name: Deploy Android Emulator
-  tags: android-emulator, gh-actions
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
-    name: android-emulator-grape
-    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
-    pull: true
-    restart_policy: unless-stopped
-    devices:
-      - "/dev/kvm"
-    ports:
-      - "5555"
-    env:
-      EMULATOR_ARGS: "-gpu swiftshader_indirect"
+# - name: Deploy Android Emulator
+#   tags: android-emulator, gh-actions
+#   vars:
+#     ansible_python_interpreter: "/usr/bin/env python3-docker"
+#   docker_container:
+#     name: android-emulator-grape
+#     image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
+#     pull: true
+#     restart_policy: unless-stopped
+#     devices:
+#       - "/dev/kvm"
+#     ports:
+#       - "5555"
+#     env:
+#       EMULATOR_ARGS: "-gpu swiftshader_indirect"
 
 # https://github.com/myoung34/docker-github-actions-runner
 - name: Deploy Github Actions Runner
@@ -22,7 +22,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: grape-gh-actions
-    image: myoung34/github-runner:latest
+    image: compscidr/github-runner-android:latest
     pull: true
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
@@ -38,25 +38,25 @@
       LABELS: "self-hosted"
       RUNNER_SCOPE: "org"
       ORG_NAME: "grape-networking"
-    links:
-      - "android-emulator-grape"
+    # links:
+    #   - "android-emulator-grape"
 
 # https://github.com/google/android-emulator-container-scripts
-- name: Deploy Android Emulator
-  tags: android-emulator, gh-actions
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
-  docker_container:
-    name: android-emulator-hello-java
-    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
-    pull: true
-    restart_policy: unless-stopped
-    devices:
-      - "/dev/kvm"
-    ports:
-      - "5555"
-    env:
-      EMULATOR_ARGS: "-gpu swiftshader_indirect"
+# - name: Deploy Android Emulator
+#   tags: android-emulator, gh-actions
+#   vars:
+#     ansible_python_interpreter: "/usr/bin/env python3-docker"
+#   docker_container:
+#     name: android-emulator-hello-java
+#     image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
+#     pull: true
+#     restart_policy: unless-stopped
+#     devices:
+#       - "/dev/kvm"
+#     ports:
+#       - "5555"
+#     env:
+#       EMULATOR_ARGS: "-gpu swiftshader_indirect"
 
 - name: Deploy Github Actions individual repo runners
   tags: gh-actions
@@ -64,7 +64,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: "{{ item.name }}"
-    image: myoung34/github-runner:latest
+    image: compscidr/github-runner-android:latest
     pull: true
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
@@ -78,8 +78,8 @@
       RUNNER_GROUP: default
       REPO_URL: "https://github.com/{{ item.repo }}"
       LABELS: "self-hosted"
-    links:
-      - "android-emulator-hello-java"
+    # links:
+    #   - "android-emulator-hello-java"
   loop:
     - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml
 
@@ -90,7 +90,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   docker_container:
     name: bump-gh-actions
-    image: myoung34/github-runner:latest
+    image: compscidr/github-runner-android:latest
     pull: true
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
