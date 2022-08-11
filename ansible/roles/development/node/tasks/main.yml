@@ -1,28 +1,13 @@
-- name: install node development tools
+- name: Install node development tools
   become: true
   ansible.builtin.apt:
     pkg:
       - npm
 
-# yarn: https://linuxize.com/post/how-to-install-yarn-on-ubuntu-20-04/
-- name: add yarn GPG
-  tags: yarn
+# yarn: https://www.itzgeek.com/how-tos/linux/ubuntu-how-tos/how-to-install-yarn-on-ubuntu-22-04-ubuntu-20-04.html
+# https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
+- name: Install yarn node.js package
   become: true
-  ansible.builtin.apt_key:
-    keyserver: https://dl.yarnpkg.com/debian/pubkey.gpg
-    id: 72ECF46A56B4AD39C907BBB71646B01B86E50310
-
-- name: add yarn repo
-  become: true
-  tags: yarn
-  ansible.builtin.apt_repository:
-    repo: "deb https://dl.yarnpkg.com/debian/ stable main"
-    state: present
-
-- name: update apt and install yarn
-  become: true
-  tags: yarn
-  ansible.builtin.apt:
-    update_cache: true
+  community.general.npm:
     name: yarn
-    state: present
+    global: yes

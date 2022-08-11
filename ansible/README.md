@@ -2,6 +2,10 @@
 
 - Ansible (>=3.2)
   - via ppa:ansible/ansible because default ubuntu only has 2.8 or something
+  - ```sudo add-apt-repository ppa:ansible/ansible && sudo apt update && sudo apt install ansible```
+
+- Upgrade Ubuntu 20.04 -> 22.04 Notes: https://github.com/nickjj/ansible-docker/issues/117
+  ```sudo rm -rf /usr/local/lib/docker/virtualenv```
 
 - Install requirements: `ansible-galaxy install -r meta/requirements.yml`
 
