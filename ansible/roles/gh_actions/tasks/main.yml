@@ -31,6 +31,7 @@
     privileged: true
     env:
       ACCESS_TOKEN: "{{ gh_pat }}"
+      DISABLE_AUTO_UPDATE: "true"
       RUNNER_NAME_PREFIX: grape
       RUNNER_WORKDIR: /tmp/grape
       RUNNER_GROUP: default
@@ -73,6 +74,7 @@
     privileged: true
     env:
       ACCESS_TOKEN: "{{ gh_pat }}"
+      DISABLE_AUTO_UPDATE: "true"
       RUNNER_NAME_PREFIX: "{{ item.name }}"
       RUNNER_WORKDIR: "/tmp/{{ item.name }}"
       RUNNER_GROUP: default
@@ -99,6 +101,7 @@
     privileged: true
     env:
       ACCESS_TOKEN: "{{ gh_pat }}"
+      DISABLE_AUTO_UPDATE: "true"
       RUNNER_NAME_PREFIX: bump
       RUNNER_WORKDIR: /tmp/bump
       RUNNER_GROUP: default
