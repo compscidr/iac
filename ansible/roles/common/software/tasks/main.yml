@@ -106,7 +106,7 @@
   tags: cheat
   become: true
   uncompress:
-    copy: no
+    copy: no  # noqa yaml
     src: https://github.com/cheat/cheat/releases/download/4.3.1/cheat-linux-amd64.gz
     dest: /usr/local/bin/cheat
     mode: '755'

@@ -11,14 +11,14 @@
   tags: yarn
   community.general.npm:
     name: yarn
-    global: yes
+    global: true
 
 - name: Install tldr node package # https://tldr.sh/
   become: true
   tags: tldr
   community.general.npm:
     name: tldr
-    global: yes
+    global: true
 
 - name: Create a tldr symbolic link
   become: true
