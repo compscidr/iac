@@ -9,12 +9,6 @@
 
 - Install requirements: `ansible-galaxy install -r meta/requirements.yml`
 
-- Install the gpg module on ansible machine:
-  - `mkdir -p ~/.ansible/plugins/modules`
-  - `wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py`
-  - verify it is there with `ansible-doc -t module gpg`
-  - todo: see if we can get this work with dependencies so we don't need to do this manually
-
 - Ensure the `.vault_pass` file exists in the ansible directory (its on keybase):
   - https://www.digitalocean.com/community/tutorials/how-to-use-vault-to-protect-sensitive-ansible-data-on-ubuntu-16-04
 
