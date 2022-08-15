@@ -7,9 +7,9 @@ roles:
   - name: webarchitect609.jet_brains_toolbox
     version: "1.2.3"
   - name: compscidr.uncompress
-    version: "0.0.1"
+    version: "0.0.2"
   - name: compscidr.gpg
-    version: "0.0.1"
+    version: "0.0.2"
 
 collections:
   - name: community.docker
