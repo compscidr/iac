@@ -3,6 +3,7 @@
   hosts: all
   roles:
     - compscidr.uncompress
+    - compscidr.gpg
     - common/user
     - common/ssh
     - common/software

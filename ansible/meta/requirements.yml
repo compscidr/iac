@@ -1,10 +1,18 @@
 # from galaxy
 roles:
-- name: nickjj.docker  # noqa yaml
-- name: diodonfrost.terraform  # noqa yaml
+- name: nickjj.docker
+  version: "v2.1.0"
+- name: diodonfrost.terraform
+  version: "1.6.1"
 - name: webarchitect609.jet_brains_toolbox
+  version: "1.2.3"
 - name: compscidr.uncompress
+  version: "0.0.1"
+- name: compscidr.gpg
+  version: "0.0.1"
 
 collections:
   - name: community.docker
+    version: "2.7.0"
   - name: community.general
+    version: "5.4.0"
