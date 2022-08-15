@@ -2,6 +2,7 @@
 - name: Common Tasks for all Hosts
   hosts: all
   roles:
+    - compscidr.uncompress
     - common/user
     - common/ssh
     - common/software

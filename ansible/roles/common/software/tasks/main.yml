@@ -101,3 +101,12 @@
     - { name: "user.email", value: "ernstjason1@gmail.com" }  # noqa yaml
     - { name: "user.signingkey", value: "BDD9823CA1EA5636114208E86CD8B581B5FA61E1" }  # noqa yaml
     - { name: "pull.rebase", value: "false" }  # noqa yaml
+
+- name: install cheat # https://github.com/cheat/cheat/blob/master/INSTALLING.md
+  tags: cheat
+  become: true
+  uncompress:
+    copy: no
+    src: https://github.com/cheat/cheat/releases/download/4.3.1/cheat-linux-amd64.gz
+    dest: /usr/local/bin/cheat
+    mode: '755'
