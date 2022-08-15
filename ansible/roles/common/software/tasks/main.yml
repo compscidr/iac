@@ -7,6 +7,7 @@
     cache_valid_time: 3600
 
 - name: install various tools
+  tags: common-tools
   become: true
   ansible.builtin.apt:
     pkg:
@@ -21,6 +22,7 @@
 
 - name: install network tools
   become: true
+  tags: network-tools
   ansible.builtin.apt:
     pkg:
       - arp-scan                # for ip <-> mac map search
