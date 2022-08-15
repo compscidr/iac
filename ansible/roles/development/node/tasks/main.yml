@@ -8,6 +8,24 @@
 # https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
 - name: Install yarn node.js package
   become: true
+  tags: yarn
   community.general.npm:
     name: yarn
     global: yes
+
+- name: Install tldr node package # https://tldr.sh/
+  become: true
+  tags: tldr
+  community.general.npm:
+    name: tldr
+    global: yes
+
+- name: Create a tldr symbolic link
+  become: true
+  tags: tldr
+  ansible.builtin.file:
+    src: /usr/local/bin/tldr
+    dest: /usr/bin/tldr
+    owner: root
+    group: root
+    state: link
