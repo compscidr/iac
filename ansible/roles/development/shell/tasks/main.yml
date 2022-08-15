@@ -111,6 +111,7 @@
     - "export DOCKER_BUILDKIT=1"
 
 - name: Update bashrc for various tools Ubuntu 20.04
+  tags: fzf
   ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
@@ -120,10 +121,22 @@
   when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
 
 - name: Update bashrc for various tools Ubuntu 22.04
+  tags: fzf
   ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
     line: "{{ item }}"
   with_items:
     - "source /usr/share/bash-completion/completions/fzf"
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'jammy'
+
+- name: Remove bashrc lines for various tools upon upgrade to 22.04
+  tags: fzf
+  ansible.builtin.lineinfile:
+    dest: /home/jason/.bashrc
+    owner: jason
+    line: "{{ item }}"
+    state: absent
+  with_items:
+    - "source /usr/share/doc/fzf/examples/completion.bash"
   when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'jammy'
