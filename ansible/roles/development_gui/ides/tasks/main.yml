@@ -35,6 +35,6 @@
 
 - name: Ensure jetbrains toolbox is installed on the target system
   ansible.builtin.include_role:
-    name: ansible-role-jet-brains-toolbox
+    name: webarchitect609.jet_brains_toolbox
     apply:
       become: true

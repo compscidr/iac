@@ -85,7 +85,27 @@
   loop:
     - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml
 
-# https://github.com/myoung34/docker-github-actions-runner
+## mostly to enable ipv6 for the deamon
+- name: Docker daemon config
+  tags: gh-actions
+  copy:
+    src: files/daemon.json
+    dest: /etc/docker/daemon.json
+  register: docker_conf
+
+- name: restart service
+  tags: gh-actions
+  service:
+    name: docker
+    state: restarted
+  when: docker_conf.changed
+
+- name: Enable ipv6 NAT for docker
+  tags: gh-actions
+  become: true
+  ansible.builtin.shell: ip6tables -t nat -A POSTROUTING -s fd00::/80 ! -o docker0 -j MASQUERADE
+
+# https://github.com/compscidr/docker-github-actions-runner-android
 - name: Deploy GH actions for bump
   tags: gh-actions
   vars:
