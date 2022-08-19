@@ -1,0 +1,35 @@
+## mostly to enable ipv6 for the deamon
+- name: Docker daemon config
+  tags: gh-actions
+  become: true
+  copy:
+    src: files/daemon.json
+    dest: /etc/docker/daemon.json
+  register: docker_conf
+
+- name: restart service
+  tags: gh-actions
+  become: true
+  service:
+    name: docker
+    state: restarted
+  when: docker_conf.changed
+
+- name: Enable ipv6 NAT for docker
+  tags: gh-actions
+  become: true
+  ansible.builtin.shell: ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE
+
+# https://forums.docker.com/t/solution-docker-ipv6-and-docker-compose-woes/97852
+# https://docs.ansible.com/ansible/latest/collections/community/docker/docker_network_module.html#ansible-collections-community-docker-docker-network-module
+# https://docs.ansible.com/ansible/latest/collections/community/docker/docker_container_module.html#ansible-collections-community-docker-docker-container-module
+- name: Create a network with Ipv6 that can route to the Internet
+  tags: gh-actions
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_network:
+    name: network_ipv6_one
+    enable_ipv6: true
+    ipam_config:
+      - subnet: 2001:3984:3989::/64
+        gateway: 2001:3984:3989::1
