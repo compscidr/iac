@@ -30,6 +30,7 @@
     - development/node
     - development/ziglang
     - development/ruby
+    - development/rust
     - tunnels
 
 - name: Development Software for GUIs
