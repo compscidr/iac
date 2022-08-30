@@ -1,0 +1,20 @@
+# https://waylonwalker.com/til/install-rust/
+- name: check if cargo is installed
+  tags: rust
+  shell: command -v cargo
+  register: cargo_exists
+  ignore_errors: yes
+
+- name: Download Installer
+  tags: rust
+  when: cargo_exists is failed
+  get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/sh.rustup.rs
+    mode: '0755'
+    force: 'yes'
+
+- name: install rust/cargo
+  tags: rust
+  when: cargo_exists is failed
+  shell: /tmp/sh.rustup.rs -y
