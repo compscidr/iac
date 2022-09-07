@@ -49,6 +49,7 @@
     - home_jasonernst_com/sonarr
     - home_jasonernst_com/radarr
     - home_jasonernst_com/rust
+    - home_jasonernst_com/honeygain
     - gh_actions/ipv6-docker
     - gh_actions/bump-jvm
     - gh_actions/bump-android

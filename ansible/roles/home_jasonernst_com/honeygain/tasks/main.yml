@@ -1,0 +1,12 @@
+- name: Deploy Honeygain
+  tags: honeygain
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: honeygain
+    image: honeygain/honeygain:latest
+    pull: true
+    restart_policy: unless-stopped
+    memory: "1g"
+    entrypoint: |
+      ./honeygain -tou-accept -email {{ honeygain_email }} -pass {{ honeygain_pass }} -device {{ inventory_hostname }}
