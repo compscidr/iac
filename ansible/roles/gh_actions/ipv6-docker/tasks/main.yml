@@ -18,7 +18,7 @@
 - name: Enable ipv6 NAT for docker
   tags: gh-actions
   become: true
-  ansible.builtin.shell: ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE
+  ansible.builtin.shell: ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE && iptables-save > /etc/iptables/rules.v6
 
 # https://forums.docker.com/t/solution-docker-ipv6-and-docker-compose-woes/97852
 # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_network_module.html#ansible-collections-community-docker-docker-network-module

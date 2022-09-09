@@ -40,6 +40,7 @@
       - sqlite3                 # good db for integration tests
       - socat                   # sort of like nc but doesn't hang
       - sshfs                   # ssh mounts
+      - iptables-persistent
 
 - name: ensure python is python3 in ubuntu 20.04
   become: true
