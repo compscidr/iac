@@ -71,7 +71,7 @@
   become: true
   ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
-    id: C99B11DEB97541F0
+    id: 23F3D4EA75716059
 
 - name: add github cli repository
   tags: git
