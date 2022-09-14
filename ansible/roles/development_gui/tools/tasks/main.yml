@@ -155,7 +155,7 @@
     mode: '0600'
   register: telegram
 
-- name: Update desktop applications  # noqa no-handler
+- name: Update desktop applications  # noqa no-handler # todo: fix later
   become: true
   tags: telegram
   ansible.builtin.command: update-desktop-database /usr/share/applications

@@ -2,23 +2,35 @@
 - name: Docker daemon config
   tags: gh-actions
   become: true
-  copy:
+  ansible.builtin.copy:
     src: files/daemon.json
     dest: /etc/docker/daemon.json
+    mode: '644'
   register: docker_conf
 
-- name: restart service
+- name: restart service # noqa no-handler # todo: fix later
   tags: gh-actions
   become: true
-  service:
+  ansible.builtin.service:
     name: docker
     state: restarted
   when: docker_conf.changed
 
+- name: Check for ipv6 NAT
+  tags: gh-actions
+  become: true
+  ansible.builtin.shell: 'ip6tables -t nat -L | grep "MASQUERADE  all      2001:3984:3989::/64  anywhere"'
+  register: ipv6_nat_exists
+  ignore_errors: true
+  changed_when: false
+
 - name: Enable ipv6 NAT for docker
   tags: gh-actions
   become: true
-  ansible.builtin.shell: ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE && iptables-save > /etc/iptables/rules.v6
+  when: ipv6_nat_exists is failed
+  ansible.builtin.shell: |
+    ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE &&
+    iptables-save > /etc/iptables/rules.v6
 
 # https://forums.docker.com/t/solution-docker-ipv6-and-docker-compose-woes/97852
 # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_network_module.html#ansible-collections-community-docker-docker-network-module
