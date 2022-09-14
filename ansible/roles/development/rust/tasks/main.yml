@@ -1,20 +1,21 @@
 # https://waylonwalker.com/til/install-rust/
 - name: check if cargo is installed
   tags: rust
-  shell: command -v cargo
+  ansible.builtin.command: command -v cargo
   register: cargo_exists
-  ignore_errors: yes
+  ignore_errors: true
+  changed_when: false
 
 - name: Download Installer
   tags: rust
   when: cargo_exists is failed
-  get_url:
+  ansible.builtin.get_url:
     url: https://sh.rustup.rs
     dest: /tmp/sh.rustup.rs
     mode: '0755'
-    force: 'yes'
+    force: true
 
 - name: install rust/cargo
   tags: rust
   when: cargo_exists is failed
-  shell: /tmp/sh.rustup.rs -y
+  ansible.builtin.command: /tmp/sh.rustup.rs -y
