@@ -100,6 +100,7 @@
 # and forgit: https://github.com/wfxr/forgit
 # and docker, docker-compose buildkit
 - name: Update bashrc for various tools
+  tags: bashrc
   ansible.builtin.lineinfile:
     dest: /home/jason/.bashrc
     owner: jason
@@ -109,6 +110,8 @@
     - "source <(curl -sSL git.io/forgit)"
     - "export COMPOSE_DOCKER_CLI_BUILD=1"
     - "export DOCKER_BUILDKIT=1"
+    - "export DOCKER_CLIENT_TIMEOUT=120"
+    - "export COMPOSE_HTTP_TIMEOUT=120"
 
 - name: Update bashrc for various tools Ubuntu 20.04
   tags: fzf
