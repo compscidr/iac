@@ -10,6 +10,8 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - name: network_ipv6_one
     restart_policy: unless-stopped
     privileged: true
     env:

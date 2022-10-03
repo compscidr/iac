@@ -16,20 +16,32 @@
     state: restarted
   when: docker_conf.changed
 
-# https://github.com/docker/for-linux/issues/648?curius=2014
 - name: Check for ipv6 NAT
   tags: gh-actions
   become: true
-  ansible.builtin.shell: 'ip6tables -t nat -L | grep "MASQUERADE  all      2001:db8:1::/64  anywhere"'
+  ansible.builtin.shell: 'ip6tables -t nat -L | grep "MASQUERADE  all      2001:3984:3989::/64  anywhere"'
   register: ipv6_nat_exists
   ignore_errors: true
   changed_when: false
 
-# https://github.com/docker/for-linux/issues/648?curius=2014
 - name: Enable ipv6 NAT for docker
   tags: gh-actions
   become: true
   when: ipv6_nat_exists is failed
   ansible.builtin.shell: |
-    ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:db8:1::/64 ! -o docker0 -j MASQUERADE &&
+    ip6tables -t nat -F && sudo ip6tables -t nat -A POSTROUTING -s  2001:3984:3989::/64 ! -o docker0 -j MASQUERADE &&
     iptables-save > /etc/iptables/rules.v6
+
+# https://forums.docker.com/t/solution-docker-ipv6-and-docker-compose-woes/97852
+# https://docs.ansible.com/ansible/latest/collections/community/docker/docker_network_module.html#ansible-collections-community-docker-docker-network-module
+# https://docs.ansible.com/ansible/latest/collections/community/docker/docker_container_module.html#ansible-collections-community-docker-docker-container-module
+- name: Create a network with Ipv6 that can route to the Internet
+  tags: gh-actions
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  docker_network:
+    name: network_ipv6_one
+    enable_ipv6: true
+    ipam_config:
+      - subnet: 2001:3984:3989::/64
+        gateway: 2001:3984:3989::1
