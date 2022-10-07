@@ -135,7 +135,7 @@
   tags: telegram
   become: true
   ansible.builtin.unarchive:
-    src: https://updates.tdesktop.com/tlinux/tsetup.3.5.2.tar.xz
+    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
     dest: /opt/
     remote_src: true
 
@@ -147,18 +147,16 @@
     mode: '0600'
 
 - name: Telegram app shortcut
-  become: true
   tags: telegram
   ansible.builtin.copy:
     src: files/telegram.desktop
-    dest: /usr/share/applications/telegram.desktop
+    dest: ~/.local/share/applications/telegram.desktop
     mode: '0600'
   register: telegram
 
 - name: Update desktop applications  # noqa no-handler # todo: fix later
-  become: true
   tags: telegram
-  ansible.builtin.command: update-desktop-database /usr/share/applications
+  ansible.builtin.command: update-desktop-database ~/.local/share/applications
   when: telegram.changed
 
 - name: Postman
