@@ -1,15 +1,16 @@
 - name: install atom editor
+  tags: atom
   become: true
   ansible.builtin.apt:
     deb: https://atom.io/download/deb
 
 - name: atom gpu fix
   become: true
-  tags: telegram
+  tags: atom
   ansible.builtin.copy:
     src: files/atom.desktop
     dest: /usr/share/applications/atom.desktop
-    mode: '0600'
+    mode: '0664'
   notify: Update desktop applications
 
 # vscode

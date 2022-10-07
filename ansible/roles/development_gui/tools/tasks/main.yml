@@ -151,7 +151,7 @@
   ansible.builtin.copy:
     src: files/telegram128.png
     dest: /opt/Telegram/telegram128.png
-    mode: '0600'
+    mode: '0664'
 
 - name: Telegram app shortcut
   tags: telegram
@@ -159,7 +159,7 @@
   ansible.builtin.copy:
     src: files/telegram.desktop
     dest: /usr/share/applicationstelegram.desktop
-    mode: '0600'
+    mode: '0664'
   notify: Update desktop applications
 
 - name: Telegram startup
@@ -167,7 +167,7 @@
   ansible.builtin.copy:
     src: files/telegram.desktop
     dest: ~/.config/autostart
-    mode: '0600'
+    mode: '0664'
 
 - name: Postman
   tags: postman
