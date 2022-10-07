@@ -155,16 +155,19 @@
 
 - name: Telegram app shortcut
   tags: telegram
+  become: true
   ansible.builtin.copy:
     src: files/telegram.desktop
-    dest: ~/.local/share/applications/telegram.desktop
+    dest: /usr/share/applicationstelegram.desktop
     mode: '0600'
-  register: telegram
+  notify: Update desktop applications
 
-- name: Update desktop applications  # noqa no-handler # todo: fix later
+- name: Telegram startup
   tags: telegram
-  ansible.builtin.command: update-desktop-database ~/.local/share/applications
-  when: telegram.changed
+  ansible.builtin.copy:
+    src: files/telegram.desktop
+    dest: ~/.config/autostart
+    mode: '0600'
 
 - name: Postman
   tags: postman

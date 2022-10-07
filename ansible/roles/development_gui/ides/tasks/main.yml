@@ -3,6 +3,15 @@
   ansible.builtin.apt:
     deb: https://atom.io/download/deb
 
+- name: atom gpu fix
+  become: true
+  tags: telegram
+  ansible.builtin.copy:
+    src: files/atom.desktop
+    dest: /usr/share/applications/atom.desktop
+    mode: '0600'
+  notify: Update desktop applications
+
 # vscode
 - name: add microsoft GPG
   tags: vscode
