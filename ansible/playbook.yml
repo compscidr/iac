@@ -7,6 +7,7 @@
     - common/user
     - common/ssh
     - common/software
+    - common/i3
 
 - name: Tasks for LAN Hosts
   hosts: lan

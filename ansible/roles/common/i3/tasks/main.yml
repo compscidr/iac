@@ -1,0 +1,8 @@
+- name: install various tools
+  tags: common-tools
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - i3                      # window-manager
+      - playerctl               # play-pause, previous, next commands
+      - feh                     # wallpaper
