@@ -54,14 +54,14 @@
   tags: slack
   become: true
   ansible.builtin.apt:
-    deb: https://downloads.slack-edge.com/releases/linux/4.28.171/prod/x64/slack-desktop-4.28.171-amd64.deb
+    deb: https://downloads.slack-edge.com/releases/linux/4.28.182/prod/x64/slack-desktop-4.28.182-amd64.deb
 
 - name: start slack silently
   tags: slack
   ansible.builtin.copy:
     src: files/slack.desktop
     dest: ~/.config/autostart/slack.desktop
-    mode: '0600'
+    mode: '0644'
 
 # spotify
 - name: Install spotify apt keys
