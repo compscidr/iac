@@ -1,7 +1,7 @@
 [Desktop Entry]
 Encoding=UTF-8
 Name=Telegram
-Exec=/opt/Telegram/Telegram -- %u
+Exec=/opt/Telegram/Telegram -startintray -- %u
 Icon=/opt/Telegram/telegram128.png
 Type=Application
 Categories=Network;
