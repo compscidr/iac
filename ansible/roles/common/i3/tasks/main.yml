@@ -1,8 +1,24 @@
 - name: install various tools
-  tags: common-tools
+  tags: i3
   become: true
   ansible.builtin.apt:
     pkg:
       - i3                      # window-manager
       - playerctl               # play-pause, previous, next commands
       - feh                     # wallpaper
+      - arandr                  # gui tool for xrandr (multi-monitor)
+
+# currently from: https://imgur.com/a/2JEMhoy
+- name: wallpaper
+  tags: wallpaper
+  ansible.builtin.copy:
+    src: files/wallpaper.png
+    dest: ~/.Pictures/wallpaper.png
+    mode: '0600'
+
+- name: config
+  tags: i3
+  ansible.builtin.copy:
+    src: files/{{inventory_hostname}}
+    dest: ~/.config/i3/config
+    mode: '0600'
