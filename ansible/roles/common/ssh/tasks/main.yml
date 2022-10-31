@@ -65,3 +65,29 @@
       User git
       IdentityFile ~/.ssh/github_id_rsa
     marker: "# {mark} ANSIBLE MANAGED BLOCK github"
+
+- name: Add work key
+  become: true
+  tags: ssh
+  ansible.builtin.copy:
+    src: jason-test.pem
+    dest: /home/jason/.ssh/jason-test.pem
+    mode: '0600'
+    owner: jason
+    group: jason
+
+- name: Add work key to ssh/config
+  become: true
+  tags: ssh
+  ansible.builtin.blockinfile:
+    create: true
+    mode: '0600'
+    owner: jason
+    group: jason
+    path: "/home/jason/.ssh/config"
+    block: |
+      Host ec2-54-84-236-202.compute-1.amazonaws.com
+      Hostname ec2-54-84-236-202.compute-1.amazonaws.com
+      User ubuntu
+      IdentityFile ~/.ssh/jason-test.pem
+    marker: "# {mark} ANSIBLE MANAGED BLOCK github"
