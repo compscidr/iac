@@ -41,6 +41,7 @@
       - socat                   # sort of like nc but doesn't hang
       - sshfs                   # ssh mounts
       - iptables-persistent
+      - tcpstat
 
 - name: ensure python is python3 in ubuntu 20.04
   become: true

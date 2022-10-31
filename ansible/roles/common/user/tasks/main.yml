@@ -7,6 +7,13 @@
       - sudo
       - ssh-import-id
 
+- name: Ensure group "pcap" exists
+  tags: user
+  become: true
+  ansible.builtin.group:
+    name: pcap
+    state: present
+
 - name: Add the user 'jason'
   tags: user
   become: true
@@ -16,7 +23,7 @@
     comment: "Jason Ernst"
     shell: /bin/bash
     append: true
-    groups: sudo
+    groups: sudo,pcap
     skeleton: "/etc/skel"
     create_home: true
     update_password: always
