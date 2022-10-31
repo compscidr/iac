@@ -120,3 +120,28 @@
   tags: 1password
   ansible.builtin.apt:
     deb: https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', deb_architecture) | first }}/stable/1password-cli-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}-latest.deb
+
+# todo: figure out how to make this not reproduced
+- name: Run whoami without become.
+  tags: 1password
+  command: whoami
+  changed_when: false
+  become: false
+  register: whoami
+
+- name: Set a fact with the user name.
+  tags: 1password
+  set_fact:
+    login_user: "{{ whoami.stdout }}"
+
+# bash aliases for 1password cli
+- name: 1password bash aliases
+  tags: 1password
+  ansible.builtin.blockinfile:
+    path: "/home/{{ login_user }}/.bash_aliases"
+    block: |
+      alias op-signin='eval $(op signin)'
+      alias op-logout='op signout'
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: 0600
