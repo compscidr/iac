@@ -78,7 +78,7 @@
   tags: git
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://cli.github.com/packages {{ ansible_distribution_release }} main"
+    repo: "deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}] https://cli.github.com/packages {{ ansible_distribution_release }} main"
     state: present
   when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
 
@@ -110,6 +110,13 @@
   become: true
   uncompress:
     copy: no  # noqa yaml
-    src: https://github.com/cheat/cheat/releases/download/4.3.1/cheat-linux-amd64.gz
+    src: https://github.com/cheat/cheat/releases/download/4.3.1/cheat-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.gz
     dest: /usr/local/bin/cheat
     mode: '755'
+
+# https://developer.1password.com/docs/cli/get-started/
+- name: Install 1password cli
+  become: true
+  tags: 1password
+  ansible.builtin.apt:
+    deb: https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', deb_architecture) | first }}/stable/1password-cli-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}-latest.deb

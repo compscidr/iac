@@ -48,7 +48,7 @@
   become: true
   tags: packer
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    repo: "deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     state: present
 
 - name: Install Ansible, Vagrant, Packer and AWS CLI
@@ -122,7 +122,7 @@
   become: true
   tags: doctl
   ansible.builtin.unarchive:
-    src: https://github.com/digitalocean/doctl/releases/download/v1.66.0/doctl-1.66.0-linux-amd64.tar.gz
+    src: https://github.com/digitalocean/doctl/releases/download/v1.66.0/doctl-1.66.0-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz
     dest: /usr/local/bin
     remote_src: true
 

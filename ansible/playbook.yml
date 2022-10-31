@@ -1,26 +1,33 @@
 ---
 - name: Common Tasks for all Hosts
   hosts: all
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - compscidr.uncompress
     - compscidr.gpg
     - common/user
     - common/ssh
     - common/software
-    - common/i3
 
 - name: Tasks for LAN Hosts
   hosts: lan
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - common/lan
 
 - name: Tasks for WAN hosts
   hosts: all, !lan
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - common/wan
 
 - name: Non-GUI Development Software
   hosts: development
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - development/shell
     - development/ops
@@ -36,12 +43,17 @@
 
 - name: Development Software for GUIs
   hosts: development_gui
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - development_gui/ides
     - development_gui/tools
+    - development_gui/i3
 
 - name: Services for home.jasonernst.com
   hosts: home_jasonernst_com
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - home_jasonernst_com/plex
     - home_jasonernst_com/transmission
@@ -58,12 +70,16 @@
 
 - name: Services for ubuntu-desktop
   hosts: ubuntu-desktop
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - gh_actions/ipv6-docker
     - gh_actions/bump-jvm
 
 - name: Services for www.jasonernst.com
   hosts: www_jasonernst_com
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - web_common/nginx
     - web_common/letsencrypt
@@ -71,6 +87,8 @@
 
 - name: Services for lp.jasonernst.com
   hosts: lp_jasonernst_com
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - lp_jasonernst_com/grafana
     - livepeer/orchestrator
@@ -78,6 +96,8 @@
 
 - name: Services for ombi.jasonernst.com
   hosts: ombi_jasonernst_com
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     # enable these when ombi moves to its own server
     # - web_common/nginx
@@ -86,12 +106,16 @@
 
 - name: AMD GPU related tasks
   hosts: amd
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - lolminer/amd
     - livepeer/transcoder_cpu
 
 - name: Nvidia GPU related tasks
   hosts: nvidia
+  vars_files:
+    - vars/deb_arch.yml
   roles:
     - lolminer/nvidia
     - livepeer/transcoder_gpu
