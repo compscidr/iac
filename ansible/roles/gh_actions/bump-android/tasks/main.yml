@@ -17,7 +17,7 @@
     env:
       ACCESS_TOKEN: "{{ gh_pat }}"
       DISABLE_AUTO_UPDATE: "true"
-      RUNNER_NAME_PREFIX: "bump-android"
+      RUNNER_NAME_PREFIX: "bump-android-jason"
       RUNNER_WORKDIR: /tmp/bump
       RUNNER_GROUP: default
       REPO_URL: https://github.com/BumpApp/hop-poc
