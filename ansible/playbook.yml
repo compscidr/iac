@@ -63,6 +63,7 @@
     - home_jasonernst_com/radarr
     - home_jasonernst_com/rust
     - home_jasonernst_com/honeygain
+    - home_jasonernst_com/sabnzbd
     - gh_actions/ipv6-docker
     - gh_actions/bump-jvm
     - gh_actions/bump-android
