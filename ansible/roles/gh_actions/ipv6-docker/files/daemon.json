@@ -1,5 +1,5 @@
 {
   "ipv6": true,
-  "fixed-cidr-v6": "2001:db8:1::/64",
+  "fixed-cidr-v6": "fd00:dead:beef::/48",
   "log-driver": "journald"
 }

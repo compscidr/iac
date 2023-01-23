@@ -28,8 +28,6 @@
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "/home/jason/.android:/root/.android"
-    networks:
-      - name: network_ipv6_one
     restart_policy: unless-stopped
     privileged: true
     env:
@@ -74,8 +72,6 @@
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "/home/jason/.android:/root/.android"
-    networks:
-      - name: network_ipv6_one
     restart_policy: unless-stopped
     privileged: true
     env:
@@ -86,8 +82,6 @@
       RUNNER_GROUP: default
       REPO_URL: "https://github.com/{{ item.repo }}"
       LABELS: "self-hosted"
-    # links:
-    #   - "android-emulator-hello-java"
   loop:
     - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml
     - { name: 'hello-kotlin-android', repo: 'compscidr/hello-kotlin-android' }  # noqa yaml
