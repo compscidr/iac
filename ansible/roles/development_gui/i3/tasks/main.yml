@@ -17,10 +17,10 @@
       - polybar
 
 # have to use the snap version because the apt version segfaults
-- name: install color-picker
-  community.general.snap:
-    name: color-picker
-    state: present
+# - name: install color-picker
+#   community.general.snap:
+#     name: color-picker
+#     state: present
 
 # currently from: https://imgur.com/a/2JEMhoy
 - name: wallpaper

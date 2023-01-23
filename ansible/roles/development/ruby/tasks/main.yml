@@ -1,10 +1,10 @@
-- name: update apt and install ruby
-  tags: ruby
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    name: ruby
-    state: present
+# - name: update apt and install ruby
+#   tags: ruby
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#     name: ruby
+#     state: present
 
 - name: Create ruby gems folder
   tags: ruby

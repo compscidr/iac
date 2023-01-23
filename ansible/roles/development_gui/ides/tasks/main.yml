@@ -1,8 +1,8 @@
-- name: install atom editor
-  tags: atom
-  become: true
-  ansible.builtin.apt:
-    deb: https://atom.io/download/deb
+# - name: install atom editor
+#   tags: atom
+#   become: true
+#   ansible.builtin.apt:
+#     deb: https://atom.io/download/deb
 
 - name: atom gpu fix
   become: true
@@ -21,27 +21,27 @@
     url: https://packages.microsoft.com/keys/microsoft.asc
     state: present
 
-- name: add microsoft package repository
-  tags: vscode
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}] https://packages.microsoft.com/repos/code stable main"
-    state: present
-    filename: vscode
-
-- name: update apt and install vscode
-  tags: vscode
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    name: code
-    state: present
-
-- name: Remove duplicate microsoft package repository
-  become: true
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/ackages_microsoft_com_repos_code.list
-    state: absent
+# - name: add microsoft package repository
+#   tags: vscode
+#   become: true
+#   ansible.builtin.apt_repository:
+#     repo: "deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}] https://packages.microsoft.com/repos/code stable main"
+#     state: present
+#     filename: vscode
+#
+# - name: update apt and install vscode
+#   tags: vscode
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#     name: code
+#     state: present
+#
+# - name: Remove duplicate microsoft package repository
+#   become: true
+#   ansible.builtin.file:
+#     path: /etc/apt/sources.list.d/ackages_microsoft_com_repos_code.list
+#     state: absent
 
 - name: Ensure jetbrains toolbox is installed on the target system
   ansible.builtin.include_role:

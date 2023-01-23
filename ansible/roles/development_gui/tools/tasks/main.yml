@@ -64,28 +64,28 @@
     mode: '0644'
 
 # spotify
-- name: Install spotify apt keys
-  tags: spotify
-  become: true
-  ansible.builtin.apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: F9A211976ED662F00E59361E5E3C45D7B312C643
-    state: present
-
-- name: Install spotify apt repo
-  tags: spotify
-  become: true
-  ansible.builtin.apt_repository:
-    repo: deb http://repository.spotify.com stable non-free
-    state: present
-
-- name: Install spotify
-  tags: spotify
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    name: spotify-client
-    state: present
+# - name: Install spotify apt keys
+#   tags: spotify
+#   become: true
+#   ansible.builtin.apt_key:
+#     keyserver: keyserver.ubuntu.com
+#     id: F9A211976ED662F00E59361E5E3C45D7B312C643
+#     state: present
+#
+# - name: Install spotify apt repo
+#   tags: spotify
+#   become: true
+#   ansible.builtin.apt_repository:
+#     repo: deb http://repository.spotify.com stable non-free
+#     state: present
+#
+# - name: Install spotify
+#   tags: spotify
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#     name: spotify-client
+#     state: present
 
 # texmaker
 - name: install texmaker
@@ -136,13 +136,13 @@
     repo: "deb https://updates.signal.org/desktop/apt xenial main"
     state: present
 
-- name: Install signal
-  tags: signal
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    name: signal-desktop
-    state: present
+# - name: Install signal
+#   tags: signal
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#     name: signal-desktop
+#     state: present
 
 # telegram:
 - name: Download and install telegram
