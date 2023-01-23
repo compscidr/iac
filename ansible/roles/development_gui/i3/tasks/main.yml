@@ -56,10 +56,20 @@
 # wget -qO - https://github.com/PRATAP-KUMAR/ubuntu-gdm-set-background/archive/main.tar.gz | tar zx --strip-components=1 ubuntu-gdm-set-background-main/ubuntu-gdm-set-background
 # sudo ./ubuntu-gdm-set-background --image ~/Pictures/wallpaper.png
 
+- name: Create ~/.config/i3 directory if it does not exist
+  tags: config/autostart
+  become_user: jason
+  ansible.builtin.file:
+    path: ~/.config/i3
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
+
 - name: config
   tags: i3
   ansible.builtin.copy:
-    src: files/{{inventory_hostname}}
+    src: files/config.{{inventory_hostname}}
     dest: ~/.config/i3/config
     mode: '0600'
 
