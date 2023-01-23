@@ -106,21 +106,21 @@
     # - web_common/letsencrypt
     - ombi_jasonernst_com/ombi
 
-- name: AMD GPU related tasks
-  hosts: amd
-  vars_files:
-    - vars/deb_arch.yml
-  roles:
-    - lolminer/amd
-    - livepeer/transcoder_cpu
+# - name: AMD GPU related tasks
+#   hosts: amd
+#   vars_files:
+#     - vars/deb_arch.yml
+#   roles:
+#     - lolminer/amd
+#     - livepeer/transcoder_cpu
 
-- name: Nvidia GPU related tasks
-  hosts: nvidia
-  vars_files:
-    - vars/deb_arch.yml
-  roles:
-    - lolminer/nvidia
-    - livepeer/transcoder_gpu
+# - name: Nvidia GPU related tasks
+#   hosts: nvidia
+#   vars_files:
+#     - vars/deb_arch.yml
+#   roles:
+#     - lolminer/nvidia
+#     - livepeer/transcoder_gpu
 
 # this is the only computer that seems to be fast enough to keep up to the network
 # tried previously on ubuntu-desktop and ubuntu-server, but no dice.
