@@ -6,10 +6,10 @@
     state: present
     update_cache: true
 
-- name: update apt and install zig
-  tags: zig
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    name: zig
-    state: present
+# - name: update apt and install zig
+#   tags: zig
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#     name: zig
+#     state: present

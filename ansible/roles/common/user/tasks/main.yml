@@ -106,3 +106,14 @@
     mode: 0600
     owner: "{{ login_user }}"
     group: "{{ login_user }}"
+
+
+- name: Create ~/.config/autostart directory if it does not exist
+  tags: config/autostart
+  become_user: jason
+  ansible.builtin.file:
+    path: ~/.config/autostart
+    state: directory
+    mode: '0700'
+    owner: jason
+    group: jason
