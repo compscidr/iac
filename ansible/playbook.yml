@@ -39,7 +39,7 @@
     - development/ziglang
     - development/ruby
     - development/rust
-    - tunnels
+#    - tunnels
 
 - name: Development Software for GUIs
   hosts: development_gui
