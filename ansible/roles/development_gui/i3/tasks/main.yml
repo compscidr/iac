@@ -70,7 +70,7 @@
 - name: config
   tags: i3
   ansible.builtin.copy:
-    src: files/config.{{inventory_hostname}}
+    src: "files/config.{{ inventory_hostname }}"
     dest: ~/.config/i3/config
     mode: '0600'
 
