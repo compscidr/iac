@@ -44,4 +44,4 @@
     remote_src: true
     dest: ~/.fonts/
     include:
-    - '*.otf'
+      - '*.otf'
