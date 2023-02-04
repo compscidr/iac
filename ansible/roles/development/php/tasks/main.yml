@@ -6,3 +6,4 @@
       - php-xml
       - php-curl
       - php-mysql
+      - php-pdo-sqlite
