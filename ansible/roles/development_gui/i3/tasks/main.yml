@@ -88,7 +88,7 @@
     remote_src: true
     dest: ~/.fonts/
     include:
-    - '*.otf'
+      - '*.otf'
 
 ## todo: setup the picom config for transparent
 
@@ -108,5 +108,5 @@
   ansible.builtin.git:
     repo: https://github.com/Anachron/i3blocks.git
     dest: /usr/share/i3blocks-improved
-    single_branch: yes
+    single_branch: true
     version: master
