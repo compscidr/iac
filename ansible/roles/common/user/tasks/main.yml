@@ -18,9 +18,9 @@
   tags: user
   become: true
   ansible.builtin.user:
-    name: "jason"
+    name: "{{ username }}"
     password: "{{ vault_password|password_hash('sha512') }}"
-    comment: "Jason Ernst"
+    comment: "{{ fullname }}"
     shell: /bin/bash
     append: true
     groups: sudo,pcap
