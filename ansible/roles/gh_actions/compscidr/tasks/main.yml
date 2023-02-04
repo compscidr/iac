@@ -27,7 +27,7 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/home/jason/.android:/root/.android"
+      - "/home/{{ username }}/.android:/root/.android"
     restart_policy: unless-stopped
     privileged: true
     env:
@@ -71,7 +71,7 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/home/jason/.android:/root/.android"
+      - "/home/{{ username }}/.android:/root/.android"
     restart_policy: unless-stopped
     privileged: true
     env:

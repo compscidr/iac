@@ -49,17 +49,17 @@
   tags: livepeer
   ansible.builtin.file:
     mode: '700'
-    path: /home/jason/.lpData/arbitrum-one-mainnet/keystore
+    path: /home/{{ username }}/.lpData/arbitrum-one-mainnet/keystore
     state: directory
-    owner: jason
-    group: jason
+    owner: {{ username }}
+    group: {{ username }}
     recurse: true
 
 - name: Copy Ethereum Wallet to Livepeer
   tags: livepeer
   ansible.builtin.copy:
     src: files/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
-    dest: /home/jason/.lpData/arbitrum-one-mainnet/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
+    dest: /home/{{ username }}/.lpData/arbitrum-one-mainnet/keystore/UTC--2016-03-12T21-58-48.509345400Z--74ba897f65f04008d8eff364efcc54b0a20e17eb
     mode: '0600'
     owner: jason
     group: jason

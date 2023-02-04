@@ -2,11 +2,11 @@
   tags: ssh
   become: true
   ansible.builtin.file:
-    path: /home/jason/.ssh
+    path: /home/{{ username }}/.ssh
     state: directory
     mode: '0700'
-    owner: jason
-    group: jason
+    owner: {{ username }}
+    group: {{ username }}
 
 # enables the target to ssh into other machines I've deployed via ssh key
 # ie: no password required
@@ -15,29 +15,29 @@
   become: true
   ansible.builtin.copy:
     src: id_rsa
-    dest: /home/jason/.ssh/id_rsa
+    dest: /home/{{ username }}/.ssh/id_rsa
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: {{ username }}
+    group: {{ username }}
 
 - name: ssh id_rsa.pub
   become: true
   tags: ssh
   ansible.builtin.copy:
     src: id_rsa.pub
-    dest: /home/jason/.ssh/id_rsa.pub
+    dest: /home/{{ username }}/.ssh/id_rsa.pub
     mode: '0644'
-    owner: jason
-    group: jason
+    owner: {{ username }}
+    group: {{ username }}
 
 - name: ssh github_id_rsa
   become: true
   tags: ssh
   ansible.builtin.copy:
     src: github_id_rsa
-    dest: /home/jason/.ssh/github_id_rsa
+    dest: /home/{{ username }}/.ssh/github_id_rsa
     mode: '0600'
-    owner: jason
+    owner: {{ username }}
     group: jason
 
 - name: ssh github_id_rsa.pub

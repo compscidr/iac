@@ -10,13 +10,13 @@
     volumes:
       - "/dev/bus/usb:/dev/bus/usb"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/home/jason/.android:/root/.android"
+      - "/home/{{ username }}/.android:/root/.android"
     restart_policy: unless-stopped
     privileged: true
     env:
       ACCESS_TOKEN: "{{ gh_pat }}"
       DISABLE_AUTO_UPDATE: "true"
-      RUNNER_NAME_PREFIX: "bump-android-jason"
+      RUNNER_NAME_PREFIX: "bump-android-{{ username }}"
       RUNNER_WORKDIR: /tmp/bump
       RUNNER_GROUP: default
       REPO_URL: https://github.com/BumpApp/hop-poc

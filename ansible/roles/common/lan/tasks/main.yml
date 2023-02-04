@@ -3,11 +3,11 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    path: "/home/jason/.ssh/config"
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host {{ item }}
       Hostname {{ item }}
-      User jason
+      User {{ username }}
       IdentityFile ~/.ssh/github_id_rsa
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:
@@ -18,11 +18,11 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    path: "/home/jason/.ssh/config"
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host {{ item }}
       Hostname {{ item }}
-      User jason
+      User {{ username }}
       IdentityFile ~/.ssh/id_rsa
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:

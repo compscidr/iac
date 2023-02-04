@@ -4,14 +4,14 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: jason
-    group: jason
-    path: "/home/jason/.ssh/config"
+    owner: {{ username }}
+    group: {{ username }}
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host {{ item }}
       Hostname {{ item }}
       ProxyJump home.jasonernst.com
-      User jason
+      User {{ username }}
       IdentityFile ~/.ssh/github_id_rsa
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
   with_inventory_hostnames:
@@ -23,12 +23,12 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: jason
-    group: jason
-    path: "/home/jason/.ssh/config"
+    owner: {{ username }}
+    group: {{ username }}
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host home.jasonernst.com
       Hostname home.jasonernst.com
-      User jason
+      User {{ username }}
       IdentityFile ~/.ssh/github_id_rsa
     marker: "# {mark} ANSIBLE MANAGED BLOCK home.jasonernst.com"
