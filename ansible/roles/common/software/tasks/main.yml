@@ -103,7 +103,7 @@
   with_items:
     - { name: "user.name", value: {{ fullname }} }  # noqa yaml
     - { name: "user.email", value: {{ email }} }  # noqa yaml
-    - { name: "user.signingkey", value: { signingkey }} }  # noqa yaml
+    - { name: "user.signingkey", value: {{ signingkey }} }  # noqa yaml
     - { name: "pull.rebase", value: "false" }  # noqa yaml
     - { name: "init.defaultBranch", value: "main" } # noqa yaml
 
