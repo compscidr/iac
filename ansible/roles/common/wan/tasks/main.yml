@@ -4,8 +4,8 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
     path: "/home/{{ username }}/.ssh/config"
     block: |
       Host {{ item }}
@@ -23,8 +23,8 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
     path: "/home/{{ username }}/.ssh/config"
     block: |
       Host home.jasonernst.com

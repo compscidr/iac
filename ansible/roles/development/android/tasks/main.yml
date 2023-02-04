@@ -6,9 +6,9 @@
       - adb
       - android-sdk-platform-tools-common
 
-- name: adding jason to group plugdev for adb
+- name: adding {{ username }} to group plugdev for adb
   become: true
   ansible.builtin.user:
-    name: jason
+    name: "{{ username }}"
     groups: plugdev
     append: true

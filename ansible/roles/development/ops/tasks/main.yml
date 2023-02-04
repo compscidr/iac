@@ -81,42 +81,42 @@
 - name: Update bashrc debmaintainer
   tags: debmaintainer
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
   with_items:
-    - 'DEBEMAIL="ernstjason1@gmail.com"'
+    - 'DEBEMAIL="{{ email }}"'
     - 'DEBFULLNAME="{{ fullname  }}"'
 
 - name: Create AWS config directory
   tags: aws
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     path: ~/.aws
     state: directory
     mode: '0700'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Copy AWS credentials file
-  become_user: jason
+  become_user: "{{ username }}"
   tags: aws
   ansible.builtin.copy:
     src: files/aws/credentials
     dest: ~/.aws/credentials
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Copy AWS config file
-  become_user: jason
+  become_user: "{{ username }}"
   tags: aws
   ansible.builtin.copy:
     src: files/aws/config
     dest: ~/.aws/config
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Install dotcl (digital ocean ctl)
   become: true
@@ -128,28 +128,28 @@
 
 - name: Create doctl config directory
   tags: doctl
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     path: ~/.config/doctl
     state: directory
     mode: '0700'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Copy doctl config file
-  become_user: jason
+  become_user: "{{ username }}"
   tags: doctl
   ansible.builtin.copy:
     src: files/doctl/config.yaml
     dest: ~/.config/doctl/config.yaml
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 # bashrc updates DIGITALOCEAN_TOKEN
 - name: Update bashrc DIGITALOCEAN_TOKEN
   tags: doctl
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "export DIGITALOCEAN_TOKEN={{ do_token }}"

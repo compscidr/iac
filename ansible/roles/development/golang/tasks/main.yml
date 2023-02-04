@@ -23,8 +23,8 @@
 - name: Update bashrc go
   tags: go
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
   with_items:
     - "export GOPATH=$HOME/go"

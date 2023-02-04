@@ -41,14 +41,14 @@
   tags: wallpaper
   ansible.builtin.dconf:
     key: "/org/gnome/desktop/background/picture-uri"
-    value: "'/home/jason/Pictures/wallpaper.png'"
+    value: "'/home/{{ username }}/Pictures/wallpaper.png'"
     state: present
 
 - name: wayland-lockscreen wallpaper set
   tags: wallpaper
   ansible.builtin.dconf:
     key: "/org/gnome/desktop/screensaver/picture-uri"
-    value: "'/home/jason/Pictures/wallpaper.png'"
+    value: "'/home/{{ username }}/Pictures/wallpaper.png'"
     state: present
 
 ## todo: make this run if the wallpaper changes:
@@ -58,13 +58,13 @@
 
 - name: Create ~/.config/i3 directory if it does not exist
   tags: config/autostart
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     path: ~/.config/i3
     state: directory
     mode: '0700'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: config
   tags: i3

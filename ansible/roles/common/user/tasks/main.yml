@@ -32,21 +32,21 @@
   tags: user
   become: true
   ansible.builtin.file:
-    path: /home/{{ username }}/.ssh
+    path: "/home/{{ username }}/.ssh"
     state: directory
     mode: '0700'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Import SSH authorized key
   tags: user
   become: true
   ansible.builtin.copy:
     src: files/ssh/authorized_keys
-    dest: /home/{{ username }}/.ssh/authorized_keys
+    dest: /home/{{ username }}/.ssh/authorized_keys"
     mode: '0600'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 # pgp keys see: https://github.com/netson/ansible-gpg-key
 # and https://github.com/cpmills1975/ansible-gpg-import-module
@@ -59,10 +59,10 @@
     state: directory
     mode: '0700'
     owner: "{{ username }}"
-    group: jason
+    group: "{{ username }}"
 
 - name: Copy Public GPG Key
-  become_user: jason
+  become_user: "{{ username }}"
   tags: gpg
   ansible.builtin.copy:
     src: files/gpg/mygpgkey_pub.gpg

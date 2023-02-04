@@ -5,8 +5,8 @@
     path: /home/{{ username }}/.ssh
     state: directory
     mode: '0700'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 # enables the target to ssh into other machines I've deployed via ssh key
 # ie: no password required
@@ -15,40 +15,40 @@
   become: true
   ansible.builtin.copy:
     src: id_rsa
-    dest: /home/{{ username }}/.ssh/id_rsa
+    dest: "/home/{{ username }}/.ssh/id_rsa"
     mode: '0600'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: ssh id_rsa.pub
   become: true
   tags: ssh
   ansible.builtin.copy:
     src: id_rsa.pub
-    dest: /home/{{ username }}/.ssh/id_rsa.pub
+    dest: "/home/{{ username }}/.ssh/id_rsa.pub"
     mode: '0644'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: ssh github_id_rsa
   become: true
   tags: ssh
   ansible.builtin.copy:
     src: github_id_rsa
-    dest: /home/{{ username }}/.ssh/github_id_rsa
+    dest: "/home/{{ username }}/.ssh/github_id_rsa"
     mode: '0600'
-    owner: {{ username }}
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: ssh github_id_rsa.pub
   become: true
   tags: ssh
   ansible.builtin.copy:
     src: github_id_rsa.pub
-    dest: /home/jason/.ssh/github_id_rsa.pub
+    dest: "/home/{{ username }}/.ssh/github_id_rsa.pub"
     mode: '0644'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Add github to ssh/config
   become: true
@@ -56,9 +56,9 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: jason
-    group: jason
-    path: "/home/jason/.ssh/config"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host github.com
       Hostname github.com
@@ -71,10 +71,10 @@
   tags: ssh
   ansible.builtin.copy:
     src: jason-test.pem
-    dest: /home/jason/.ssh/jason-test.pem
+    dest: "/home/{{ username }}/.ssh/jason-test.pem"
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Add work key to ssh/config
   become: true
@@ -82,9 +82,9 @@
   ansible.builtin.blockinfile:
     create: true
     mode: '0600'
-    owner: jason
-    group: jason
-    path: "/home/jason/.ssh/config"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    path: "/home/{{ username }}/.ssh/config"
     block: |
       Host ec2-54-84-236-202.compute-1.amazonaws.com
       Hostname ec2-54-84-236-202.compute-1.amazonaws.com

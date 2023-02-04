@@ -9,11 +9,11 @@
   tags: arbitrum
   become: true
   ansible.builtin.file:
-    path: /home/{{ username }}/.arbitrum
+    path: "/home/{{ username }}/.arbitrum"
     state: directory
     mode: '0700'
-    owner: {{ username }}
-    group: {{ username }}
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: Copy Arbitrum Wallet to Fullnode
   tags: arbitrum

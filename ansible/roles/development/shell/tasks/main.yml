@@ -6,13 +6,13 @@
 
 # nano
 - name: install nano rc
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.copy:
     src: files/.nanorc
     dest: ~/.nanorc
     mode: '644'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 # better terminal + tmux
 - name: install command line apt packages (fish, powerline, tmux, byobu)
@@ -26,29 +26,29 @@
       - byobu
 
 - name: tmux config
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.git:
     repo: https://github.com/gpakosz/.tmux.git
     dest: ~/.tmux
     version: 3bfec1a25a8a66dd251d37f4efcd6a0e9f30a6da
 
 - name: tmux link
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     src: ~/.tmux/.tmux.conf
     dest: ~/.tmux.conf
     state: link
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: tmux config local
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.copy:
     src: files/.tmux.conf.local
     dest: ~/.tmux.conf.local
     mode: '644'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 - name: install oh-my-fish
   ansible.builtin.git:
@@ -57,7 +57,7 @@
     update: true
     version: 0b1396ad7962073fa25615bf03c43b53eddc2d56
   become: true
-  become_user: jason
+  become_user: "{{ username }}"
 
 - name: install oh-my-fish themes and plugins
   ansible.builtin.command: >
@@ -65,36 +65,36 @@
   args:
     creates: ~/.local/share/omf/themes/default/
   become: true
-  become_user: jason
+  become_user: "{{ username }}"
 
 - name: install bob the fish theme
   ansible.builtin.command: fish -c "omf install bobthefish"
   args:
-    creates: /home/jason/.local/share/omf/themes/bobthefish/
+    creates: "/home/{{ username }}/.local/share/omf/themes/bobthefish/"
   become: true
-  become_user: jason
+  become_user: "{{ username }}"
 
 - name: Create fish functions directory
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     mode: '755'
-    path: /home/jason/.config/fish/functions
+    path: "/home/{{ username }}/.config/fish/functions"
     state: directory
 
 - name: Add fish keybindings for fzf
   ansible.builtin.lineinfile:
     mode: '755'
-    dest: /home/jason/.config/fish/functions/fish_user_key_bindings.fish
-    owner: jason
+    dest: "/home/{{ username }}/.config/fish/functions/fish_user_key_bindings.fish"
+    owner: "{{ username }}"
     create: true
     line: "fzf_key_bindings"
 
 - name: install forgit for fish
   ansible.builtin.command: fish -c "omf install https://github.com/wfxr/forgit"
   args:
-    creates: /home/jason/.local/share/omf/pkg/fo
+    creates: "/home/{{ username }}/.local/share/omf/pkg/fo"
   become: true
-  become_user: jason
+  become_user: "{{ username }}"
 
 # bashrc updates for fzf (see /usr/share/doc/fzf/README.Debian)
 # and forgit: https://github.com/wfxr/forgit
@@ -102,8 +102,8 @@
 - name: Update bashrc for various tools
   tags: bashrc
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
   with_items:
     - "source /usr/share/doc/fzf/examples/key-bindings.bash"
@@ -116,8 +116,8 @@
 - name: Update bashrc for various tools Ubuntu 20.04
   tags: fzf
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
   with_items:
     - "source /usr/share/doc/fzf/examples/completion.bash"
@@ -126,8 +126,8 @@
 - name: Update bashrc for various tools Ubuntu 22.04
   tags: fzf
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
   with_items:
     - "source /usr/share/bash-completion/completions/fzf"
@@ -136,8 +136,8 @@
 - name: Remove bashrc lines for various tools upon upgrade to 22.04
   tags: fzf
   ansible.builtin.lineinfile:
-    dest: /home/jason/.bashrc
-    owner: jason
+    dest: "/home/{{ username }}/.bashrc"
+    owner: "{{ username }}"
     line: "{{ item }}"
     state: absent
   with_items:
