@@ -53,12 +53,12 @@
 # and https://github.com/brandonkal/ansible-gpg
 - name: Create gpg directory if it does not exist
   tags: gpg
-  become_user: {{ username }}
+  become_user: "{{ username }}"
   ansible.builtin.file:
     path: ~/.gpg
     state: directory
     mode: '0700'
-    owner: {{ username }}
+    owner: "{{ username }}"
     group: jason
 
 - name: Copy Public GPG Key
@@ -68,35 +68,22 @@
     src: files/gpg/mygpgkey_pub.gpg
     dest: ~/.gpg/mygpgkey_pub.gpg
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
   notify:
     - Import Public GPG Key
 
 - name: Copy Private GPG Key
   tags: gpg
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.copy:
     src: files/gpg/mygpgkey_sec.gpg
     dest: ~/.gpg/mygpgkey_sec.gpg
     mode: '0600'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
   notify:
     - Import Private PGP Key
-
-# todo: figure out how to make this not reproduced
-- name: Run whoami without become.
-  tags: bash_alias
-  command: whoami
-  changed_when: false
-  become: false
-  register: whoami
-
-- name: Set a fact with the user name.
-  tags: bash_alias
-  set_fact:
-    login_user: "{{ whoami.stdout }}"
 
 - name: Ensure bash aliases file exists
   tags: bash_alias
@@ -110,10 +97,10 @@
 
 - name: Create ~/.config/autostart directory if it does not exist
   tags: config/autostart
-  become_user: jason
+  become_user: "{{ username }}"
   ansible.builtin.file:
     path: ~/.config/autostart
     state: directory
     mode: '0700'
-    owner: jason
-    group: jason
+    owner: "{{ username }}"
+    group: "{{ username }}"
