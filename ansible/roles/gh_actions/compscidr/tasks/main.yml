@@ -40,6 +40,7 @@
       LABELS: "self-hosted"
       RUNNER_SCOPE: "org"
       ORG_NAME: "grape-networking"
+      HOST_NAME: {{ inventory_hostname }}
     # links:
     #   - "android-emulator-grape"
 
@@ -82,6 +83,7 @@
       RUNNER_GROUP: default
       REPO_URL: "https://github.com/{{ item.repo }}"
       LABELS: "self-hosted"
+      HOST_NAME: {{ inventory_hostname }}
   loop:
     - { name: 'hello-java-android', repo: 'compscidr/hello-java-android' }  # noqa yaml
     - { name: 'hello-kotlin-android', repo: 'compscidr/hello-kotlin-android' }  # noqa yaml

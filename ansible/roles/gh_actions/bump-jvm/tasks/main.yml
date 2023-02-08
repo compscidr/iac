@@ -22,3 +22,4 @@
       LABELS: "jvm"
       RUNNER_SCOPE: "org"
       ORG_NAME: "BumpApp"
+      HOST_NAME: {{ inventory_hostname }}
