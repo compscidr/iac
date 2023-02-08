@@ -23,4 +23,4 @@
       LABELS: "android"
       RUNNER_SCOPE: "org"
       ORG_NAME: "BumpApp"
-      HOST_NAME: {{ inventory_hostname }}
+      HOST_NAME: "{{ inventory_hostname }}"
