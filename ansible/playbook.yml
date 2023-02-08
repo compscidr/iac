@@ -3,6 +3,7 @@
   hosts: all
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - compscidr.uncompress
     - compscidr.gpg
@@ -14,6 +15,7 @@
   hosts: lan
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - common/lan
 
@@ -21,6 +23,7 @@
   hosts: all, !lan
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - common/wan
 
@@ -45,6 +48,7 @@
   hosts: development_gui
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - development_gui/ides
     - development_gui/tools
@@ -54,6 +58,7 @@
   hosts: home_jasonernst_com
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - home_jasonernst_com/plex
     - home_jasonernst_com/transmission
@@ -73,6 +78,7 @@
   hosts: ubuntu-desktop
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - gh_actions/ipv6-docker
     - gh_actions/bump-jvm
@@ -82,6 +88,7 @@
   hosts: www_jasonernst_com
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - web_common/nginx
     - web_common/letsencrypt
@@ -91,6 +98,7 @@
   hosts: lp_jasonernst_com
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - lp_jasonernst_com/grafana
     - livepeer/orchestrator
@@ -100,6 +108,7 @@
   hosts: ombi_jasonernst_com
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     # enable these when ombi moves to its own server
     # - web_common/nginx
