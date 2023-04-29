@@ -1,5 +1,5 @@
 - name: Create Rust Directories
-  tags: rust
+  tags: rust-game
   become: true
   ansible.builtin.file:
     path: /etc/rust
@@ -9,7 +9,7 @@
     group: root
 
 - name: Copy Rust config to host
-  tags: rust
+  tags: rust-game
   become: true
   ansible.builtin.copy:
     src: rust.env
@@ -19,7 +19,7 @@
     group: root
 
 - name: Deploy Rust
-  tags: rust
+  tags: rust-game
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
