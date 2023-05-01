@@ -5,7 +5,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: transmission
-    image: haugene/transmission-openvpn:4.3
+    image: haugene/transmission-openvpn:5.0
     pull: true
     volumes: /storage/downloads:/data
     devices:
