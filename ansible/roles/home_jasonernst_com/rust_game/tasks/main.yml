@@ -30,10 +30,10 @@
       - "/etc/rust:/steamcmd/rust:rw"
     env_file: /etc/rust/rust.env
     ports:
-      - "8080:8080"
       - "28015:28015"
       - "28015:28015/udp"
       - "28016:28016"
+      - "28082:28082"
     env:
       TZ: "America/Los_Angeles"
       PUID: "1000"
