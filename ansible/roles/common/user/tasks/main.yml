@@ -88,11 +88,11 @@
 - name: Ensure bash aliases file exists
   tags: bash_alias
   ansible.builtin.file:
-    path: "/home/{{ login_user }}/.bash_aliases"
+    path: "/home/{{ username }}/.bash_aliases"
     state: touch
     mode: 0600
-    owner: "{{ login_user }}"
-    group: "{{ login_user }}"
+    owner: "{{ username }}"
+    group: "{{ username }}"
 
 
 - name: Create ~/.config/autostart directory if it does not exist
