@@ -36,7 +36,6 @@
       RUNNER_NAME_PREFIX: grape
       RUNNER_WORKDIR: /tmp/grape
       RUNNER_GROUP: default
-      REPO_URL: https://github.com/compscidr/grape-networking-java
       LABELS: "self-hosted"
       RUNNER_SCOPE: "org"
       ORG_NAME: "grape-networking"

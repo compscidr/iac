@@ -19,8 +19,7 @@
       RUNNER_NAME_PREFIX: "bump-android-{{ username }}"
       RUNNER_WORKDIR: /tmp/bump
       RUNNER_GROUP: default
-      REPO_URL: https://github.com/BumpApp/hop-poc
-      LABELS: "android"
+      LABELS: "android,{{ username }}"
       RUNNER_SCOPE: "org"
       ORG_NAME: "BumpApp"
       HOST_NAME: "{{ inventory_hostname }}"

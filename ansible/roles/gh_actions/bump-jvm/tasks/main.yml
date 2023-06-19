@@ -18,8 +18,7 @@
       RUNNER_NAME_PREFIX: "bump-jvm-{{ username }}"
       RUNNER_WORKDIR: /tmp/bump
       RUNNER_GROUP: default
-      REPO_URL: https://github.com/BumpApp/hop-poc
-      LABELS: "jvm"
+      LABELS: "jvm,{{ username }}"
       RUNNER_SCOPE: "org"
       ORG_NAME: "BumpApp"
       HOST_NAME: "{{ inventory_hostname }}"
