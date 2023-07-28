@@ -55,7 +55,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.37
+    image: compscidr/goblog:v0.1.39
     volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/prod/database.db
@@ -78,7 +78,7 @@
     ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.1.37
+    image: compscidr/goblog:v0.1.39
     volumes: /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/staging/database.db
