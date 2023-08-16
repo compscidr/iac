@@ -42,6 +42,7 @@
       - sshfs                   # ssh mounts
       - iptables-persistent
       - tcpstat
+      - fail2ban                # https://help.ubuntu.com/community/Fail2ban
 
 - name: ensure python is python3 in ubuntu 20.04
   become: true
