@@ -1,50 +1,9 @@
-# - name: install atom editor
-#   tags: atom
-#   become: true
-#   ansible.builtin.apt:
-#     deb: https://atom.io/download/deb
-
-- name: atom gpu fix
-  become: true
-  tags: atom
-  ansible.builtin.copy:
-    src: files/atom.desktop
-    dest: /usr/share/applications/atom.desktop
-    mode: '0664'
-  notify: Update desktop applications
-
-# vscode
-- name: add microsoft GPG
-  tags: vscode
-  become: true
-  ansible.builtin.apt_key:
-    url: https://packages.microsoft.com/keys/microsoft.asc
-    state: present
-
-# - name: add microsoft package repository
-#   tags: vscode
-#   become: true
-#   ansible.builtin.apt_repository:
-#     repo: "deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}] https://packages.microsoft.com/repos/code stable main"
-#     state: present
-#     filename: vscode
-#
-# - name: update apt and install vscode
-#   tags: vscode
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: code
-#     state: present
-#
-# - name: Remove duplicate microsoft package repository
-#   become: true
-#   ansible.builtin.file:
-#     path: /etc/apt/sources.list.d/ackages_microsoft_com_repos_code.list
-#     state: absent
-
 - name: Ensure jetbrains toolbox is installed on the target system
   ansible.builtin.include_role:
     name: webarchitect609.jet_brains_toolbox
     apply:
       become: true
+
+- name: Ensure vscode is installed on the target system
+  ansible.builtin.include_role:
+    name: gantsign.visual-studio-code

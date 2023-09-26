@@ -11,22 +11,6 @@
     - common/ssh
     - common/software
 
-- name: Tasks for LAN Hosts
-  hosts: lan
-  vars_files:
-    - vars/deb_arch.yml
-    - vars/user.yml
-  roles:
-    - common/lan
-
-- name: Tasks for WAN hosts
-  hosts: all, !lan
-  vars_files:
-    - vars/deb_arch.yml
-    - vars/user.yml
-  roles:
-    - common/wan
-
 - name: Non-GUI Development Software
   hosts: development
   vars_files:
@@ -42,7 +26,6 @@
     - development/ziglang
     - development/ruby
     - development/rust
-#    - tunnels
 
 - name: Development Software for GUIs
   hosts: development_gui
@@ -70,19 +53,7 @@
     - home_jasonernst_com/honeygain
     - home_jasonernst_com/sabnzbd
     - gh_actions/ipv6-docker
-#    - gh_actions/bump-jvm
-    - gh_actions/bump-android
     - gh_actions/compscidr
-
-- name: Services for ubuntu-desktop
-  hosts: ubuntu-desktop
-  vars_files:
-    - vars/deb_arch.yml
-    - vars/user.yml
-  roles:
-    - gh_actions/ipv6-docker
-    - gh_actions/bump-jvm
-    - gh_actions/bump-android
 
 - name: Services for www.jasonernst.com
   hosts: www_jasonernst_com
@@ -94,16 +65,6 @@
     - web_common/letsencrypt
     - www_jasonernst_com/goblog
 
-- name: Services for lp.jasonernst.com
-  hosts: lp_jasonernst_com
-  vars_files:
-    - vars/deb_arch.yml
-    - vars/user.yml
-  roles:
-    - lp_jasonernst_com/grafana
-    - livepeer/orchestrator
-    - lp_jasonernst_com/prometheus
-
 - name: Services for ombi.jasonernst.com
   hosts: ombi_jasonernst_com
   vars_files:
@@ -114,28 +75,3 @@
     # - web_common/nginx
     # - web_common/letsencrypt
     - ombi_jasonernst_com/ombi
-
-# - name: AMD GPU related tasks
-#   hosts: amd
-#   vars_files:
-#     - vars/deb_arch.yml
-#   roles:
-#     - lolminer/amd
-#     - livepeer/transcoder_cpu
-
-# - name: Nvidia GPU related tasks
-#   hosts: nvidia
-#   vars_files:
-#     - vars/deb_arch.yml
-#   roles:
-#     - lolminer/nvidia
-#     - livepeer/transcoder_gpu
-
-# this is the only computer that seems to be fast enough to keep up to the network
-# tried previously on ubuntu-desktop and ubuntu-server, but no dice.
-# disabled because using an external service now
-# - name: Ethereum
-#   tags: ethereum
-#   hosts: ubuntu-desktop-beast
-#   roles:
-#     - ethereum/fullnode

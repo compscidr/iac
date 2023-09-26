@@ -10,6 +10,8 @@ roles:
     version: "0.0.2"
   - name: compscidr.gpg
     version: "0.0.2"
+  - name: gantsign.visual-studio-code
+    version: "2.12"
 
 collections:
   - name: community.docker

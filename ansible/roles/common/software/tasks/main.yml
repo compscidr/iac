@@ -67,32 +67,6 @@
     groups: docker
     append: true
 
-# github cli
-- name: add git cli GPG apt key
-  tags: git
-  become: true
-  ansible.builtin.apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: 23F3D4EA75716059
-
-- name: add github cli repository
-  tags: git
-  become: true
-  ansible.builtin.apt_repository:
-    repo: >
-      deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}]
-      https://cli.github.com/packages {{ ansible_distribution_release }} main
-    state: present
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
-
-# - name: update apt and install gh
-#   tags: git
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: gh
-#     state: present
-
 # don't lint-fix this or it will break the task
 - name: setup default git configuration
   tags: git

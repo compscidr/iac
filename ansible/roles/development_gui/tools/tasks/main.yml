@@ -120,21 +120,21 @@
     mode: '0600'
 
 # signal:
-- name: Install signal apt keys
-  tags: signal
-  become: true
-  ansible.builtin.apt_key:
-    keyserver: https://updates.signal.org/desktop/apt/keys.asc
-    id: DBA36B5181D0C816F630E889D980A17457F6FB06
-    state: present
+#- name: Install signal apt keys
+#  tags: signal
+#  become: true
+#  ansible.builtin.apt_key:
+#    keyserver: https://updates.signal.org/desktop/apt/keys.asc
+#    id: DBA36B5181D0C816F630E889D980A17457F6FB06
+#    state: present
 
 # doesn't have anything other than a xenial (16.04) release :(
-- name: Install signal apt repo
-  tags: signal
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb https://updates.signal.org/desktop/apt xenial main"
-    state: present
+#- name: Install signal apt repo
+#  tags: signal
+#  become: true
+#  ansible.builtin.apt_repository:
+#    repo: "deb https://updates.signal.org/desktop/apt xenial main"
+#    state: present
 
 # - name: Install signal
 #   tags: signal
@@ -145,36 +145,36 @@
 #     state: present
 
 # telegram:
-- name: Download and install telegram
-  tags: telegram
-  become: true
-  ansible.builtin.unarchive:
-    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
-    dest: /opt/
-    remote_src: true
-
-- name: Telegram icon
-  tags: telegram
-  ansible.builtin.copy:
-    src: files/telegram128.png
-    dest: /opt/Telegram/telegram128.png
-    mode: '0664'
-
-- name: Telegram app shortcut
-  tags: telegram
-  become: true
-  ansible.builtin.copy:
-    src: files/telegram.desktop
-    dest: /usr/share/applicationstelegram.desktop
-    mode: '0664'
-  notify: Update desktop applications
-
-- name: Telegram startup
-  tags: telegram
-  ansible.builtin.copy:
-    src: files/telegram.desktop
-    dest: ~/.config/autostart
-    mode: '0664'
+#- name: Download and install telegram
+#  tags: telegram
+#  become: true
+#  ansible.builtin.unarchive:
+#    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
+#    dest: /opt/
+#    remote_src: true
+#
+#- name: Telegram icon
+#  tags: telegram
+#  ansible.builtin.copy:
+#    src: files/telegram128.png
+#    dest: /opt/Telegram/telegram128.png
+#    mode: '0664'
+#
+#- name: Telegram app shortcut
+#  tags: telegram
+#  become: true
+#  ansible.builtin.copy:
+#    src: files/telegram.desktop
+#    dest: /usr/share/applicationstelegram.desktop
+#    mode: '0664'
+#  notify: Update desktop applications
+#
+#- name: Telegram startup
+#  tags: telegram
+#  ansible.builtin.copy:
+#    src: files/telegram.desktop
+#    dest: ~/.config/autostart
+#    mode: '0664'
 
 - name: Postman
   tags: postman

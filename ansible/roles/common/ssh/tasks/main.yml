@@ -70,24 +70,8 @@
   become: true
   tags: ssh
   ansible.builtin.copy:
-    src: jason-test.pem
-    dest: "/home/{{ username }}/.ssh/jason-test.pem"
+    src: bump.pem
+    dest: "/home/{{ username }}/.ssh/bump.pem"
     mode: '0600'
     owner: "{{ username }}"
     group: "{{ username }}"
-
-- name: Add work key to ssh/config
-  become: true
-  tags: ssh
-  ansible.builtin.blockinfile:
-    create: true
-    mode: '0600'
-    owner: "{{ username }}"
-    group: "{{ username }}"
-    path: "/home/{{ username }}/.ssh/config"
-    block: |
-      Host ec2-54-84-236-202.compute-1.amazonaws.com
-      Hostname ec2-54-84-236-202.compute-1.amazonaws.com
-      User ubuntu
-      IdentityFile ~/.ssh/jason-test.pem
-    marker: "# {mark} ANSIBLE MANAGED BLOCK github"
