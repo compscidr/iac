@@ -21,7 +21,7 @@
       OPENVPN_USERNAME: "{{ nordvpn_user }}"
       OPENVPN_PASSWORD: "{{ nordvpn_password }}"
       NORDVPN_COUNTRY: US
-      NORDVPN_CATEGORY: legacy_p2p
+      NORDVPN_CATEGORY: P2P
       LOCAL_NETWORK: 10.0.0.0/24
       HEALTH_CHECK_HOST: 8.8.8.8
       OPENVPN_OPTS: ""
