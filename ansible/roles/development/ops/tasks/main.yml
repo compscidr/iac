@@ -24,6 +24,7 @@
   ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367
+    keyring: /etc/apt/trusted.gpg.d/ansible.gpg
 
 - name: Add ansible PPA
   become: true
@@ -42,7 +43,8 @@
   become: true
   ansible.builtin.apt_key:
     keyserver: https://apt.releases.hashicorp.com/gpg
-    id: E8A032E094D8EB4EA189D270DA418C88A3219F7B
+    id: 798AEC654E5C15428C8E42EEAA16FCBCA621E701
+    keyring: /etc/apt/trusted.gpg.d/hashicorp.gpg
 
 - name: Add packer apt repository
   become: true
@@ -125,8 +127,7 @@
   tags: doctl
   ansible.builtin.unarchive:
     src: >
-      https://github.com/digitalocean/doctl/releases/download/v1.66.0/doctl-1.66.0-linux-
-      {{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz
+      https://github.com/digitalocean/doctl/releases/download/v1.66.0/doctl-1.66.0-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz
     dest: /usr/local/bin
     remote_src: true
 
