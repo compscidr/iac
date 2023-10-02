@@ -1,9 +1,13 @@
 - name: Ensure jetbrains toolbox is installed on the target system
+  tags: jetbrains
   ansible.builtin.include_role:
     name: webarchitect609.jet_brains_toolbox
     apply:
       become: true
 
 - name: Ensure vscode is installed on the target system
+  tags: vscode
   ansible.builtin.include_role:
     name: gantsign.visual-studio-code
+    apply:
+      become: true
