@@ -124,29 +124,32 @@
     mode: '0600'
 
 # signal:
-#- name: Install signal apt keys
-#  tags: signal
-#  become: true
-#  ansible.builtin.apt_key:
-#    keyserver: https://updates.signal.org/desktop/apt/keys.asc
-#    id: DBA36B5181D0C816F630E889D980A17457F6FB06
-#    state: present
+- name: Install signal apt keys
+  tags: signal
+  become: true
+  ansible.builtin.apt_key:
+    keyserver: https://updates.signal.org/desktop/apt/keys.asc
+    id: DBA36B5181D0C816F630E889D980A17457F6FB06
+    state: present
+    keyring: /etc/apt/trusted.gpg.d/signal.gpg
 
 # doesn't have anything other than a xenial (16.04) release :(
-#- name: Install signal apt repo
-#  tags: signal
-#  become: true
-#  ansible.builtin.apt_repository:
-#    repo: "deb https://updates.signal.org/desktop/apt xenial main"
-#    state: present
+- name: Install signal apt repo
+  tags: signal
+  become: true
+  ansible.builtin.apt_repository:
+    repo: >
+      deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}]
+      https://updates.signal.org/desktop/apt xenial main
+    state: present
 
-# - name: Install signal
-#   tags: signal
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: signal-desktop
-#     state: present
+- name: Install signal
+  tags: signal
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name: signal-desktop
+    state: present
 
 # telegram:
 #- name: Download and install telegram
