@@ -5,6 +5,7 @@
   ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 52B59B1571A79DBC054901C0F6BC817356A3D45E
+    keyring: /etc/apt/trusted.gpg.d/golang.gpg
 
 - name: add go repository
   tags: go
