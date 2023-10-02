@@ -43,7 +43,7 @@
   become: true
   ansible.builtin.copy:
     src: files/ssh/authorized_keys
-    dest: /home/{{ username }}/.ssh/authorized_keys"
+    dest: /home/{{ username }}/.ssh/authorized_keys
     mode: '0600'
     owner: "{{ username }}"
     group: "{{ username }}"

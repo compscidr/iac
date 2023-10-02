@@ -1,10 +1,10 @@
-- name: add zig repository
-  tags: zig
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [trusted=yes] https://apt.fury.io/compscidr/ /"
-    state: present
-    update_cache: true
+# - name: add zig repository
+#   tags: zig
+#   become: true
+#   ansible.builtin.apt_repository:
+#     repo: "deb [trusted=yes] https://apt.fury.io/compscidr/ /"
+#     state: present
+#     update_cache: true
 
 # - name: update apt and install zig
 #   tags: zig

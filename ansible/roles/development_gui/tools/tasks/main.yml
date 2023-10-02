@@ -49,6 +49,9 @@
   ansible.builtin.apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
+# todo: get gpg key and put into /etc/apt/trusted.gpg.d/slack.gpg
+#   and remove from /etc/apt/trusted.gpg which will fix the warning we get from
+#   apt
 # slack
 - name: install slack
   tags: slack
@@ -64,28 +67,29 @@
     mode: '0644'
 
 # spotify
-# - name: Install spotify apt keys
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt_key:
-#     keyserver: keyserver.ubuntu.com
-#     id: F9A211976ED662F00E59361E5E3C45D7B312C643
-#     state: present
-#
-# - name: Install spotify apt repo
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt_repository:
-#     repo: deb http://repository.spotify.com stable non-free
-#     state: present
-#
-# - name: Install spotify
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: spotify-client
-#     state: present
+- name: Install spotify apt keys
+  tags: spotify
+  become: true
+  ansible.builtin.apt_key:
+    url: https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg
+    id: E27409F51D1B66337F2D2F417A3A762FAFD4A51F
+    state: present
+    keyring: /etc/apt/trusted.gpg.d/spotify.gpg
+
+- name: Install spotify apt repo
+  tags: spotify
+  become: true
+  ansible.builtin.apt_repository:
+    repo: deb http://repository.spotify.com stable non-free
+    state: present
+
+- name: Install spotify
+  tags: spotify
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name: spotify-client
+    state: present
 
 # texmaker
 - name: install texmaker
@@ -127,54 +131,57 @@
     keyserver: https://updates.signal.org/desktop/apt/keys.asc
     id: DBA36B5181D0C816F630E889D980A17457F6FB06
     state: present
+    keyring: /etc/apt/trusted.gpg.d/signal.gpg
 
 # doesn't have anything other than a xenial (16.04) release :(
 - name: Install signal apt repo
   tags: signal
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb https://updates.signal.org/desktop/apt xenial main"
+    repo: >
+      deb [arch={{ [ansible_architecture] | map('extract', deb_architecture) | first }}]
+      https://updates.signal.org/desktop/apt xenial main
     state: present
 
-# - name: Install signal
-#   tags: signal
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: signal-desktop
-#     state: present
+- name: Install signal
+  tags: signal
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name: signal-desktop
+    state: present
 
 # telegram:
-- name: Download and install telegram
-  tags: telegram
-  become: true
-  ansible.builtin.unarchive:
-    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
-    dest: /opt/
-    remote_src: true
-
-- name: Telegram icon
-  tags: telegram
-  ansible.builtin.copy:
-    src: files/telegram128.png
-    dest: /opt/Telegram/telegram128.png
-    mode: '0664'
-
-- name: Telegram app shortcut
-  tags: telegram
-  become: true
-  ansible.builtin.copy:
-    src: files/telegram.desktop
-    dest: /usr/share/applicationstelegram.desktop
-    mode: '0664'
-  notify: Update desktop applications
-
-- name: Telegram startup
-  tags: telegram
-  ansible.builtin.copy:
-    src: files/telegram.desktop
-    dest: ~/.config/autostart
-    mode: '0664'
+#- name: Download and install telegram
+#  tags: telegram
+#  become: true
+#  ansible.builtin.unarchive:
+#    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
+#    dest: /opt/
+#    remote_src: true
+#
+#- name: Telegram icon
+#  tags: telegram
+#  ansible.builtin.copy:
+#    src: files/telegram128.png
+#    dest: /opt/Telegram/telegram128.png
+#    mode: '0664'
+#
+#- name: Telegram app shortcut
+#  tags: telegram
+#  become: true
+#  ansible.builtin.copy:
+#    src: files/telegram.desktop
+#    dest: /usr/share/applicationstelegram.desktop
+#    mode: '0664'
+#  notify: Update desktop applications
+#
+#- name: Telegram startup
+#  tags: telegram
+#  ansible.builtin.copy:
+#    src: files/telegram.desktop
+#    dest: ~/.config/autostart
+#    mode: '0664'
 
 - name: Postman
   tags: postman
