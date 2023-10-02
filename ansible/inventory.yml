@@ -5,17 +5,13 @@ all:
       hosts:
         ubuntu-server:
           ansible_host: 10.0.0.218
-          max_temp: 91
 # Used in case this is run from outside of the home network
 #          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
-        ubuntu-desktop-beast:
-          ansible_host: 10.0.0.89
-          max_temp: 92
+        jason-ubuntu-beast:
 # Used in case this is run from outside of the home network
 #          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
         ubuntu-desktop:
           ansible_host: 10.0.0.111
-          max_temp: 90
         jason-ubuntu-laptop:
           ansible_host: 10.0.0.17
         jason-work-ubuntu:
@@ -23,14 +19,14 @@ all:
     development:
       hosts:
         ubuntu-server:
-        ubuntu-desktop-beast:
+        jason-ubuntu-beast:
         ubuntu-desktop:
         jason-ubuntu-laptop:
         jason-work-ubuntu:
     development_gui:
       hosts:
         ubuntu-desktop:
-        ubuntu-desktop-beast:
+        jason-ubuntu-beast:
         jason-ubuntu-laptop:
         jason-work-ubuntu:
     amd:
@@ -39,7 +35,7 @@ all:
         ubuntu-server:
     nvidia:
       hosts:
-        ubuntu-desktop-beast:
+        jason-ubuntu-beast:
     home_jasonernst_com:
       hosts:
         ubuntu-server:
