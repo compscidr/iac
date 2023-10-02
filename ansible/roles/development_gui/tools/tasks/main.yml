@@ -67,28 +67,29 @@
     mode: '0644'
 
 # spotify
-# - name: Install spotify apt keys
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt_key:
-#     keyserver: keyserver.ubuntu.com
-#     id: F9A211976ED662F00E59361E5E3C45D7B312C643
-#     state: present
-#
-# - name: Install spotify apt repo
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt_repository:
-#     repo: deb http://repository.spotify.com stable non-free
-#     state: present
-#
-# - name: Install spotify
-#   tags: spotify
-#   become: true
-#   ansible.builtin.apt:
-#     update_cache: true
-#     name: spotify-client
-#     state: present
+- name: Install spotify apt keys
+  tags: spotify
+  become: true
+  ansible.builtin.apt_key:
+    url: https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg
+    id: E27409F51D1B66337F2D2F417A3A762FAFD4A51F
+    state: present
+    keyring: /etc/apt/trusted.gpg.d/spotify.gpg
+
+- name: Install spotify apt repo
+  tags: spotify
+  become: true
+  ansible.builtin.apt_repository:
+    repo: deb http://repository.spotify.com stable non-free
+    state: present
+
+- name: Install spotify
+  tags: spotify
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name: spotify-client
+    state: present
 
 # texmaker
 - name: install texmaker
