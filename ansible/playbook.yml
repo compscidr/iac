@@ -15,6 +15,7 @@
   hosts: development
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
     - development/shell
     - development/ops
