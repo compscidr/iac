@@ -49,6 +49,9 @@
   ansible.builtin.apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
+# todo: get gpg key and put into /etc/apt/trusted.gpg.d/slack.gpg
+#   and remove from /etc/apt/trusted.gpg which will fix the warning we get from
+#   apt
 # slack
 - name: install slack
   tags: slack
