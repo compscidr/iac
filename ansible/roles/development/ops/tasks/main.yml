@@ -32,11 +32,14 @@
   ansible.builtin.apt_repository:
     repo: ppa:ansible/ansible
 
-- name: install terraform
+- name: Install terraform
+  tags: terraform
   ansible.builtin.include_role:
     name: diodonfrost.terraform
     apply:
       become: true
+  vars:
+    terraform_version: 1.6.0
 
 - name: Add packer GPG
   tags: packer
