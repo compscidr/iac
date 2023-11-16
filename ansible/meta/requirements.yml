@@ -15,6 +15,6 @@ roles:
 
 collections:
   - name: community.docker
-    version: "3.4.8"
+    version: "3.4.11"
   - name: community.general
     version: "7.4.0"
