@@ -1,5 +1,6 @@
 - name: install php development tools
   become: true
+  tags: php
   ansible.builtin.apt:
     pkg:
       - composer
