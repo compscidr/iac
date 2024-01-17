@@ -8,3 +8,4 @@
       - php-curl
       - php-mysql
       - php-pdo-sqlite
+      - php-pear
