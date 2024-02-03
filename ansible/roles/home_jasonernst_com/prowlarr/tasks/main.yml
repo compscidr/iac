@@ -1,0 +1,28 @@
+- name: Create Prowlarr Directories
+  tags: prowlarr
+  become: true
+  ansible.builtin.file:
+    path: /etc/prowlarr
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Deploy Prowlarr
+  tags: prowlarr
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: prowlarr
+    image: linuxserver/prowlarr:latest
+    pull: true
+    volumes:
+      - "/etc/prowlarr:/config:rw"
+    ports:
+      - "9696:9696"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 1g
