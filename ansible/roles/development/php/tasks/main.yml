@@ -1,5 +1,6 @@
 - name: install php development tools
   become: true
+  tags: php
   ansible.builtin.apt:
     pkg:
       - composer
@@ -7,3 +8,5 @@
       - php-curl
       - php-mysql
       - php-pdo-sqlite
+      - php-pear
+      - php-dev
