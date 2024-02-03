@@ -8,17 +8,37 @@
     owner: root
     group: root
 
-- name: Copy Rust config to host
+- name: Create Rust Weekly Directories
+  tags: rust-game
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust2
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Copy Rust monthly config to host
   tags: rust-game
   become: true
   ansible.builtin.copy:
-    src: rust.env
-    dest: /etc/rust/rust.env
+    src: rust-monthly.env
+    dest: /etc/rust/rust-monthly.env
     mode: '644'
     owner: root
     group: root
 
-- name: Deploy Rust
+- name: Copy Rust weekly config to host
+  tags: rust-game
+  become: true
+  ansible.builtin.copy:
+    src: rust-weekly.env
+    dest: /etc/rust2/rust-weekly.env
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy Rust Monthly
   tags: rust-game
   vars:
     ansible_python_interpreter: "/usr/bin/env python3-docker"
@@ -28,7 +48,7 @@
     pull: true
     volumes:
       - "/etc/rust:/steamcmd/rust:rw"
-    env_file: /etc/rust/rust.env
+    env_file: /etc/rust/rust-monthly.env
     ports:
       - "28015:28015"
       - "28015:28015/udp"
@@ -39,6 +59,34 @@
       - "8000:8080"
       - "28082:28082"
       - "28082:28082/udp"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "1000"
+      PGID: "1000"
+    restart_policy: unless-stopped
+    memory: 10g
+
+- name: Deploy Rust Weekly
+  tags: rust-game
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  community.docker.docker_container:
+    name: rust-weekly
+    image: didstopia/rust-server
+    pull: true
+    volumes:
+      - "/etc/rust2:/steamcmd/rust:rw"
+    env_file: /etc/rust2/rust-weekly.env
+    ports:
+      - "27015:27015"
+      - "27015:27015/udp"
+      - "27016:27016"
+      - "27016:27016/udp"
+      - "27017:27017"
+      - "27017:27017/udp"
+      - "8001:8080"
+      - "27082:27082"
+      - "27082:27082/udp"
     env:
       TZ: "America/Los_Angeles"
       PUID: "1000"
