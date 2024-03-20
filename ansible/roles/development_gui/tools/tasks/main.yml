@@ -110,11 +110,31 @@
     deb: https://zoom.us/client/latest/zoom_amd64.deb
 
 # discord
-- name: install discord
+- name: Install discord apt keys
+  tags: discord
+  become: true
+  ansible.builtin.apt_key:
+    keyserver: https://palfrey.github.io/discord-apt/discord-apt.gpg.asc
+    id: 2D3E44DC23D20638A854659F8F8F44E1B741DD1E
+    state: present
+    keyring: /etc/apt/trusted.gpg.d/discord-apt.gpg.asc
+
+- name: Install discord apt repo
+  tags: discord
+  become: true
+  ansible.builtin.apt_repository:
+    filename: discord
+    repo: >
+      deb https://palfrey.github.io/discord-apt/debian/ ./
+    state: present
+
+- name: Install discord
   tags: discord
   become: true
   ansible.builtin.apt:
-    deb: https://discordapp.com/api/download?platform=linux&format=deb
+    update_cache: true
+    name: discord
+    state: present
 
 - name: start discord silently
   tags: discord
