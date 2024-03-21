@@ -77,3 +77,14 @@
     # - web_common/nginx
     # - web_common/letsencrypt
     - ombi_jasonernst_com/ombi
+
+- name: Virtualbox
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tags:
+    - virtualbox
+  roles:
+    - buluma.virtualbox
+  vars:
+    virtualbox_version: "7.0"

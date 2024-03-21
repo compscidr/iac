@@ -1,5 +1,7 @@
 # from galaxy
 roles:
+  - name: buluma.virtualbox
+    version: "0.2.0"
   - name: nickjj.docker
     version: "v2.4.0"
   - name: diodonfrost.terraform
