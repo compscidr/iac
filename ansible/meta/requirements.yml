@@ -9,7 +9,7 @@ roles:
   - name: compscidr.uncompress
     version: "0.0.2"
   - name: compscidr.gpg
-    version: "0.0.2"
+    version: "0.0.4"
   - name: gantsign.visual-studio-code
     version: "7.0.0"
 
