@@ -50,6 +50,15 @@
   vars:
     vagrant_version: 2.4.1
 
+# need to use import and include because otherwise nothing will run here
+- name: Import virtualbox role
+  tags: virtualbox
+  become: true
+  ansible.builtin.import_role:
+    name: buluma.virtualbox
+  vars:
+   virtualbox_version: "7.0"
+
 - name: Add packer GPG
   tags: packer
   become: true
