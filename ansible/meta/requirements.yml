@@ -4,6 +4,8 @@ roles:
     version: "v2.4.0"
   - name: diodonfrost.terraform
     version: "1.6.1"
+  - name: diodonfrost.vagrant
+    verison: "1.9.0"
   - name: webarchitect609.jet_brains_toolbox
     version: "2.0.1"
   - name: compscidr.uncompress
