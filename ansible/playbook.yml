@@ -45,6 +45,7 @@
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
+    - vars/secrets.yml
   roles:
     - home_jasonernst_com/plex
     - home_jasonernst_com/transmission
@@ -55,8 +56,25 @@
     - home_jasonernst_com/rust_game
     - home_jasonernst_com/sabnzbd
     - home_jasonernst_com/prowlarr
-    - gh_actions/ipv6-docker
-    - gh_actions/compscidr
+    - role: compscidr.github_runner.github_runner
+      vars:
+        github_runner_name: "hello-java-android"
+        github_runner_java: true
+        github_runner_install_docker: false
+        github_runner_repo: "compscidr/hello-java-android"
+    - role: compscidr.github_runner.github_runner
+      vars:
+        github_runner_name: "hello-kotlin-android"
+        github_runner_java: true
+        github_runner_install_docker: false
+        github_runner_repo: "compscidr/hello-kotlin-android"
+    - role: compscidr.github_runner.github_runner
+      vars:
+        github_runner_name: "grape"
+        github_runner_java: true
+        github_runner_install_docker: false
+        github_runner_org: true
+        github_runner_org_name: "grape-networking"
 
 - name: Services for www.jasonernst.com
   hosts: www_jasonernst_com
