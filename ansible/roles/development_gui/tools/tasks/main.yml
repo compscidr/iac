@@ -171,6 +171,13 @@
     name: signal-desktop
     state: present
 
+- name: Install variety
+  tags: variety
+  become: true
+  ansible.builtin.apt:
+    name: variety
+    state: present
+
 # telegram:
 #- name: Download and install telegram
 #  tags: telegram
