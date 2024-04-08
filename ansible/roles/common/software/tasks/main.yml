@@ -34,7 +34,6 @@
       - nmap                    # determine open ports
       - traceroute              # traceroute
       - nbtscan                 # netbios scanner
-      - speedtest-cli           # bandwidth debugging
       - sshuttle                # forward ssh through tunnel
       - whois                   # whois
       - sqlite3                 # good db for integration tests
@@ -111,3 +110,10 @@
     owner: "{{ username }}"
     group: "{{ username }}"
     mode: 0600
+
+- # speedtest-cli
+- name: Install speedtest
+  tags: speedtest
+  become: true
+  ansible.builtin.import_role:
+    name: darkwizard242.speedtest

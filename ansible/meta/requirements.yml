@@ -16,6 +16,8 @@ roles:
     version: "0.0.4"
   - name: gantsign.visual-studio-code
     version: "7.0.0"
+  - name: darkwizard242.speedtest
+    version: "3.3.0"
 
 collections:
   - name: community.docker
