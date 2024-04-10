@@ -4,12 +4,11 @@ php_upload_max_filesize: "256M"
 php_default_version_debian: "8.2"
 php_packages:
   - "php{{ php_default_version_debian }}"
-  - php-cli
-  - php-common
-  - php-curl
-  - php-dev
-  - php-pear
-  - php-gd
-  - php-mbstring
+  - "php{{ php_default_version_debian }}-cli"
+  - "php{{ php_default_version_debian }}-common"
+  - "php{{ php_default_version_debian }}-curl"
+  - "php{{ php_default_version_debian }}-dev"
+  - "php{{ php_default_version_debian }}-gd"
+  - "php{{ php_default_version_debian }}-mbstring"
   - "php{{ php_default_version_debian }}-sqlite3"
-  - php-xml
+  - "php{{ php_default_version_debian }}-xml"
