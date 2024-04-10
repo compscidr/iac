@@ -25,4 +25,4 @@ collections:
   - name: community.general
     version: "8.5.0"
   - name: compscidr.github_runner
-    version: "0.0.8"
+    version: "0.0.9"
