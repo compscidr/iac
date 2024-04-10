@@ -18,6 +18,8 @@ roles:
     version: "7.0.0"
   - name: darkwizard242.speedtest
     version: "3.3.0"
+  - name: geerlingguy.php
+    version: "5.0.1"
 
 collections:
   - name: community.docker
