@@ -17,7 +17,7 @@ roles:
   - name: gantsign.visual-studio-code
     version: "7.0.0"
   - name: darkwizard242.speedtest
-    version: "3.3.0"
+    version: "4.0.0"
   - name: geerlingguy.php
     version: "5.0.1"
 
