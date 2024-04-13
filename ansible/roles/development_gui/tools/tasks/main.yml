@@ -28,12 +28,13 @@
     groups: wireshark
     append: true
 
+# no longer maintained - see: https://github.com/grpc-ecosystem/awesome-grpc#tools instead?
 # bloomrpc
-- name: install bloomrpc
-  become: true
-  tags: bloomrpc
-  ansible.builtin.apt:
-    deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
+# - name: install bloomrpc
+#   become: true
+#   tags: bloomrpc
+#   ansible.builtin.apt:
+#     deb: https://github.com/uw-labs/bloomrpc/releases/download/1.5.2/bloomrpc_1.5.2_amd64.deb
 
 # keybase
 - name: install keybase
@@ -57,7 +58,7 @@
   tags: slack
   become: true
   ansible.builtin.apt:
-    deb: https://downloads.slack-edge.com/releases/linux/4.29.149/prod/x64/slack-desktop-4.29.149-amd64.deb
+    deb: https://downloads.slack-edge.com/releases/linux/4.37.101/prod/x64/slack-desktop-4.37.101-amd64.deb
 
 - name: start slack silently
   tags: slack
@@ -71,8 +72,8 @@
   tags: spotify
   become: true
   ansible.builtin.apt_key:
-    url: https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg
-    id: E27409F51D1B66337F2D2F417A3A762FAFD4A51F
+    url: https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg
+    id: 63CBEEC9006602088F9B19326224F9941A8AA6D1
     state: present
     keyring: /etc/apt/trusted.gpg.d/spotify.gpg
 
@@ -114,10 +115,10 @@
   tags: discord
   become: true
   ansible.builtin.apt_key:
-    keyserver: https://palfrey.github.io/discord-apt/discord-apt.gpg.asc
+    url: https://palfrey.github.io/discord-apt/discord-apt.gpg.asc
     id: 2D3E44DC23D20638A854659F8F8F44E1B741DD1E
     state: present
-    keyring: /etc/apt/trusted.gpg.d/discord-apt.gpg.asc
+    keyring: /etc/apt/trusted.gpg.d/discord.gpg
 
 - name: Install discord apt repo
   tags: discord
