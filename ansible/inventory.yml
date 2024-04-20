@@ -15,7 +15,7 @@ all:
         jason-ubuntu-laptop:
           ansible_host: 10.0.0.17
         jason-work-ubuntu:
-          ansible_host: 10.0.0.15
+          ansible_host: 10.0.0.16
     development:
       hosts:
         ubuntu-server:
