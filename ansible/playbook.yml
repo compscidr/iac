@@ -47,15 +47,19 @@
     - vars/user.yml
     - vars/secrets.yml
   roles:
-    - home_jasonernst_com/plex
-    - home_jasonernst_com/transmission
-    - home_jasonernst_com/flaresolver
-    - home_jasonernst_com/jackett
-    - home_jasonernst_com/sonarr
-    - home_jasonernst_com/radarr
     - home_jasonernst_com/rust_game
-    - home_jasonernst_com/sabnzbd
-    - home_jasonernst_com/prowlarr
+    - home_jasonernst_com/transmission
+    - role: compscidr.media_server.transmission
+    - role: compscidr.media_server.plex
+      vars:
+        plex_dri_devices: true
+        plex_bonjour_port: 5354
+    - role: compscidr.media_server.flaresolverr
+    - role: compscidr.media_server.jackett
+    - role: compscidr.media_server.sonarr
+    - role: compscidr.media_server.radarr
+    - role: compscidr.media_server.prowlarr
+    - role: compscidr.media_server.sabnzbd
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "hello-java-android"
@@ -98,4 +102,7 @@
     # enable these when ombi moves to its own server
     # - web_common/nginx
     # - web_common/letsencrypt
-    - ombi_jasonernst_com/ombi
+    - role: compscidr.media_server.ombi
+      vars:
+        ombi_virtual_host: "ombi.jasonernst.com"
+        ombi_letsencrypt_email: "ernstjason1@gmail.com"

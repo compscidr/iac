@@ -28,3 +28,5 @@ collections:
     version: "8.5.0"
   - name: compscidr.github_runner
     version: "0.0.9"
+  - name: compscidr.media_server
+    version: "0.0.18"
