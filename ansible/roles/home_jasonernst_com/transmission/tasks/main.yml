@@ -13,6 +13,9 @@
   tags: transmission
   become: true
   copy:
+    mode: '755'
+    owner: root
+    group: root
     dest: "/etc/transmission/.env"
     content: |
       TRANSMISSION_WEB_UI=transmission-web-control
