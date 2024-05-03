@@ -53,10 +53,11 @@
 # https://github.com/nickjj/ansible-docker
 - name: Ensure docker is installed on the target system
   tags: docker
-  ansible.builtin.include_role:
+  become: true
+  ansible.builtin.import_role:
     name: nickjj.docker
-    apply:
-      become: true
+  vars:
+    docker__state: "latest"
 
 - name: adding {{ username }} to group docker
   tags: docker
@@ -65,6 +66,18 @@
     name: "{{ username }}"
     groups: docker
     append: true
+
+- name: docker watchtower container
+  tags: docker
+  become: true
+  community.docker.docker_container:
+    name: watchtower
+    image: containrrr/watchtower
+    pull: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    restart_policy: unless-stopped
+    memory: 10g
 
 # don't lint-fix this or it will break the task
 - name: setup default git configuration
