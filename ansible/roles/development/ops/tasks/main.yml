@@ -179,3 +179,13 @@
     dest: "/home/{{ username }}/.bashrc"
     owner: "{{ username }}"
     line: "export DIGITALOCEAN_TOKEN={{ do_token }}"
+
+- name: Copy userspace icmp socket permission file
+  become_user: "{{ username }}"
+  tags: ping
+  ansible.builtin.copy:
+    src: files/99-allow-ping.cong
+    dest: /etc/sysctl.d/99-allow-ping.conf
+    mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
