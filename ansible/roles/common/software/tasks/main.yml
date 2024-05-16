@@ -74,6 +74,11 @@
     name: watchtower
     image: containrrr/watchtower
     pull: true
+    command: --http-api-update --http-api-periodic-polls
+    env:
+      WATCHTOWER_HTTP_API_TOKEN: mytoken
+    ports:
+      - "8081:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     restart_policy: unless-stopped
