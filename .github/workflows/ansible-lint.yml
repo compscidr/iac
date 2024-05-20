@@ -9,7 +9,7 @@ jobs:
 
     steps:
     # Important: This sets up your GITHUB_WORKSPACE environment variable
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
 
     - run: 'echo "$VAULT_PASS" > $GITHUB_WORKSPACE/.vault_pass && printf "[defaults]\n\tvault_password_file = $GITHUB_WORKSPACE/.vault_pass\n" > ansible.cfg && cat ansible.cfg && touch requirements.txt'
       shell: bash
