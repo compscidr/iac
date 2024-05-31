@@ -47,6 +47,7 @@
     - vars/user.yml
     - vars/secrets.yml
   roles:
+    - home_jasonernst_com/dyndns
     - home_jasonernst_com/rust_game
     - home_jasonernst_com/transmission
     - role: compscidr.media_server.transmission
