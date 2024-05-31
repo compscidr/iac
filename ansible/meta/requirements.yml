@@ -23,9 +23,9 @@ roles:
 
 collections:
   - name: community.docker
-    version: "3.9.0"
+    version: "3.10.3"
   - name: community.general
-    version: "8.6.0"
+    version: "9.0.1"
   - name: compscidr.github_runner
     version: "0.0.9"
   - name: compscidr.media_server
