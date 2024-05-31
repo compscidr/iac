@@ -68,13 +68,13 @@
     append: true
 
 - name: docker watchtower container
-  tags: docker
+  tags: docker, watchtower
   become: true
   community.docker.docker_container:
     name: watchtower
     image: containrrr/watchtower
     pull: true
-    command: --http-api-update --http-api-periodic-polls
+    command: --http-api-update --http-api-periodic-polls --include-restarting --log-level debug
     env:
       WATCHTOWER_HTTP_API_TOKEN: mytoken
     ports:
