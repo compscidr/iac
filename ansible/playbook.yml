@@ -17,6 +17,7 @@
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
+    - vars/secrets.yml
   roles:
     - development/shell
     - development/ops
@@ -29,7 +30,11 @@
     - development/ziglang
     - development/ruby
     - development/rust
-    - development/tools
+#    - development/tools
+    - role: compscidr.github_cli.github_cli
+    - role: compscidr.github_cli.github_cli_extension
+      vars:
+        github_cli_extension: "dlvhdr/gh-dash"
 
 - name: Development Software for GUIs
   hosts: development_gui

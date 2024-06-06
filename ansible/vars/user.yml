@@ -2,3 +2,4 @@ username: jason
 fullname: Jason Ernst
 email: ernstjason1@gmail.com
 signingkey: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
+github_cli_user: "{{ username }}"
