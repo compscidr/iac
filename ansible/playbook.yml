@@ -29,6 +29,7 @@
     - development/ziglang
     - development/ruby
     - development/rust
+    - development/tools
 
 - name: Development Software for GUIs
   hosts: development_gui

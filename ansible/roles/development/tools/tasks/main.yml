@@ -1,0 +1,6 @@
+--- 
+- name: Ensure gh cli is installed on the target system
+  tags: github_cli
+  become: true
+  ansible.builtin.import_role:
+    name: compscidr.github_cli.github_cli
