@@ -46,6 +46,22 @@
     - development_gui/tools
     - development_gui/i3
 
+- name: Services for nas.local
+  hosts: nas_local
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+    - vars/secrets.yml
+  roles:
+    - role: compscidr.media_server.plex
+      vars:
+        plex_dri_devices: true
+        plex_bonjour_port: 5354
+        plex_tv_folder: /volume1/storage/tv
+        plex_movies_folder: /volume1/storage/movies
+        plex_pid: "999"
+        plex_gid: "10"
+
 - name: Services for home.jasonernst.com
   hosts: home_jasonernst_com
   vars_files:

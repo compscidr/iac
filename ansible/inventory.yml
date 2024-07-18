@@ -16,6 +16,8 @@ all:
           ansible_host: 10.0.0.17
         jason-work-ubuntu:
           ansible_host: 10.0.0.16
+        nas.local:
+          ansible_host: 10.0.0.238
     development:
       hosts:
         ubuntu-server:
@@ -39,6 +41,9 @@ all:
     home_jasonernst_com:
       hosts:
         ubuntu-server:
+    nas_local:
+      hosts:
+        nas.local:
     www_jasonernst_com:
       hosts:
         www.jasonernst.com:
