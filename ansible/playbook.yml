@@ -53,14 +53,49 @@
     - vars/user.yml
     - vars/secrets.yml
   roles:
+    - nas_local/transmission
+    - role: compscidr.media_server.transmission
+      vars:
+        transmission_folder: /etc/transmission
+        transmission_downloads_folder: /volume1/storage/downloads
+        transmission_pid: "999"
+        transmission_gid: "10"
     - role: compscidr.media_server.plex
       vars:
         plex_dri_devices: true
         plex_bonjour_port: 5354
         plex_tv_folder: /volume1/storage/tv
         plex_movies_folder: /volume1/storage/movies
+        plex_claim: claim-haziyvUxG2Fb4uj5-tF1
         plex_pid: "999"
         plex_gid: "10"
+    - role: compscidr.media_server.sabnzbd
+      vars:
+        sabnzbd_pid: "999"
+        sabnzbd_gid: "10"
+        sabnzbd_download_folder: /volume1/storage/downloads
+    - role: compscidr.media_server.sonarr
+      vars:
+        sonarr_folder: /etc/sonarr
+        sonarr_tv_folder: /volume1/storage/tv
+        sonarr_tranmissions_downloads_folder: /volume1/storage/downloads
+        sonarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+        sonarr_pid: "999"
+        sonarr_gid: "10"
+    - role: compscidr.media_server.radarr
+      vars:
+        radarr_movies_folder: /volume1/storage/movies
+        radarr_transmission_downloads_folder: /volume1/storage/downloads
+        radarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+        radarr_pid: "999"
+        radarr_gid: "10"
+    - role: compscidr.media_server.prowlarr
+      vars:
+        prowlarr_pid: "999"
+        prowlarr_gid: "10"
+    - role: compscidr.media_server.flaresolverr
+      vars:
+        flare_port: 8191
 
 - name: Services for home.jasonernst.com
   hosts: home_jasonernst_com
@@ -71,18 +106,6 @@
   roles:
     - home_jasonernst_com/dyndns
     - home_jasonernst_com/rust_game
-    - home_jasonernst_com/transmission
-    - role: compscidr.media_server.transmission
-    - role: compscidr.media_server.plex
-      vars:
-        plex_dri_devices: true
-        plex_bonjour_port: 5354
-    - role: compscidr.media_server.flaresolverr
-    - role: compscidr.media_server.jackett
-    - role: compscidr.media_server.sonarr
-    - role: compscidr.media_server.radarr
-    - role: compscidr.media_server.prowlarr
-    - role: compscidr.media_server.sabnzbd
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "hello-java-android"
