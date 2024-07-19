@@ -21,22 +21,48 @@
 - name: Copy Rust monthly config to host
   tags: rust-game
   become: true
-  ansible.builtin.copy:
-    src: rust-monthly.env
+  ansible.builtin.template:
+    src: files/rust.env.j2
     dest: /etc/rust/rust-monthly.env
     mode: '644'
     owner: root
     group: root
+  vars:
+    rust_identity: rust_docker
+    rust_seed: 30
+    rust_server_name: "California | Monthly | No BP Wipe"
+    rust_server_description: "Self hosted in Redwood City CA"
+    rust_world_size: 4500
+    rust_server_port: 28015
+    rust_server_query_port: 28016
+    rust_rcon_port: 28017
+    rust_app_port: 28082
+    rust_oxide_enabled: 1
+    rust_server_url: https://discord.gg/4Dc3FUVD
+    rust_banner_url: https://gcdnb.pbrd.co/images/TC7pjSZx3Zd6.jpg
 
 - name: Copy Rust weekly config to host
   tags: rust-game
   become: true
-  ansible.builtin.copy:
-    src: rust-weekly.env
+  ansible.builtin.template:
+    src: files/rust.env.j2
     dest: /etc/rust2/rust-weekly.env
     mode: '644'
     owner: root
     group: root
+  vars:
+    rust_identity: rust_docker_weekly
+    rust_seed: 17
+    rust_server_name: "California | Weekly | No BP Wipe"
+    rust_server_description: "Self hosted in Redwood City CA"
+    rust_world_size: 4000
+    rust_server_port: 27015
+    rust_server_query_port: 27016
+    rust_rcon_port: 27017
+    rust_app_port: 27082
+    rust_oxide_enabled: 0
+    rust_server_url: https://discord.gg/4Dc3FUVD
+    rust_banner_url: https://gcdnb.pbrd.co/images/TC7pjSZx3Zd6.jpg
 
 - name: Deploy Rust Monthly
   tags: rust-game
