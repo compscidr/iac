@@ -72,6 +72,14 @@ resource "digitalocean_record" "txt" {
   value = "keybase-site-verification=YuSsvhu0S_6Oy2jZeTSr9ZojN-hYTcSl4HlWTvYxZBw"
 }
 
+# maven verification record
+resource "digitalocean_record" "txt" {
+  domain = digitalocean_domain.default.name
+  type = "TXT"
+  name = "@"
+  value = "7mi6gm0pb0"
+}
+
 resource "digitalocean_record" "A-home" {
   domain = digitalocean_domain.default.name
   type = "A"
