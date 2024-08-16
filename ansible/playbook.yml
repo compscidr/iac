@@ -54,6 +54,7 @@
     - vars/secrets.yml
   roles:
     - nas_local/transmission
+    - nas_local/home_assistant
     - role: compscidr.media_server.transmission
       vars:
         transmission_folder: /etc/transmission
