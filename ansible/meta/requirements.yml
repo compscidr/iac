@@ -27,7 +27,7 @@ collections:
   - name: community.general
     version: "9.3.0"
   - name: compscidr.github_runner
-    version: "0.0.10"
+    version: "0.0.11"
   - name: compscidr.media_server
     version: "0.0.26"
   - name: compscidr.github_cli
