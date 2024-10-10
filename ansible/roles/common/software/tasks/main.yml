@@ -11,6 +11,7 @@
   become: true
   ansible.builtin.apt:
     pkg:
+      - btop
       - apt-transport-https
       - ca-certificates
       - software-properties-common
