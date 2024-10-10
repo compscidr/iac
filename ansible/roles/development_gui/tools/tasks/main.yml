@@ -180,36 +180,35 @@
     state: present
 
 # telegram:
-#- name: Download and install telegram
-#  tags: telegram
-#  become: true
-#  ansible.builtin.unarchive:
-#    src: https://updates.tdesktop.com/tlinux/tsetup.4.2.4.tar.xz
-#    dest: /opt/
-#    remote_src: true
-#
-#- name: Telegram icon
-#  tags: telegram
-#  ansible.builtin.copy:
-#    src: files/telegram128.png
-#    dest: /opt/Telegram/telegram128.png
-#    mode: '0664'
-#
-#- name: Telegram app shortcut
-#  tags: telegram
-#  become: true
-#  ansible.builtin.copy:
-#    src: files/telegram.desktop
-#    dest: /usr/share/applicationstelegram.desktop
-#    mode: '0664'
-#  notify: Update desktop applications
-#
-#- name: Telegram startup
-#  tags: telegram
-#  ansible.builtin.copy:
-#    src: files/telegram.desktop
-#    dest: ~/.config/autostart
-#    mode: '0664'
+- name: Download and install telegram
+  tags: telegram
+  become: true
+  ansible.builtin.unarchive:
+    src: https://updates.tdesktop.com/tlinux/tsetup.5.6.1.tar.xz
+    dest: /opt/
+    remote_src: true
+
+- name: Telegram icon
+  tags: telegram
+  ansible.builtin.copy:
+    src: files/telegram128.png
+    dest: /opt/Telegram/telegram128.png
+    mode: '0664'
+
+- name: Telegram app shortcut
+  tags: telegram
+  become: true
+  ansible.builtin.copy:
+    src: files/telegram.desktop
+    dest: /usr/share/applications/telegram.desktop
+    mode: '0664'
+
+- name: Telegram startup
+  tags: telegram
+  ansible.builtin.copy:
+    src: files/telegram.desktop
+    dest: ~/.config/autostart
+    mode: '0664'
 
 - name: Postman
   tags: postman
