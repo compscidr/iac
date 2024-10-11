@@ -55,6 +55,7 @@
   roles:
     - nas_local/transmission
     - nas_local/home_assistant
+    - nas_local/rust_game
     - role: compscidr.media_server.transmission
       vars:
         transmission_folder: /etc/transmission
@@ -106,7 +107,6 @@
     - vars/secrets.yml
   roles:
     - home_jasonernst_com/dyndns
-    - home_jasonernst_com/rust_game
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "hello-java-android"

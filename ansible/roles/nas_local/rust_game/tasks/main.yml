@@ -1,8 +1,8 @@
-- name: Create Rust Directories
+- name: Create Rust Monthly Directories
   tags: rust-game
   become: true
   ansible.builtin.file:
-    path: /etc/rust
+    path: /etc/rust-monthly
     state: directory
     mode: '755'
     owner: root
@@ -12,18 +12,18 @@
   tags: rust-game
   become: true
   ansible.builtin.file:
-    path: /etc/rust2
+    path: /etc/rust-weekly
     state: directory
     mode: '755'
     owner: root
     group: root
 
-- name: Copy Rust monthly config to host
+- name: Copy Rust Monthly config to host
   tags: rust-game
   become: true
   ansible.builtin.template:
     src: files/rust.env.j2
-    dest: /etc/rust/rust-monthly.env
+    dest: /etc/rust-monthly/rust.env
     mode: '644'
     owner: root
     group: root
@@ -41,12 +41,12 @@
     rust_server_url: https://discord.gg/4Dc3FUVD
     rust_banner_url: https://gcdnb.pbrd.co/images/TC7pjSZx3Zd6.jpg
 
-- name: Copy Rust weekly config to host
+- name: Copy Rust Weekly config to host
   tags: rust-game
   become: true
   ansible.builtin.template:
     src: files/rust.env.j2
-    dest: /etc/rust2/rust-weekly.env
+    dest: /etc/rust-weekly/rust.env
     mode: '644'
     owner: root
     group: root
@@ -66,15 +66,15 @@
 
 - name: Deploy Rust Monthly
   tags: rust-game
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  # vars:
+  #   ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: rust
     image: didstopia/rust-server
     pull: true
     volumes:
-      - "/etc/rust:/steamcmd/rust:rw"
-    env_file: /etc/rust/rust-monthly.env
+      - "/etc/rust-monthly:/steamcmd/rust:rw"
+    env_file: /etc/rust-monthly/rust.env
     ports:
       - "28015:28015"
       - "28015:28015/udp"
@@ -94,15 +94,15 @@
 
 - name: Deploy Rust Weekly
   tags: rust-game
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+  # vars:
+  #   ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: rust-weekly
     image: didstopia/rust-server
     pull: true
     volumes:
-      - "/etc/rust2:/steamcmd/rust:rw"
-    env_file: /etc/rust2/rust-weekly.env
+      - "/etc/rust-weekly:/steamcmd/rust:rw"
+    env_file: /etc/rust-weekly/rust.env
     ports:
       - "27015:27015"
       - "27015:27015/udp"
