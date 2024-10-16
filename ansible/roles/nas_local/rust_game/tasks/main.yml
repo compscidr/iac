@@ -38,8 +38,8 @@
     rust_rcon_port: 28017
     rust_app_port: 28082
     rust_oxide_enabled: 1
-    rust_server_url: https://discord.gg/4Dc3FUVD
-    rust_banner_url: https://gcdnb.pbrd.co/images/TC7pjSZx3Zd6.jpg
+    rust_server_url: https://discord.gg/t77M3yAgKu
+    rust_banner_url: https://images2.imgbox.com/37/6d/fOpdrpYS_o.jpeg
 
 - name: Copy Rust Weekly config to host
   tags: rust-game
@@ -61,8 +61,8 @@
     rust_rcon_port: 27017
     rust_app_port: 27082
     rust_oxide_enabled: 0
-    rust_server_url: https://discord.gg/4Dc3FUVD
-    rust_banner_url: https://gcdnb.pbrd.co/images/TC7pjSZx3Zd6.jpg
+    rust_server_url: https://discord.gg/t77M3yAgKu
+    rust_banner_url: https://images2.imgbox.com/37/6d/fOpdrpYS_o.jpeg
 
 - name: Deploy Rust Monthly
   tags: rust-game
