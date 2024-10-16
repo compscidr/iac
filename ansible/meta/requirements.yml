@@ -23,7 +23,7 @@ roles:
 
 collections:
   - name: community.docker
-    version: "3.13.0"
+    version: "3.13.1"
   - name: community.general
     version: "9.5.0"
   - name: compscidr.github_runner
