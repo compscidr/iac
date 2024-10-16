@@ -24,6 +24,7 @@
       - powerline
       - tmux
       - byobu
+      - neofetch
 
 - name: tmux config
   become_user: "{{ username }}"
