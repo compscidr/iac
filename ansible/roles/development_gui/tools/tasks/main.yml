@@ -5,6 +5,14 @@
     state: touch
     mode: '0600'
 
+# variety wallpaper changer
+- name: install variety
+  tags: UI
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - variety
+
 # wireshark
 - name: install wireshark
   tags: wireshark
