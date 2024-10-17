@@ -7,3 +7,4 @@
       - python3-pip
       - python3-venv
       - python3-setuptools
+      - python-is-python3
