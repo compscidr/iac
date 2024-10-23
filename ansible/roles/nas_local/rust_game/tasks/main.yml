@@ -2,34 +2,82 @@
   tags: rust-game
   become: true
   ansible.builtin.file:
-    path: /etc/rust-monthly
+    path: "{{ item }}"
     state: directory
     mode: '755'
     owner: root
     group: root
+  loop:
+    - /etc/rust-monthly
+    - /etc/rust-monthly/oxide
+    - /etc/rust-monthly/oxide/plugins
+    - /etc/rust-monthly/cfg
 
 - name: Create Rust Weekly Directories
   tags: rust-game
   become: true
   ansible.builtin.file:
-    path: /etc/rust-weekly
+    path: "{{ item}}"
     state: directory
     mode: '755'
     owner: root
     group: root
+  loop:
+    - /etc/rust-weekly
+    - /etc/rust-weekly/oxide
+    - /etc/rust-weekly/oxide/plugins
+    - /etc/rust-weekly/cfg
+
+- name: Copy oxide plugins to Monthly
+  tags: rust-game
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '644'
+    owner: root
+    group: root
+  loop:
+    - src: files/oxide.config.json
+      dest: /etc/rust-monthly/oxide/oxide.config.json
+    - src: files/RustadminOnline.cs
+      dest: /etc/rust-monthly/oxide/plugins/RustadminOnline.cs
+
+- name: Copy oxide plugins to Weekly
+  tags: rust-game
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '644'
+    owner: root
+    group: root
+  loop:
+    - src: files/oxide.config.json
+      dest: /etc/rust-weekly/oxide/oxide.config.json
+    - src: files/RustadminOnline.cs
+      dest: /etc/rust-weekly/oxide/plugins/RustadminOnline.cs
 
 - name: Copy Rust Monthly config to host
   tags: rust-game
   become: true
   ansible.builtin.template:
-    src: files/rust.env.j2
-    dest: /etc/rust-monthly/rust.env
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
     mode: '644'
     owner: root
     group: root
+  loop:
+    - src: files/rust.env.j2
+      dest: /etc/rust-monthly/rust.env
+    - src: files/server.cfg.j2
+      dest: /etc/rust-monthly/server/rust_docker/cfg/server.cfg
   vars:
+    rust_server_tags: vanilla,monthly,NA
+    rust_cron_wipe_schedule: 0 19 4 * *
+    rust_startup_args: -load -nographics +server.secure 1 +server.tags {{ rust_server_tags }} +wipeTimezone America/Los_Angeles
     rust_identity: rust_docker
-    rust_seed: 30
+    rust_seed: "{{ 2147483647 | random }}"
     rust_server_name: "California | Monthly | No BP Wipe"
     rust_server_description: "Self hosted in Redwood City CA"
     rust_world_size: 4500
@@ -45,22 +93,30 @@
   tags: rust-game
   become: true
   ansible.builtin.template:
-    src: files/rust.env.j2
-    dest: /etc/rust-weekly/rust.env
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
     mode: '644'
     owner: root
     group: root
+  loop:
+    - src: files/rust.env.j2
+      dest: /etc/rust-weekly/rust.env
+    - src: files/server.cfg.j2
+      dest: /etc/rust-weekly/server/rust_docker_weekly/cfg/server.cfg
   vars:
+    rust_server_tags: vanilla,weekly,NA
+    rust_cron_wipe_schedule: 0 19 * * 4
+    rust_startup_args: -load -nographics +server.secure 1 +server.tags {{ rust_server_tags }} +wipeTimezone America/Los_Angeles
     rust_identity: rust_docker_weekly
-    rust_seed: 17
+    rust_seed: "{{ 2147483647 | random }}"
     rust_server_name: "California | Weekly | No BP Wipe"
     rust_server_description: "Self hosted in Redwood City CA"
-    rust_world_size: 4000
+    rust_world_size: 3000
     rust_server_port: 27015
     rust_server_query_port: 27016
     rust_rcon_port: 27017
     rust_app_port: 27082
-    rust_oxide_enabled: 0
+    rust_oxide_enabled: 1
     rust_server_url: https://discord.gg/t77M3yAgKu
     rust_banner_url: https://images2.imgbox.com/37/6d/fOpdrpYS_o.jpeg
 
@@ -70,7 +126,7 @@
   #   ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: rust
-    image: didstopia/rust-server
+    image: ghcr.io/compscidr/rust-server
     pull: true
     volumes:
       - "/etc/rust-monthly:/steamcmd/rust:rw"
@@ -90,7 +146,7 @@
       PUID: "1000"
       PGID: "1000"
     restart_policy: unless-stopped
-    memory: 10g
+    memory: 16g
 
 - name: Deploy Rust Weekly
   tags: rust-game
@@ -98,7 +154,7 @@
   #   ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: rust-weekly
-    image: didstopia/rust-server
+    image: ghcr.io/compscidr/rust-server
     pull: true
     volumes:
       - "/etc/rust-weekly:/steamcmd/rust:rw"
@@ -118,4 +174,4 @@
       PUID: "1000"
       PGID: "1000"
     restart_policy: unless-stopped
-    memory: 10g
+    memory: 16g

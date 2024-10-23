@@ -1,0 +1,32 @@
+{
+  "Options": {
+    "Modded": false,
+    "PluginWatchers": true,
+    "DefaultGroups": {
+      "Players": "default",
+      "Administrators": "admin"
+    },
+    "WebRequestIP": "0.0.0.0"
+  },
+  "Commands": {
+    "Chat command prefixes": [
+      "/"
+    ]
+  },
+  "Plugin Compiler": {
+    "Shutdown on idle": true,
+    "Seconds before idle": 60,
+    "Preprocessor directives": []
+  },
+  "OxideConsole": {
+    "Enabled": true,
+    "MinimalistMode": true,
+    "ShowStatusBar": true
+  },
+  "OxideRcon": {
+    "Enabled": false,
+    "Port": 25580,
+    "Password": "",
+    "ChatPrefix": "[Server Console]"
+  }
+}
