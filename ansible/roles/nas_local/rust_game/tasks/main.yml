@@ -17,7 +17,7 @@
   tags: rust-game
   become: true
   ansible.builtin.file:
-    path: "{{ item}}"
+    path: "{{ item }}"
     state: directory
     mode: '755'
     owner: root
