@@ -79,7 +79,7 @@
     rust_identity: rust_docker
     rust_seed: "{{ 2147483647 | random }}"
     rust_server_name: "California | Monthly | No BP Wipe"
-    rust_server_description: "Self hosted in Redwood City CA"
+    rust_server_description: "Self hosted in Redwood City CA\nWipes on the 4th day of the month at 7pm PST\nWorld Size: {{rust_world_size}}"
     rust_world_size: 4500
     rust_server_port: 28015
     rust_server_query_port: 28016
@@ -110,7 +110,7 @@
     rust_identity: rust_docker_weekly
     rust_seed: "{{ 2147483647 | random }}"
     rust_server_name: "California | Weekly | No BP Wipe"
-    rust_server_description: "Self hosted in Redwood City CA"
+    rust_server_description: "Self hosted in Redwood City CA\nWipes on Thursdays at 7pm PST\nWorld Size: {{rust_world_size}}"
     rust_world_size: 3000
     rust_server_port: 27015
     rust_server_query_port: 27016
