@@ -51,11 +51,9 @@
 
 - name: Deploy www.jasonernst.com
   tags: website
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.43
+    image: compscidr/goblog:v0.1.44
     volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/prod/database.db
@@ -74,11 +72,9 @@
 
 - name: Deploy staging.jasonernst.com
   tags: website
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.1.43
+    image: compscidr/goblog:v0.1.44
     volumes: /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/staging/database.db
@@ -97,8 +93,6 @@
 
 - name: Deploy mysql db
   tags: db
-  vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: db
     image: mysql
