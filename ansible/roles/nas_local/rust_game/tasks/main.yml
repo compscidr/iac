@@ -42,8 +42,9 @@
       dest: /etc/rust-monthly/oxide/oxide.config.json
     - src: files/RustadminOnline.cs
       dest: /etc/rust-monthly/oxide/plugins/RustadminOnline.cs
-    - src: files/Oxide.Ext.RustIO.dll
-      dest: /etc/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+# only if we want a modded server
+#    - src: files/Oxide.Ext.RustIO.dll
+#      dest: /etc/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
 
 - name: Copy oxide plugins to Weekly
   tags: rust-weekly
@@ -59,8 +60,9 @@
       dest: /etc/rust-weekly/oxide/oxide.config.json
     - src: files/RustadminOnline.cs
       dest: /etc/rust-weekly/oxide/plugins/RustadminOnline.cs
-    - src: files/Oxide.Ext.RustIO.dll
-      dest: /etc/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+# only if we want a modded server
+#    - src: files/Oxide.Ext.RustIO.dll
+#      dest: /etc/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
 
 - name: Copy Wipe Script to weekly
   tags: rust-weekly
