@@ -28,6 +28,10 @@ You'll probably want to test it works (and accept the ssh key) - with:
 ## Deploying to just www.jasonernst.com
 `ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --limit www.jasonernst.com`
 
+## Deploying to nas
+Requires an extra `ask-pass` argument:
+`ansible-playbook -i inventory.yml playbook.yml --ask-become-pass --ask-pass --limit nas.local --tags rust-weekly`
+
 # Checking for problems
 `ansible-playbook -i inventory.yml playbook.yml --check -vvvv`
 
