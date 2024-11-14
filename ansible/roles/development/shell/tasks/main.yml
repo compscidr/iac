@@ -14,9 +14,9 @@
     owner: "{{ username }}"
     group: "{{ username }}"
 
-# better terminal + tmux
+# better shell + tmux
 - name: install command line apt packages (fish, powerline, tmux, byobu)
-  tags: terminal
+  tags: shell
   become: true
   ansible.builtin.apt:
     pkg:
@@ -25,6 +25,7 @@
       - tmux
       - byobu
       - neofetch
+      - screen
 
 - name: tmux config
   become_user: "{{ username }}"

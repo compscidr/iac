@@ -31,6 +31,8 @@
       - ethtool                 # gets info like link speed
       - iftop                   # network top
       - iotop                   # disk top
+      - htop                    # better top (uses mouse for example)
+      - lm-sensors              # suggested installed with htop
       - net-tools               # ifconfig, netstat, arp
       - nmap                    # determine open ports
       - traceroute              # traceroute
