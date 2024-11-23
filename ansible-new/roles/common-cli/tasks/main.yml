@@ -55,3 +55,54 @@
       value: main
     - name: user.signingkey
       value: "{{ signingkey }}"
+
+- name: Create docker group
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: Add user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ username }}"
+    groups: docker
+    append: true
+  notify: Reset ssh connection    
+
+- name: Install various cli tools
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - btop                    # modern and colorful cli resource monitor
+      - curl                    # http/https/gopher tool
+      - docker.io               # containers
+      - git			# code repos
+      - htop                    # better top (uses mouse for example)
+      - lm-sensors              # suggested installed with htop
+      - nvme-cli                # get temperature / stats on nmves
+      - unzip                   # zip files
+      - wget                    # curl alternative
+      - xclip                   # cli interface for x selections
+
+- name: Install network tools
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - arp-scan                # for ip <-> mac map search
+      - dnsutils                # dig
+      - ethtool                 # gets info like link speed
+      - iftop                   # network top
+      - iptables-persistent	# boot-time loader for netfilter rules
+      - iotop                   # disk top
+      - nbtscan                 # netbios scanner
+      - net-tools               # ifconfig, netstat, arp
+      - nmap                    # determine open ports
+      - socat                   # sort of like nc but doesn't hang
+      - sqlite3                 # good db for integration tests
+      - sshfs                   # ssh mounts
+      - sshuttle                # forward ssh through tunnel
+      - tcpstat		        # network interface statistics reporting tool
+      - traceroute              # traceroute
+      - fail2ban                # https://help.ubuntu.com/community/Fail2ban
+      - whois                   # whois
+      
