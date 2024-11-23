@@ -1,6 +1,8 @@
 # from galaxy
 roles:
-
+  - name: compscidr.gpg
+    version: "0.0.10"
+  
 collections:
   - name: community.general
     version: "10.0.1"

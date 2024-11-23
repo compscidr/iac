@@ -3,7 +3,9 @@
   hosts: all
   vars_files:
     - vars/deb_arch.yml
+    - vars/user.yml
   roles:
+    - compscidr.gpg
     - common-cli
 
 - name: Common tasks for gui hosts

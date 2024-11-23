@@ -21,17 +21,37 @@
     update_cache: true
     pkg:
       - 1password-cli
-  
+
+- name: Ensure GPG directory exists
+  tags: gpg
+  become_user: "{{ username }}"
+  file:
+    path: "~/.gpg"
+    mode: "0700"
+    state: directory
+
+- name: Copy GPG key
+  tags: gpg
+  become_user: "{{ username }}"
+  ansible.builtin.copy:
+    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
+    dest: "~/.gpg/{{ username }}.gpg"
+    mode: "0600"
+  notify: 
+    - Import GPG private key
+
 - name: Configure git preferences
-  become_user: jason
+  become_user: "{{ username }}"
   community.general.git_config:
     scope: global
     name: "{{ item.name }}"
     value: "{{ item.value }}"
   loop:
     - name: user.email
-      value: ernstjason1@gmail.com
+      value: "{{ email }}" 
     - name: user.name
-      value: Jason Ernst
+      value: "{{ fullname }}"
     - name: init.defaultBranch
       value: main
+    - name: user.signingkey
+      value: "{{ signingkey }}"

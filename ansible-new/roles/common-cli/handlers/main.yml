@@ -1,0 +1,8 @@
+---
+- name: Import GPG private key
+  tags: gpg
+  become_user: "{{ username }}"
+  gpg:
+    key_file: "~/.gpg/{{ username }}.gpg"
+    key_id: "{{ signingkey }}"
+    key_type: private
