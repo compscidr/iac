@@ -1,0 +1,6 @@
+dev:
+  hosts:
+    ubuntu-beast:
+gui:
+  hosts:
+    ubuntu-beast:

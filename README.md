@@ -8,6 +8,9 @@ local devices, and use a common set of expectations for all devices in my fleet
 2. a way to easily provision and deploy cloud resources
 3. a minimal amount of secret management by encrypting secrets
 
+## Opinionated Stuff
+- I hate snaps. Wherever possible I use apt on ubuntu.
+
 ## Terraform
 Used to provision cloud resources (currently on digital ocean and terraform):
 - compute

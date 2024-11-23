@@ -1,0 +1,6 @@
+# from galaxy
+roles:
+
+collections:
+  - name: community.general
+    version: "10.0.1"

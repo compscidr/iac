@@ -1,0 +1,9 @@
+---
+- name: Install 1password
+  tags: 1password
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - 1password
+  

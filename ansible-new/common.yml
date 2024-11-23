@@ -1,0 +1,13 @@
+---
+- name: Common tasks for all hosts
+  hosts: all
+  vars_files:
+    - vars/deb_arch.yml
+  roles:
+    - common-cli
+
+- name: Common tasks for gui hosts
+  hosts: gui
+  vars_files:
+  roles:
+    - common-gui
