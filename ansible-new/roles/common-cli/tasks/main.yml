@@ -81,17 +81,17 @@
       - byobu                   # text window manager / multiplexer / devops env
       - curl                    # http/https/gopher tool
       - docker.io               # containers
-      - fish			# friendly interactive shell
-      - fzf			# command line fuzzy finder
-      - git			# code repos
+      - fish                    # friendly interactive shell
+      - fzf                     # command line fuzzy finder
+      - git                     # code repos
       - htop                    # better top (uses mouse for example)
       - lm-sensors              # suggested installed with htop
-      - nano			# simple command line editor
+      - nano                    # simple command line editor
       - neofetch                # cli system info
       - nvme-cli                # get temperature / stats on nmves
       - powerline               # prompt and statusline utility
       - screen                  # terminal multiplexer
-      - stow			# use this to manage dotfiles
+      - stow                    # use this to manage dotfiles
       - tmux                    # terminal multiplexer
       - unzip                   # zip files
       - wget                    # curl alternative
@@ -106,7 +106,7 @@
       - dnsutils                # dig
       - ethtool                 # gets info like link speed
       - iftop                   # network top
-      - iptables-persistent	# boot-time loader for netfilter rules
+      - iptables-persistent     # boot-time loader for netfilter rules
       - iotop                   # disk top
       - nbtscan                 # netbios scanner
       - net-tools               # ifconfig, netstat, arp
@@ -115,7 +115,7 @@
       - sqlite3                 # good db for integration tests
       - sshfs                   # ssh mounts
       - sshuttle                # forward ssh through tunnel
-      - tcpstat		        # network interface statistics reporting tool
+      - tcpstat                 # network interface statistics reporting tool
       - traceroute              # traceroute
       - fail2ban                # https://help.ubuntu.com/community/Fail2ban
       - whois                   # whois
@@ -143,3 +143,55 @@
   shell: "stow {{ item.path | basename }}"
   args:
     chdir: ~/dotfiles
+
+# https://github.com/jorgebucaran/fisher
+- name: Check if fisher install needed
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    fisher list
+  args:
+    executable: /usr/bin/fish
+  register: fisher_status
+  ignore_errors: true
+
+- name: Install fisher
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  args:
+    executable: /usr/bin/fish
+  when: fisher_status is failed
+
+- name: Check if forgit is installed
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    fisher list | grep wfxr/forgit
+  args:
+    executable: /usr/bin/fish
+  register: forgit_status
+  ignore_errors: true
+
+- name: Install forgit
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    fisher install wfxr/forgit
+  args:
+    executable: /usr/bin/fish
+  when: forgit_status is failed
+
+- name: Check if bobthefish is installed
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    fisher list | grep bobthefish
+  args:
+    executable: /usr/bin/fish  
+  register: bobthefish_status
+  ignore_errors: true
+
+- name: Install bobthefish
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    fisher install oh-my-fish/theme-bobthefish
+  args:
+    executable: /usr/bin/fish
+  when: bobthefish_status is failed
