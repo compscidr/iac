@@ -82,3 +82,18 @@
     update_cache: true
     pkg:
       - libfuse2
+
+- name: Install slack
+  tags: slack
+  become: true
+  ansible.builtin.apt:
+    deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.41.97/slack-desktop-4.41.97-amd64.deb
+
+# telegram:
+- name: Download and install telegram
+  tags: telegram
+  become: true
+  ansible.builtin.unarchive:
+    src: https://updates.tdesktop.com/tlinux/tsetup.5.8.1.tar.xz
+    dest: /opt/
+    remote_src: true
