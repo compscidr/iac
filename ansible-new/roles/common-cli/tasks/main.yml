@@ -42,6 +42,7 @@
 
 - name: Configure git preferences
   become_user: "{{ username }}"
+  tags: git
   community.general.git_config:
     scope: global
     name: "{{ item.name }}"
@@ -57,12 +58,14 @@
       value: "{{ signingkey }}"
 
 - name: Create docker group
+  tags: docker
   ansible.builtin.group:
     name: docker
     state: present
 
 - name: Add user to docker group
   become: true
+  tags: docker
   ansible.builtin.user:
     name: "{{ username }}"
     groups: docker
@@ -71,21 +74,32 @@
 
 - name: Install various cli tools
   become: true
+  tags: cli-tools
   ansible.builtin.apt:
     pkg:
       - btop                    # modern and colorful cli resource monitor
+      - byobu                   # text window manager / multiplexer / devops env
       - curl                    # http/https/gopher tool
       - docker.io               # containers
+      - fish			# friendly interactive shell
+      - fzf			# command line fuzzy finder
       - git			# code repos
       - htop                    # better top (uses mouse for example)
       - lm-sensors              # suggested installed with htop
+      - nano			# simple command line editor
+      - neofetch                # cli system info
       - nvme-cli                # get temperature / stats on nmves
+      - powerline               # prompt and statusline utility
+      - screen                  # terminal multiplexer
+      - stow			# use this to manage dotfiles
+      - tmux                    # terminal multiplexer
       - unzip                   # zip files
       - wget                    # curl alternative
       - xclip                   # cli interface for x selections
 
 - name: Install network tools
   become: true
+  tags: network-tools
   ansible.builtin.apt:
     pkg:
       - arp-scan                # for ip <-> mac map search
