@@ -89,7 +89,6 @@
   ansible.builtin.apt:
     deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.41.97/slack-desktop-4.41.97-amd64.deb
 
-# telegram:
 - name: Download and install telegram
   tags: telegram
   become: true
@@ -97,3 +96,16 @@
     src: https://updates.tdesktop.com/tlinux/tsetup.5.8.1.tar.xz
     dest: /opt/
     remote_src: true
+
+- name: install keybase
+  tags: keybase
+  become: true
+  ansible.builtin.apt:
+    deb: https://prerelease.keybase.io/keybase_amd64.deb
+
+- name: Install Gimp
+  tags: gimp
+  become: true
+  ansible.builtin.apt:
+    name: gimp
+    state: present

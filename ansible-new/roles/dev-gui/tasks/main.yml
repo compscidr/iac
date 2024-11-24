@@ -48,3 +48,19 @@
   ansible.builtin.apt:
     pkg:
       - wireshark
+
+- name: Postman
+  tags: postman
+  become: true
+  ansible.builtin.unarchive:
+    src: https://dl.pstmn.io/download/latest/linux64
+    dest: /opt/
+    remote_src: true
+
+- name: Postman app shortcut
+  tags: postman
+  become: true
+  ansible.builtin.copy:
+    src: files/postman.desktop
+    dest: /usr/share/applications/postman.desktop
+    mode: '0664'
