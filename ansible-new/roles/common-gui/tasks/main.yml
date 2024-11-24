@@ -34,6 +34,8 @@
     path: "~/Templates/Empty Document"
     state: touch
     mode: '0600'
+    modification_time: preserve
+    access_time: preserve
     
 # # why you might want to swtich up terminal emulators: https://www.reddit.com/r/linuxquestions/comments/ri3yjg/comment/hout26s/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
 - name: Install terminal emulators
