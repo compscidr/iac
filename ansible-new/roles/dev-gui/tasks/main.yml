@@ -19,3 +19,10 @@
     update_cache: true
     pkg:
       - code
+
+- name: Install jetbrains toolbox
+  tags: jetbrains
+  ansible.builtin.include_role:
+    name: webarchitect609.jet_brains_toolbox
+    apply:
+      become: true

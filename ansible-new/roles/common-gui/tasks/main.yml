@@ -72,3 +72,11 @@
     update_cache: true
     pkg:
       - spotify-client
+
+- name: AppImage compatibility
+  become: true
+  tags: AppImage
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - libfuse2
