@@ -21,6 +21,7 @@
 
 - name: Install discord
   become: true
+  tags: discord
   ansible.builtin.apt:
     update_cache: true
     pkg:
@@ -50,3 +51,24 @@
       - cool-retro-term
       - terminology
       - sakura # simple, multiple tabs
+
+- name: Install spotify apt repo
+  tags: spotify
+  become: true
+  ansible.builtin.deb822_repository:
+    name: spotify
+    types: [deb]
+    uris: http://repository.spotify.com
+    signed_by: https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg
+    suites: [stable]
+    components: [non-free]
+    state: present
+    enabled: yes
+
+- name: Install spotify
+  become: true
+  tags: spotify
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - spotify-client
