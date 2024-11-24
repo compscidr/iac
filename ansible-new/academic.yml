@@ -1,0 +1,8 @@
+---
+- name: Academic tools
+  hosts: academic-gui
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  roles:
+    - academic-gui
