@@ -25,3 +25,11 @@
     update_cache: true
     pkg:
       - discord
+
+- name: Create new File context menu
+  tags: UI
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/Templates/Empty Document"
+    state: touch
+    mode: '0600'
