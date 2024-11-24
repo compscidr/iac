@@ -33,3 +33,20 @@
     path: "~/Templates/Empty Document"
     state: touch
     mode: '0600'
+    
+# # why you might want to swtich up terminal emulators: https://www.reddit.com/r/linuxquestions/comments/ri3yjg/comment/hout26s/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+- name: Install terminal emulators
+  tags: terminal-emulators
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - kitty # gpu enabled
+      - rxvt-unicode # hate this one
+      - alacritty # opengl enabled, cross platform, no tabs
+      - terminator # kind of like a tmux behavior built in (note this will change the ctrl-cmd-t to use this one). Change back with: sudo update-alternatives --config x-terminal-emulator
+      - stterm # https://st.suckless.org/
+      - foot # wayland native (should probably only install on ubuntu)
+      - tilda # uses a weird full screen setup.
+      - cool-retro-term
+      - terminology
+      - sakura # simple, multiple tabs
