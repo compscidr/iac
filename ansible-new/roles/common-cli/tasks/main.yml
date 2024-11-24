@@ -119,4 +119,27 @@
       - traceroute              # traceroute
       - fail2ban                # https://help.ubuntu.com/community/Fail2ban
       - whois                   # whois
-      
+
+# https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
+- name: Clone dotfile repo
+  become_user: "{{ username }}"
+  tags: dotfiles
+  ansible.builtin.git:
+    repo: git@github.com:compscidr/dotfiles.git
+    dest: ~/dotfiles
+
+- name: Build directories list
+  tags: dotfiles
+  find:
+    paths: [~/dotfiles/]
+    recurse: no
+    file_type: directory
+  register: files
+ 
+- name: Deploy dotfiles!
+  become_user: "{{ username }}"
+  tags: dotfiles
+  with_items: "{{ files.files }}"
+  shell: "stow {{ item.path | basename }}"
+  args:
+    chdir: ~/dotfiles
