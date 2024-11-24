@@ -6,4 +6,22 @@
     update_cache: true
     pkg:
       - 1password
-  
+
+- name: Install discord apt repo
+  tags: discord
+  become: true
+  ansible.builtin.deb822_repository:
+    name: discord
+    types: [deb]
+    uris: https://palfrey.github.io/discord-apt/debian
+    signed_by: https://palfrey.github.io/discord-apt/discord-apt.gpg.asc
+    suites: ./
+    state: present
+    enabled: yes
+
+- name: Install discord
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - discord
