@@ -26,3 +26,25 @@
     name: webarchitect609.jet_brains_toolbox
     apply:
       become: true
+
+- name: Ensure group wireshark exists
+  become: true
+  tags: wireshark
+  ansible.builtin.group:
+    name: wireshark
+    state: present
+
+- name: adding jason to group wireshark
+  become: true
+  tags: wireshark
+  ansible.builtin.user:
+    name: "{{ username }}"
+    groups: wireshark
+    append: true
+
+- name: install wireshark
+  tags: wireshark
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - wireshark
