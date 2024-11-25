@@ -1,5 +1,5 @@
 ---
-- name: install latex tools
+- name: Install latex tools
   tags: latex
   become: true
   ansible.builtin.apt:

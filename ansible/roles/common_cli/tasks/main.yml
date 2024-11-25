@@ -52,10 +52,10 @@
     name: compscidr.gpg
     apply:
       become_user: "{{ username }}"
-  vars:  
-    key_file: "~/.gpg/{{ username }}.gpg"
-    key_id: "{{ signingkey }}"
-    key_type: private
+  vars:
+    gpg_key_file: "~/.gpg/{{ username }}.gpg"
+    gpg_key_id: "{{ signingkey }}"
+    gpg_key_type: private
 
 - name: Configure git preferences
   become_user: "{{ username }}"
@@ -66,7 +66,7 @@
     value: "{{ item.value }}"
   loop:
     - name: user.email
-      value: "{{ email }}" 
+      value: "{{ email }}"
     - name: user.name
       value: "{{ fullname }}"
     - name: init.defaultBranch
@@ -148,7 +148,7 @@
 
 - name: Build directories list
   tags: dotfiles
-  find:
+  ansible.builtin.find:
     paths: [~/dotfiles/]
     recurse: false
     file_type: directory
@@ -202,7 +202,7 @@
   ansible.builtin.shell: |
     fisher list | grep bobthefish
   args:
-    executable: /usr/bin/fish  
+    executable: /usr/bin/fish
   register: bobthefish_status
   ignore_errors: true
 

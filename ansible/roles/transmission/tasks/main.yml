@@ -12,7 +12,7 @@
 - name: Set transmission nordvpn credentials
   tags: transmission
   become: true
-  copy:
+  ansible.builtin.copy:
     mode: '755'
     owner: root
     group: root

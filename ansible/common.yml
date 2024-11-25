@@ -6,7 +6,7 @@
     - vars/user.yml
   roles:
     - compscidr.gpg
-    - common-cli
+    - common_cli
 
 - name: Common tasks for gui hosts
   hosts: gui
@@ -14,4 +14,4 @@
     - vars/deb_arch.yml
     - vars/user.yml
   roles:
-    - common-gui
+    - common_gui

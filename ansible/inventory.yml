@@ -2,7 +2,7 @@ ungrouped:
   hosts:
     nas.local:
     jasonernst.com:
-academic-gui:
+academic_gui:
   hosts:
     ubuntu-beast:
 dev:
@@ -14,7 +14,7 @@ dev:
     ubuntu-asus-laptop:
     ubuntu-toshiba-laptop:
     ubuntu-toshiba-mini-laptop:
-dev-gui:
+dev_gui:
   hosts:
     ubuntu-beast:
     ubuntu-work:
@@ -22,9 +22,9 @@ gui:
   hosts:
     ubuntu-beast:
     ubuntu-work:
-android-runner:
+android_runner:
   hosts:
     ubuntu-silverstone:
-java-runner:
+java_runner:
   hosts:
     ubuntu-silverstone:

@@ -185,4 +185,4 @@
 #     name: "backup www.jasonernst.com"
 #     minute: "0"
 #     hour: "3"
-#     job: "rsync -av --delete /opt/goblog/prod/ ubuntu-server:/storage/backup/www.jasonernst.com/"      
+#     job: "rsync -av --delete /opt/goblog/prod/ ubuntu-server:/storage/backup/www.jasonernst.com/"

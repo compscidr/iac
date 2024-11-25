@@ -1,3 +1,4 @@
+---
 - name: Create Home Assistant Directories
   tags: homeassistant
   become: true
@@ -5,7 +6,7 @@
     mode: '755'
     path: "/etc/homeassistant"
     state: directory
-    
+
 - name: Deploy Home Assistant
   tags: homeassistant
   community.docker.docker_container:

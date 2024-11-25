@@ -5,7 +5,7 @@
     - vars/deb_arch.yml
     - vars/user.yml
   roles:
-    - jasonernst.com
+    - jasonernst_com
     - role: compscidr.media_server.ombi
       vars:
         ombi_virtual_host: "ombi.jasonernst.com"

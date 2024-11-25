@@ -8,9 +8,9 @@
     - dev
 
 - name: Gui Developer tools
-  hosts: dev-gui
+  hosts: dev_gui
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
   roles:
-    - dev-gui
+    - dev_gui

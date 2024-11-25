@@ -1,7 +1,7 @@
 ---
 - name: Deploy Android Runners
   hosts: android-runner
-  vars: 
+  vars:
     github_runner_install_docker: false
     github_runner_java: true
     github_runner_java_mount_usb: true
@@ -28,13 +28,14 @@
         github_runner_org: true
         github_runner_org_name: "grape-networking"
 
-- name: Deploy Java Runners
-  hosts: java-runner
-  vars: 
-    github_runner_install_docker: false
-    github_runner_java: true
-    github_runner_java_mount_usb: false
-  vars_files:
-    - vars/deb_arch.yml
-    - vars/user.yml
-  roles:
+# enable this when we require any non-android java runners
+# - name: Deploy Java Runners
+#   hosts: java-runner
+#   vars:
+#     github_runner_install_docker: false
+#     github_runner_java: true
+#     github_runner_java_mount_usb: false
+#   vars_files:
+#     - vars/deb_arch.yml
+#     - vars/user.yml
+#   roles:
