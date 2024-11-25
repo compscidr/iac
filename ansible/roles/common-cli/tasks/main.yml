@@ -37,8 +37,6 @@
     content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
-  notify: 
-    - Import GPG private key
 
 - name: Import GPG private key
   tags: gpg
