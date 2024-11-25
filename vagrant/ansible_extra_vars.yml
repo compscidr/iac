@@ -1,0 +1,11 @@
+username: vagrant
+fullname: Jason Ernst
+email: ernstjason1@gmail.com
+signingkey: BDD9823CA1EA5636114208E86CD8B581B5FA61E1
+deb_architecture: {
+    "armv6l": "armhf",
+    "armv7l": "armhf",
+    "aarch64": "arm64",
+    "x86_64": "amd64",
+    "i386": "i386"
+}
