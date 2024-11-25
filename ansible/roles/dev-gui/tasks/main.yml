@@ -10,7 +10,7 @@
     suites: [stable]
     components: [main]
     state: present
-    enabled: yes
+    enabled: true
 
 - name: Install vscode
   become: true
@@ -34,7 +34,7 @@
     name: wireshark
     state: present
 
-- name: adding jason to group wireshark
+- name: Add user to group wireshark
   become: true
   tags: wireshark
   ansible.builtin.user:
@@ -42,7 +42,7 @@
     groups: wireshark
     append: true
 
-- name: install wireshark
+- name: Install wireshark
   tags: wireshark
   become: true
   ansible.builtin.apt:
@@ -71,7 +71,7 @@
   ansible.builtin.apt:
     pkg:
       - dconf-editor
-    
+
 - name: Virtualbox
   tags: virtualbox
   become: true

@@ -7,7 +7,7 @@
       - adb
       - android-sdk-platform-tools-common
 
-- name: Add {{ username }} to group plugdev for adb
+- name: Add user to group plugdev for adb
   become: true
   tags: android
   ansible.builtin.user:
@@ -63,7 +63,7 @@
 
 - name: Install node development tools
   become: true
-  tags: 
+  tags:
     - node
     - npm
   ansible.builtin.apt:
@@ -74,7 +74,7 @@
 # https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
 - name: Install yarn node.js package
   become: true
-  tags: 
+  tags:
     - yarn
     - node
     - npm
@@ -84,7 +84,7 @@
 
 - name: Install tldr node package # https://tldr.sh/
   become: true
-  tags: 
+  tags:
     - tldr
     - node
     - npm
@@ -100,10 +100,10 @@
     state: present
     types: [deb]
     uris: "https://ppa.launchpadcontent.net/ondrej/php/ubuntu"
-    suites: ["{{ ansible_distribution_release|lower }}"]
+    suites: ["{{ ansible_distribution_release | lower }}"]
     components: [main]
     signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
-    enabled: yes
+    enabled: true
 
 - name: Install php and php dev tools
   tags: php
@@ -167,8 +167,8 @@
   become: true
   tags: doctl
   ansible.builtin.unarchive:
-    src: >
-      https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz
+    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-
+      1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz"
     dest: /usr/local/bin
     remote_src: true
 
@@ -179,6 +179,7 @@
   ansible.builtin.copy:
     content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
     dest: /etc/environment.d/90-digitalocean.conf
+    mode: "644"
 
 - name: Download awscli
   become: true
@@ -206,6 +207,7 @@
       AWS_DEFAULT_REGION=us-west-1
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
+    mode: "644"
 
 - name: Add hashicorp repository
   become: true
@@ -218,7 +220,7 @@
     suites: "{{ ansible_distribution_release }}"
     components: [main]
     signed_by: "https://apt.releases.hashicorp.com/gpg"
-    enabled: yes
+    enabled: true
 
 - name: Install hashicorp tools
   become: true
@@ -245,7 +247,7 @@
     suites: "{{ ansible_distribution_release }}"
     components: [main]
     signed_by: "https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_distribution_release }}.noarmor.gpg"
-    enabled: yes
+    enabled: true
 
 - name: Install tailscale tools
   become: true
@@ -263,3 +265,4 @@
     content: |
       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault='Infrastructure') }}
     dest: /etc/environment.d/90-op.conf
+    mode: "644"

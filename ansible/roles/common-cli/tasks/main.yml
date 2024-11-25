@@ -12,7 +12,7 @@
     suites: [stable]
     components: [main]
     state: present
-    enabled: yes
+    enabled: true
 
 - name: Install 1password cli
   tags: 1password
@@ -33,7 +33,7 @@
 - name: Ensure GPG directory exists
   tags: gpg
   become_user: "{{ username }}"
-  file:
+  ansible.builtin.file:
     path: "~/.gpg"
     mode: "0700"
     state: directory
@@ -87,7 +87,7 @@
     name: "{{ username }}"
     groups: docker
     append: true
-  notify: Reset ssh connection    
+  notify: Reset ssh connection
 
 - name: Install various cli tools
   become: true
@@ -150,10 +150,10 @@
   tags: dotfiles
   find:
     paths: [~/dotfiles/]
-    recurse: no
+    recurse: false
     file_type: directory
   register: files
- 
+
 - name: Deploy dotfiles
   become_user: "{{ username }}"
   tags: dotfiles
