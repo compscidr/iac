@@ -1,4 +1,11 @@
 # Ansible
+For any plays which deploy secrets / credentials, all of these are managed by 1password.
+The plays are setup to lookup the secrets using 1password cli (op). In order for this 
+to work, you must login to onepassword in the terminal you are doing the deploying from.
+
+You can do this: `eval $(op signin)` in order to login, and enter your 1password password.
+
+After this, you can run any of the example commands below
 
 ## Example commands
 
