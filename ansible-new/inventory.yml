@@ -8,11 +8,14 @@ academic-gui:
 dev:
   hosts:
     ubuntu-beast:
-    silverstone:
-    cube:
+    ubuntu-silverstone:
+    ubuntu-cube:
+    ubuntu-work:
 dev-gui:
   hosts:
     ubuntu-beast:
+    ubuntu-work:
 gui:
   hosts:
     ubuntu-beast:
+    ubunut-work:
