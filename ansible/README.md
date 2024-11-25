@@ -1,8 +1,21 @@
 # Ansible
 
-## Requirements
-The first time you are deploying from a machine, or if the requirements.yml file
-changes, you should run `ansible-galaxy install -r requirements.yml`
+## Requirements / Bootstrapping Host Machine
+The machine running the ansible plays requires ansible >= 3.2. 
+Note, this doesn't have to be the target machine where you are deploying things to.
+If you want to add it to ubuntu, for example, do the following (the ansible included in ubuntu is very old)
+```sudo add-apt-repository ppa:ansible/ansible && sudo apt update && sudo apt install ansible ansible-lint```
+
+## Target Machines:
+The only real requirement on the target machines, is that they have SSH, are reachable
+and have the authorized the key from the deploying machine.
+
+### Ubuntu 24.04
+- Install ssh and import ssh authorized key: 
+```
+sudo apt install ssh
+ssh-import-id gh:compscidr
+```
 
 ## Credentials / Secrets
 For any plays which deploy secrets / credentials, all of these are managed by 1password.
