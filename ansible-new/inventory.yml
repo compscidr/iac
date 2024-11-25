@@ -1,6 +1,7 @@
 ungrouped:
   hosts:
     nas.local:
+    jasonernst.com:
 academic-gui:
   hosts:
     ubuntu-beast:
