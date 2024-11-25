@@ -254,3 +254,12 @@
     update_cache: true
     pkg:
       - tailscale
+
+# note: this will require a restart to apply changes
+- name: Set op service account token
+  tags: 1password
+  become: true
+  ansible.builtin.copy:
+    content: |
+      OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault='Infrastructure') }}
+    dest: /etc/environment.d/90-op.conf

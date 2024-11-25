@@ -11,6 +11,10 @@ to work, you must login to onepassword in the terminal you are doing the deployi
 
 You can do this: `eval $(op signin)` in order to login, and enter your 1password password.
 
+Once this is done successfully, machines will be deployed with a service account token to
+their environment and they will not need this step any longer for self-deploying or to
+deploy to other machines
+
 After this, you can run any of the example commands below.
 
 ## Example commands
