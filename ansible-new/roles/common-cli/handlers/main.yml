@@ -1,12 +1,4 @@
 ---
-- name: Import GPG private key
-  tags: gpg
-  become_user: "{{ username }}"
-  gpg:
-    key_file: "~/.gpg/{{ username }}.gpg"
-    key_id: "{{ signingkey }}"
-    key_type: private
-
 # used when we make a change to the user like them
 # to a group
 - name: Reset ssh connection

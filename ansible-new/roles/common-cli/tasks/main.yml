@@ -40,6 +40,17 @@
   notify: 
     - Import GPG private key
 
+- name: Import GPG private key
+  tags: gpg
+  ansible.builtin.include_role:
+    name: compscidr.gpg
+    apply:
+      become_user: "{{ username }}"
+  vars:  
+    key_file: "~/.gpg/{{ username }}.gpg"
+    key_id: "{{ signingkey }}"
+    key_type: private
+
 - name: Configure git preferences
   become_user: "{{ username }}"
   tags: git
