@@ -21,4 +21,10 @@ dev-gui:
 gui:
   hosts:
     ubuntu-beast:
-    ubunut-work:
+    ubuntu-work:
+android-runner:
+  hosts:
+    ubuntu-silverstone:
+java-runner:
+  hosts:
+    ubuntu-silverstone:
