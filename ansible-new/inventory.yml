@@ -8,6 +8,8 @@ academic-gui:
 dev:
   hosts:
     ubuntu-beast:
+    silverstone:
+    cube:
 dev-gui:
   hosts:
     ubuntu-beast:
