@@ -171,3 +171,11 @@
       https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz
     dest: /usr/local/bin
     remote_src: true
+
+# note: this will require a restart to apply changes
+- name: Set digitalocean access token
+  become: true
+  tags: doctl
+  ansible.builtin.copy:
+    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
+    dest: /etc/environment.d/90-digitalocean.conf
