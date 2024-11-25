@@ -1,6 +1,9 @@
 academic-gui:
   hosts:
     ubuntu-beast:
+dev:
+  hosts:
+    ubuntu-beast:
 dev-gui:
   hosts:
     ubuntu-beast:

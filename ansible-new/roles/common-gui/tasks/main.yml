@@ -75,6 +75,13 @@
     pkg:
       - spotify-client
 
+- name: Cleanup spotify duplicate apt
+  become: true
+  tags: spotify
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/spotify.list
+    state: absent
+
 - name: AppImage compatibility
   become: true
   tags: AppImage
@@ -97,11 +104,27 @@
     dest: /opt/
     remote_src: true
 
-- name: install keybase
+# https://book.keybase.io/docs/server/our-code-signing-key
+- name: Install keybase apt repo
   tags: keybase
   become: true
+  ansible.builtin.deb822_repository:
+    name: keybase
+    types: [deb]
+    uris: http://prerelease.keybase.io/deb
+    signed_by: https://keybase.io/docs/server_security/code_signing_key.asc
+    suites: [stable]
+    components: [main]
+    state: present
+    enabled: yes
+
+- name: Install keybase
+  become: true
+  tags: keybase
   ansible.builtin.apt:
-    deb: https://prerelease.keybase.io/keybase_amd64.deb
+    update_cache: true
+    pkg:
+      - keybase
 
 - name: Install Gimp
   tags: gimp
