@@ -1,3 +1,6 @@
+ungrouped:
+  hosts:
+    nas.local:
 academic-gui:
   hosts:
     ubuntu-beast:

@@ -1,0 +1,31 @@
+- name: Create Home Assistant Directories
+  tags: homeassistant
+  become: true
+  ansible.builtin.file:
+    mode: '755'
+    path: "/etc/homeassistant"
+    state: directory
+    
+- name: Deploy Home Assistant
+  tags: homeassistant
+  community.docker.docker_container:
+    name: homeassistant
+    image: lscr.io/linuxserver/homeassistant:latest
+    network_mode: host
+    pull: true
+    env:
+      PUID: "999"
+      PGID: "10"
+      TZ: "America/Los_Angeles"
+    restart_policy: unless-stopped
+    volumes:
+      - "/etc/homeassistant:/config"
+      - "/run/dbus:/run:dbus:ro"
+    ports:
+      - "8123:8123"
+    memory: 1g
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb:rwm"
+    capabilities:
+      - net_admin
+      - net_raw
