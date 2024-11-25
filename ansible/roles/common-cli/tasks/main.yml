@@ -22,6 +22,14 @@
     pkg:
       - 1password-cli
 
+- name: Obtain ssh key
+  tags: ssh
+  become_user: "{{ username }}"
+  ansible.builtin.copy:
+    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
+    dest: "~/.ssh/id_rsa"
+    mode: "0600"
+
 - name: Ensure GPG directory exists
   tags: gpg
   become_user: "{{ username }}"
