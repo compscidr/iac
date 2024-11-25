@@ -140,7 +140,7 @@
   become_user: "{{ username }}"
   tags: dotfiles
   with_items: "{{ files.files }}"
-  shell: "stow {{ item.path | basename }}"
+  ansible.builtin.shell: "stow {{ item.path | basename }}"
   args:
     chdir: ~/dotfiles
 

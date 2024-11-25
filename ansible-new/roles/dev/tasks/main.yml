@@ -180,6 +180,33 @@
     content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
     dest: /etc/environment.d/90-digitalocean.conf
 
+- name: Download awscli
+  become: true
+  tags: aws
+  ansible.builtin.unarchive:
+    src: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}.zip"
+    dest: /tmp
+    remote_src: true
+
+- name: Install awscli
+  become: true
+  tags: aws
+  ansible.builtin.shell: ./install --update
+  args:
+    chdir: "/tmp/aws"
+
+# note: this will require a restart to apply changes
+- name: Set aws access token
+  become: true
+  tags: aws
+  ansible.builtin.copy:
+    content: |
+      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault='Infrastructure') }}
+      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault='Infrastructure') }}
+      AWS_DEFAULT_REGION=us-west-1
+      AWS_DEFAULT_OUTPUT=json
+    dest: /etc/environment.d/90-aws.conf
+
 - name: Add hashicorp repository
   become: true
   tags: hashicorp
