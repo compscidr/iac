@@ -72,3 +72,9 @@
     pkg:
       - dconf-editor
     
+- name: Virtualbox
+  tags: virtualbox
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - virtualbox
