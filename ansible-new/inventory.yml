@@ -10,7 +10,10 @@ dev:
     ubuntu-beast:
     ubuntu-silverstone:
     ubuntu-cube:
-    ubuntu-work:
+    ubuntu-work-laptop:
+    ubuntu-asus-laptop:
+    ubuntu-toshiba-laptop:
+    ubuntu-toshiba-mini-laptop:
 dev-gui:
   hosts:
     ubuntu-beast:
