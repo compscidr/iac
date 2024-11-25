@@ -121,4 +121,18 @@
   become: true
   ansible.builtin.apt:
     pkg:
-      - variety    
+      - variety
+
+- name: install chrome browser
+  tags: chrome
+  become: true
+  ansible.builtin.apt:
+    deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+
+- name: Set dock icons
+  tags: dock
+  become_user: "{{ username }}" # really important to have the username here, or it will seem like it isn't taking effect
+  community.general.dconf:
+    key: "/org/gnome/shell/favorite-apps"
+    value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop', 'org.gnome.Nautilus.desktop', 'code.desktop', 'snap-store_snap-store.desktop']"
+    state: present

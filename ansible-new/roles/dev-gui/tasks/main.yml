@@ -64,3 +64,11 @@
     src: files/postman.desktop
     dest: /usr/share/applications/postman.desktop
     mode: '0664'
+
+- name: Dconf-Editor
+  tags: dconf
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - dconf-editor
+    
