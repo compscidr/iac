@@ -179,3 +179,30 @@
   ansible.builtin.copy:
     content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
     dest: /etc/environment.d/90-digitalocean.conf
+
+- name: Add hashicorp repository
+  become: true
+  tags: hashicorp
+  ansible.builtin.deb822_repository:
+    name: hashicorp
+    state: present
+    types: [deb]
+    uris: "https://apt.releases.hashicorp.com"
+    suites: "{{ ansible_distribution_release }}"
+    components: [main]
+    signed_by: "https://apt.releases.hashicorp.com/gpg"
+    enabled: yes
+
+- name: Install hashicorp tools
+  become: true
+  tags:
+    - hashicorp
+    - vagrant
+    - terraform
+    - packer
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - vagrant
+      - terraform
+      - packer
