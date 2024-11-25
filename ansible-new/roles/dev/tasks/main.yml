@@ -233,3 +233,24 @@
       - vagrant
       - terraform
       - packer
+
+- name: Add tailscale repository
+  become: true
+  tags: tailscale
+  ansible.builtin.deb822_repository:
+    name: tailscale
+    state: present
+    types: [deb]
+    uris: "https://pkgs.tailscale.com/stable/ubuntu"
+    suites: "{{ ansible_distribution_release }}"
+    components: [main]
+    signed_by: "https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_distribution_release }}.noarmor.gpg"
+    enabled: yes
+
+- name: Install tailscale tools
+  become: true
+  tags: tailscale
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - tailscale
