@@ -1,5 +1,5 @@
 [![ansible lint](https://github.com/compscidr/iac/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/compscidr/iac/actions/workflows/ansible-lint.yml)
-[![ansible lint rules](https://img.shields.io/badge/Ansible--lint-rules%20table-blue.svg)](https://ansible-lint.readthedocs.io/en/latest/default_rules.html)
+[![ansible lint rules](https://img.shields.io/badge/Ansible--lint-rules%20table-blue.svg)](https://ansible.readthedocs.io/projects/lint/rules/)
 
 # Infrastructure as Code
 There are several goals of this project
@@ -7,6 +7,9 @@ There are several goals of this project
 local devices, and use a common set of expectations for all devices in my fleet
 2. a way to easily provision and deploy cloud resources
 3. a minimal amount of secret management by encrypting secrets
+
+## Opinionated Stuff
+- I hate snaps. Wherever possible I use apt on ubuntu.
 
 ## Terraform
 Used to provision cloud resources (currently on digital ocean and terraform):

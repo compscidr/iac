@@ -1,0 +1,10 @@
+---
+- name: install latex tools
+  tags: latex
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - texmaker
+      - fonts-font-awesome
+      - texlive-fonts-recommended
+      - texlive-fonts-extra

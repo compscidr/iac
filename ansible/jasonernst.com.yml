@@ -1,0 +1,12 @@
+---
+- name: Services for www.jasonernst.com
+  hosts: www_jasonernst_com
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  roles:
+    - jasonernst.com
+    - role: compscidr.media_server.ombi
+      vars:
+        ombi_virtual_host: "ombi.jasonernst.com"
+        ombi_letsencrypt_email: "ernstjason1@gmail.com"

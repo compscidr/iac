@@ -135,6 +135,7 @@
     rust_server_port: 28015
     rust_server_query_port: 28016
     rust_rcon_port: 28017
+    rust_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}""
     rust_app_port: 28082
     rust_oxide_enabled: 1
     rust_server_url: https://discord.gg/t77M3yAgKu
@@ -169,6 +170,7 @@
     rust_server_port: 27015
     rust_server_query_port: 27016
     rust_rcon_port: 27017
+    rust_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}""
     rust_app_port: 27082
     rust_oxide_enabled: 1
     rust_server_url: https://discord.gg/t77M3yAgKu

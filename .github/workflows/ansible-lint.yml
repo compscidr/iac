@@ -1,28 +1,19 @@
-name: Ansible Lint  # feel free to pick your own name
-
-on: [push, pull_request]
+name: ansible-lint
+on:
+  pull_request:
+    branches: ["main", "stable", "release/v*"]
 
 jobs:
   build:
-
+    name: Ansible Lint # Naming the build is important to use it as a status check
     runs-on: ubuntu-latest
-
     steps:
-    # Important: This sets up your GITHUB_WORKSPACE environment variable
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-    - run: 'echo "$VAULT_PASS" > $GITHUB_WORKSPACE/.vault_pass && printf "[defaults]\n\tvault_password_file = $GITHUB_WORKSPACE/.vault_pass\n" > ansible.cfg && cat ansible.cfg && touch requirements.txt'
-      shell: bash
-      env:
-        VAULT_PASS: ${{secrets.VAULT_PASS}}
-    
-    - name: Install Ansible
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.8"
-        cache: 'pip'
-    - run: pip install ansible-core==2.12.1 ansible-lint==5.2.1 rich~=10.0.0 # https://github.com/ansible-community/ansible-lint/issues/1795
-    
-    - run: ansible-galaxy install -r ansible/meta/requirements.yml
-    - run: mkdir -p ~/.ansible/plugins/modules && wget -O ~/.ansible/plugins/modules/gpg.py https://raw.githubusercontent.com/brandonkal/ansible-gpg/master/gpg.py
-    - run: ansible-lint ansible/playbook.yml
+      - uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        # optional (see below):
+        with:
+          args: ""
+          setup_python: "true"
+          working_directory: ""
+          requirements_file: ""
