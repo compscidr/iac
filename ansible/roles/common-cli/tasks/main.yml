@@ -92,6 +92,7 @@
       - byobu                   # text window manager / multiplexer / devops env
       - curl                    # http/https/gopher tool
       - docker.io               # containers
+      - docker-compose-v2       # docker compose
       - fish                    # friendly interactive shell
       - fzf                     # command line fuzzy finder
       - git                     # code repos
