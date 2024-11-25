@@ -1,55 +1,30 @@
-ungrouped: {}
-all:
-  children:
-    lan:
-      hosts:
-        ubuntu-server:
-          ansible_host: 10.0.0.218
-# Used in case this is run from outside of the home network
-#          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
-        jason-ubuntu-beast:
-# Used in case this is run from outside of the home network
-#          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q jason@home.jasonernst.com"'
-        ubuntu-desktop:
-          ansible_host: 10.0.0.111
-        jason-ubuntu-laptop:
-          ansible_host: 10.0.0.17
-        jason-work-ubuntu:
-          ansible_host: 10.0.0.16
-        nas.local:
-          ansible_host: 10.0.0.238
-    development:
-      hosts:
-        ubuntu-server:
-        jason-ubuntu-beast:
-        ubuntu-desktop:
-        jason-ubuntu-laptop:
-        jason-work-ubuntu:
-    development_gui:
-      hosts:
-        ubuntu-desktop:
-        jason-ubuntu-beast:
-        jason-ubuntu-laptop:
-        jason-work-ubuntu:
-    amd:
-      hosts:
-        ubuntu-desktop:
-        ubuntu-server:
-    nvidia:
-      hosts:
-        jason-ubuntu-beast:
-    home_jasonernst_com:
-      hosts:
-        ubuntu-server:
-    nas_local:
-      hosts:
-        nas.local:
-    www_jasonernst_com:
-      hosts:
-        www.jasonernst.com:
-    lp_jasonernst_com:
-      hosts:
-        lp.jasonernst.com:
-    ombi_jasonernst_com:
-      hosts:
-        ombi.jasonernst.com:
+ungrouped:
+  hosts:
+    nas.local:
+    jasonernst.com:
+academic-gui:
+  hosts:
+    ubuntu-beast:
+dev:
+  hosts:
+    ubuntu-beast:
+    ubuntu-silverstone:
+    ubuntu-cube:
+    ubuntu-work-laptop:
+    ubuntu-asus-laptop:
+    ubuntu-toshiba-laptop:
+    ubuntu-toshiba-mini-laptop:
+dev-gui:
+  hosts:
+    ubuntu-beast:
+    ubuntu-work:
+gui:
+  hosts:
+    ubuntu-beast:
+    ubuntu-work:
+android-runner:
+  hosts:
+    ubuntu-silverstone:
+java-runner:
+  hosts:
+    ubuntu-silverstone:
