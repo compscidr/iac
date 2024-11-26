@@ -1,7 +1,7 @@
 # from galaxy
 roles:
   - name: compscidr.gpg
-    version: "0.0.10"
+    version: "0.0.11"
   - name: webarchitect609.jet_brains_toolbox
     version: "2.0.1"
   - name: geerlingguy.php
