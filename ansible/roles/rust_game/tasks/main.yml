@@ -205,7 +205,7 @@
     restart_policy: unless-stopped
     devices:
       - /dev/dri:/dev/dri
-    memory: 16g
+    memory: 20g
 
 - name: Deploy Rust Weekly
   tags: rust-weekly
@@ -236,4 +236,4 @@
     devices:
       - /dev/dri:/dev/dri
     restart_policy: unless-stopped
-    memory: 16g
+    memory: 20g

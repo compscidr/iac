@@ -24,7 +24,7 @@
       - "/run/dbus:/run:dbus:ro"
     ports:
       - "8123:8123"
-    memory: 1g
+    memory: 5g
     devices:
       - "/dev/bus/usb:/dev/bus/usb:rwm"
     capabilities:

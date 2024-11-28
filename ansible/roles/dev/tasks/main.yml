@@ -123,6 +123,7 @@
       - python3-setuptools
       - python-is-python3
       - python3-poetry
+      - pipx
 
 - name: Install rust development tools
   tags: rust
@@ -192,9 +193,11 @@
 - name: Install awscli
   become: true
   tags: aws
-  ansible.builtin.shell: ./install --update
+  ansible.builtin.command: ./install --update
   args:
     chdir: "/tmp/aws"
+  register: awscli_status
+  changed_when: "'changed' in awscli_status.stdout"
 
 # note: this will require a restart to apply changes
 - name: Set aws access token
@@ -266,3 +269,31 @@
       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault='Infrastructure') }}
     dest: /etc/environment.d/90-op.conf
     mode: "644"
+
+- name: Install ansible-lint
+  tags: ansible-lint
+  become: true
+  become_user: jason
+  community.general.pipx:
+    name: ansible-lint
+
+- name: Copy userspace icmp socket permission file
+  become: true
+  tags: ping
+  ansible.builtin.copy:
+    src: files/99-allow-ping.conf
+    dest: /etc/sysctl.d/99-allow-ping.conf
+    mode: '0644'
+    owner: "root"
+    group: "root"
+
+- name: Download and install speedtest from Ookla
+  tags: speedtest
+  become: true
+  ansible.builtin.unarchive:
+    src: https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz
+    dest: /usr/local/bin
+    remote_src: true
+    exclude:
+      - speedtest.5
+      - speedtest.md

@@ -24,6 +24,7 @@
 
 - name: Obtain ssh key
   tags: ssh
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
     content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
@@ -32,6 +33,7 @@
 
 - name: Ensure GPG directory exists
   tags: gpg
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.file:
     path: "~/.gpg"
@@ -40,6 +42,7 @@
 
 - name: Copy GPG key
   tags: gpg
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
     content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
@@ -53,11 +56,12 @@
     apply:
       become_user: "{{ username }}"
   vars:
-    gpg_key_file: "~/.gpg/{{ username }}.gpg"
-    gpg_key_id: "{{ signingkey }}"
-    gpg_key_type: private
+    key_file: "~/.gpg/{{ username }}.gpg"
+    key_id: "{{ signingkey }}"
+    key_type: private
 
 - name: Configure git preferences
+  become: true
   become_user: "{{ username }}"
   tags: git
   community.general.git_config:
@@ -139,15 +143,20 @@
       - whois                   # whois
 
 # https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
+# without version pinning we get lint errors
 - name: Clone dotfile repo
+  become: true
   become_user: "{{ username }}"
   tags: dotfiles
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
+    version: 41540b8f09babd44a7e1bcc63912157bf770261d
 
 - name: Build directories list
   tags: dotfiles
+  become: true
+  become_user: "{{ username }}"
   ansible.builtin.find:
     paths: [~/dotfiles/]
     recurse: false
@@ -155,61 +164,78 @@
   register: files
 
 - name: Deploy dotfiles
+  become: true
   become_user: "{{ username }}"
   tags: dotfiles
   with_items: "{{ files.files }}"
-  ansible.builtin.shell: "stow {{ item.path | basename }}"
+  ansible.builtin.command: "stow {{ item.path | basename }}"
+  register: dotfiles_result
+  changed_when: "'changed' in dotfiles_result.stdout"
   args:
     chdir: ~/dotfiles
 
 # https://github.com/jorgebucaran/fisher
 - name: Check if fisher install needed
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     fisher list
   args:
     executable: /usr/bin/fish
   register: fisher_status
+  changed_when: false
   ignore_errors: true
 
-- name: Install fisher
+- name: Download fisher
+  become: true
   become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-  args:
-    executable: /usr/bin/fish
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish
+    dest: /tmp/fisher.sh
+    mode: "0755"
   when: fisher_status is failed
+  notify: Install fisher
 
 - name: Check if forgit is installed
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     fisher list | grep wfxr/forgit
   args:
     executable: /usr/bin/fish
   register: forgit_status
+  changed_when: false
   ignore_errors: true
 
 - name: Install forgit
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     fisher install wfxr/forgit
   args:
     executable: /usr/bin/fish
   when: forgit_status is failed
+  register: forgit_install
+  changed_when: "'changed' in forgit_install.stdout"
 
 - name: Check if bobthefish is installed
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     fisher list | grep bobthefish
   args:
     executable: /usr/bin/fish
   register: bobthefish_status
+  changed_when: false
   ignore_errors: true
 
 - name: Install bobthefish
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     fisher install oh-my-fish/theme-bobthefish
   args:
     executable: /usr/bin/fish
   when: bobthefish_status is failed
+  register: bobthefish_install
+  changed_when: "'changed' in bobthefish_install.stdout"

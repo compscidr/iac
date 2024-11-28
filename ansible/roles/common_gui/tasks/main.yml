@@ -29,6 +29,7 @@
 
 - name: Create new File context menu
   tags: UI
+  become: true
   become_user: "{{ username }}"
   ansible.builtin.file:
     path: "~/Templates/Empty Document"
@@ -156,9 +157,27 @@
 
 - name: Set dock icons
   tags: dock
+  become: true
   become_user: "{{ username }}" # really important to have the username here, or it will seem like it isn't taking effect
   community.general.dconf:
     key: "/org/gnome/shell/favorite-apps"
     value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop',
       'org.gnome.Nautilus.desktop', 'code.desktop', 'snap-store_snap-store.desktop']"
     state: present
+
+- name: Install Gnome Browser Connector for Extensions
+  tags: gui
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - gnome-browser-connector
+      - gnome-shell-extension-manager
+
+# - name: Install Gnome Extensions
+#   tags: gui
+#   become: true
+#   ansible.builtin.import_role:
+#     name: luizgavalda.gnome_extensions
+#   vars:
+#     gnome-extension_ids:
+#       - 6580 # https://extensions.gnome.org/extension/6580/open-bar/
