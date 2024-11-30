@@ -207,7 +207,16 @@
     dest: /tmp/fisher.sh
     mode: "0755"
   when: fisher_status is failed
-  notify: Install fisher
+
+- name: Install fisher
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
+  args:
+    executable: /usr/bin/fish
+  register: fisher_installed
+  when: fisher_status is failed
+  changed_when: "'changed ' in fisher_installed.stdout"
 
 - name: Check if forgit is installed
   become: true

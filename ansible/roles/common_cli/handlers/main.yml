@@ -4,13 +4,3 @@
 - name: Reset ssh connection
   ansible.builtin.meta:
     reset_connection
-
-- name: Install fisher
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    source /tmp/fisher.fish && fisher install jorgebucaran/fisher
-  args:
-    executable: /usr/bin/fish
-  register: fisher_installed
-  changed_when: "'changed ' in fisher_installed.stdout"
