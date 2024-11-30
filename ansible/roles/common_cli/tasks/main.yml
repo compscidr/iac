@@ -127,6 +127,17 @@
       - fail2ban                # https://help.ubuntu.com/community/Fail2ban
       - whois                   # whois
 
+- name: Add github to known hosts so the following bit doesn't fail
+  become: true
+  become_user: "{{ username }}"
+  tags: dotfiles
+  ansible.builtin.known_hosts:
+    hash_host: true
+    name: github.com
+    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+    path: ~/.ssh/known_hosts
+    state: present
+
 # https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
 # without version pinning we get lint errors
 - name: Clone dotfile repo
@@ -137,6 +148,23 @@
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
     version: 41540b8f09babd44a7e1bcc63912157bf770261d
+
+- name: Test .bashrc file to see if its a symlink
+  tags: dotfile
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.stat:
+    path: ~/.bashrc
+  register: bash_test
+
+- name: Remove .bashrc file so stow has no conflicts
+  tags: dotfiles
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    dest: ~/.bashrc
+    state: absent
+  when: bash_test.stat is defined and bash_test.stat.islnk is false
 
 - name: Build directories list
   tags: dotfiles
