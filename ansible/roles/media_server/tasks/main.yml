@@ -1,0 +1,120 @@
+---
+- name: Create Transmission Directories
+  tags: transmission
+  become: true
+  ansible.builtin.file:
+    path: "/etc/transmission/"
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Set transmission nordvpn credentials
+  tags: transmission
+  become: true
+  ansible.builtin.copy:
+    mode: '755'
+    owner: root
+    group: root
+    dest: "/etc/transmission/.env"
+    content: |
+      TRANSMISSION_WEB_UI=transmission-web-control
+      OPENVPN_PROVIDER=NORDVPN
+      NORDVPN_PROTOCOL=udp
+      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault='Infrastructure') }}
+      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault='Infrastructure') }}
+      NORDVPN_COUNTRY:=US
+      NORDVPN_CATEGORY=P2P
+      LOCAL_NETWORK=10.0.0.0/24
+      HEALTH_CHECK_HOST=8.8.8.8
+
+- name: Install transmission
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.transmission
+    apply:
+      become: true
+      tags: transmission
+  vars:
+    transmission_folder: /etc/transmission
+    transmission_downloads_folder: /volume1/storage/downloads
+    transmission_pid: "999"
+    transmission_gid: "10"
+
+- name: Install plex
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.plex
+    apply:
+      become: true
+      tags: plex
+  vars:
+    plex_dri_devices: true
+    plex_bonjour_port: 5354
+    plex_tv_folder: /volume1/storage/tv
+    plex_movies_folder: /volume1/storage/movies
+    plex_claim: claim-haziyvUxG2Fb4uj5-tF1
+    plex_pid: "999"
+    plex_gid: "10"
+
+- name: Install sabnzbd
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.sabnzbd
+    apply:
+      become: true
+      tags: sabnzbd
+  vars:
+    sabnzbd_pid: "999"
+    sabnzbd_gid: "10"
+    sabnzbd_download_folder: /volume1/storage/downloads
+
+- name: Install sonarr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.sonarr
+    apply:
+      become: true
+      tags: sonarr
+  vars:
+    sonarr_folder: /etc/sonarr
+    sonarr_tv_folder: /volume1/storage/tv
+    sonarr_tranmissions_downloads_folder: /volume1/storage/downloads
+    sonarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    sonarr_pid: "999"
+    sonarr_gid: "10"
+
+- name: Install radarr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.radarr
+    apply:
+      become: true
+      tags: radarr
+  vars:
+    radarr_movies_folder: /volume1/storage/movies
+    radarr_transmission_downloads_folder: /volume1/storage/downloads
+    radarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    radarr_pid: "999"
+    radarr_gid: "10"
+
+- name: Install prowlarr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.prowlarr
+    apply:
+      become: true
+      tags: prowlarr
+  vars:
+    prowlarr_pid: "999"
+    prowlarr_gid: "10"
+
+- name: Install flaresolverr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.flaresolverr
+    apply:
+      become: true
+      tags: flaresolverr
+  vars:
+    flare_port: 8191

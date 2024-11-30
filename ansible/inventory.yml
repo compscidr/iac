@@ -28,3 +28,6 @@ android_runner:
 java_runner:
   hosts:
     ubuntu-silverstone:
+nas:
+  hosts:
+    nas.local:

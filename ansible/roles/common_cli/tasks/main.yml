@@ -1,26 +1,11 @@
 ---
-# https://www.jeffgeerling.com/blog/2022/aptkey-deprecated-debianubuntu-how-fix-ansible
-# https://gist.github.com/roib20/27fde10af195cee1c1f8ac5f68be7e9b
-- name: Install 1password apt repo
-  tags: 1password
-  become: true
-  ansible.builtin.deb822_repository:
-    name: 1password
-    types: [deb]
-    uris: https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', deb_architecture) | first }}/
-    signed_by: https://downloads.1password.com/linux/keys/1password.asc
-    suites: [stable]
-    components: [main]
-    state: present
-    enabled: true
-
-- name: Install 1password cli
-  tags: 1password
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    pkg:
-      - 1password-cli
+- name: Install 1password CLI
+  ansible.builtin.include_role:
+    name: compscidr.onepassword.onepassword_cli
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 
 - name: Obtain ssh key
   tags: ssh

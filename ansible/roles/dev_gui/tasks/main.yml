@@ -78,3 +78,12 @@
   ansible.builtin.apt:
     pkg:
       - virtualbox
+
+- name: Lapce
+  ansible.builtin.include_role:
+    name: compscidr.lapce
+    apply:
+      tags: lapce
+      become: true
+  # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
+  tags: always

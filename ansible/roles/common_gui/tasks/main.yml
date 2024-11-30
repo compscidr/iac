@@ -1,11 +1,11 @@
 ---
 - name: Install 1password
-  tags: 1password
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-    pkg:
-      - 1password
+  ansible.builtin.include_role:
+    name: compscidr.onepassword.onepassword
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 
 - name: Install discord apt repo
   tags: discord

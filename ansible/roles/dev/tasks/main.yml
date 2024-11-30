@@ -297,3 +297,25 @@
     exclude:
       - speedtest.5
       - speedtest.md
+
+- name: Github CLI
+  ansible.builtin.include_role:
+    name: compscidr.github_cli.github_cli
+    apply:
+      tags: gh
+      become: true
+      vars:
+        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure') }}"
+  # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
+  tags: always
+
+# https://github.com/dlvhdr/gh-dash
+- name: Github CLI gh dash extension
+  ansible.builtin.include_role:
+    name: compscidr.github_cli.github_cli_extension
+    apply:
+      tags: gh
+      become: true
+      vars:
+        github_cli_extension_name: "dlvhdr/gh-dash"
+  tags: always
