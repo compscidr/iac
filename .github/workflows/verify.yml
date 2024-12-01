@@ -16,7 +16,7 @@ jobs:
           working_directory: "ansible"
           requirements_file: ""
 
-  # https://github.com/jonashackt/vagrant-github-actions
+  # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
     runs-on: ubuntu-24.04
     name: Molecule Test
@@ -31,3 +31,5 @@ jobs:
           . venv/bin/activate
           pip3 install molecule molecule-docker
           molecule test
+        env:
+          MOLECULE_DISTRO: ubuntu2404
