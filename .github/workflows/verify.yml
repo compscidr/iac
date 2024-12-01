@@ -1,4 +1,4 @@
-name: ansible-verify
+name: verify
 on: [push, pull_request]
 
 jobs:
@@ -27,4 +27,4 @@ jobs:
       - name: molecule
         uses: robertdebock/molecule-action@6.0.0
         with:
-          working_directory: "ansible"
+          working_directory: "ansible/molecule"
