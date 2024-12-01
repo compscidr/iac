@@ -23,10 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: "${{ github.repository }}/ansible"
+          path: "${{ github.repository }}"
       - name: molecule
         uses: robertdebock/molecule-action@6.0.0
         with:
           # working_directory: "ansible"
           image: "ubuntu"
           tag: "noble"
+        env:
+          GITHUB_REPOSITORY: "${{ github.repository }}/ansible"
