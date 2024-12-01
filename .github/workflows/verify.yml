@@ -30,3 +30,4 @@ jobs:
           # working_directory: "ansible"
           image: "ubuntu"
           tag: "noble"
+          command: "--debug test"
