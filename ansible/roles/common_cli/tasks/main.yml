@@ -3,8 +3,29 @@
   become: true
   tags: prereqs
   ansible.builtin.apt:
+    update_cache: true
     pkg:
       - gpg-agent
+      - ssh
+      - git
+
+- name: Reset ssh connection
+  ansible.builtin.meta:
+    reset_connection
+
+- name: Add the user
+  tags: user
+  become: true
+  ansible.builtin.user:
+    name: "{{ username }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
+    comment: "{{ fullname }}"
+    shell: /bin/bash
+    append: true
+    groups: sudo
+    skeleton: "/etc/skel"
+    create_home: true
+    update_password: on_create
 
 - name: Install 1password CLI
   ansible.builtin.include_role:
@@ -13,6 +34,15 @@
       tags: 1password
       become: true
   tags: always
+
+- name: Ensure SSH directory exits
+  tags: ssh
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/.ssh"
+    mode: "0700"
+    state: directory
 
 - name: Obtain ssh key
   tags: ssh

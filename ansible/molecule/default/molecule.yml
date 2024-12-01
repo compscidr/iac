@@ -7,10 +7,9 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-rockylinux9}-ansible:latest"
-    # image: "ubuntu:noble"
-    command: ${MOLECULE_DOCKER_COMMAND:-""}
+  - name: instance    
+    image: "geerlingguy/docker-ubuntu2404-ansible:latest"
+    # dockerfile: Dockerfile
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
@@ -20,3 +19,6 @@ provisioner:
   name: ansible
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    instance:
+      ansible_python_interpreter: "/usr/bin/python3"

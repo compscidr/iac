@@ -43,3 +43,12 @@ Run all roles in the common playbook on a specific machine:
 
 Run all roles in the common playbook on a specific machine that requires an ssh password:
 `ansible-playbook -i inventory.yml common.yml --ask-become-pass --ask-pass --limit nas.local`
+
+## Testing molecule locally
+Inside the ansible directory:
+```
+python -m venv venv
+. venv/bin/activate
+pythong install molecule molecule-docker passlib
+molecule test
+```

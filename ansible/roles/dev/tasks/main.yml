@@ -123,6 +123,7 @@
       - python3-setuptools
       - python-is-python3
       - python3-poetry
+      - python3-passlib
       - pipx
 
 - name: Install rust development tools
@@ -277,10 +278,9 @@
   vars:
     pipx_packages:
       - ansible-lint
-      - molecule
   community.general.pipx:
     name: "{{ item }}"
-    state: latest
+    state: present
   with_items: "{{ pipx_packages }}"
 
 - name: Copy userspace icmp socket permission file
