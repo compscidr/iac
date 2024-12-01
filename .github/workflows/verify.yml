@@ -27,4 +27,4 @@ jobs:
       - name: molecule
         uses: robertdebock/molecule-action@6.0.0
         with:
-          working_directory: "ansible/molecule"
+          working_directory: "ansible"
