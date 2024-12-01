@@ -22,8 +22,6 @@ jobs:
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: "${{ github.repository }}"
       - name: Install and run molecule
         run: |
           pwd
