@@ -18,7 +18,7 @@ jobs:
 
   # https://github.com/jonashackt/vagrant-github-actions
   deploy-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
@@ -29,3 +29,4 @@ jobs:
         with:
           # working_directory: "ansible"
           image: "ubuntu"
+          tag: "noble"
