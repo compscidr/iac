@@ -18,12 +18,12 @@ jobs:
 
   # https://github.com/jonashackt/vagrant-github-actions
   deploy-test:
-    runs-on: macos-10.15
-    name: Ansible Deploy
+    runs-on: macos-14
+    name: Ansible / Vagrant Deploy
     steps:
       - uses: actions/checkout@v4
       - name: Cache Vagrant boxes
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.vagrant.d/boxes
           key: ${{ runner.os }}-vagrant-${{ hashFiles('Vagrantfile') }}
