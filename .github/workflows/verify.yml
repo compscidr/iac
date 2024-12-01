@@ -25,6 +25,6 @@ jobs:
         with:
           path: "${{ github.repository }}"
       - name: molecule
-        uses: robertdebock/molecule-action@6.0.0
+        uses: robertdebock/molecule-action@6.0.1
         with:
           working_directory: "ansible"
