@@ -9,9 +9,13 @@
       - ssh
       - git
 
-- name: Reset ssh connection
-  ansible.builtin.meta:
-    reset_connection
+- name: Install 1password CLI
+  ansible.builtin.include_role:
+    name: compscidr.onepassword.onepassword_cli
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 
 - name: Add the user
   tags: user
@@ -26,14 +30,6 @@
     skeleton: "/etc/skel"
     create_home: true
     update_password: on_create
-
-- name: Install 1password CLI
-  ansible.builtin.include_role:
-    name: compscidr.onepassword.onepassword_cli
-    apply:
-      tags: 1password
-      become: true
-  tags: always
 
 - name: Ensure SSH directory exits
   tags: ssh
