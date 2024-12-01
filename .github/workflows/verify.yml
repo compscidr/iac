@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: "${{ github.repository }}"
+          path: "${{ github.repository }}/ansible"
       - name: molecule
         uses: robertdebock/molecule-action@6.0.0
         with:
