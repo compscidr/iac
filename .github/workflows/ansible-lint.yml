@@ -30,6 +30,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vagrant-
 
+      # macos 14 runner doesn't seem to have vagrant on it 
+      - name: Install Vagrant
+        run: |
+          brew tap hashicorp/tap
+          brew install hashicorp/tap/hashicorp-vagrant
+
       - name: Show Vagrant version
         run: vagrant --version
 
