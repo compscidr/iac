@@ -7,7 +7,7 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: instance    
+  - name: instance
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
     # dockerfile: Dockerfile
     volumes:
