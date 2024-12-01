@@ -1,4 +1,11 @@
 ---
+- name: Install prereqs
+  become: true
+  tags: prereqs
+  ansible.builtin.apt:
+    pkg:
+      - gpg-agent
+
 - name: Install 1password CLI
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword_cli
