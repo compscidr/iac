@@ -30,4 +30,5 @@ jobs:
           . venv/bin/activate
           pip3 install molecule molecule-docker
           molecule test
-        working-directory: ansible
+        with:
+          working_directory: "ansible"
