@@ -22,6 +22,9 @@ jobs:
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
+      - name: Install 1Password CLI
+        # we need op to be on the "deploying device, ie, the GH runner"
+        uses: 1password/install-cli-action@v1
       - name: Install and run molecule
         run: |
           pwd
