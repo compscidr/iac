@@ -2,7 +2,7 @@ name: ansible-lint
 on: [push, pull_request]
 
 jobs:
-  build:
+  lint:
     name: Ansible Lint # Naming the build is important to use it as a status check
     runs-on: ubuntu-latest
     steps:
@@ -15,3 +15,28 @@ jobs:
           setup_python: "true"
           working_directory: "ansible"
           requirements_file: ""
+
+  # https://github.com/jonashackt/vagrant-github-actions
+  deploy-test:
+    runs-on: macos-10.15
+    name: Ansible Deploy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Vagrant boxes
+        uses: actions/cache@v2
+        with:
+          path: ~/.vagrant.d/boxes
+          key: ${{ runner.os }}-vagrant-${{ hashFiles('Vagrantfile') }}
+          restore-keys: |
+            ${{ runner.os }}-vagrant-
+
+      - name: Show Vagrant version
+        run: vagrant --version
+
+      # this is the step that will do the ansible provisioning
+      - name: Run vagrant up
+        working-directory: ./vagrant
+        run: vagrant up
+
+      - name: ssh into box after boot
+        run: vagrant ssh -c "echo 'hello world!'"
