@@ -270,12 +270,18 @@
     dest: /etc/environment.d/90-op.conf
     mode: "644"
 
-- name: Install ansible-lint
-  tags: ansible-lint
+- name: Install ansible tools
+  tags: ansible
   become: true
   become_user: jason
+  vars:
+    pipx_packages:
+      - ansible-lint
+      - molecule
   community.general.pipx:
-    name: ansible-lint
+    name: "{{ item }}"
+    state: latest
+  with_items: "{{ pipx_packages }}"
 
 - name: Copy userspace icmp socket permission file
   become: true
