@@ -18,17 +18,16 @@ jobs:
 
   # https://github.com/jonashackt/vagrant-github-actions
   deploy-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
         with:
           path: "${{ github.repository }}"
-      - name: molecule
-        uses: robertdebock/molecule-action@6.0.0
-        with:
-          # working_directory: "ansible"
-          image: "ubuntu"
-          tag: "noble"
-        env:
-          GITHUB_REPOSITORY: "${{ github.repository }}/ansible"
+      - name: Install and run molecule
+        run: |
+          python3 -m venv venv 
+          . venv/bin/activate
+          pip3 install molecule molecule-docker
+          molecule test
+        working-directory: ansible
