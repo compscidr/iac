@@ -1,0 +1,30 @@
+name: ansible-verify
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: Ansible Lint # Naming the build is important to use it as a status check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        # optional (see below):
+        with:
+          args: ""
+          setup_python: "true"
+          working_directory: "ansible"
+          requirements_file: ""
+
+  # https://github.com/jonashackt/vagrant-github-actions
+  deploy-test:
+    runs-on: ubuntu-22.04
+    name: Molecule Test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: "${{ github.repository }}"
+      - name: molecule
+        uses: robertdebock/molecule-action@6.0.0
+        with:
+          working_directory: "ansible"
