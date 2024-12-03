@@ -24,6 +24,7 @@
     groups: plugdev
     append: true
 
+# todo: see why this is failing molecule
 - name: Install java tools
   tags: java
   become: true
@@ -114,6 +115,7 @@
     signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
     enabled: true
 
+# todo: see why this is failing molecule
 - name: Install php and php dev tools
   tags: php
   become: true
