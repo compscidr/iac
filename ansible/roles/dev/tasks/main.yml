@@ -1,8 +1,17 @@
 ---
+- name: Install prereqs
+  become: true
+  tags: prereqs
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - python3-debian
+
 - name: Install android tools
   tags: android
   become: true
   ansible.builtin.apt:
+    update_cache: true
     pkg:
       - adb
       - android-sdk-platform-tools-common
@@ -169,8 +178,8 @@
   become: true
   tags: doctl
   ansible.builtin.unarchive:
-    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-
-      1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz"
+    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{
+      [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz"
     dest: /usr/local/bin
     remote_src: true
 
