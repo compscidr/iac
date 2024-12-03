@@ -17,7 +17,7 @@
     rust_gameserver_app_port: 27082
     rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}"
     rust_gameserver_wipe: "weekly"
-    rust_gameserver_seed: 18689
+    rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
 
 - name: Copy oxide plugins
@@ -31,9 +31,9 @@
     group: root
   loop:
     - src: files/oxide.config.json
-      dest: /etc/rust/server/rust-weekly/oxide/oxide.config.json
+      dest: /etc/rust/server/weekly/oxide/oxide.config.json
     - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/rust-weekly/oxide/plugins/RustadminOnline.cs
+      dest: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
@@ -47,17 +47,17 @@
       tags: rust-monthly
   vars:
     rust_gameserver_identity: "monthly"
-    rust_gameserver_name: "California | Weekly | No BP Wipe"
-    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
+    rust_gameserver_name: "California | Monthly | No BP Wipe"
+    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Thursday of the Month at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
     rust_gameserver_wipe_bp: 0
-    rust_gameserver_worldsize: 3000
+    rust_gameserver_worldsize: 4500
     rust_gameserver_port: 28015
     rust_gameserver_query_port: 28016
     rust_gameserver_rcon_port: 28017
     rust_gameserver_app_port: 28082
     rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}"
     rust_gameserver_wipe: "monthly"
-    rust_gameserver_seed: 18689
+    rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
 
 - name: Copy oxide plugins
@@ -71,9 +71,9 @@
     group: root
   loop:
     - src: files/oxide.config.json
-      dest: /etc/rust/server/rust-monthly/oxide/oxide.config.json
+      dest: /etc/rust/server/monthly/oxide/oxide.config.json
     - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/rust-monthly/oxide/plugins/RustadminOnline.cs
+      dest: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
