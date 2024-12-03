@@ -1,4 +1,12 @@
 ---
+- name: Install prereqs
+  become: true
+  tags: prereqs
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - python3-debian
+
 - name: Install 1password
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword
@@ -26,6 +34,15 @@
     update_cache: true
     pkg:
       - discord
+
+- name: Ensure template directory exists
+  tags: UI
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/Templates"
+    mode: "0755"
+    state: directory
 
 - name: Create new File context menu
   tags: UI
@@ -94,27 +111,13 @@
     dest: /opt/
     remote_src: true
 
-# https://book.keybase.io/docs/server/our-code-signing-key
-- name: Install keybase apt repo
-  tags: keybase
-  become: true
-  ansible.builtin.deb822_repository:
-    name: keybase
-    types: [deb]
-    uris: http://prerelease.keybase.io/deb
-    signed_by: https://keybase.io/docs/server_security/code_signing_key.asc
-    suites: [stable]
-    components: [main]
-    state: present
-    enabled: true
-
 - name: Install keybase
-  become: true
-  tags: keybase
-  ansible.builtin.apt:
-    update_cache: true
-    pkg:
-      - keybase
+  ansible.builtin.include_role:
+    name: compscidr.keybase.keybase
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 
 - name: Install Gimp
   tags: gimp
