@@ -8,6 +8,13 @@ driver:
   name: docker
 platforms:
   - name: instance
+    groups:
+      - dev
+      - dev_gui
+      - gui
+      - android_runner
+      - nas
+      - academic_gui
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
     # dockerfile: Dockerfile
     volumes:
@@ -19,6 +26,3 @@ provisioner:
   name: ansible
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
-  inventory:
-    instance:
-      ansible_python_interpreter: "/usr/bin/python3"
