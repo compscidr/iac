@@ -1,0 +1,34 @@
+---
+- name: Create config directories
+  tags: cs2_gameserver
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+  loop:
+    - /etc/cs2
+
+- name: Deply cs2 server
+  tags: cs2_gameserver
+  become: true
+  community.docker.docker_container:
+    name: "cs2"
+    image: joedwards32/cs2
+    pull: true
+    volumes:
+      - "/etc/cs2:/home/steam/cs2-dedicated/"
+    ports:
+      - "29015:27015/tcp"
+      - "29015:27015/udp"
+      - "29020:27020/udp"
+    env:
+      SRCDS_TOKEN: "{{ lookup('community.general.onepassword', 'CS2 Steam', field='credential', vault='Infrastructure') }}"
+      CS2_SERVERNAME: "California CS2"
+      CS2_RCONPW: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}"
+    devices:
+      - /dev/dri:/dev/dri
+    restart_policy: unless-stopped
+    memory: 20g
