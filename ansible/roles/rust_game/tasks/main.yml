@@ -48,7 +48,7 @@
   vars:
     rust_gameserver_identity: "monthly"
     rust_gameserver_name: "California | Monthly | No BP Wipe"
-    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Thursday of the Month at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
+    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Wednesday of the Month at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
     rust_gameserver_wipe_bp: 0
     rust_gameserver_worldsize: 4500
     rust_gameserver_port: 28015
@@ -59,6 +59,7 @@
     rust_gameserver_wipe: "monthly"
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
+    rust_gameserver_wipe_day_of_week: 3
 
 - name: Copy oxide plugins
   tags: rust-monthly
