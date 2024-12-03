@@ -35,6 +35,8 @@
       SRCDS_TOKEN: "{{ lookup('community.general.onepassword', 'CS2 Steam', field='credential', vault='Infrastructure') }}"
       CS2_SERVERNAME: "California CS2"
       CS2_RCONPW: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure') }}"
+      CS2_SERVER_HIBERNATE: "1"
+      CS2_GAMEALIAS: "casual"
     devices:
       - /dev/dri:/dev/dri
     restart_policy: unless-stopped
