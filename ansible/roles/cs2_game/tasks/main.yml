@@ -1,4 +1,12 @@
 ---
+- name: Add the user
+  tags: cs2_gameserver
+  become: true
+  ansible.builtin.user:
+    name: "steam"
+    uid: 1000
+    state: present
+
 - name: Create config directories
   tags: cs2_gameserver
   become: true
@@ -6,12 +14,11 @@
     path: "{{ item }}"
     state: directory
     mode: '755'
-    owner: root
-    group: root
+    owner: "steam"
   loop:
     - /etc/cs2
 
-- name: Deply cs2 server
+- name: Deploy cs2 server
   tags: cs2_gameserver
   become: true
   community.docker.docker_container:
