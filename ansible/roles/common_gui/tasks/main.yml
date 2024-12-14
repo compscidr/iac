@@ -35,6 +35,26 @@
     pkg:
       - discord
 
+# - name: Install signal apt repo
+#   tags: signal
+#   become: true
+#   ansible.builtin.deb822_repository:
+#     name: signal
+#     types: [deb]
+#     uris: https://updates.signal.org/desktop/apt
+#     signed_by: https://updates.signal.org/desktop/apt/keys.asc
+#     components: [main]
+#     state: present
+#     enabled: true
+
+# - name: Install signal
+#   become: true
+#   tags: signal
+#   ansible.builtin.apt:
+#     update_cache: true
+#     pkg:
+#       - signal-desktop
+
 - name: Ensure template directory exists
   tags: UI
   become: true
