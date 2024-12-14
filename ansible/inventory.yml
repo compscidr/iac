@@ -5,29 +5,38 @@ ungrouped:
 academic_gui:
   hosts:
     ubuntu-beast:
+    ubuntu-beast.local:
 dev:
   hosts:
     ubuntu-beast:
+    ubuntu-beast.local:
     ubuntu-silverstone:
+    ubuntu-silverstone.local:
     ubuntu-cube:
     ubuntu-work-laptop:
+    ubuntu-work-laptop.local:
     ubuntu-asus-laptop:
     ubuntu-toshiba-laptop:
     ubuntu-toshiba-mini-laptop:
 dev_gui:
   hosts:
     ubuntu-beast:
+    ubuntu-beast.local:
     ubuntu-work:
 gui:
   hosts:
     ubuntu-beast:
-    ubuntu-work:
+    ubuntu-beast.local:
+    ubuntu-work-laptop:
+    ubuntu-work-laptop.local:
 android_runner:
   hosts:
     ubuntu-silverstone:
+    ubuntu-silverstone.local:
 java_runner:
   hosts:
     ubuntu-silverstone:
+    ubuntu-silverstone.local:
 nas:
   hosts:
     nas.local:
