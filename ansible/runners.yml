@@ -1,6 +1,6 @@
 ---
 - name: Deploy Android Runners
-  hosts: android-runner
+  hosts: android_runner
   vars:
     github_runner_install_docker: false
     github_runner_java: true
@@ -14,23 +14,27 @@
       vars:
         github_runner_name: "hello-java-android"
         github_runner_repo: "compscidr/hello-java-android"
+        github_runner_adb_port: "5037"
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "hello-kotlin-android"
         github_runner_repo: "compscidr/hello-kotlin-android"
+        github_runner_adb_port: "5038"
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "icmp"
         github_runner_repo: "compscidr/icmp"
+        github_runner_adb_port: "5039"
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "grape"
         github_runner_org: true
         github_runner_org_name: "grape-networking"
+        github_runner_adb_port: "5040"
 
 # enable this when we require any non-android java runners
 # - name: Deploy Java Runners
-#   hosts: java-runner
+#   hosts: java_runner
 #   vars:
 #     github_runner_install_docker: false
 #     github_runner_java: true
