@@ -117,6 +117,7 @@
   tags: cli-tools
   ansible.builtin.apt:
     pkg:
+      - avahi-daemon            # mostly used for <host>.local zeroconf
       - btop                    # modern and colorful cli resource monitor
       - byobu                   # text window manager / multiplexer / devops env
       - curl                    # http/https/gopher tool
