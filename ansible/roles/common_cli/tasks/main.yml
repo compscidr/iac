@@ -97,6 +97,7 @@
       value: "{{ signingkey }}"
 
 - name: Create docker group
+  become: true
   tags: docker
   ansible.builtin.group:
     name: docker
