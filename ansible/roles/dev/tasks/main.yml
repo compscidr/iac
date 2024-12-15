@@ -327,12 +327,12 @@
   tags: always
 
 # https://github.com/dlvhdr/gh-dash
-- name: Github CLI gh dash extension
-  ansible.builtin.include_role:
-    name: compscidr.github_cli.github_cli_extension
-    apply:
-      tags: gh
-      become: true
-      vars:
-        github_cli_extension_name: "dlvhdr/gh-dash"
-  tags: always
+#- name: Github CLI gh dash extension
+#  ansible.builtin.include_role:
+#    name: compscidr.github_cli.github_cli_extension
+#    apply:
+#      tags: gh
+#      become: true
+#      vars:
+#        github_cli_extension_name: "dlvhdr/gh-dash"
+#  tags: always
