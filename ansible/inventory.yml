@@ -22,7 +22,8 @@ dev_gui:
   hosts:
     ubuntu-beast:
     ubuntu-beast.local:
-    ubuntu-work:
+    ubuntu-work-laptop:
+    ubuntu-work-laptop-local:
 gui:
   hosts:
     ubuntu-beast:
