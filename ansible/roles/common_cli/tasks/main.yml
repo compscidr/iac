@@ -145,6 +145,7 @@
   tags: network-tools
   ansible.builtin.apt:
     pkg:
+      - avahi-utils             # avahi-browse
       - arp-scan                # for ip <-> mac map search
       - dnsutils                # dig
       - ethtool                 # gets info like link speed
