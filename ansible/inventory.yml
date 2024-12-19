@@ -13,9 +13,11 @@ dev:
     ubuntu-silverstone:
     ubuntu-silverstone.local:
     ubuntu-cube:
+    ubuntu-cube.local:
     ubuntu-work-laptop:
     ubuntu-work-laptop.local:
     ubuntu-asus-laptop:
+    ubuntu-asus-laptop.local:
     ubuntu-toshiba-laptop:
     ubuntu-toshiba-mini-laptop:
 dev_gui:
@@ -23,21 +25,29 @@ dev_gui:
     ubuntu-beast:
     ubuntu-beast.local:
     ubuntu-work-laptop:
-    ubuntu-work-laptop-local:
+    ubuntu-work-laptop.local:
+    ubuntu-asus-laptop:
+    ubuntu-asus-laptop.local:
 gui:
   hosts:
     ubuntu-beast:
     ubuntu-beast.local:
     ubuntu-work-laptop:
     ubuntu-work-laptop.local:
+    ubuntu-asus-laptop:
+    ubuntu-asus-laptop.local:
 android_runner:
   hosts:
     ubuntu-silverstone:
     ubuntu-silverstone.local:
+    ubuntu-cube:
+    ubuntu-cube.local:
 java_runner:
   hosts:
     ubuntu-silverstone:
     ubuntu-silverstone.local:
+    ubuntu-cube:
+    ubuntu-cube.local:
 nas:
   hosts:
     nas.local:
