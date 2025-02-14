@@ -13,7 +13,7 @@ collections:
   - name: community.general
     version: "10.1.0"
   - name: community.docker
-    version: "4.1.0"
+    version: "4.4.0"
   - name: compscidr.media_server
     version: "0.1.0"
   - name: compscidr.github_runner
