@@ -11,7 +11,7 @@ jobs:
         uses: ansible/ansible-lint@main
         # optional (see below):
         with:
-          args: offline"
+          args: --offline"
           setup_python: "true"
           working_directory: "ansible"
           requirements_file: ""
