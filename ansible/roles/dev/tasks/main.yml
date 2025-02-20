@@ -327,7 +327,7 @@
   tags: always
 
 # https://github.com/dlvhdr/gh-dash
-#- name: Github CLI gh dash extension
+# - name: Github CLI gh dash extension
 #  ansible.builtin.include_role:
 #    name: compscidr.github_cli.github_cli_extension
 #    apply:
