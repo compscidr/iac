@@ -68,6 +68,7 @@
     sabnzbd_pid: "999"
     sabnzbd_gid: "10"
     sabnzbd_download_folder: /volume1/storage/downloads
+    sabnzbd_memory: "10g"
 
 - name: Install sonarr
   tags: always
