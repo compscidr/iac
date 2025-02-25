@@ -143,6 +143,8 @@
   ansible.builtin.apt:
     pkg:
       - rustc
+      - cargo
+      - rustup
 
 - name: Install ruby development tools
   tags: ruby
