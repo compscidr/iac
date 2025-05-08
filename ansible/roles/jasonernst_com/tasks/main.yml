@@ -132,7 +132,7 @@
   tags: website
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.45
+    image: compscidr/goblog:v0.1.46
     volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/prod/database.db
@@ -153,7 +153,7 @@
   tags: website
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.1.45
+    image: compscidr/goblog:v0.1.46
     volumes: /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/staging/database.db
