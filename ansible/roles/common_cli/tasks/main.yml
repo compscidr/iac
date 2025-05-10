@@ -74,7 +74,7 @@
     apply:
       become_user: "{{ username }}"
   vars:
-    key_file: "~/.gpg/{{ username }}.gpg"
+    key_file: "/home/{{ username }}/.gpg/{{ username }}.gpg"
     key_id: "{{ signingkey }}"
     key_type: private
 
