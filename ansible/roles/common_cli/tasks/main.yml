@@ -69,14 +69,11 @@
 
 - name: Import GPG private key
   tags: gpg
-  ansible.builtin.include_role:
-    name: compscidr.gpg
-    apply:
-      become_user: "{{ username }}"
-  vars:
+  gpg:
     key_file: "/home/{{ username }}/.gpg/{{ username }}.gpg"
     key_id: "{{ signingkey }}"
     key_type: private
+    state: latest
 
 - name: Configure git preferences
   become: true
