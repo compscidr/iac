@@ -25,7 +25,7 @@
       OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault='Infrastructure') }}
       NORDVPN_COUNTRY:=US
       NORDVPN_CATEGORY=P2P
-      LOCAL_NETWORK=10.0.0.0/24
+      LOCAL_NETWORK=192.168.0.0/24
       HEALTH_CHECK_HOST=8.8.8.8
 
 - name: Install transmission
