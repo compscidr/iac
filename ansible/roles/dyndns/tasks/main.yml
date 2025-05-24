@@ -2,12 +2,12 @@
   tags: dyndns
   community.docker.docker_container:
     name: dyndns
-    image: tunix/digitalocean-dyndns
+    image: compscidr/digitalocean-dyndns
     pull: true
     env:
       DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
       DOMAIN: "jasonernst.com"
-      NAME: "home"
+      NAME: "nas"
       SLEEP_INTERVAL: "60"
       REMOVE_DUPLICATES: "true"
     restart_policy: unless-stopped
