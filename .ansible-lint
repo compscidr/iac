@@ -6,9 +6,6 @@ exclude_paths:
   - terraform/
   - vagrant
 
-# Enable offline mode for CI environments
-offline: true
-
 # Set warnings for issues related to missing modules
 warn_list:
   - fqcn[unknown-module]
