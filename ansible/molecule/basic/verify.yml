@@ -1,0 +1,14 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if curl is installed
+      ansible.builtin.command: which curl
+      register: curl_check
+      changed_when: false
+      
+    - name: Verify curl is installed
+      ansible.builtin.assert:
+        that:
+          - curl_check.rc == 0
