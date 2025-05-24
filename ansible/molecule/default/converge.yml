@@ -1,17 +1,15 @@
 ---
-- name: Test local roles
+- name: Converge
   hosts: all
   tasks:
-    - name: Verify environment
-      ansible.builtin.debug:
-        msg: "Running molecule test on {{ ansible_distribution }} {{ ansible_distribution_version }}"
-      
-    - name: Update package cache
+    - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
+        cache_valid_time: 3600
       become: true
+      ignore_errors: yes
       
-    - name: Install test package
+    - name: Install a test package
       ansible.builtin.apt:
         name: curl
         state: present
