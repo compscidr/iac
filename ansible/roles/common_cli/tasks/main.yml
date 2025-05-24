@@ -69,7 +69,7 @@
 
 - name: Import GPG private key
   tags: gpg
-  compscidr.gpg:
+  compscidr.gpg.gpg:
     key_file: "/home/{{ username }}/.gpg/{{ username }}.gpg"
     key_id: "{{ signingkey }}"
     key_type: private
