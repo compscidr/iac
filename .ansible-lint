@@ -5,3 +5,11 @@ exclude_paths:
   - packer/
   - terraform/
   - vagrant
+
+# Enable offline mode for CI environments
+offline: true
+
+# Skip dependency checks
+skip_list:
+  - syntax-check[specific]
+  - syntax-check[unknown-module]
