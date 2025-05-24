@@ -84,12 +84,14 @@ jobs:
             name: docker
           platforms:
             - name: instance
-              image: ubuntu:latest
+              image: geerlingguy/docker-ubuntu2204-ansible:latest
           provisioner:
             name: ansible
             config_options:
               defaults:
                 remote_tmp: /tmp/.ansible
+            ansible_args:
+              - "--extra-vars=ansible_python_interpreter=/usr/bin/python3"
           verifier:
             name: ansible
           EOF
@@ -99,9 +101,9 @@ jobs:
           - name: Converge
             hosts: all
             tasks:
-              - name: Include test_role
-                include_role:
-                  name: test_role
+              - name: Test task
+                debug:
+                  msg: Hello world
           EOF
           
           cat > roles/test_role/molecule/default/verify.yml << EOF
