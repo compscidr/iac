@@ -17,12 +17,14 @@ jobs:
         run: pip install ansible ansible-lint
       
       - name: Install Ansible dependencies
-        working-directory: /home/runner/work/iac/iac/ansible
-        run: ansible-galaxy install -r requirements.yml
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
       
       - name: Run ansible-lint
-        working-directory: /home/runner/work/iac/iac
-        run: ansible-lint
+        run: |
+          cd ansible
+          ansible-lint .
 
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:

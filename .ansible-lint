@@ -5,8 +5,3 @@ exclude_paths:
   - packer/
   - terraform/
   - vagrant
-
-# Set warnings for issues related to missing modules
-warn_list:
-  - fqcn[unknown-module]
-  - var-naming[no-role-prefix]
