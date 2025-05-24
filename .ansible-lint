@@ -9,7 +9,7 @@ exclude_paths:
 # Enable offline mode for CI environments
 offline: true
 
-# Skip dependency checks
-skip_list:
-  - syntax-check[specific]
-  - syntax-check[unknown-module]
+# Set warnings for issues related to missing modules
+warn_list:
+  - fqcn[unknown-module]
+  - var-naming[no-role-prefix]

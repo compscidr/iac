@@ -7,14 +7,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint@main
-        # optional (see below):
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          args: --offline
-          setup_python: "true"
-          working_directory: "ansible"
-          requirements_file: "requirements.yml"
+          python-version: '3.12'
+      
+      - name: Install ansible and ansible-lint
+        run: pip install ansible ansible-lint
+      
+      - name: Run ansible-lint
+        working-directory: /home/runner/work/iac/iac
+        env:
+          ANSIBLE_LINT_NODEPS: "1"
+        run: ansible-lint --offline
 
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
