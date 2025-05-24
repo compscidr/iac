@@ -36,18 +36,11 @@ jobs:
         # we need op to be on the "deploying device, ie, the GH runner"
         uses: 1password/install-cli-action@v1
       - name: Install and run molecule
-        env: # Or as an environment variable
+        env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |
-          pwd
-          ls 
           cd ansible
           python3 -m venv venv 
           . venv/bin/activate
           pip3 install molecule molecule-docker passlib ansible
-          # Install collections and roles before running molecule test
-          ansible-galaxy install -r requirements.yml
-          # Add nameserver configuration to ensure DNS resolution inside docker
-          sudo echo "nameserver 8.8.8.8" > /tmp/resolv.conf
-          sudo echo "nameserver 8.8.4.4" >> /tmp/resolv.conf
           molecule test

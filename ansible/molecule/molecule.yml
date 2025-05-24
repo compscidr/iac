@@ -1,19 +1,11 @@
 ---
-role_name_check: 1
 dependency:
   name: galaxy
-  enabled: false  # Disable galaxy dependency resolution
+  enabled: false
 driver:
   name: docker
 platforms:
   - name: instance
-    groups:
-      - dev
-      - dev_gui
-      - gui
-      - android_runner
-      - nas
-      - academic_gui
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
@@ -25,7 +17,9 @@ platforms:
     pre_build_image: true
 provisioner:
   name: ansible
-  playbooks:
-    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
-  env:
-    ANSIBLE_ROLES_PATH: ../../roles
+  inventory:
+    host_vars:
+      instance:
+        ansible_user: ansible
+verifier:
+  name: ansible

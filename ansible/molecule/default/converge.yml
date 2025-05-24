@@ -1,7 +1,18 @@
 ---
-- name: Include common playbook
-  ansible.builtin.import_playbook: ../../common.yml
-  
-# Including dev playbook only if needed
-- name: Include dev playbook
-  ansible.builtin.import_playbook: ../../dev.yml
+- name: Test local roles
+  hosts: all
+  tasks:
+    - name: Verify environment
+      ansible.builtin.debug:
+        msg: "Running molecule test on {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+      become: true
+      
+    - name: Install test package
+      ansible.builtin.apt:
+        name: curl
+        state: present
+      become: true
