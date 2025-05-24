@@ -146,6 +146,7 @@
       - arp-scan                # for ip <-> mac map search
       - dnsutils                # dig
       - ethtool                 # gets info like link speed
+      - isc-dhcp-client         # dhcp client
       - iftop                   # network top
       - iptables-persistent     # boot-time loader for netfilter rules
       - iotop                   # disk top
