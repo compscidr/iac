@@ -1,16 +1,25 @@
 ---
-- name: Converge
+- name: Test Ansible Installation
   hosts: all
+  become: true
   tasks:
     - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
+      apt:
+        update_cache: yes
         cache_valid_time: 3600
-      become: true
-      ignore_errors: yes
       
-    - name: Install a test package
-      ansible.builtin.apt:
-        name: curl
+    - name: Install common packages
+      apt:
+        name: 
+          - git
+          - curl
+          - htop
+          - vim
         state: present
-      become: true
+      
+    - name: Install development packages  
+      apt:
+        name:
+          - build-essential
+          - python3-pip
+        state: present

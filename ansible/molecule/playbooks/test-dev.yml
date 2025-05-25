@@ -1,0 +1,28 @@
+---
+- name: Developer tools (Test Version)
+  hosts: dev
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  tasks:
+    - name: Install dev packages
+      apt:
+        name: 
+          - build-essential
+          - python3-pip
+        state: present
+      become: true
+
+- name: Gui Developer tools (Test Version)
+  hosts: dev_gui
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  tasks:
+    - name: Install GUI dev packages
+      apt:
+        name:
+          - gedit
+        state: present
+      become: true
+      ignore_errors: yes

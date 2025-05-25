@@ -1,0 +1,13 @@
+all:
+  hosts:
+    instance:
+  children:
+    gui:
+      hosts:
+        instance:
+    dev:
+      hosts:
+        instance:
+    dev_gui:
+      hosts:
+        instance:

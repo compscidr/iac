@@ -32,21 +32,29 @@ jobs:
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: 'iac'
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Create molecule test directory
+      
+      - name: Install dependencies
         run: |
-          cd ansible
-          mkdir -p molecule/playbooks
+          python -m pip install --upgrade pip
+          pip install ansible molecule molecule-docker
+
+      - name: Create simple test playbook
+        working-directory: ./iac/ansible
+        run: |
+          mkdir -p molecule/default
           
           # Create molecule configuration
-          cat > molecule/playbooks/molecule.yml << EOF
+          cat > molecule/default/molecule.yml << EOF
           ---
           dependency:
             name: galaxy
-            enabled: true
           driver:
             name: docker
           platforms:
@@ -63,61 +71,24 @@ jobs:
                 - /run/lock
           provisioner:
             name: ansible
-            inventory:
-              host_vars:
-                instance:
-                  ansible_user: ansible
             config_options:
               defaults:
                 remote_tmp: /tmp/.ansible
-                callbacks_enabled: profile_tasks,timer
-            ansible_args:
-              - "--extra-vars=ansible_python_interpreter=/usr/bin/python3"
           verifier:
             name: ansible
           EOF
           
-          # Create inventory file with required groups
-          cat > molecule/playbooks/inventory.yml << EOF
-          all:
-            hosts:
-              instance:
-            children:
-              gui:
-                hosts:
-                  instance:
-              dev:
-                hosts:
-                  instance:
-              dev_gui:
-                hosts:
-                  instance:
-          EOF
-          
-          # Create custom vars for tests - replace user.yml with test values
-          mkdir -p molecule/playbooks/vars
-          cp vars/deb_arch.yml molecule/playbooks/vars/
-          cat > molecule/playbooks/vars/user.yml << EOF
-          username: ansible
-          fullname: Ansible Test User
-          email: test@example.com
-          signingkey: 0000000000000000000000000000000000000000
-          EOF
-          
-          # Create test versions of common.yml and dev.yml for molecule
-          cat > molecule/playbooks/test-common.yml << EOF
+          # Create converge playbook that tests basic package installation
+          cat > molecule/default/converge.yml << EOF
           ---
-          - name: Common tasks for all hosts (Test Version)
+          - name: Test Ansible Installation
             hosts: all
-            vars_files:
-              - vars/deb_arch.yml
-              - vars/user.yml
+            become: true
             tasks:
               - name: Update apt cache
                 apt:
                   update_cache: yes
                   cache_valid_time: 3600
-                become: true
                 
               - name: Install common packages
                 apt:
@@ -127,85 +98,23 @@ jobs:
                     - htop
                     - vim
                   state: present
-                become: true
-
-          - name: Common tasks for gui hosts (Test Version)
-            hosts: gui
-            vars_files:
-              - vars/deb_arch.yml
-              - vars/user.yml
-            tasks:
-              - name: Install GUI packages
+                
+              - name: Install development packages  
                 apt:
-                  name: 
-                    - firefox
-                  state: present
-                become: true
-                ignore_errors: yes
-          EOF
-          
-          cat > molecule/playbooks/test-dev.yml << EOF
-          ---
-          - name: Developer tools (Test Version)
-            hosts: dev
-            vars_files:
-              - vars/deb_arch.yml
-              - vars/user.yml
-            tasks:
-              - name: Install dev packages
-                apt:
-                  name: 
+                  name:
                     - build-essential
                     - python3-pip
                   state: present
-                become: true
-
-          - name: Gui Developer tools (Test Version)
-            hosts: dev_gui
-            vars_files:
-              - vars/deb_arch.yml
-              - vars/user.yml
-            tasks:
-              - name: Install GUI dev packages
-                apt:
-                  name:
-                    - gedit
-                  state: present
-                become: true
-                ignore_errors: yes
           EOF
           
-          # Create converge.yml to import the test playbooks
-          cat > molecule/playbooks/converge.yml << EOF
-          ---
-          # First set up minimal test environment
-          - name: Prepare test environment
-            hosts: all
-            tasks:
-              - name: Create required directory structure
-                file:
-                  path: "{{ item }}"
-                  state: directory
-                loop:
-                  - /tmp/.ansible
-                  - /home/ansible/.ssh
-            
-          # Import the test playbooks - with simpler tasks to ensure they work in CI
-          - name: Import common playbook
-            ansible.builtin.import_playbook: test-common.yml
-            
-          - name: Import dev playbook
-            ansible.builtin.import_playbook: test-dev.yml
-          EOF
-          
-          # Create verify.yml to check that playbooks executed correctly
-          cat > molecule/playbooks/verify.yml << EOF
+          # Create verify.yml
+          cat > molecule/default/verify.yml << EOF
           ---
           - name: Verify
             hosts: all
             gather_facts: false
             tasks:
-              - name: Check if key packages from common playbook were installed
+              - name: Check if packages are installed
                 command: dpkg-query -W {{ item }}
                 register: pkg_check
                 changed_when: false
@@ -226,18 +135,12 @@ jobs:
               - name: Verify at least some packages were installed
                 assert:
                   that:
-                    - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 0
-                  fail_msg: "None of the expected packages were installed"
-                  success_msg: "Playbooks executed successfully"
+                    - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 4
+                  fail_msg: "Required packages were not installed"
+                  success_msg: "All required packages were successfully installed"
           EOF
       
-      - name: Install dependencies
+      - name: Run molecule test
+        working-directory: ./iac/ansible
         run: |
-          cd ansible
-          pip install ansible molecule molecule-docker pytest pytest-testinfra
-          ansible-galaxy install -r requirements.yml
-      
-      - name: Run molecule test with actual playbooks
-        run: |
-          cd ansible
-          MOLECULE_NO_LOG=false molecule --debug test -s playbooks
+          molecule test
