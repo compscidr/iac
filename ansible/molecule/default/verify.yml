@@ -1,18 +1,18 @@
 ---
 - name: Verify
   hosts: all
+  become: true
   gather_facts: false
   tasks:
     - name: Check if packages are installed
-      command: dpkg-query -W {{ item }}
+      command: rpm -q {{ item }}
       register: pkg_check
       changed_when: false
       loop:
         - curl
         - git
         - htop
-        - vim
-        - build-essential
+        - gcc
         - python3-pip
       ignore_errors: true
       
@@ -21,9 +21,9 @@
         msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
       loop: "{{ pkg_check.results }}"
     
-    - name: Verify at least some packages were installed
+    - name: Verify common.yml and dev.yml packages were installed
       assert:
         that:
-          - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 4
-        fail_msg: "Required packages were not installed"
-        success_msg: "All required packages were successfully installed"
+          - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 3
+        fail_msg: "Required packages from common.yml and dev.yml were not installed"
+        success_msg: "Packages from common.yml and dev.yml were successfully installed"

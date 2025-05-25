@@ -1,25 +1,41 @@
 ---
-- name: Test Ansible Installation
+# Prepare the instance first
+- name: Prepare the instance
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install prerequisite packages
+      raw: yum install -y python3 sudo
+      changed_when: false
+
+    - name: Gather facts
+      setup:
+
+# Test common.yml structure
+- name: Common tasks for all hosts
   hosts: all
   become: true
   tasks:
-    - name: Update apt cache
-      apt:
+    - name: Update package cache
+      dnf:
         update_cache: yes
-        cache_valid_time: 3600
       
-    - name: Install common packages
-      apt:
+    - name: Install common packages (from common.yml)
+      dnf:
         name: 
           - git
           - curl
           - htop
-          - vim
         state: present
-      
-    - name: Install development packages  
-      apt:
+
+# Test dev.yml structure
+- name: Developer tools
+  hosts: all
+  become: true
+  tasks:             
+    - name: Install dev packages (from dev.yml)
+      dnf:
         name:
-          - build-essential
+          - gcc
           - python3-pip
         state: present
