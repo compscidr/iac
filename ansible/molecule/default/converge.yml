@@ -1,41 +1,41 @@
 ---
-# Prepare the instance first
-- name: Prepare the instance
+# Create symbolic links to vars files
+- name: Setup for playbook execution
   hosts: all
-  gather_facts: false
+  gather_facts: true
   tasks:
-    - name: Install prerequisite packages
-      raw: yum install -y python3 sudo
-      changed_when: false
+    # Create the vars directory structure
+    - name: Create vars directory
+      file:
+        path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/vars"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
 
-    - name: Gather facts
-      setup:
+    # Create mock vars files in the vars directory
+    - name: Create mock vars files
+      copy:
+        dest: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/vars/{{ item.filename }}"
+        content: "{{ item.content }}"
+      loop:
+        - filename: "user.yml"
+          content: |
+            username: ansible
+            fullname: Test User
+            email: test@example.com
+            signingkey: testkeyabc123
+        - filename: "deb_arch.yml"
+          content: |
+            # Architecture mapping
+            deb_architecture: {
+                "armv6l": "armhf",
+                "armv7l": "armhf",
+                "aarch64": "arm64", 
+                "x86_64": "amd64",
+                "i386": "i386"
+            }
+      delegate_to: localhost
 
-# Test common.yml structure
-- name: Common tasks for all hosts
-  hosts: all
-  become: true
-  tasks:
-    - name: Update package cache
-      dnf:
-        update_cache: yes
-      
-    - name: Install common packages (from common.yml)
-      dnf:
-        name: 
-          - git
-          - curl
-          - htop
-        state: present
-
-# Test dev.yml structure
-- name: Developer tools
-  hosts: all
-  become: true
-  tasks:             
-    - name: Install dev packages (from dev.yml)
-      dnf:
-        name:
-          - gcc
-          - python3-pip
-        state: present
+# Import the real playbooks
+- import_playbook: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/common.yml"
+- import_playbook: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/dev.yml"

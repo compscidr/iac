@@ -1,29 +1,91 @@
 ---
 - name: Verify
   hosts: all
-  become: true
   gather_facts: false
   tasks:
-    - name: Check if packages are installed
-      command: rpm -q {{ item }}
-      register: pkg_check
+    - name: Check common_cli role packages
+      command: dpkg-query -W {{ item }}
+      register: common_cli_packages
       changed_when: false
       loop:
-        - curl
         - git
+        - curl
+        - wget
         - htop
-        - gcc
-        - python3-pip
       ignore_errors: true
       
-    - name: Report package installation status
+    - name: Display common_cli package status
       debug:
         msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
-      loop: "{{ pkg_check.results }}"
+      loop: "{{ common_cli_packages.results }}"
     
-    - name: Verify common.yml and dev.yml packages were installed
+    - name: Check common_gui role packages
+      command: dpkg-query -W {{ item }}
+      register: common_gui_packages
+      changed_when: false
+      loop:
+        - nano
+        - xclip
+      ignore_errors: true
+      
+    - name: Display common_gui package status
+      debug:
+        msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
+      loop: "{{ common_gui_packages.results }}"
+    
+    - name: Check dev role packages
+      command: dpkg-query -W {{ item }}
+      register: dev_packages
+      changed_when: false
+      loop:
+        - build-essential
+        - python3-pip
+        - python3-dev
+        - cmake
+      ignore_errors: true
+      
+    - name: Display dev packages status
+      debug:
+        msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
+      loop: "{{ dev_packages.results }}"
+    
+    - name: Check dev_gui role packages
+      command: dpkg-query -W {{ item }}
+      register: dev_gui_packages
+      changed_when: false
+      loop:
+        - dconf-editor
+      ignore_errors: true
+      
+    - name: Display dev_gui packages status
+      debug:
+        msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
+      loop: "{{ dev_gui_packages.results }}"
+    
+    - name: Verify basic packages were installed
       assert:
         that:
-          - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 3
-        fail_msg: "Required packages from common.yml and dev.yml were not installed"
-        success_msg: "Packages from common.yml and dev.yml were successfully installed"
+          - common_cli_packages.results | selectattr('rc', 'eq', 0) | list | length >= 2
+        fail_msg: "Required packages from common_cli role were not installed"
+        success_msg: "Packages from common_cli role were successfully installed"
+
+    - name: Verify GUI packages were installed
+      assert:
+        that:
+          - common_gui_packages.results | selectattr('rc', 'eq', 0) | list | length >= 1
+        fail_msg: "Required packages from common_gui role were not installed"
+        success_msg: "Packages from common_gui role were successfully installed"
+    
+    - name: Verify dev packages were installed
+      assert:
+        that:
+          - dev_packages.results | selectattr('rc', 'eq', 0) | list | length >= 2
+        fail_msg: "Required packages from dev role were not installed"
+        success_msg: "Packages from dev role were successfully installed"
+    
+    - name: Verify dev_gui packages were installed
+      assert:
+        that:
+          - dev_gui_packages.results | selectattr('rc', 'eq', 0) | list | length >= 1
+        fail_msg: "Required packages from dev_gui role were not installed"
+        success_msg: "Packages from dev_gui role were successfully installed"
