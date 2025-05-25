@@ -28,7 +28,7 @@ jobs:
 
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     name: Molecule Test
     steps:
       - uses: actions/checkout@v4
@@ -38,14 +38,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.10'
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ansible molecule molecule-docker
+          pip install ansible molecule molecule-docker pytest pytest-testinfra
 
-      - name: Create simple test playbook
+      - name: Create ansible.cfg to avoid permission issues
+        run: |
+          cat > $HOME/ansible.cfg << EOF
+          [defaults]
+          remote_tmp = /tmp/.ansible
+          local_tmp = /tmp/.ansible-local
+          EOF
+          export ANSIBLE_CONFIG=$HOME/ansible.cfg
+          echo "ANSIBLE_CONFIG=$HOME/ansible.cfg" >> $GITHUB_ENV
+
+      - name: Create simple test playbook for common.yml and dev.yml
         working-directory: ./iac/ansible
         run: |
           mkdir -p molecule/default
@@ -59,29 +69,53 @@ jobs:
             name: docker
           platforms:
             - name: instance
-              image: geerlingguy/docker-ubuntu2204-ansible:latest
+              image: ubuntu:22.04
               pre_build_image: true
-              privileged: true
-              command: ""
+              command: "/sbin/init"
+              capabilities:
+                - SYS_ADMIN
               volumes:
                 - /sys/fs/cgroup:/sys/fs/cgroup:rw
               tmpfs:
                 - /tmp
                 - /run
                 - /run/lock
+              privileged: true
+              environment:
+                ANSIBLE_USER: ansible
+                SUDO_GROUP: sudo
+                DEPLOY_GROUP: deployer
+                container: docker
           provisioner:
             name: ansible
+            env:
+              ANSIBLE_FORCE_COLOR: "true"
             config_options:
               defaults:
                 remote_tmp: /tmp/.ansible
+                interpreter_python: auto_silent
+                stdout_callback: yaml
           verifier:
             name: ansible
           EOF
           
-          # Create converge playbook that tests basic package installation
+          # Create converge playbook that simulates common.yml structure
           cat > molecule/default/converge.yml << EOF
           ---
-          - name: Test Ansible Installation
+          # Prepare the instance first
+          - name: Prepare the instance
+            hosts: all
+            gather_facts: false
+            tasks:
+              - name: Install sudo and python
+                raw: apt-get update && apt-get install -y sudo python3
+                changed_when: false
+
+              - name: Gather facts
+                setup:
+
+          # Test common.yml structure
+          - name: Common tasks for all hosts
             hosts: all
             become: true
             tasks:
@@ -90,16 +124,20 @@ jobs:
                   update_cache: yes
                   cache_valid_time: 3600
                 
-              - name: Install common packages
+              - name: Install common packages (from common.yml)
                 apt:
                   name: 
                     - git
                     - curl
                     - htop
-                    - vim
                   state: present
-                
-              - name: Install development packages  
+
+          # Test dev.yml structure
+          - name: Developer tools
+            hosts: all
+            become: true
+            tasks:             
+              - name: Install dev packages (from dev.yml)
                 apt:
                   name:
                     - build-essential
@@ -112,6 +150,7 @@ jobs:
           ---
           - name: Verify
             hosts: all
+            become: true
             gather_facts: false
             tasks:
               - name: Check if packages are installed
@@ -122,7 +161,6 @@ jobs:
                   - curl
                   - git
                   - htop
-                  - vim
                   - build-essential
                   - python3-pip
                 ignore_errors: true
@@ -132,15 +170,20 @@ jobs:
                   msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
                 loop: "{{ pkg_check.results }}"
               
-              - name: Verify at least some packages were installed
+              - name: Verify common.yml and dev.yml packages were installed
                 assert:
                   that:
-                    - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 4
-                  fail_msg: "Required packages were not installed"
-                  success_msg: "All required packages were successfully installed"
+                    - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 3
+                  fail_msg: "Required packages from common.yml and dev.yml were not installed"
+                  success_msg: "Packages from common.yml and dev.yml were successfully installed"
           EOF
       
-      - name: Run molecule test
+      - name: Run molecule test with debug
         working-directory: ./iac/ansible
+        env:
+          ANSIBLE_VERBOSITY: 1
+          PY_COLORS: 1
+          ANSIBLE_FORCE_COLOR: 1
+          MOLECULE_DEBUG: 1
         run: |
           molecule test
