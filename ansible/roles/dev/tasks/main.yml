@@ -25,12 +25,12 @@
     append: true
 
 # todo: see why this is failing molecule
-- name: Install java tools
-  tags: java
-  become: true
-  ansible.builtin.apt:
-    pkg:
-      - openjdk-21-jdk
+# - name: Install java tools
+#   tags: java
+#   become: true
+#   ansible.builtin.apt:
+#     pkg:
+#       - openjdk-21-jre-headless
 
 - name: Install cpp development tools
   become: true
@@ -137,14 +137,26 @@
       - python3-passlib
       - pipx
 
+# note: if you install rustup package, you can't install rustc or cargo because its a conflict
 - name: Install rust development tools
   tags: rust
   become: true
   ansible.builtin.apt:
     pkg:
-      - rustc
-      - cargo
       - rustup
+
+# use rustup to install rust and cargo
+- name: Install rust and cargo
+  tags: rust
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.command:
+    cmd: rustup install stable
+    creates: /home/{{ username }}/.cargo/bin/rustc
+  args:
+    chdir: "/home/{{ username }}"
+  register: rust_install_status
+  changed_when: "'changed' in rust_install_status.stdout"
 
 - name: Install ruby development tools
   tags: ruby

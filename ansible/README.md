@@ -49,6 +49,6 @@ Inside the ansible directory:
 ```
 python -m venv venv
 . venv/bin/activate
-pythong install molecule molecule-docker passlib
+pip install molecule molecule-docker passlib
 molecule test
 ```
