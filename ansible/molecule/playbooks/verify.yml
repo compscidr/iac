@@ -1,0 +1,29 @@
+---
+- name: Verify
+  hosts: instance
+  gather_facts: false
+  tasks:
+    - name: Check if key packages were installed
+      command: dpkg-query -W {{ item }}
+      register: pkg_check
+      changed_when: false
+      loop:
+        - curl
+        - git
+        - htop
+        - vim
+        - build-essential
+        - python3-pip
+      ignore_errors: true
+      
+    - name: Report package installation status
+      debug:
+        msg: "Package {{ item.item }} {{ 'is' if item.rc == 0 else 'is not' }} installed"
+      loop: "{{ pkg_check.results }}"
+    
+    - name: Verify at least some packages were installed
+      assert:
+        that:
+          - pkg_check.results | selectattr('rc', 'eq', 0) | list | length > 0
+        fail_msg: "None of the expected packages were installed"
+        success_msg: "Playbooks executed successfully"

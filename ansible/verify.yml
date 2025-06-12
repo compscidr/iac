@@ -1,0 +1,8 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Example verification task
+      ansible.builtin.command: echo "This is a very basic test"
+      changed_when: false

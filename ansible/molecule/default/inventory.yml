@@ -1,0 +1,15 @@
+all:
+  hosts:
+    instance:
+
+dev:
+  hosts:
+    instance:
+
+gui:
+  hosts:
+    instance:
+
+dev_gui:
+  hosts:
+    instance:

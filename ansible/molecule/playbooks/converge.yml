@@ -1,0 +1,37 @@
+---
+# Combined test playbook that installs all necessary packages
+- name: Test environment setup
+  hosts: instance
+  become: true
+  tasks:
+    - name: Create required directory structure
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /tmp/.ansible
+        - /home/ansible/.ssh
+        
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Install common packages
+      apt:
+        name: 
+          - git
+          - curl
+          - htop
+          - vim
+          - build-essential
+          - python3-pip
+        state: present
+      
+    - name: Install GUI packages
+      apt:
+        name: 
+          - firefox
+          - gedit
+        state: present
+      ignore_errors: yes

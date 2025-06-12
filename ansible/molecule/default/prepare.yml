@@ -1,0 +1,41 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install python and required packages
+      raw: |
+        apt-get update &&
+        apt-get install -y python3 python3-apt sudo aptitude gpg curl ca-certificates gnupg lsb-release apt-utils
+      changed_when: false
+
+    - name: Gather facts
+      setup:
+
+    - name: Create mock vars directory
+      file:
+        path: "/etc/ansible/facts.d"
+        state: directory
+        mode: '0755'
+      
+    - name: Create mock vars files for testing
+      copy:
+        dest: "/root/.ansible/tmp/{{ item.filename }}"
+        content: "{{ item.content }}"
+      loop:
+        - filename: "user.yml"
+          content: |
+            username: ansible
+            fullname: Test User
+            email: test@example.com
+            signingkey: testkeyabc123
+        - filename: "deb_arch.yml"
+          content: |
+            # Architecture mapping
+            deb_architecture: {
+                "armv6l": "armhf",
+                "armv7l": "armhf",
+                "aarch64": "arm64", 
+                "x86_64": "amd64",
+                "i386": "i386"
+            }

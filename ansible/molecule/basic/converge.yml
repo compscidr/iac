@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      become: true
+      
+    - name: Install packages
+      ansible.builtin.apt:
+        name: 
+          - curl
+        state: present
+      become: true

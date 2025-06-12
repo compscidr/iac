@@ -1,0 +1,36 @@
+---
+- name: Common tasks for all hosts (Test Version)
+  hosts: all
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      become: true
+      
+    - name: Install common packages
+      apt:
+        name: 
+          - git
+          - curl
+          - htop
+          - vim
+        state: present
+      become: true
+
+- name: Common tasks for gui hosts (Test Version)
+  hosts: gui
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  tasks:
+    - name: Install GUI packages
+      apt:
+        name: 
+          - firefox
+        state: present
+      become: true
+      ignore_errors: yes

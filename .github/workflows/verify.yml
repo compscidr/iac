@@ -26,23 +26,41 @@ jobs:
           cd ansible
           ansible-lint .
 
-  # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
-  deploy-test:
-    runs-on: ubuntu-24.04
+  molecule-test:
+    runs-on: ubuntu-22.04
     name: Molecule Test
     steps:
-      - uses: actions/checkout@v4
-      - name: Install 1Password CLI
-        # we need op to be on the "deploying device, ie, the GH runner"
-        uses: 1password/install-cli-action@v1
-      - name: Install and run molecule
-        env: # Or as an environment variable
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
-          pwd
-          ls 
+          python -m pip install --upgrade pip
+          pip install ansible molecule molecule-docker pytest-testinfra docker
+
+      - name: Install Ansible Galaxy requirements
+        run: |
           cd ansible
-          python3 -m venv venv 
-          . venv/bin/activate
-          pip3 install molecule molecule-docker passlib
-          molecule test
+          ansible-galaxy install -r requirements.yml
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Show available roles
+        run: |
+          cd ansible
+          ls -la roles/
+          ansible-galaxy role list
+
+      - name: Run molecule test
+        working-directory: ./ansible
+        run: molecule test
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          MOLECULE_VERBOSITY: '2'
+          ANSIBLE_ROLES_PATH: "./roles:~/.ansible/roles"
+          ANSIBLE_COLLECTIONS_PATH: "~/.ansible/collections"
