@@ -11,7 +11,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       
       - name: Install ansible and ansible-lint
         run: pip install ansible ansible-lint
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install 1Password CLI
         # we need op to be on the "deploying device, ie, the GH runner"
-        uses: 1password/install-cli-action@v1
+        uses: 1password/install-cli-action@v2
       - name: Install and run molecule
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
