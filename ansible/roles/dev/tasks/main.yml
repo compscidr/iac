@@ -144,7 +144,7 @@
     pkg:
       - rustc
       - cargo
-      - rustup
+      # - rustup # conflicts with rustc and cargo apparently
 
 - name: Install ruby development tools
   tags: ruby

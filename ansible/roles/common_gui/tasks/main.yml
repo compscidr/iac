@@ -94,20 +94,20 @@
       - terminology
       - sakura # simple, multiple tabs
 
-- name: Install spotify apt repo
-  tags: always
-  ansible.builtin.include_role:
-    name: compscidr.spotify.spotify
-    apply:
-      become: true
-      tags: spotify
+# - name: Install spotify apt repo
+#   tags: always
+#   ansible.builtin.include_role:
+#     name: compscidr.spotify.spotify
+#     apply:
+#       become: true
+#       tags: spotify
 
-- name: Cleanup spotify duplicate apt
-  become: true
-  tags: spotify
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/spotify.list
-    state: absent
+# - name: Cleanup spotify duplicate apt
+#   become: true
+#   tags: spotify
+#   ansible.builtin.file:
+#     path: /etc/apt/sources.list.d/spotify.list
+#     state: absent
 
 - name: AppImage compatibility
   become: true
