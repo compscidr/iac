@@ -40,7 +40,7 @@
   become: true
   ansible.builtin.apt:
     pkg:
-      - openjdk-21-jre-headless
+      - openjdk-21-jdk-headless
 
 - name: Install cpp development tools
   become: true
