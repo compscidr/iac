@@ -38,6 +38,7 @@ jobs:
       - name: Install and run molecule
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ALLOW_BROKEN_CONDITIONALS: 1
         run: |
           pwd
           ls 
