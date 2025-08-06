@@ -15,7 +15,6 @@ platforms:
       - android_runner
       - nas
       - academic_gui
-      - nas
       - java_runner
       - android_runner
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
