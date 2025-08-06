@@ -42,12 +42,11 @@ jobs:
       - name: Install and run molecule
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          ANSIBLE_CONDITIONALS_ALLOW_BROKEN: 1
         run: |
           pwd
           ls 
           cd ansible
           python3 -m venv venv 
           . venv/bin/activate
-          pip3 install molecule molecule-docker passlib
-          ALLOW_BROKEN_CONDITIONALS=1 molecule test
+          pip3 install molecule molecule-docker==2.1.0 passlib
+          molecule test
