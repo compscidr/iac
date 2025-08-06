@@ -67,13 +67,25 @@
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
+- name: Check if GPG private key is already imported
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: "gpg --batch --list-secret-keys {{ signingkey }}"
+  environment:
+    GPG_TTY: ""
+  register: gpg_key_check
+  failed_when: false
+  changed_when: false
+
 - name: Import GPG private key
   tags: gpg
-  gpg:
-    key_file: "/home/{{ username }}/.gpg/{{ username }}.gpg"
-    key_id: "{{ signingkey }}"
-    key_type: private
-    state: latest
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: "gpg --batch --yes --import /home/{{ username }}/.gpg/{{ username }}.gpg"
+  environment:
+    GPG_TTY: ""
+  when: gpg_key_check.rc != 0
 
 - name: Configure git preferences
   become: true

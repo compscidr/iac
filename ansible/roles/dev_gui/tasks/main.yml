@@ -1,4 +1,11 @@
 ---
+- name: Check if vscode apt repo exists
+  tags: vscode
+  become: true
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/vscode.sources
+  register: vscode_repo_exists
+
 - name: Install vscode apt repo
   tags: vscode
   become: true
@@ -11,6 +18,7 @@
     components: [main]
     state: present
     enabled: true
+  when: not vscode_repo_exists.stat.exists
 
 - name: Install vscode
   become: true

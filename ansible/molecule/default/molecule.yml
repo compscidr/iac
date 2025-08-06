@@ -1,9 +1,9 @@
 ---
-role_name_check: 1
 dependency:
   name: galaxy
   options:
     ignore-errors: true
+    role-name-check: 1
 driver:
   name: docker
 platforms:
@@ -25,7 +25,11 @@ platforms:
     cgroupns_mode: host
     privileged: true
     pre_build_image: true
+    env:
+      OP_SERVICE_ACCOUNT_TOKEN: "${OP_SERVICE_ACCOUNT_TOKEN}"
 provisioner:
   name: ansible
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  env:
+    OP_SERVICE_ACCOUNT_TOKEN: "${OP_SERVICE_ACCOUNT_TOKEN}"

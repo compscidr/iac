@@ -131,12 +131,20 @@
     dest: /opt/
     remote_src: true
 
+- name: Check if keybase is already installed
+  tags: keybase
+  become: true
+  ansible.builtin.stat:
+    path: /usr/bin/keybase
+  register: keybase_installed
+
 - name: Install keybase
   ansible.builtin.include_role:
     name: compscidr.keybase.keybase
     apply:
-      tags: 1password
+      tags: keybase
       become: true
+  when: not keybase_installed.stat.exists
   tags: always
 
 - name: Install Gimp
