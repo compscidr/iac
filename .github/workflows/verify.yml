@@ -1,5 +1,9 @@
 name: verify
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   lint:
@@ -38,7 +42,7 @@ jobs:
       - name: Install and run molecule
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          ALLOW_BROKEN_CONDITIONALS: 1
+          ANSIBLE_CONDITIONALS_ALLOW_BROKEN: 1
         run: |
           pwd
           ls 
@@ -46,4 +50,4 @@ jobs:
           python3 -m venv venv 
           . venv/bin/activate
           pip3 install molecule molecule-docker passlib
-          molecule test
+          ALLOW_BROKEN_CONDITIONALS=1 molecule test
