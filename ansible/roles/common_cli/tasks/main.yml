@@ -71,7 +71,12 @@
   tags: gpg
   become: true
   become_user: "{{ username }}"
-  ansible.builtin.shell: "gpg --batch --list-secret-keys {{ signingkey }}"
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --batch
+      - --list-secret-keys
+      - "{{ signingkey }}"
   environment:
     GPG_TTY: ""
   register: gpg_key_check
@@ -82,7 +87,13 @@
   tags: gpg
   become: true
   become_user: "{{ username }}"
-  ansible.builtin.shell: "gpg --batch --yes --import /home/{{ username }}/.gpg/{{ username }}.gpg"
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --batch
+      - --yes
+      - --import
+      - "/home/{{ username }}/.gpg/{{ username }}.gpg"
   environment:
     GPG_TTY: ""
   when: gpg_key_check.rc != 0
