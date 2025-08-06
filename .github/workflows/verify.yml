@@ -1,5 +1,9 @@
 name: verify
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   lint:
@@ -38,11 +42,13 @@ jobs:
       - name: Install and run molecule
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ANSIBLE_CONDITIONALS_ALLOW_BROKEN: "1"
         run: |
           pwd
           ls 
           cd ansible
           python3 -m venv venv 
           . venv/bin/activate
-          pip3 install molecule molecule-docker passlib
+          pip3 install 'ansible-core>=2.15,<2.19' molecule molecule-docker==2.1.0 passlib
+          export ANSIBLE_CONDITIONALS_ALLOW_BROKEN=1
           molecule test

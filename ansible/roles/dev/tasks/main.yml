@@ -24,13 +24,23 @@
     groups: plugdev
     append: true
 
-# todo: see why this is failing molecule
+- name: Create man directories for java installation
+  tags: java
+  become: true
+  ansible.builtin.file:
+    path: "/usr/share/man/man{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - 1
+    - 7
+
 - name: Install java tools
   tags: java
   become: true
   ansible.builtin.apt:
     pkg:
-      - openjdk-21-jdk
+      - openjdk-21-jdk-headless
 
 - name: Install cpp development tools
   become: true
@@ -144,7 +154,7 @@
     pkg:
       - rustc
       - cargo
-      # - rustup # conflicts with rustc and cargo apparently
+ # - rustup # conflicts with rustc and cargo apparently
 
 - name: Install ruby development tools
   tags: ruby
@@ -284,17 +294,19 @@
     dest: /etc/environment.d/90-op.conf
     mode: "644"
 
-- name: Install ansible tools
+- name: Install ansible tools via pip (user install)
   tags: ansible
   become: true
   become_user: jason
   vars:
-    pipx_packages:
+    pip_packages:
       - ansible-lint
-  community.general.pipx:
+  ansible.builtin.pip:
     name: "{{ item }}"
     state: present
-  with_items: "{{ pipx_packages }}"
+    executable: pip3
+    extra_args: --user
+  with_items: "{{ pip_packages }}"
 
 - name: Copy userspace icmp socket permission file
   become: true
