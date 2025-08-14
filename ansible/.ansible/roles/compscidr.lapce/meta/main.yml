@@ -1,0 +1,21 @@
+---
+dependencies: []
+galaxy_info:
+  namespace: compscidr
+  role_name: lapce
+  author: Jason Ernst
+  description: Installs the lapce IDE
+  company: ""
+  license: MIT
+  min_ansible_version: "2.4"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic # 18.04 LTS
+        - focal # 20.04 LTS
+        - jammy # 22.04 LTS
+        - noble  # 24.04 LTS
+  galaxy_tags:
+    - lapce
+    - ide
+    - tools

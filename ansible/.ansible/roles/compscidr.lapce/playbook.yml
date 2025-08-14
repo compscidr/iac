@@ -1,0 +1,5 @@
+- name: Install lapce
+  hosts: all
+  tasks:
+    - name: Install lapce
+      ansible.builtin.include_tasks: tasks/main.yml
