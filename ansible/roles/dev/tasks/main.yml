@@ -112,6 +112,13 @@
     name: tldr
     global: true
 
+- name: Check if php ppa repository exists
+  tags: php
+  become: true
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/php-ppa.sources
+  register: php_ppa_repo_exists
+
 - name: Add php ppa repository
   become: true
   tags: php
@@ -124,6 +131,7 @@
     components: [main]
     signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
     enabled: true
+  when: not php_ppa_repo_exists.stat.exists
 
 # todo: see why this is failing molecule
 - name: Install php and php dev tools
