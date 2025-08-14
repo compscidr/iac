@@ -1,5 +1,6 @@
 - name: Deploy DynDns
   tags: dyndns
+  hosts: nas.local
   community.docker.docker_container:
     name: dyndns
     image: compscidr/digitalocean-dyndns
@@ -10,5 +11,40 @@
       NAME: "nas"
       SLEEP_INTERVAL: "60"
       REMOVE_DUPLICATES: "true"
+      USE_DUAL_STACK: "true"
+    restart_policy: unless-stopped
+    memory: 1g
+
+- name: Deploy DynDns
+  tags: dyndns
+  hosts: 
+  community.docker.docker_container:
+    name: dyndns
+    image: compscidr/digitalocean-dyndns
+    pull: true
+    env:
+      DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
+      DOMAIN: "jasonernst.com"
+      NAME: "home"
+      SLEEP_INTERVAL: "60"
+      REMOVE_DUPLICATES: "true"
+      USE_DUAL_STACK: "true"
+    restart_policy: unless-stopped
+    memory: 1g
+
+- name: Deploy DynDns
+  tags: dyndns
+  hosts: ubuntu-cube.local
+  community.docker.docker_container:
+    name: dyndns
+    image: compscidr/digitalocean-dyndns
+    pull: true
+    env:
+      DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
+      DOMAIN: "jasonernst.com"
+      NAME: "vpn"
+      SLEEP_INTERVAL: "60"
+      REMOVE_DUPLICATES: "true"
+      USE_DUAL_STACK: "true"
     restart_policy: unless-stopped
     memory: 1g
