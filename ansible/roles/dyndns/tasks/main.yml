@@ -19,7 +19,7 @@
   tags: dyndns
   hosts: all
   community.docker.docker_container:
-    name: dyndns
+    name: dyndns-home
     image: compscidr/digitalocean-dyndns
     pull: true
     env:
