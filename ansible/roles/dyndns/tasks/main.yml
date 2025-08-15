@@ -1,7 +1,7 @@
 - name: Deploy DynDns
   tags: dyndns
-  hosts: nas.local
   community.docker.docker_container:
+    hosts: nas.local
     name: dyndns
     image: compscidr/digitalocean-dyndns
     pull: true
@@ -17,8 +17,8 @@
 
 - name: Deploy DynDns
   tags: dyndns
-  hosts: ubuntu-beast.local
   community.docker.docker_container:
+    hosts: ubuntu-beast.local
     name: dyndns-home
     image: compscidr/digitalocean-dyndns
     pull: true
@@ -34,8 +34,8 @@
 
 - name: Deploy DynDns
   tags: dyndns
-  hosts: ubuntu-cube.local
   community.docker.docker_container:
+    hosts: ubuntu-cube.local
     name: dyndns
     image: compscidr/digitalocean-dyndns
     pull: true
