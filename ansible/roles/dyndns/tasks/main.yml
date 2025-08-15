@@ -1,16 +1,19 @@
 - name: Set DynDns configuration for nas.local
+  tags: dyndns
   set_fact:
     dyndns_name: "nas"
     dyndns_container_name: "dyndns"
   when: inventory_hostname == 'nas.local'
 
 - name: Set DynDns configuration for ubuntu-beast.local
+  tags: dyndns
   set_fact:
     dyndns_name: "home"
     dyndns_container_name: "dyndns-home"
   when: inventory_hostname == 'ubuntu-beast.local'
 
 - name: Set DynDns configuration for ubuntu-cube.local
+  tags: dyndns
   set_fact:
     dyndns_name: "vpn"
     dyndns_container_name: "dyndns"
