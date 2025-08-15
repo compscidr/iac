@@ -1,14 +1,34 @@
+- name: Set DynDns configuration for nas.local
+  set_fact:
+    dyndns_name: "nas"
+    dyndns_container_name: "dyndns"
+  when: inventory_hostname == 'nas.local'
+
+- name: Set DynDns configuration for ubuntu-beast.local
+  set_fact:
+    dyndns_name: "home"
+    dyndns_container_name: "dyndns-home"
+  when: inventory_hostname == 'ubuntu-beast.local'
+
+- name: Set DynDns configuration for ubuntu-cube.local
+  set_fact:
+    dyndns_name: "vpn"
+    dyndns_container_name: "dyndns"
+  when: inventory_hostname == 'ubuntu-cube.local'
+
 - name: Deploy DynDns
   tags: dyndns
   community.docker.docker_container:
-    name: dyndns
+    name: "{{ dyndns_container_name }}"
     image: compscidr/digitalocean-dyndns
     pull: true
     env:
       DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
       DOMAIN: "jasonernst.com"
-      NAME: "nas"
+      NAME: "{{ dyndns_name }}"
       SLEEP_INTERVAL: "60"
       REMOVE_DUPLICATES: "true"
+      USE_DUAL_STACK: "true"
     restart_policy: unless-stopped
     memory: 1g
+  when: dyndns_name is defined
