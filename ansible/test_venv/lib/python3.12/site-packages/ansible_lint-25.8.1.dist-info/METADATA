@@ -1,0 +1,209 @@
+Metadata-Version: 2.4
+Name: ansible-lint
+Version: 25.8.1
+Summary: Checks playbooks for practices and behavior that could potentially be improved
+Author-email: Will Thames <will@thames.id.au>
+Maintainer-email: Ansible by Red Hat <info@ansible.com>
+License-Expression: GPL-3.0-or-later
+Project-URL: changelog, https://github.com/ansible/ansible-lint/releases
+Project-URL: documentation, https://ansible.readthedocs.io/projects/lint/
+Project-URL: homepage, https://github.com/ansible/ansible-lint
+Project-URL: repository, https://github.com/ansible/ansible-lint
+Keywords: ansible,lint
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python
+Classifier: Topic :: System :: Systems Administration
+Classifier: Topic :: Software Development :: Quality Assurance
+Classifier: Topic :: Software Development :: Testing
+Classifier: Topic :: Utilities
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: COPYING
+Requires-Dist: ansible-core>=2.16.11
+Requires-Dist: ansible-compat>=25.8.0
+Requires-Dist: black>=24.3.0
+Requires-Dist: filelock>=3.8.2
+Requires-Dist: importlib-metadata
+Requires-Dist: jsonschema>=4.10.0
+Requires-Dist: packaging>=22.0
+Requires-Dist: pathspec>=0.10.3
+Requires-Dist: pyyaml>=6.0.2
+Requires-Dist: ruamel.yaml>=0.18.11
+Requires-Dist: referencing>=0.36.2
+Requires-Dist: subprocess-tee>=0.4.1
+Requires-Dist: yamllint>=1.34.0
+Requires-Dist: wcmatch>=8.1.2; python_version < "3.12"
+Requires-Dist: wcmatch>=8.5.0; python_version >= "3.12"
+Provides-Extra: docs
+Requires-Dist: mkdocs-ansible>=25.5.0; extra == "docs"
+Provides-Extra: lock
+Requires-Dist: ansible-compat==25.8.0; extra == "lock"
+Requires-Dist: attrs==25.3.0; extra == "lock"
+Requires-Dist: black==25.1.0; extra == "lock"
+Requires-Dist: bracex==2.6; extra == "lock"
+Requires-Dist: cffi==1.17.1; extra == "lock"
+Requires-Dist: click==8.2.1; extra == "lock"
+Requires-Dist: cryptography==45.0.6; extra == "lock"
+Requires-Dist: filelock==3.18.0; extra == "lock"
+Requires-Dist: importlib-metadata==8.7.0; extra == "lock"
+Requires-Dist: jinja2==3.1.6; extra == "lock"
+Requires-Dist: jsonschema==4.25.0; extra == "lock"
+Requires-Dist: jsonschema-specifications==2025.4.1; extra == "lock"
+Requires-Dist: markupsafe==3.0.2; extra == "lock"
+Requires-Dist: mypy-extensions==1.1.0; extra == "lock"
+Requires-Dist: packaging==25.0; extra == "lock"
+Requires-Dist: pathspec==0.12.1; extra == "lock"
+Requires-Dist: platformdirs==4.3.8; extra == "lock"
+Requires-Dist: pycparser==2.22; extra == "lock"
+Requires-Dist: pyyaml==6.0.2; extra == "lock"
+Requires-Dist: referencing==0.36.2; extra == "lock"
+Requires-Dist: rpds-py==0.27.0; extra == "lock"
+Requires-Dist: ruamel-yaml==0.18.14; extra == "lock"
+Requires-Dist: subprocess-tee==0.4.2; extra == "lock"
+Requires-Dist: wcmatch==10.1; extra == "lock"
+Requires-Dist: yamllint==1.37.1; extra == "lock"
+Requires-Dist: zipp==3.23.0; extra == "lock"
+Provides-Extra: test
+Requires-Dist: ansible-creator>=24.6.0; extra == "test"
+Requires-Dist: black; extra == "test"
+Requires-Dist: coverage-enable-subprocess; extra == "test"
+Requires-Dist: coverage[toml]>=6.4.4; extra == "test"
+Requires-Dist: ipdb; extra == "test"
+Requires-Dist: ipython; extra == "test"
+Requires-Dist: jmespath; extra == "test"
+Requires-Dist: license-expression>=30.3.0; extra == "test"
+Requires-Dist: mypy; extra == "test"
+Requires-Dist: netaddr; extra == "test"
+Requires-Dist: pip; extra == "test"
+Requires-Dist: psutil; extra == "test"
+Requires-Dist: pylint; extra == "test"
+Requires-Dist: pytest>=7.2.2; extra == "test"
+Requires-Dist: pytest-instafail>=0.5.0; extra == "test"
+Requires-Dist: pytest-mock; extra == "test"
+Requires-Dist: pytest-plus>=0.6; extra == "test"
+Requires-Dist: pytest-sugar; extra == "test"
+Requires-Dist: pytest-xdist[psutil,setproctitle]>=2.1.0; extra == "test"
+Requires-Dist: ruamel-yaml-clib; python_version < "3.14" and extra == "test"
+Requires-Dist: ruamel.yaml>=0.18.11; extra == "test"
+Requires-Dist: tox>=4.0.0; extra == "test"
+Requires-Dist: tox-extra>=2.1; extra == "test"
+Requires-Dist: tox-uv>=1.25; extra == "test"
+Requires-Dist: tox>=4.24.2; extra == "test"
+Requires-Dist: types-jsonschema; extra == "test"
+Requires-Dist: types-pyyaml; extra == "test"
+Dynamic: license-file
+
+[![PyPI version](https://img.shields.io/pypi/v/ansible-lint.svg)](https://pypi.org/project/ansible-lint)
+[![Ansible-lint rules explanation](https://img.shields.io/badge/Ansible--lint-rules-blue.svg)](https://ansible.readthedocs.io/projects/lint/rules/)
+[![Discussions](https://img.shields.io/badge/Discussions-gray.svg)](https://forum.ansible.com/tag/ansible-lint)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+
+# Ansible-lint
+
+`ansible-lint` checks playbooks for practices and behavior that could
+potentially be improved. As a community-backed project ansible-lint supports
+only the last two major versions of Ansible.
+
+[Visit the Ansible Lint docs site](https://ansible.readthedocs.io/projects/lint/)
+
+# Using ansible-lint as a GitHub Action
+
+This action allows you to run `ansible-lint` on your codebase without having to
+install it yourself.
+
+```yaml
+# .github/workflows/ansible-lint.yml
+name: ansible-lint
+on:
+  pull_request:
+    branches: ["main", "stable", "release/v*"]
+jobs:
+  build:
+    name: Ansible Lint # Naming the build is important to use it as a status check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main # or vX.X.X version
+        # optional (see below):
+        with:
+          args: ""
+          gh_action_ref: "<version - e.g. `v25.5.0`>" # Not recommended for non-composite action use
+          setup_python: "true"
+          working_directory: ""
+          requirements_file: ""
+```
+
+By default, the workflow uses ansible-lint installed from `main`. For production or stable workflows, it is recommended to specify a particular release tag (in format v.X.X.X).
+
+All the arguments are optional:
+
+- `args`: Arguments to be passed to ansible-lint command.
+- `gh_action_ref`: The git branch, tag, or commit to use for ansible-lint.
+  Not recommended for standard use - only use with composite actions where
+  `GH_ACTION_REF` is set to the parent action version.
+- `requirements_file`: Path to the requirements.yml file to install role and
+  collection dependencies.
+- `setup_python`: If python should be installed. Default is `true`.
+- `working_directory`: The directory where to run ansible-lint from. Default is
+  `github.workspace`. Needed if you want to lint only a subset of
+  your repository.
+
+
+For more details, see [ansible-lint-action].
+
+# Communication
+
+Refer to the
+[Talk to us](https://ansible.readthedocs.io/projects/lint/contributing/#talk-to-us)
+section of the Contributing guide to find out how to get in touch with us.
+
+You can also find more information in the
+[Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
+
+# Contributing
+
+Please read [Contribution guidelines] if you wish to contribute.
+
+# Code of Conduct
+
+Please see the
+[Ansible Community Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html).
+
+# Licensing
+
+The ansible-lint project is distributed as [GPLv3] due to use of [GPLv3] runtime
+dependencies, like `ansible` and `yamllint`.
+
+For historical reasons, its own code-base remains licensed under a more liberal
+[MIT] license and any contributions made are accepted as being made under
+original [MIT] license.
+
+# Authors
+
+ansible-lint was created by [Will Thames] and is now maintained as part of the [Ansible]
+by [Red Hat] project.
+
+[ansible]: https://ansible.com
+[contribution guidelines]:
+  https://ansible.readthedocs.io/projects/lint/contributing
+[gplv3]: https://github.com/ansible/ansible-lint/blob/main/COPYING
+[mit]:
+  https://github.com/ansible/ansible-lint/blob/main/docs/licenses/LICENSE.mit.txt
+[red hat]: https://redhat.com
+[will thames]: https://github.com/willthames
+[ansible-lint-action]:
+  https://ansible.readthedocs.io/projects/lint/installing/#installing-from-source-code
