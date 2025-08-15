@@ -132,7 +132,7 @@
     remote_src: true
 
 - name: Check if keybase is already installed
-  tags: keybase
+  tags: always
   become: true
   ansible.builtin.stat:
     path: /usr/bin/keybase
