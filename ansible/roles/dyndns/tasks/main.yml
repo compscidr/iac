@@ -17,7 +17,7 @@
 
 - name: Deploy DynDns
   tags: dyndns
-  hosts: 
+  hosts: all
   community.docker.docker_container:
     name: dyndns
     image: compscidr/digitalocean-dyndns
