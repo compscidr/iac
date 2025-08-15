@@ -17,7 +17,7 @@
 
 - name: Deploy DynDns
   tags: dyndns
-  hosts: all
+  hosts: ubuntu-beast.local
   community.docker.docker_container:
     name: dyndns-home
     image: compscidr/digitalocean-dyndns
