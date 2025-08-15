@@ -46,5 +46,9 @@
       SLEEP_INTERVAL: "60"
       REMOVE_DUPLICATES: "true"
       USE_DUAL_STACK: "true"
+      NAME: "{{ dyndns_name }}"
+      SLEEP_INTERVAL: "60"
+      REMOVE_DUPLICATES: "true"
+      USE_DUAL_STACK: "true"
     restart_policy: unless-stopped
     memory: 1g
