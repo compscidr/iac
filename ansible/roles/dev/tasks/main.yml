@@ -112,6 +112,29 @@
     name: tldr
     global: true
 
+- name: Check if php ppa repository exists
+  tags: php
+  become: true
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/php-ppa.sources
+  register: dev_php_ppa_repo_exists
+
+- name: Check if php ppa gpg key exists
+  tags: php
+  become: true
+  ansible.builtin.stat:
+    path: /usr/share/keyrings/php-ppa.asc
+  register: dev_php_ppa_key_exists
+
+- name: Download PHP PPA GPG key
+  become: true
+  tags: php
+  ansible.builtin.get_url:
+    url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
+    dest: /usr/share/keyrings/php-ppa.asc
+    mode: '0644'
+  when: not dev_php_ppa_key_exists.stat.exists
+
 - name: Add php ppa repository
   become: true
   tags: php
@@ -122,8 +145,9 @@
     uris: "https://ppa.launchpadcontent.net/ondrej/php/ubuntu"
     suites: ["{{ ansible_distribution_release | lower }}"]
     components: [main]
-    signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
+    signed_by: "/usr/share/keyrings/php-ppa.asc"
     enabled: true
+  when: not dev_php_ppa_repo_exists.stat.exists
 
 # todo: see why this is failing molecule
 - name: Install php and php dev tools
@@ -220,8 +244,8 @@
   ansible.builtin.command: ./install --update
   args:
     chdir: "/tmp/aws"
-  register: awscli_status
-  changed_when: "'changed' in awscli_status.stdout"
+  register: dev_awscli_status
+  changed_when: "'changed' in dev_awscli_status.stdout"
 
 # note: this will require a restart to apply changes
 - name: Set aws access token
