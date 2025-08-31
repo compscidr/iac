@@ -1,4 +1,21 @@
 ---
+- name: Create media folders
+  tags: plex, transmission, sabnzbd, sonarr, radarr, lidarr
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+  loop:
+    - /volume1/storage/
+    - /volume1/storage/downloads
+    - /volume1/storage/downloads/complete
+    - /volume1/storage/tv
+    - /volume1/storage/movies
+    - /volume1/storage/music
+
 - name: Create Transmission Directories
   tags: transmission
   become: true
@@ -53,6 +70,7 @@
     plex_bonjour_port: 5354
     plex_tv_folder: /volume1/storage/tv
     plex_movies_folder: /volume1/storage/movies
+    plex_music_folder: /volume1/storage/music
     plex_claim: claim-haziyvUxG2Fb4uj5-tF1
     plex_pid: "999"
     plex_gid: "10"
@@ -98,6 +116,20 @@
     radarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
     radarr_pid: "999"
     radarr_gid: "10"
+
+- name: Install lidarr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.lidarr
+    apply:
+      become: true
+      tags: lidarr
+  vars:
+    lidarr_music_folder: /volume1/storage/music
+    lidarr_transmission_downloads_folder: /volume1/storage/downloads
+    lidarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    lidarr_pid: "999"
+    lidarr_gid: "10"
 
 - name: Install prowlarr
   tags: always
