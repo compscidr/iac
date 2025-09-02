@@ -318,19 +318,24 @@
     dest: /etc/environment.d/90-op.conf
     mode: "644"
 
-- name: Install ansible tools via pip (user install)
+- name: Install pipx for Python package management
+  tags: ansible
+  become: true
+  ansible.builtin.apt:
+    name: pipx
+    state: present
+
+- name: Install ansible tools via pipx
   tags: ansible
   become: true
   become_user: jason
   vars:
-    pip_packages:
+    pipx_packages:
       - ansible-lint
-  ansible.builtin.pip:
-    name: "{{ item }}"
-    state: present
-    executable: pip3
-    extra_args: --user
-  with_items: "{{ pip_packages }}"
+  ansible.builtin.command:
+    cmd: pipx install {{ item }}
+    creates: /home/jason/.local/bin/{{ item }}
+  with_items: "{{ pipx_packages }}"
 
 - name: Copy userspace icmp socket permission file
   become: true
