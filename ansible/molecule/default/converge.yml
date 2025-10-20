@@ -7,8 +7,8 @@
 #   ansible.builtin.import_playbook: academic.yml
 
 # temp comment out
-# - name: Include dev playbook
-#   ansible.builtin.import_playbook: dev.yml
+- name: Include dev playbook
+  ansible.builtin.import_playbook: ../../dev.yml
 
 # - name: Include jasonernst_com playbook
 #   ansible.builtin.import_playbook: jasonernst_com.yml
