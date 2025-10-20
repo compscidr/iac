@@ -1,4 +1,13 @@
-# from galaxy
+# External Ansible Dependencies
+#
+# This file defines external roles and collections from Ansible Galaxy.
+#
+# INSTALLATION:
+#   - For Molecule: Automatic (via dependency.sh script)
+#   - For Standalone: Run 'ansible-galaxy install -r requirements.yml'
+#
+# See DEPENDENCIES.md for more information.
+
 roles:
   - name: compscidr.gpg
     version: "0.0.11"
@@ -10,6 +19,7 @@ roles:
     version: "0.0.3"
 
 collections:
+  - name: ansible.posix
   - name: community.general
     version: "11.2.1"
   - name: community.docker
