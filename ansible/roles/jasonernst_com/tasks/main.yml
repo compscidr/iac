@@ -170,13 +170,24 @@
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
+- name: Create database directory on host
+  tags: db
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/mysql
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
 - name: Deploy mysql db
   tags: db
   community.docker.docker_container:
     name: db
     image: mysql
     env_file: /opt/goblog/prod/.env
-    network_mode: bridge
+    volumes: /opt/goblog/mysql:/var/lib/mysql
+    network_mode: host
     restart_policy: unless-stopped
 
 # todo: fix this
