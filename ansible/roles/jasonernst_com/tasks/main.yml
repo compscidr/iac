@@ -61,7 +61,9 @@
   community.docker.docker_container:
     name: letsencrypt
     image: jrcs/letsencrypt-nginx-proxy-companion
-    volumes: certs:/etc/nginx/certs:rw,/var/run/docker.sock:/var/run/docker.sock:ro
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     volumes_from: nginx-proxy
     network_mode: bridge
     restart_policy: unless-stopped
@@ -133,7 +135,8 @@
   community.docker.docker_container:
     name: www.jasonernst.com
     image: compscidr/goblog:v0.1.46
-    volumes: /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+    volumes:
+      - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/prod/database.db
         target: /go/src/github.com/compscidr/database.db
@@ -154,7 +157,8 @@
   community.docker.docker_container:
     name: staging.jasonernst.com
     image: compscidr/goblog:v0.1.46
-    volumes: /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+    volumes:
+      - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
       - source: /opt/goblog/staging/database.db
         target: /go/src/github.com/compscidr/database.db
@@ -187,7 +191,8 @@
     image: mysql
     env:
       MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='www.jasonernst.com') }}"
-    volumes: /opt/goblog/mysql:/var/lib/mysql
+    volumes:
+      - /opt/goblog/mysql:/var/lib/mysql
     network_mode: host
     restart_policy: unless-stopped
 
