@@ -177,15 +177,16 @@
     path: /opt/goblog/mysql
     state: directory
     mode: '755'
-    owner: root
-    group: root
+    owner: '999'
+    group: '999'
 
 - name: Deploy mysql db
   tags: db
   community.docker.docker_container:
     name: db
     image: mysql
-    env_file: /opt/goblog/prod/.env
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='www.jasonernst.com') }}"
     volumes: /opt/goblog/mysql:/var/lib/mysql
     network_mode: host
     restart_policy: unless-stopped
