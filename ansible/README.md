@@ -19,6 +19,15 @@ sudo apt install ssh
 ssh-import-id gh:compscidr
 ```
 
+### Mac OS
+- Ensure command lines tools are installed: `xcode-select --install`
+- Import ssh authorized key: `pip3 install ssh-import-id`
+- Add the python bin directory to your path, for example:
+- `export PATH="$HOME/Library/Python/3.9/bin:$PATH"`
+- Import the key: `ssh-import-id gh:compscidr`
+- Disable SSH password login (edit /etc/ssh/sshd_config and set `PasswordAuthentication no`, set `KbdInteractiveAuthentication no`)
+- Turn on SSH access (System Preferences -> Sharing -> Remote Login)
+
 ## Credentials / Secrets
 For any plays which deploy secrets / credentials, all of these are managed by 1password.
 The plays are setup to lookup the secrets using 1password cli (op). In order for this 

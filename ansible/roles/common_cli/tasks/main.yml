@@ -1,13 +1,34 @@
 ---
-- name: Install prereqs
+- name: Install prereqs (Ubuntu/Debian)
   become: true
   tags: prereqs
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - gpg-agent
-      - ssh
-      - git
+    pkg: "{{ common_cli_prereq_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Check if Homebrew is installed (macOS)
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_check
+  when: ansible_os_family == "Darwin"
+
+- name: Install Homebrew (macOS)
+  ansible.builtin.shell: |
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  args:
+    creates: /opt/homebrew/bin/brew
+    executable: /bin/bash
+  when:
+    - ansible_os_family == "Darwin"
+    - not homebrew_check.stat.exists
+
+- name: Install prereqs (macOS)
+  tags: prereqs
+  community.general.homebrew:
+    name: "{{ common_cli_prereq_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Install 1password CLI
   ansible.builtin.include_role:
@@ -26,7 +47,7 @@
     comment: "{{ fullname }}"
     shell: /bin/bash
     append: true
-    groups: sudo
+    groups: "{{ 'admin' if ansible_os_family == 'Darwin' else 'sudo' }}"
     skeleton: "/etc/skel"
     create_home: true
     update_password: on_create
@@ -67,7 +88,7 @@
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
-- name: Check if GPG private key is already imported
+- name: Check if GPG private key is already imported (Linux)
   tags: gpg
   become: true
   become_user: "{{ username }}"
@@ -79,24 +100,47 @@
       - "{{ signingkey }}"
   environment:
     GPG_TTY: ""
-  register: gpg_key_check
+  register: gpg_key_check_linux
   failed_when: false
   changed_when: false
+  when: ansible_os_family != "Darwin"
 
-- name: Import GPG private key
+- name: Check if GPG private key is already imported (macOS)
   tags: gpg
   become: true
   become_user: "{{ username }}"
-  ansible.builtin.command:
-    argv:
-      - gpg
-      - --batch
-      - --yes
-      - --import
-      - "/home/{{ username }}/.gpg/{{ username }}.gpg"
+  ansible.builtin.shell: |
+    /opt/homebrew/bin/gpg --batch --list-secret-keys "{{ signingkey }}" 2>&1
+  register: gpg_key_check_macos
+  failed_when: false
+  changed_when: false
+  when: ansible_os_family == "Darwin"
+
+- name: Import GPG private key (Linux)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    gpg --batch --yes --import ~/.gpg/{{ username }}.gpg
   environment:
     GPG_TTY: ""
-  when: gpg_key_check.rc != 0
+  register: gpg_import
+  changed_when: "'imported' in (gpg_import.stdout + gpg_import.stderr)"
+  when:
+    - ansible_os_family != "Darwin"
+    - gpg_key_check_linux.rc != 0
+
+- name: Import GPG private key (macOS)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    /opt/homebrew/bin/gpg --batch --yes --no-tty --import ~/.gpg/{{ username }}.gpg 2>&1
+  register: gpg_import_macos
+  changed_when: "'imported' in (gpg_import_macos.stdout + gpg_import_macos.stderr)"
+  when:
+    - ansible_os_family == "Darwin"
+    - gpg_key_check_macos.rc != 0
 
 - name: Configure git preferences
   become: true
@@ -115,6 +159,8 @@
       value: main
     - name: user.signingkey
       value: "{{ signingkey }}"
+    - name: push.autoSetupRemote
+      value: true
 
 - name: Create docker group
   become: true
@@ -132,58 +178,34 @@
     append: true
   notify: Reset ssh connection
 
-- name: Install various cli tools
+- name: Install various cli tools (Ubuntu/Debian)
   become: true
   tags: cli-tools
   ansible.builtin.apt:
-    pkg:
-      - avahi-daemon            # mostly used for <host>.local zeroconf
-      - btop                    # modern and colorful cli resource monitor
-      - byobu                   # text window manager / multiplexer / devops env
-      - curl                    # http/https/gopher tool
-      - docker.io               # containers
-      - docker-buildx
-      - docker-compose-v2       # docker compose
-      - fish                    # friendly interactive shell
-      - fzf                     # command line fuzzy finder
-      - git                     # code repos
-      - htop                    # better top (uses mouse for example)
-      - lm-sensors              # suggested installed with htop
-      - nano                    # simple command line editor
-      - neofetch                # cli system info
-      - nvme-cli                # get temperature / stats on nmves
-      - powerline               # prompt and statusline utility
-      - screen                  # terminal multiplexer
-      - stow                    # use this to manage dotfiles
-      - tmux                    # terminal multiplexer
-      - unzip                   # zip files
-      - wget                    # curl alternative
-      - xclip                   # cli interface for x selections
+    pkg: "{{ common_cli_tools_ubuntu }}"
+  when: ansible_os_family == "Debian"
 
-- name: Install network tools
+- name: Install various cli tools (macOS)
+  tags: cli-tools
+  community.general.homebrew:
+    name: "{{ common_cli_tools_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install network tools (Ubuntu/Debian)
   become: true
   tags: network-tools
   ansible.builtin.apt:
-    pkg:
-      - avahi-utils             # avahi-browse
-      - arp-scan                # for ip <-> mac map search
-      - dnsutils                # dig
-      - ethtool                 # gets info like link speed
-      - isc-dhcp-client         # dhcp client
-      - iftop                   # network top
-      - iptables-persistent     # boot-time loader for netfilter rules
-      - iotop                   # disk top
-      - nbtscan                 # netbios scanner
-      - net-tools               # ifconfig, netstat, arp
-      - nmap                    # determine open ports
-      - socat                   # sort of like nc but doesn't hang
-      - sqlite3                 # good db for integration tests
-      - sshfs                   # ssh mounts
-      - sshuttle                # forward ssh through tunnel
-      - tcpstat                 # network interface statistics reporting tool
-      - traceroute              # traceroute
-      - fail2ban                # https://help.ubuntu.com/community/Fail2ban
-      - whois                   # whois
+    pkg: "{{ common_cli_network_tools_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install network tools (macOS)
+  tags: network-tools
+  community.general.homebrew:
+    name: "{{ common_cli_network_tools_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
 
 - name: Add github to known hosts so the following bit doesn't fail
   become: true
@@ -224,6 +246,7 @@
     state: absent
   when: bash_test.stat is defined and bash_test.stat.islnk is false
 
+
 - name: Build directories list
   tags: dotfiles
   become: true
@@ -239,7 +262,7 @@
   become_user: "{{ username }}"
   tags: dotfiles
   with_items: "{{ files.files }}"
-  ansible.builtin.command: "stow {{ item.path | basename }}"
+  ansible.builtin.command: "{{ '/opt/homebrew/bin/stow' if ansible_os_family == 'Darwin' else 'stow' }} {{ item.path | basename }}"
   register: dotfiles_result
   changed_when: "'changed' in dotfiles_result.stdout"
   args:
@@ -252,7 +275,7 @@
   ansible.builtin.shell: |
     fisher list
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   register: fisher_status
   changed_when: false
   ignore_errors: true
@@ -271,7 +294,7 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   register: fisher_installed
   when: fisher_status is failed
   changed_when: "'changed ' in fisher_installed.stdout"
@@ -282,7 +305,7 @@
   ansible.builtin.shell: |
     fisher list | grep wfxr/forgit
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   register: forgit_status
   changed_when: false
   ignore_errors: true
@@ -293,7 +316,7 @@
   ansible.builtin.shell: |
     fisher install wfxr/forgit
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   when: forgit_status is failed
   register: forgit_install
   changed_when: "'changed' in forgit_install.stdout"
@@ -304,7 +327,7 @@
   ansible.builtin.shell: |
     fisher list | grep bobthefish
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   register: bobthefish_status
   changed_when: false
   ignore_errors: true
@@ -315,7 +338,7 @@
   ansible.builtin.shell: |
     fisher install oh-my-fish/theme-bobthefish
   args:
-    executable: /usr/bin/fish
+    executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
   when: bobthefish_status is failed
   register: bobthefish_install
   changed_when: "'changed' in bobthefish_install.stdout"
