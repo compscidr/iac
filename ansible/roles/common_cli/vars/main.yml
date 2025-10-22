@@ -53,3 +53,47 @@ common_cli_tools_macos:
   # unzip - built-in on macOS
   - wget                    # curl alternative
   # xclip - X11 specific, use pbcopy/pbpaste (built-in) on macOS
+
+common_cli_network_tools_ubuntu:
+  - avahi-utils             # avahi-browse
+  - arp-scan                # for ip <-> mac map search
+  - dnsutils                # dig
+  - ethtool                 # gets info like link speed
+  - isc-dhcp-client         # dhcp client
+  - iftop                   # network top
+  - iptables-persistent     # boot-time loader for netfilter rules
+  - iotop                   # disk top
+  - nbtscan                 # netbios scanner
+  - net-tools               # ifconfig, netstat, arp
+  - nmap                    # determine open ports
+  - socat                   # sort of like nc but doesn't hang
+  - sqlite3                 # good db for integration tests
+  - sshfs                   # ssh mounts
+  - sshuttle                # forward ssh through tunnel
+  - tcpstat                 # network interface statistics reporting tool
+  - traceroute              # traceroute
+  - fail2ban                # https://help.ubuntu.com/community/Fail2ban
+  - whois                   # whois
+
+common_cli_network_tools_macos:
+  # avahi-utils - Bonjour/mDNS built-in, use dns-sd command
+  - arp-scan                # for ip <-> mac map search
+  # dnsutils (dig) - built-in on macOS
+  # ethtool - Linux-specific, not applicable on macOS
+  # isc-dhcp-client - built-in on macOS
+  - iftop                   # network top
+  # iptables-persistent - macOS uses pf/pfctl, not iptables
+  # iotop - not available on macOS
+  # - nbtscan                 # netbios scanner - requires macports, not in homebrew
+  # net-tools (ifconfig, netstat, arp) - built-in on macOS
+  - nmap                    # determine open ports
+  - netcat
+  - socat                   # sort of like nc but doesn't hang
+  # sqlite3 - built-in on macOS
+  # - macfuse                 # required for sshfs - requires GUI approval, install manually
+  # - sshfs                   # ssh mounts (requires macfuse) - requires GUI approval, install manually
+  - sshuttle                # forward ssh through tunnel
+  # tcpstat - not readily available on macOS
+  # traceroute - built-in on macOS
+  # fail2ban - not commonly used on macOS
+  # whois - built-in on macOS
