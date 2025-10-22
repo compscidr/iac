@@ -101,7 +101,7 @@
       - "{{ signingkey }}"
   environment:
     GPG_TTY: ""
-  register: gpg_key_check
+  register: gpg_key_check_linux
   failed_when: false
   changed_when: false
   when: ansible_os_family != "Darwin"
@@ -112,7 +112,7 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     /opt/homebrew/bin/gpg --batch --list-secret-keys "{{ signingkey }}" 2>&1
-  register: gpg_key_check
+  register: gpg_key_check_macos
   failed_when: false
   changed_when: false
   when: ansible_os_family == "Darwin"
@@ -129,7 +129,7 @@
   changed_when: "'imported' in (gpg_import.stdout + gpg_import.stderr)"
   when:
     - ansible_os_family != "Darwin"
-    - gpg_key_check.rc != 0
+    - gpg_key_check_linux.rc != 0
 
 - name: Import GPG private key (macOS)
   tags: gpg
@@ -141,7 +141,7 @@
   changed_when: "'imported' in (gpg_import_macos.stdout + gpg_import_macos.stderr)"
   when:
     - ansible_os_family == "Darwin"
-    - gpg_key_check.rc != 0
+    - gpg_key_check_macos.rc != 0
 
 - name: Configure git preferences
   become: true
