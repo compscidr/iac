@@ -3,5 +3,53 @@ common_cli_prereq_packages_ubuntu:
   - ssh
   - git
 
-# No prerequisite packages required for macOS at this time; list intentionally left empty.
 common_cli_prereq_packages_macos:
+  - gnupg
+
+common_cli_tools_ubuntu:
+  - avahi-daemon            # mostly used for <host>.local zeroconf
+  - btop                    # modern and colorful cli resource monitor
+  - byobu                   # text window manager / multiplexer / devops env
+  - curl                    # http/https/gopher tool
+  - docker.io               # containers
+  - docker-buildx
+  - docker-compose-v2       # docker compose
+  - fish                    # friendly interactive shell
+  - fzf                     # command line fuzzy finder
+  - git                     # code repos
+  - htop                    # better top (uses mouse for example)
+  - lm-sensors              # suggested installed with htop
+  - nano                    # simple command line editor
+  - neofetch                # cli system info
+  - nvme-cli                # get temperature / stats on nmves
+  - powerline               # prompt and statusline utility
+  - screen                  # terminal multiplexer
+  - stow                    # use this to manage dotfiles
+  - tmux                    # terminal multiplexer
+  - unzip                   # zip files
+  - wget                    # curl alternative
+  - xclip                   # cli interface for x selections
+
+common_cli_tools_macos:
+  # avahi-daemon - built-in as Bonjour on macOS
+  - btop                    # modern and colorful cli resource monitor
+  - byobu                   # text window manager / multiplexer / devops env
+  # curl - built-in on macOS
+  - docker                  # containers (CLI - or use Docker Desktop)
+  - docker-buildx           # docker buildx
+  - docker-compose          # docker compose
+  - fish                    # friendly interactive shell
+  - fzf                     # command line fuzzy finder
+  - git                     # code repos
+  - htop                    # better top (uses mouse for example)
+  # lm-sensors - Linux-specific, not applicable on macOS
+  - nano                    # simple command line editor
+  - neofetch                # cli system info
+  # nvme-cli - Linux-specific, use smartmontools instead if needed
+  - powerline-go            # prompt and statusline utility
+  - screen                  # terminal multiplexer
+  - stow                    # use this to manage dotfiles
+  - tmux                    # terminal multiplexer
+  # unzip - built-in on macOS
+  - wget                    # curl alternative
+  # xclip - X11 specific, use pbcopy/pbpaste (built-in) on macOS

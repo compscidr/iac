@@ -30,156 +30,169 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-- name: Install 1password CLI
-  become: "{{ (ansible_os_family == 'Debian') | bool }}"
-  ansible.builtin.include_role:
-    name: compscidr.onepassword.onepassword_cli
-    apply:
-      tags: 1password
-  tags: always
+# TODO: waiting on a fix here: https://github.com/compscidr/ansible-1password/pull/16
+# - name: Install 1password CLI
+#   ansible.builtin.include_role:
+#     name: compscidr.onepassword.onepassword_cli
+#     apply:
+#       tags: 1password
+#       become: "{{ (ansible_os_family == 'Debian') | bool }}"
+#   tags: always
 
-#- name: Add the user
-#  tags: user
-#  become: true
-#  ansible.builtin.user:
-#    name: "{{ username }}"
-#    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
-#    comment: "{{ fullname }}"
-#    shell: /bin/bash
-#    append: true
-#    groups: sudo
-#    skeleton: "/etc/skel"
-#    create_home: true
-#    update_password: on_create
-#
-#- name: Ensure SSH directory exits
-#  tags: ssh
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.file:
-#    path: "~/.ssh"
-#    mode: "0700"
-#    state: directory
-#
-#- name: Obtain ssh key
-#  tags: ssh
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.copy:
-#    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
-#    dest: "~/.ssh/id_rsa"
-#    mode: "0600"
-#
-#- name: Ensure GPG directory exists
-#  tags: gpg
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.file:
-#    path: "~/.gpg"
-#    mode: "0700"
-#    state: directory
-#
-#- name: Copy GPG key
-#  tags: gpg
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.copy:
-#    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
-#    dest: "~/.gpg/{{ username }}.gpg"
-#    mode: "0600"
-#
-#- name: Check if GPG private key is already imported
-#  tags: gpg
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.command:
-#    argv:
-#      - gpg
-#      - --batch
-#      - --list-secret-keys
-#      - "{{ signingkey }}"
-#  environment:
-#    GPG_TTY: ""
-#  register: gpg_key_check
-#  failed_when: false
-#  changed_when: false
-#
-#- name: Import GPG private key
-#  tags: gpg
-#  become: true
-#  become_user: "{{ username }}"
-#  ansible.builtin.command:
-#    argv:
-#      - gpg
-#      - --batch
-#      - --yes
-#      - --import
-#      - "/home/{{ username }}/.gpg/{{ username }}.gpg"
-#  environment:
-#    GPG_TTY: ""
-#  when: gpg_key_check.rc != 0
-#
-#- name: Configure git preferences
-#  become: true
-#  become_user: "{{ username }}"
-#  tags: git
-#  community.general.git_config:
-#    scope: global
-#    name: "{{ item.name }}"
-#    value: "{{ item.value }}"
-#  loop:
-#    - name: user.email
-#      value: "{{ email }}"
-#    - name: user.name
-#      value: "{{ fullname }}"
-#    - name: init.defaultBranch
-#      value: main
-#    - name: user.signingkey
-#      value: "{{ signingkey }}"
+- name: Add the user
+  tags: user
+  become: true
+  ansible.builtin.user:
+    name: "{{ username }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
+    comment: "{{ fullname }}"
+    shell: /bin/bash
+    append: true
+    groups: "{{ 'admin' if ansible_os_family == 'Darwin' else 'sudo' }}"
+    skeleton: "/etc/skel"
+    create_home: true
+    update_password: on_create
 
-#- name: Create docker group
-#  become: true
-#  tags: docker
-#  ansible.builtin.group:
-#    name: docker
-#    state: present
-#
-#- name: Add user to docker group
-#  become: true
-#  tags: docker
-#  ansible.builtin.user:
-#    name: "{{ username }}"
-#    groups: docker
-#    append: true
-#  notify: Reset ssh connection
-#
-#- name: Install various cli tools
-#  become: true
-#  tags: cli-tools
-#  ansible.builtin.apt:
-#    pkg:
-#      - avahi-daemon            # mostly used for <host>.local zeroconf
-#      - btop                    # modern and colorful cli resource monitor
-#      - byobu                   # text window manager / multiplexer / devops env
-#      - curl                    # http/https/gopher tool
-#      - docker.io               # containers
-#      - docker-buildx
-#      - docker-compose-v2       # docker compose
-#      - fish                    # friendly interactive shell
-#      - fzf                     # command line fuzzy finder
-#      - git                     # code repos
-#      - htop                    # better top (uses mouse for example)
-#      - lm-sensors              # suggested installed with htop
-#      - nano                    # simple command line editor
-#      - neofetch                # cli system info
-#      - nvme-cli                # get temperature / stats on nmves
-#      - powerline               # prompt and statusline utility
-#      - screen                  # terminal multiplexer
-#      - stow                    # use this to manage dotfiles
-#      - tmux                    # terminal multiplexer
-#      - unzip                   # zip files
-#      - wget                    # curl alternative
-#      - xclip                   # cli interface for x selections
+- name: Ensure SSH directory exits
+  tags: ssh
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/.ssh"
+    mode: "0700"
+    state: directory
+
+- name: Obtain ssh key
+  tags: ssh
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.copy:
+    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
+    dest: "~/.ssh/id_rsa"
+    mode: "0600"
+
+- name: Ensure GPG directory exists
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/.gpg"
+    mode: "0700"
+    state: directory
+
+- name: Copy GPG key
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.copy:
+    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
+    dest: "~/.gpg/{{ username }}.gpg"
+    mode: "0600"
+
+- name: Check if GPG private key is already imported (Linux)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --batch
+      - --list-secret-keys
+      - "{{ signingkey }}"
+  environment:
+    GPG_TTY: ""
+  register: gpg_key_check
+  failed_when: false
+  changed_when: false
+  when: ansible_os_family != "Darwin"
+
+- name: Check if GPG private key is already imported (macOS)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    /opt/homebrew/bin/gpg --batch --list-secret-keys "{{ signingkey }}" 2>&1
+  register: gpg_key_check
+  failed_when: false
+  changed_when: false
+  when: ansible_os_family == "Darwin"
+
+- name: Import GPG private key (Linux)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    gpg --batch --yes --import ~/.gpg/{{ username }}.gpg
+  environment:
+    GPG_TTY: ""
+  register: gpg_import
+  changed_when: "'imported' in (gpg_import.stdout + gpg_import.stderr)"
+  when:
+    - ansible_os_family != "Darwin"
+    - gpg_key_check.rc != 0
+
+- name: Import GPG private key (macOS)
+  tags: gpg
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    /opt/homebrew/bin/gpg --batch --yes --no-tty --import ~/.gpg/{{ username }}.gpg 2>&1
+  register: gpg_import_macos
+  changed_when: "'imported' in (gpg_import_macos.stdout + gpg_import_macos.stderr)"
+  when:
+    - ansible_os_family == "Darwin"
+    - gpg_key_check.rc != 0
+
+- name: Configure git preferences
+  become: true
+  become_user: "{{ username }}"
+  tags: git
+  community.general.git_config:
+    scope: global
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+  loop:
+    - name: user.email
+      value: "{{ email }}"
+    - name: user.name
+      value: "{{ fullname }}"
+    - name: init.defaultBranch
+      value: main
+    - name: user.signingkey
+      value: "{{ signingkey }}"
+    - name: push.autoSetupRemote
+      value: true
+
+- name: Create docker group
+  become: true
+  tags: docker
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: Add user to docker group
+  become: true
+  tags: docker
+  ansible.builtin.user:
+    name: "{{ username }}"
+    groups: docker
+    append: true
+  notify: Reset ssh connection
+
+- name: Install various cli tools (Ubuntu/Debian)
+  become: true
+  tags: cli-tools
+  ansible.builtin.apt:
+    pkg: "{{ common_cli_tools_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install various cli tools (macOS)
+  tags: cli-tools
+  community.general.homebrew:
+    name: "{{ common_cli_tools_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
 #
 #- name: Install network tools
 #  become: true
