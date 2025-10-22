@@ -1,0 +1,6 @@
+common_cli_prereq_packages_ubuntu:
+  - gpg_agent
+  - ssh
+  - git
+
+common_cli_prereq_packages_macos:
