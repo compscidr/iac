@@ -123,13 +123,6 @@
 #  ansible.builtin.apt:
 #    deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.43.51/slack-desktop-4.43.51-amd64.deb
 #
-#- name: Download and install telegram
-#  tags: telegram
-#  become: true
-#  ansible.builtin.unarchive:
-#    src: https://updates.tdesktop.com/tlinux/tsetup.5.8.1.tar.xz
-#    dest: /opt/
-#    remote_src: true
 
 #- name: Check if keybase is already installed
 #  tags: always
@@ -146,6 +139,14 @@
 #      become: true
 #  when: not keybase_installed.stat.exists
 #  tags: always
+
+# - name: Download and install telegram
+#   tags: telegram
+#   become: true
+#   ansible.builtin.unarchive:
+#     src: https://updates.tdesktop.com/tlinux/tsetup.6.2.3.tar.xz
+#     dest: /opt/
+#     remote_src: true
 
 #- name: Install Gimp
 #  tags: gimp

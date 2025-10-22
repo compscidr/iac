@@ -1,13 +1,15 @@
 ---
+# Disable prerun to prevent automatic installation to ./roles directory
+# Dependencies are managed via custom dependency.sh script instead
+prerun: false
+
 dependency:
-  name: galaxy
-  options:
-    ignore-errors: true
-    role-name-check: 1
+  name: shell
+  command: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/dependency.sh
 driver:
   name: docker
 platforms:
-  - name: instance
+  - name: ubuntu-24.04
     groups:
       - dev
       - dev_gui
@@ -31,4 +33,6 @@ provisioner:
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
   env:
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles:${MOLECULE_PROJECT_DIRECTORY}/.molecule-roles
+    ANSIBLE_COLLECTIONS_PATH: ${MOLECULE_PROJECT_DIRECTORY}/.molecule-collections
     OP_SERVICE_ACCOUNT_TOKEN: "${OP_SERVICE_ACCOUNT_TOKEN}"

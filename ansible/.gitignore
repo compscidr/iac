@@ -1,2 +1,4 @@
 .ansible/
 test_venv/
+.molecule-roles/
+.molecule-collections/

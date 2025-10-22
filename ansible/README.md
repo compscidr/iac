@@ -1,5 +1,7 @@
 # Ansible
 
+> **📖 Dependency Management**: This project uses a dual workflow for dependency management. See [DEPENDENCIES.md](DEPENDENCIES.md) for details on installing external roles and collections for Molecule vs. standalone playbook execution.
+
 ## Requirements / Bootstrapping Host Machine
 The machine running the ansible plays requires ansible >= 3.2. 
 Note, this doesn't have to be the target machine where you are deploying things to.
