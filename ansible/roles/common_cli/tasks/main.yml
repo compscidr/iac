@@ -1,321 +1,342 @@
 ---
-- name: Install prereqs
+- name: Install prereqs (Ubuntu/Debian)
   become: true
   tags: prereqs
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - gpg-agent
-      - ssh
-      - git
+    pkg: "{{ common_cli_prereq_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Check if Homebrew is installed (macOS)
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_check
+  when: ansible_os_family == "Darwin"
+
+- name: Install Homebrew (macOS)
+  ansible.builtin.shell: |
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  args:
+    creates: /opt/homebrew/bin/brew
+    executable: /bin/bash
+  when:
+    - ansible_os_family == "Darwin"
+    - not homebrew_check.stat.exists
+
+- name: Install prereqs (macOS)
+  tags: prereqs
+  community.general.homebrew:
+    name: "{{ common_cli_prereq_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Install 1password CLI
+  become: "{{ ansible_os_family == 'Debian' }}"
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword_cli
     apply:
       tags: 1password
-      become: true
   tags: always
 
-- name: Add the user
-  tags: user
-  become: true
-  ansible.builtin.user:
-    name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
-    comment: "{{ fullname }}"
-    shell: /bin/bash
-    append: true
-    groups: sudo
-    skeleton: "/etc/skel"
-    create_home: true
-    update_password: on_create
+#- name: Add the user
+#  tags: user
+#  become: true
+#  ansible.builtin.user:
+#    name: "{{ username }}"
+#    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
+#    comment: "{{ fullname }}"
+#    shell: /bin/bash
+#    append: true
+#    groups: sudo
+#    skeleton: "/etc/skel"
+#    create_home: true
+#    update_password: on_create
+#
+#- name: Ensure SSH directory exits
+#  tags: ssh
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.file:
+#    path: "~/.ssh"
+#    mode: "0700"
+#    state: directory
+#
+#- name: Obtain ssh key
+#  tags: ssh
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.copy:
+#    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
+#    dest: "~/.ssh/id_rsa"
+#    mode: "0600"
+#
+#- name: Ensure GPG directory exists
+#  tags: gpg
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.file:
+#    path: "~/.gpg"
+#    mode: "0700"
+#    state: directory
+#
+#- name: Copy GPG key
+#  tags: gpg
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.copy:
+#    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
+#    dest: "~/.gpg/{{ username }}.gpg"
+#    mode: "0600"
+#
+#- name: Check if GPG private key is already imported
+#  tags: gpg
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.command:
+#    argv:
+#      - gpg
+#      - --batch
+#      - --list-secret-keys
+#      - "{{ signingkey }}"
+#  environment:
+#    GPG_TTY: ""
+#  register: gpg_key_check
+#  failed_when: false
+#  changed_when: false
+#
+#- name: Import GPG private key
+#  tags: gpg
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.command:
+#    argv:
+#      - gpg
+#      - --batch
+#      - --yes
+#      - --import
+#      - "/home/{{ username }}/.gpg/{{ username }}.gpg"
+#  environment:
+#    GPG_TTY: ""
+#  when: gpg_key_check.rc != 0
+#
+#- name: Configure git preferences
+#  become: true
+#  become_user: "{{ username }}"
+#  tags: git
+#  community.general.git_config:
+#    scope: global
+#    name: "{{ item.name }}"
+#    value: "{{ item.value }}"
+#  loop:
+#    - name: user.email
+#      value: "{{ email }}"
+#    - name: user.name
+#      value: "{{ fullname }}"
+#    - name: init.defaultBranch
+#      value: main
+#    - name: user.signingkey
+#      value: "{{ signingkey }}"
 
-- name: Ensure SSH directory exits
-  tags: ssh
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.file:
-    path: "~/.ssh"
-    mode: "0700"
-    state: directory
-
-- name: Obtain ssh key
-  tags: ssh
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
-    dest: "~/.ssh/id_rsa"
-    mode: "0600"
-
-- name: Ensure GPG directory exists
-  tags: gpg
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.file:
-    path: "~/.gpg"
-    mode: "0700"
-    state: directory
-
-- name: Copy GPG key
-  tags: gpg
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
-    dest: "~/.gpg/{{ username }}.gpg"
-    mode: "0600"
-
-- name: Check if GPG private key is already imported
-  tags: gpg
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.command:
-    argv:
-      - gpg
-      - --batch
-      - --list-secret-keys
-      - "{{ signingkey }}"
-  environment:
-    GPG_TTY: ""
-  register: gpg_key_check
-  failed_when: false
-  changed_when: false
-
-- name: Import GPG private key
-  tags: gpg
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.command:
-    argv:
-      - gpg
-      - --batch
-      - --yes
-      - --import
-      - "/home/{{ username }}/.gpg/{{ username }}.gpg"
-  environment:
-    GPG_TTY: ""
-  when: gpg_key_check.rc != 0
-
-- name: Configure git preferences
-  become: true
-  become_user: "{{ username }}"
-  tags: git
-  community.general.git_config:
-    scope: global
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-  loop:
-    - name: user.email
-      value: "{{ email }}"
-    - name: user.name
-      value: "{{ fullname }}"
-    - name: init.defaultBranch
-      value: main
-    - name: user.signingkey
-      value: "{{ signingkey }}"
-
-- name: Create docker group
-  become: true
-  tags: docker
-  ansible.builtin.group:
-    name: docker
-    state: present
-
-- name: Add user to docker group
-  become: true
-  tags: docker
-  ansible.builtin.user:
-    name: "{{ username }}"
-    groups: docker
-    append: true
-  notify: Reset ssh connection
-
-- name: Install various cli tools
-  become: true
-  tags: cli-tools
-  ansible.builtin.apt:
-    pkg:
-      - avahi-daemon            # mostly used for <host>.local zeroconf
-      - btop                    # modern and colorful cli resource monitor
-      - byobu                   # text window manager / multiplexer / devops env
-      - curl                    # http/https/gopher tool
-      - docker.io               # containers
-      - docker-buildx
-      - docker-compose-v2       # docker compose
-      - fish                    # friendly interactive shell
-      - fzf                     # command line fuzzy finder
-      - git                     # code repos
-      - htop                    # better top (uses mouse for example)
-      - lm-sensors              # suggested installed with htop
-      - nano                    # simple command line editor
-      - neofetch                # cli system info
-      - nvme-cli                # get temperature / stats on nmves
-      - powerline               # prompt and statusline utility
-      - screen                  # terminal multiplexer
-      - stow                    # use this to manage dotfiles
-      - tmux                    # terminal multiplexer
-      - unzip                   # zip files
-      - wget                    # curl alternative
-      - xclip                   # cli interface for x selections
-
-- name: Install network tools
-  become: true
-  tags: network-tools
-  ansible.builtin.apt:
-    pkg:
-      - avahi-utils             # avahi-browse
-      - arp-scan                # for ip <-> mac map search
-      - dnsutils                # dig
-      - ethtool                 # gets info like link speed
-      - isc-dhcp-client         # dhcp client
-      - iftop                   # network top
-      - iptables-persistent     # boot-time loader for netfilter rules
-      - iotop                   # disk top
-      - nbtscan                 # netbios scanner
-      - net-tools               # ifconfig, netstat, arp
-      - nmap                    # determine open ports
-      - socat                   # sort of like nc but doesn't hang
-      - sqlite3                 # good db for integration tests
-      - sshfs                   # ssh mounts
-      - sshuttle                # forward ssh through tunnel
-      - tcpstat                 # network interface statistics reporting tool
-      - traceroute              # traceroute
-      - fail2ban                # https://help.ubuntu.com/community/Fail2ban
-      - whois                   # whois
-
-- name: Add github to known hosts so the following bit doesn't fail
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  ansible.builtin.known_hosts:
-    hash_host: true
-    name: github.com
-    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
-    path: ~/.ssh/known_hosts
-    state: present
-
-# https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
-# without version pinning we get lint errors
-- name: Clone dotfile repo
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  ansible.builtin.git:
-    repo: git@github.com:compscidr/dotfiles.git
-    dest: ~/dotfiles
-    version: 41540b8f09babd44a7e1bcc63912157bf770261d
-
-- name: Test .bashrc file to see if its a symlink
-  tags: dotfile
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.stat:
-    path: ~/.bashrc
-  register: bash_test
-
-- name: Remove .bashrc file so stow has no conflicts
-  tags: dotfiles
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.file:
-    dest: ~/.bashrc
-    state: absent
-  when: bash_test.stat is defined and bash_test.stat.islnk is false
-
-- name: Build directories list
-  tags: dotfiles
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.find:
-    paths: [~/dotfiles/]
-    recurse: false
-    file_type: directory
-  register: files
-
-- name: Deploy dotfiles
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  with_items: "{{ files.files }}"
-  ansible.builtin.command: "stow {{ item.path | basename }}"
-  register: dotfiles_result
-  changed_when: "'changed' in dotfiles_result.stdout"
-  args:
-    chdir: ~/dotfiles
-
-# https://github.com/jorgebucaran/fisher
-- name: Check if fisher install needed
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    fisher list
-  args:
-    executable: /usr/bin/fish
-  register: fisher_status
-  changed_when: false
-  ignore_errors: true
-
-- name: Download fisher
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish
-    dest: /tmp/fisher.sh
-    mode: "0755"
-  when: fisher_status is failed
-
-- name: Install fisher
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
-  args:
-    executable: /usr/bin/fish
-  register: fisher_installed
-  when: fisher_status is failed
-  changed_when: "'changed ' in fisher_installed.stdout"
-
-- name: Check if forgit is installed
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    fisher list | grep wfxr/forgit
-  args:
-    executable: /usr/bin/fish
-  register: forgit_status
-  changed_when: false
-  ignore_errors: true
-
-- name: Install forgit
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    fisher install wfxr/forgit
-  args:
-    executable: /usr/bin/fish
-  when: forgit_status is failed
-  register: forgit_install
-  changed_when: "'changed' in forgit_install.stdout"
-
-- name: Check if bobthefish is installed
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    fisher list | grep bobthefish
-  args:
-    executable: /usr/bin/fish
-  register: bobthefish_status
-  changed_when: false
-  ignore_errors: true
-
-- name: Install bobthefish
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.shell: |
-    fisher install oh-my-fish/theme-bobthefish
-  args:
-    executable: /usr/bin/fish
-  when: bobthefish_status is failed
-  register: bobthefish_install
-  changed_when: "'changed' in bobthefish_install.stdout"
+#- name: Create docker group
+#  become: true
+#  tags: docker
+#  ansible.builtin.group:
+#    name: docker
+#    state: present
+#
+#- name: Add user to docker group
+#  become: true
+#  tags: docker
+#  ansible.builtin.user:
+#    name: "{{ username }}"
+#    groups: docker
+#    append: true
+#  notify: Reset ssh connection
+#
+#- name: Install various cli tools
+#  become: true
+#  tags: cli-tools
+#  ansible.builtin.apt:
+#    pkg:
+#      - avahi-daemon            # mostly used for <host>.local zeroconf
+#      - btop                    # modern and colorful cli resource monitor
+#      - byobu                   # text window manager / multiplexer / devops env
+#      - curl                    # http/https/gopher tool
+#      - docker.io               # containers
+#      - docker-buildx
+#      - docker-compose-v2       # docker compose
+#      - fish                    # friendly interactive shell
+#      - fzf                     # command line fuzzy finder
+#      - git                     # code repos
+#      - htop                    # better top (uses mouse for example)
+#      - lm-sensors              # suggested installed with htop
+#      - nano                    # simple command line editor
+#      - neofetch                # cli system info
+#      - nvme-cli                # get temperature / stats on nmves
+#      - powerline               # prompt and statusline utility
+#      - screen                  # terminal multiplexer
+#      - stow                    # use this to manage dotfiles
+#      - tmux                    # terminal multiplexer
+#      - unzip                   # zip files
+#      - wget                    # curl alternative
+#      - xclip                   # cli interface for x selections
+#
+#- name: Install network tools
+#  become: true
+#  tags: network-tools
+#  ansible.builtin.apt:
+#    pkg:
+#      - avahi-utils             # avahi-browse
+#      - arp-scan                # for ip <-> mac map search
+#      - dnsutils                # dig
+#      - ethtool                 # gets info like link speed
+#      - isc-dhcp-client         # dhcp client
+#      - iftop                   # network top
+#      - iptables-persistent     # boot-time loader for netfilter rules
+#      - iotop                   # disk top
+#      - nbtscan                 # netbios scanner
+#      - net-tools               # ifconfig, netstat, arp
+#      - nmap                    # determine open ports
+#      - socat                   # sort of like nc but doesn't hang
+#      - sqlite3                 # good db for integration tests
+#      - sshfs                   # ssh mounts
+#      - sshuttle                # forward ssh through tunnel
+#      - tcpstat                 # network interface statistics reporting tool
+#      - traceroute              # traceroute
+#      - fail2ban                # https://help.ubuntu.com/community/Fail2ban
+#      - whois                   # whois
+#
+#- name: Add github to known hosts so the following bit doesn't fail
+#  become: true
+#  become_user: "{{ username }}"
+#  tags: dotfiles
+#  ansible.builtin.known_hosts:
+#    hash_host: true
+#    name: github.com
+#    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+#    path: ~/.ssh/known_hosts
+#    state: present
+#
+## https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
+## without version pinning we get lint errors
+#- name: Clone dotfile repo
+#  become: true
+#  become_user: "{{ username }}"
+#  tags: dotfiles
+#  ansible.builtin.git:
+#    repo: git@github.com:compscidr/dotfiles.git
+#    dest: ~/dotfiles
+#    version: 41540b8f09babd44a7e1bcc63912157bf770261d
+#
+#- name: Test .bashrc file to see if its a symlink
+#  tags: dotfile
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.stat:
+#    path: ~/.bashrc
+#  register: bash_test
+#
+#- name: Remove .bashrc file so stow has no conflicts
+#  tags: dotfiles
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.file:
+#    dest: ~/.bashrc
+#    state: absent
+#  when: bash_test.stat is defined and bash_test.stat.islnk is false
+#
+#- name: Build directories list
+#  tags: dotfiles
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.find:
+#    paths: [~/dotfiles/]
+#    recurse: false
+#    file_type: directory
+#  register: files
+#
+#- name: Deploy dotfiles
+#  become: true
+#  become_user: "{{ username }}"
+#  tags: dotfiles
+#  with_items: "{{ files.files }}"
+#  ansible.builtin.command: "stow {{ item.path | basename }}"
+#  register: dotfiles_result
+#  changed_when: "'changed' in dotfiles_result.stdout"
+#  args:
+#    chdir: ~/dotfiles
+#
+## https://github.com/jorgebucaran/fisher
+#- name: Check if fisher install needed
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: |
+#    fisher list
+#  args:
+#    executable: /usr/bin/fish
+#  register: fisher_status
+#  changed_when: false
+#  ignore_errors: true
+#
+#- name: Download fisher
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.get_url:
+#    url: https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish
+#    dest: /tmp/fisher.sh
+#    mode: "0755"
+#  when: fisher_status is failed
+#
+#- name: Install fisher
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
+#  args:
+#    executable: /usr/bin/fish
+#  register: fisher_installed
+#  when: fisher_status is failed
+#  changed_when: "'changed ' in fisher_installed.stdout"
+#
+#- name: Check if forgit is installed
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: |
+#    fisher list | grep wfxr/forgit
+#  args:
+#    executable: /usr/bin/fish
+#  register: forgit_status
+#  changed_when: false
+#  ignore_errors: true
+#
+#- name: Install forgit
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: |
+#    fisher install wfxr/forgit
+#  args:
+#    executable: /usr/bin/fish
+#  when: forgit_status is failed
+#  register: forgit_install
+#  changed_when: "'changed' in forgit_install.stdout"
+#
+#- name: Check if bobthefish is installed
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: |
+#    fisher list | grep bobthefish
+#  args:
+#    executable: /usr/bin/fish
+#  register: bobthefish_status
+#  changed_when: false
+#  ignore_errors: true
+#
+#- name: Install bobthefish
+#  become: true
+#  become_user: "{{ username }}"
+#  ansible.builtin.shell: |
+#    fisher install oh-my-fish/theme-bobthefish
+#  args:
+#    executable: /usr/bin/fish
+#  when: bobthefish_status is failed
+#  register: bobthefish_install
+#  changed_when: "'changed' in bobthefish_install.stdout"
