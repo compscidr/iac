@@ -23,7 +23,7 @@ collections:
   - name: compscidr.github_cli
     version: "0.0.9"
   - name: compscidr.onepassword
-    version: "0.0.2"
+    version: "0.1.1"
   - name: compscidr.spotify
     version: "0.0.2"
   - name: compscidr.keybase
