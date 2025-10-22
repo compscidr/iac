@@ -31,7 +31,7 @@
   when: ansible_os_family == "Darwin"
 
 - name: Install 1password CLI
-  become: "{{ ansible_os_family == 'Debian' }}"
+  become: "{{ (ansible_os_family == 'Debian') | bool }}"
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword_cli
     apply:
