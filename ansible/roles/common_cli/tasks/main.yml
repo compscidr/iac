@@ -30,14 +30,13 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-# TODO: waiting on a fix here: https://github.com/compscidr/ansible-1password/pull/16
-# - name: Install 1password CLI
-#   ansible.builtin.include_role:
-#     name: compscidr.onepassword.onepassword_cli
-#     apply:
-#       tags: 1password
-#       become: "{{ (ansible_os_family == 'Debian') | bool }}"
-#   tags: always
+- name: Install 1password CLI
+  ansible.builtin.include_role:
+    name: compscidr.onepassword.onepassword_cli
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 
 - name: Add the user
   tags: user
