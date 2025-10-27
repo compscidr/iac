@@ -14,7 +14,7 @@
       vars:
         github_runner_name: "hello-java-android"
         github_runner_repo: "compscidr/hello-java-android"
-        github_runner_adb_port: "5037"
+        github_runner_adb_port: "5041"
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "hello-kotlin-android"
