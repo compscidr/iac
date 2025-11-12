@@ -94,4 +94,12 @@
       tags: lapce
       become: true
   # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
-  tags: always
+  tags: lapce
+
+- name: Spotify
+  ansible.builtin.include_role:
+    name: compscidr.spotify.spotify
+    apply:
+      tags: spotify
+      become: true
+  tags: spotify
