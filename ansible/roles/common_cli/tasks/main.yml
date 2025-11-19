@@ -159,6 +159,7 @@
       - unzip                   # zip files
       - wget                    # curl alternative
       - xclip                   # cli interface for x selections
+      - nvitop                  # nvidia gpu top
 
 - name: Install network tools
   become: true
