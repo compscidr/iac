@@ -21,7 +21,7 @@ roles:
 collections:
   - name: ansible.posix
   - name: community.general
-    version: "11.4.0"
+    version: "11.4.2"
   - name: community.docker
     version: "4.8.2"
   - name: compscidr.media_server
