@@ -35,6 +35,6 @@ collections:
   - name: compscidr.onepassword
     version: "0.1.2"
   - name: compscidr.spotify
-    version: "0.0.2"
+    version: "0.0.3"
   - name: compscidr.keybase
     version: "0.0.1"
