@@ -10,7 +10,7 @@ jobs:
     name: Ansible Lint # Naming the build is important to use it as a status check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -36,7 +36,7 @@ jobs:
     name: Molecule Test
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install 1Password CLI
         # we need op to be on the "deploying device, ie, the GH runner"
         uses: 1password/install-cli-action@v2
