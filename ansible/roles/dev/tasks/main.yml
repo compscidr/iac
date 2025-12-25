@@ -171,14 +171,41 @@
       - python3-passlib
       - pipx
 
-- name: Install rust development tools
+- name: Remove old apt-based rust packages
   tags: rust
   become: true
   ansible.builtin.apt:
     pkg:
       - rustc
       - cargo
- # - rustup # conflicts with rustc and cargo apparently
+    state: absent
+
+- name: Check if rustup is installed
+  tags: rust
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+  register: dev_rustup_installed
+
+- name: Download rustup installer
+  tags: rust
+  ansible.builtin.get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/rustup-init.sh
+    mode: '0755'
+  when: not dev_rustup_installed.stat.exists
+
+- name: Install rustup
+  tags: rust
+  ansible.builtin.command: /tmp/rustup-init.sh -y --default-toolchain stable
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+  when: not dev_rustup_installed.stat.exists
+
+- name: Ensure cargo bin is in PATH for current session
+  tags: rust
+  ansible.builtin.set_fact:
+    ansible_env: "{{ ansible_env | combine({'PATH': ansible_env.HOME + '/.cargo/bin:' + ansible_env.PATH}) }}"
+  when: not dev_rustup_installed.stat.exists
 
 - name: Install ruby development tools
   tags: ruby
