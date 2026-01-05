@@ -98,8 +98,8 @@
   vars:
     sonarr_folder: /etc/sonarr
     sonarr_tv_folder: /volume1/storage/tv
-    sonarr_tranmissions_downloads_folder: /volume1/storage/downloads
-    sonarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    sonarr_transmissions_downloads_folder: /volume1/storage/downloads
+    sonarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     sonarr_pid: "999"
     sonarr_gid: "10"
 
@@ -113,7 +113,7 @@
   vars:
     radarr_movies_folder: /volume1/storage/movies
     radarr_transmission_downloads_folder: /volume1/storage/downloads
-    radarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    radarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     radarr_pid: "999"
     radarr_gid: "10"
 
@@ -127,7 +127,7 @@
   vars:
     lidarr_music_folder: /volume1/storage/music
     lidarr_transmission_downloads_folder: /volume1/storage/downloads
-    lidarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    lidarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     lidarr_pid: "999"
     lidarr_gid: "10"
 
