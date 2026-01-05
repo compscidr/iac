@@ -171,15 +171,15 @@
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
     env:
-      WATCHTOWER_SCHEDULE: "{{ watchtower_schedule }}"
-      WATCHTOWER_CLEANUP: "{{ watchtower_cleanup | string | lower }}"
-      WATCHTOWER_INCLUDE_STOPPED: "{{ watchtower_include_stopped | string | lower }}"
-      WATCHTOWER_DEBUG: "{{ watchtower_debug | string | lower }}"
-      TZ: "{{ watchtower_timezone }}"
-      WATCHTOWER_MONITOR_ONLY: "{{ watchtower_monitor_only | string | lower }}"
-      WATCHTOWER_NOTIFICATION_URL: "{{ watchtower_notification_url }}"
+      WATCHTOWER_SCHEDULE: "{{ watchtower_schedule | default('0 0 4 * * *') }}"
+      WATCHTOWER_CLEANUP: "{{ watchtower_cleanup | default(true) | string | lower }}"
+      WATCHTOWER_INCLUDE_STOPPED: "{{ watchtower_include_stopped | default(false) | string | lower }}"
+      WATCHTOWER_DEBUG: "{{ watchtower_debug | default(false) | string | lower }}"
+      TZ: "{{ watchtower_timezone | default('America/Los_Angeles') }}"
+      WATCHTOWER_MONITOR_ONLY: "{{ watchtower_monitor_only | default(false) | string | lower }}"
+      WATCHTOWER_NOTIFICATION_URL: "{{ watchtower_notification_url | default('') }}"
     memory: 512m
-  when: watchtower_enabled
+  when: watchtower_enabled | default(true)
 
 - name: Install network tools
   become: true
