@@ -53,6 +53,7 @@
     types: [deb]
     uris: https://updates.signal.org/desktop/apt
     signed_by: https://updates.signal.org/desktop/apt/keys.asc
+    suites: [xenial]
     components: [main]
     state: present
     enabled: true
