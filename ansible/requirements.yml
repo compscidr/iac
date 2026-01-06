@@ -17,6 +17,7 @@ roles:
     version: "6.0.0"
   - name: compscidr.lapce
     version: "0.0.3"
+  - name: luizgavalda.gnome_extensions
 
 collections:
   - name: ansible.posix

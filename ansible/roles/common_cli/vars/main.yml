@@ -1,0 +1,115 @@
+# Dotfile packages to stow on each platform
+common_cli_dotfile_packages_ubuntu:
+  - autostart    # GUI app autostart
+  - bashrc       # Bash shell config
+  - nano         # Text editor
+  - tmux         # Terminal multiplexer
+  - variety      # Wallpaper manager
+
+common_cli_dotfile_packages_macos:
+  - nano         # Text editor (cross-platform)
+  - tmux         # Terminal multiplexer (cross-platform)
+  # Skip: autostart (Linux GUI), bashrc (use zsh), profile (Ubuntu-specific), variety (Linux GUI)
+  # Consider adding: fish/ or zshrc/ directories to your dotfiles repo for shell configs
+
+common_cli_prereq_packages_ubuntu:
+  - gpg-agent
+  - ssh
+  - git
+
+common_cli_prereq_packages_macos:
+  - gnupg
+
+common_cli_tools_ubuntu:
+  - avahi-daemon            # mostly used for <host>.local zeroconf
+  - btop                    # modern and colorful cli resource monitor
+  - byobu                   # text window manager / multiplexer / devops env
+  - curl                    # http/https/gopher tool
+  - docker.io               # containers
+  - docker-buildx
+  - docker-compose-v2       # docker compose
+  - fish                    # friendly interactive shell
+  - fzf                     # command line fuzzy finder
+  - git                     # code repos
+  - htop                    # better top (uses mouse for example)
+  - lm-sensors              # suggested installed with htop
+  - nano                    # simple command line editor
+  - neofetch                # cli system info
+  - nvme-cli                # get temperature / stats on nmves
+  - powerline               # prompt and statusline utility
+  - screen                  # terminal multiplexer
+  - stow                    # use this to manage dotfiles
+  - tmux                    # terminal multiplexer
+  - unzip                   # zip files
+  - wget                    # curl alternative
+  - xclip                   # cli interface for x selections
+
+common_cli_tools_macos:
+  # avahi-daemon - built-in as Bonjour on macOS
+  - btop                    # modern and colorful cli resource monitor
+  - byobu                   # text window manager / multiplexer / devops env
+  # curl - built-in on macOS
+  - lima                    # Linux virtual machines (required by colima)
+  - colima                  # Docker daemon for macOS
+  - docker                  # containers (CLI)
+  - docker-buildx           # docker buildx
+  - docker-compose          # docker compose
+  - fish                    # friendly interactive shell
+  - fzf                     # command line fuzzy finder
+  - git                     # code repos
+  - htop                    # better top (uses mouse for example)
+  # lm-sensors - Linux-specific, not applicable on macOS
+  - nano                    # simple command line editor
+  - neofetch                # cli system info
+  # nvme-cli - Linux-specific, use smartmontools instead if needed
+  - powerline-go            # prompt and statusline utility
+  - screen                  # terminal multiplexer
+  - stow                    # use this to manage dotfiles
+  - tmux                    # terminal multiplexer
+  # unzip - built-in on macOS
+  - wget                    # curl alternative
+  # xclip - X11 specific, use pbcopy/pbpaste (built-in) on macOS
+
+common_cli_network_tools_ubuntu:
+  - avahi-utils             # avahi-browse
+  - arp-scan                # for ip <-> mac map search
+  - dnsutils                # dig
+  - ethtool                 # gets info like link speed
+  - isc-dhcp-client         # dhcp client
+  - iftop                   # network top
+  - iptables-persistent     # boot-time loader for netfilter rules
+  - iotop                   # disk top
+  - nbtscan                 # netbios scanner
+  - net-tools               # ifconfig, netstat, arp
+  - nmap                    # determine open ports
+  - socat                   # sort of like nc but doesn't hang
+  - sqlite3                 # good db for integration tests
+  - sshfs                   # ssh mounts
+  - sshuttle                # forward ssh through tunnel
+  - tcpstat                 # network interface statistics reporting tool
+  - traceroute              # traceroute
+  - fail2ban                # https://help.ubuntu.com/community/Fail2ban
+  - whois                   # whois
+
+common_cli_network_tools_macos:
+  # avahi-utils - Bonjour/mDNS built-in, use dns-sd command
+  - arp-scan                # for ip <-> mac map search
+  # dnsutils (dig) - built-in on macOS
+  # ethtool - Linux-specific, not applicable on macOS
+  # isc-dhcp-client - built-in on macOS
+  - iftop                   # network top
+  # iptables-persistent - macOS uses pf/pfctl, not iptables
+  # iotop - not available on macOS
+  # - nbtscan                 # netbios scanner - requires macports, not in homebrew
+  # net-tools (ifconfig, netstat, arp) - built-in on macOS
+  - nmap                    # determine open ports
+  - netcat
+  - socat                   # sort of like nc but doesn't hang
+  # sqlite3 - built-in on macOS
+  # - macfuse                 # required for sshfs - requires GUI approval, install manually
+  # - sshfs                   # ssh mounts (requires macfuse) - requires GUI approval, install manually
+  - sshuttle                # forward ssh through tunnel
+  # tcpstat - not readily available on macOS
+  # traceroute - built-in on macOS
+  # fail2ban - not commonly used on macOS
+  # whois - built-in on macOS

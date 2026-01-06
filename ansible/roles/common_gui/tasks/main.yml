@@ -1,11 +1,12 @@
 ---
-- name: Install prereqs
+- name: Install prereqs (Ubuntu/Debian)
   become: true
   tags: prereqs
   ansible.builtin.apt:
     update_cache: true
     pkg:
       - python3-debian
+  when: ansible_os_family == "Debian"
 
 - name: Install 1password
   ansible.builtin.include_role:
@@ -15,7 +16,7 @@
       become: true
   tags: always
 
-- name: Install discord apt repo
+- name: Install discord apt repo (Ubuntu/Debian)
   tags: discord
   become: true
   ansible.builtin.deb822_repository:
@@ -26,34 +27,53 @@
     suites: ./
     state: present
     enabled: true
+  when: ansible_os_family == "Debian"
 
-- name: Install discord
+- name: Install discord (Ubuntu/Debian)
   become: true
   tags: discord
   ansible.builtin.apt:
     update_cache: true
     pkg:
       - discord
+  when: ansible_os_family == "Debian"
 
-# - name: Install signal apt repo
-#   tags: signal
-#   become: true
-#   ansible.builtin.deb822_repository:
-#     name: signal
-#     types: [deb]
-#     uris: https://updates.signal.org/desktop/apt
-#     signed_by: https://updates.signal.org/desktop/apt/keys.asc
-#     components: [main]
-#     state: present
-#     enabled: true
+- name: Install discord (macOS)
+  tags: discord
+  community.general.homebrew_cask:
+    name: discord
+    state: present
+  when: ansible_os_family == "Darwin"
 
-# - name: Install signal
-#   become: true
-#   tags: signal
-#   ansible.builtin.apt:
-#     update_cache: true
-#     pkg:
-#       - signal-desktop
+- name: Install signal apt repo (Ubuntu/Debian)
+  tags: signal
+  become: true
+  ansible.builtin.deb822_repository:
+    name: signal
+    types: [deb]
+    uris: https://updates.signal.org/desktop/apt
+    signed_by: https://updates.signal.org/desktop/apt/keys.asc
+    suites: [xenial]
+    components: [main]
+    state: present
+    enabled: true
+  when: ansible_os_family == "Debian"
+
+- name: Install signal (Ubuntu/Debian)
+  become: true
+  tags: signal
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - signal-desktop
+  when: ansible_os_family == "Debian"
+
+- name: Install signal (macOS)
+  tags: signal
+  community.general.homebrew_cask:
+    name: signal
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Ensure template directory exists
   tags: UI
@@ -63,6 +83,7 @@
     path: "~/Templates"
     mode: "0755"
     state: directory
+  when: ansible_os_family == "Debian"
 
 - name: Create new File context menu
   tags: UI
@@ -74,40 +95,51 @@
     mode: '0600'
     modification_time: preserve
     access_time: preserve
+  when: ansible_os_family == "Debian"
 
 # why you might want to swtich up terminal emulators:
 # https://www.reddit.com/r/linuxquestions/comments/ri3yjg/comment/hout26s/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-- name: Install terminal emulators
+# (note this will change the ctrl-cmd-t to use this one). Change back with: sudo update-alternatives --config x-terminal-emulator
+- name: Install terminal emulators (Ubuntu/Debian)
   tags: terminal-emulators
   become: true
   ansible.builtin.apt:
-    pkg:
-      - kitty # gpu enabled
-      - rxvt-unicode # hate this one
-      - alacritty # opengl enabled, cross platform, no tabs
-      # (note this will change the ctrl-cmd-t to use this one). Change back with: sudo update-alternatives --config x-terminal-emulator
-      - terminator # kind of like a tmux behavior built in
-      - stterm # https://st.suckless.org/
-      - foot # wayland native (should probably only install on ubuntu)
-      - tilda # uses a weird full screen setup.
-      - cool-retro-term
-      - terminology
-      - sakura # simple, multiple tabs
+    pkg: "{{ common_gui_terminal_emulators_ubuntu }}"
+  when: ansible_os_family == "Debian"
 
-# - name: Install spotify apt repo
-#   tags: always
-#   ansible.builtin.include_role:
-#     name: compscidr.spotify.spotify
-#     apply:
-#       become: true
-#       tags: spotify
+- name: Install terminal emulators (macOS)
+  tags: terminal-emulators
+  community.general.homebrew_cask:
+    name: "{{ common_gui_terminal_emulators_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
-# - name: Cleanup spotify duplicate apt
-#   become: true
-#   tags: spotify
-#   ansible.builtin.file:
-#     path: /etc/apt/sources.list.d/spotify.list
-#     state: absent
+- name: Install spotify apt repo (Ubuntu/Debian)
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.spotify.spotify
+    apply:
+      become: true
+      tags: spotify
+  when: ansible_os_family == "Debian"
+  register: spotify_role_result
+
+- name: Cleanup spotify duplicate apt (Ubuntu/Debian)
+  become: true
+  tags: spotify
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/spotify.list
+    state: absent
+  when:
+    - ansible_os_family == "Debian"
+    - spotify_role_result is changed
+
+- name: Install spotify (macOS)
+  tags: spotify
+  community.general.homebrew_cask:
+    name: spotify
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: AppImage compatibility
   become: true
@@ -116,49 +148,117 @@
     update_cache: true
     pkg:
       - libfuse2
+  when: ansible_os_family == "Debian"
 
-- name: Install slack
+- name: Install slack (Ubuntu/Debian)
   tags: slack
   become: true
   ansible.builtin.apt:
     deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.43.51/slack-desktop-4.43.51-amd64.deb
+  when: ansible_os_family == "Debian"
 
-- name: Download and install telegram
+- name: Install slack (macOS)
+  tags: slack
+  community.general.homebrew_cask:
+    name: slack
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Check if keybase is already installed (Ubuntu/Debian)
+  tags: always
+  become: true
+  ansible.builtin.stat:
+    path: /usr/bin/keybase
+  register: keybase_installed
+  when: ansible_os_family == "Debian"
+
+- name: Install keybase (Ubuntu/Debian)
+  ansible.builtin.include_role:
+    name: compscidr.keybase.keybase
+    apply:
+      tags: keybase
+      become: true
+  when:
+    - ansible_os_family == "Debian"
+    - not keybase_installed.stat.exists
+  tags: always
+
+- name: Install keybase (macOS)
+  tags: keybase
+  community.general.homebrew_cask:
+    name: keybase
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Download and install telegram (Ubuntu/Debian)
   tags: telegram
   become: true
   ansible.builtin.unarchive:
     src: https://updates.tdesktop.com/tlinux/tsetup.6.2.3.tar.xz
     dest: /opt/
     remote_src: true
+  when: ansible_os_family == "Debian"
 
-- name: Check if keybase is already installed
-  tags: always
-  become: true
-  ansible.builtin.stat:
-    path: /usr/bin/keybase
-  register: keybase_installed
+- name: Install telegram (macOS)
+  tags: telegram
+  community.general.homebrew_cask:
+    name: telegram
+    state: present
+  when: ansible_os_family == "Darwin"
 
-- name: Install keybase
-  ansible.builtin.include_role:
-    name: compscidr.keybase.keybase
-    apply:
-      tags: keybase
-      become: true
-  when: not keybase_installed.stat.exists
-  tags: always
-
-- name: Install Gimp
+- name: Install Gimp (Ubuntu/Debian)
   tags: gimp
   become: true
   ansible.builtin.apt:
     name: gimp
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Install zoom
+- name: Install Gimp (macOS)
+  tags: gimp
+  community.general.homebrew_cask:
+    name: gimp
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install zoom (Ubuntu/Debian)
   tags: zoom
   become: true
   ansible.builtin.apt:
     deb: https://zoom.us/client/latest/zoom_amd64.deb
+  when: ansible_os_family == "Debian"
+
+- name: Check if Zoom is already installed (macOS)
+  tags: zoom
+  ansible.builtin.stat:
+    path: /Applications/zoom.us.app
+  register: zoom_check
+  when: ansible_os_family == "Darwin"
+
+- name: Download Zoom installer (macOS)
+  tags: zoom
+  ansible.builtin.get_url:
+    url: https://zoom.us/client/latest/Zoom.pkg
+    dest: /tmp/Zoom.pkg
+    mode: '0644'
+  when:
+    - ansible_os_family == "Darwin"
+    - not zoom_check.stat.exists
+
+- name: Install Zoom from package (macOS)
+  tags: zoom
+  become: true
+  ansible.builtin.command: installer -pkg /tmp/Zoom.pkg -target /
+  when:
+    - ansible_os_family == "Darwin"
+    - not zoom_check.stat.exists
+
+- name: Clean up Zoom installer (macOS)
+  tags: zoom
+  ansible.builtin.file:
+    path: /tmp/Zoom.pkg
+    state: absent
+  when: ansible_os_family == "Darwin"
 
 - name: Install variety
   tags: UI
@@ -166,12 +266,21 @@
   ansible.builtin.apt:
     pkg:
       - variety
+  when: ansible_os_family == "Debian"
 
-- name: Install chrome browser
+- name: Install chrome browser (Ubuntu/Debian)
   tags: chrome
   become: true
   ansible.builtin.apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+  when: ansible_os_family == "Debian"
+
+- name: Install chrome browser (macOS)
+  tags: chrome
+  community.general.homebrew_cask:
+    name: google-chrome
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Set dock icons
   tags: dock
@@ -182,6 +291,7 @@
     value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop',
       'org.gnome.Nautilus.desktop', 'code.desktop', 'snap-store_snap-store.desktop']"
     state: present
+  when: ansible_os_family == "Debian"
 
 - name: Install Gnome Browser Connector for Extensions
   tags: gui
@@ -190,12 +300,16 @@
     pkg:
       - gnome-browser-connector
       - gnome-shell-extension-manager
+  when: ansible_os_family == "Debian"
 
-# - name: Install Gnome Extensions
-#   tags: gui
-#   become: true
-#   ansible.builtin.import_role:
-#     name: luizgavalda.gnome_extensions
-#   vars:
-#     gnome-extension_ids:
-#       - 6580 # https://extensions.gnome.org/extension/6580/open-bar/
+- name: Install Gnome Extensions
+  tags:
+    - gui
+    - molecule-notest
+  become: true
+  ansible.builtin.import_role:
+    name: luizgavalda.gnome_extensions
+  vars:
+    gnome_extension_ids:
+      - 6580 # https://extensions.gnome.org/extension/6580/open-bar/
+  when: ansible_os_family == "Debian"

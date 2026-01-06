@@ -1,6 +1,5 @@
 ungrouped:
   hosts:
-    nas.local:
     jasonernst.com:
 academic_gui:
   hosts:
@@ -8,6 +7,8 @@ academic_gui:
     ubuntu-beast.local:
 dev:
   hosts:
+    Jasons-MacBook-Air.local:
+    Jasons-MacBook-Air:
     ubuntu-beast:
     ubuntu-beast.local:
     ubuntu-silverstone:
@@ -30,6 +31,8 @@ dev_gui:
     ubuntu-asus-laptop.local:
 gui:
   hosts:
+    Jasons-MacBook-Air.local:
+    Jasons-MacBook-Air:
     ubuntu-beast:
     ubuntu-beast.local:
     ubuntu-work-laptop:
