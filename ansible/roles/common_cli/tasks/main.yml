@@ -168,6 +168,7 @@
   ansible.builtin.group:
     name: docker
     state: present
+  when: ansible_os_family != "Darwin"
 
 - name: Add user to docker group
   become: true
@@ -177,6 +178,7 @@
     groups: docker
     append: true
   notify: Reset ssh connection
+  when: ansible_os_family != "Darwin"
 
 - name: Install various cli tools (Ubuntu/Debian)
   become: true
@@ -206,6 +208,26 @@
     state: present
   when: ansible_os_family == "Darwin"
 
+- name: Check if colima is running (macOS)
+  tags: docker
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.command: /opt/homebrew/bin/colima status
+  register: colima_status
+  failed_when: false
+  changed_when: false
+  when: ansible_os_family == "Darwin"
+
+- name: Start colima (macOS)
+  tags: docker
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.command: /opt/homebrew/bin/colima start --cpu 2 --memory 4
+  environment:
+    PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
+  when:
+    - ansible_os_family == "Darwin"
+    - colima_status.rc != 0
 
 - name: Add github to known hosts so the following bit doesn't fail
   become: true

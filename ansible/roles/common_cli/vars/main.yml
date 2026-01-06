@@ -35,7 +35,9 @@ common_cli_tools_macos:
   - btop                    # modern and colorful cli resource monitor
   - byobu                   # text window manager / multiplexer / devops env
   # curl - built-in on macOS
-  - docker                  # containers (CLI - or use Docker Desktop)
+  - lima                    # Linux virtual machines (required by colima)
+  - colima                  # Docker daemon for macOS
+  - docker                  # containers (CLI)
   - docker-buildx           # docker buildx
   - docker-compose          # docker compose
   - fish                    # friendly interactive shell
