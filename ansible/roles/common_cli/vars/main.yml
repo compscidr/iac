@@ -3,7 +3,6 @@ common_cli_dotfile_packages_ubuntu:
   - autostart    # GUI app autostart
   - bashrc       # Bash shell config
   - nano         # Text editor
-  - profile      # Shell profile
   - tmux         # Terminal multiplexer
   - variety      # Wallpaper manager
 
