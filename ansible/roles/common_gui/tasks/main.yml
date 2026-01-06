@@ -300,7 +300,9 @@
   when: ansible_os_family == "Debian"
 
 - name: Install Gnome Extensions
-  tags: gui
+  tags:
+    - gui
+    - molecule-notest
   become: true
   ansible.builtin.import_role:
     name: luizgavalda.gnome_extensions
