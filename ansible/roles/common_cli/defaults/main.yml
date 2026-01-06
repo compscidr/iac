@@ -1,0 +1,10 @@
+---
+# Watchtower configuration
+watchtower_enabled: true
+watchtower_schedule: "0 0 4 * * *"  # Daily at 4 AM (cron format: second minute hour day month dayOfWeek)
+watchtower_cleanup: true
+watchtower_include_stopped: false
+watchtower_debug: false
+watchtower_timezone: "America/Los_Angeles"
+watchtower_monitor_only: false
+watchtower_notification_url: ""

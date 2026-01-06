@@ -160,6 +160,27 @@
       - wget                    # curl alternative
       - xclip                   # cli interface for x selections
 
+- name: Deploy Watchtower container updater
+  tags: watchtower
+  become: true
+  community.docker.docker_container:
+    name: watchtower
+    image: containrrr/watchtower:latest
+    pull: true
+    restart_policy: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    env:
+      WATCHTOWER_SCHEDULE: "{{ watchtower_schedule | default('0 0 4 * * *') }}"
+      WATCHTOWER_CLEANUP: "{{ watchtower_cleanup | default(true) | string | lower }}"
+      WATCHTOWER_INCLUDE_STOPPED: "{{ watchtower_include_stopped | default(false) | string | lower }}"
+      WATCHTOWER_DEBUG: "{{ watchtower_debug | default(false) | string | lower }}"
+      TZ: "{{ watchtower_timezone | default('America/Los_Angeles') }}"
+      WATCHTOWER_MONITOR_ONLY: "{{ watchtower_monitor_only | default(false) | string | lower }}"
+      WATCHTOWER_NOTIFICATION_URL: "{{ watchtower_notification_url | default('') }}"
+    memory: 512m
+  when: watchtower_enabled | default(true)
+
 - name: Install network tools
   become: true
   tags: network-tools
