@@ -1,19 +1,20 @@
 ---
-#- name: Install prereqs
-#  become: true
-#  tags: prereqs
-#  ansible.builtin.apt:
-#    update_cache: true
-#    pkg:
-#      - python3-debian
-#
-#- name: Install 1password
-#  ansible.builtin.include_role:
-#    name: compscidr.onepassword.onepassword
-#    apply:
-#      tags: 1password
-#      become: true
-#  tags: always
+- name: Install prereqs (Ubuntu/Debian)
+  become: true
+  tags: prereqs
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - python3-debian
+  when: ansible_os_family == "Debian"
+
+- name: Install 1password
+  ansible.builtin.include_role:
+    name: compscidr.onepassword.onepassword
+    apply:
+      tags: 1password
+      become: true
+  tags: always
 #
 #- name: Install discord apt repo
 #  tags: discord

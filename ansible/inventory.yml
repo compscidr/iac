@@ -31,6 +31,8 @@ dev_gui:
     ubuntu-asus-laptop.local:
 gui:
   hosts:
+    Jasons-MacBook-Air.local:
+    Jasons-MacBook-Air:
     ubuntu-beast:
     ubuntu-beast.local:
     ubuntu-work-laptop:
