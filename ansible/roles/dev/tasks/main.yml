@@ -365,6 +365,8 @@
       tags: gh
       become: true
       vars:
+        github_cli_user: "{{ username }}"
+        github_cli_username: "compscidr"
         github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure') }}"
   # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
   tags: always

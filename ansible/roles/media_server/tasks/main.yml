@@ -57,6 +57,8 @@
     transmission_downloads_folder: /volume1/storage/downloads
     transmission_pid: "999"
     transmission_gid: "10"
+    transmission_memory: "1g"
+    transmission_memory_swap: "1g"
 
 - name: Install plex
   tags: always
@@ -74,6 +76,8 @@
     plex_claim: claim-haziyvUxG2Fb4uj5-tF1
     plex_pid: "999"
     plex_gid: "10"
+    plex_memory: "5g"
+    plex_memory_swap: "5g"
 
 - name: Install sabnzbd
   tags: always
@@ -86,7 +90,8 @@
     sabnzbd_pid: "999"
     sabnzbd_gid: "10"
     sabnzbd_download_folder: /volume1/storage/downloads
-    sabnzbd_memory: "10g"
+    sabnzbd_memory: "1g"
+    sabnzbd_memory_swap: "1g"
 
 - name: Install sonarr
   tags: always
@@ -98,10 +103,12 @@
   vars:
     sonarr_folder: /etc/sonarr
     sonarr_tv_folder: /volume1/storage/tv
-    sonarr_tranmissions_downloads_folder: /volume1/storage/downloads
-    sonarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    sonarr_transmissions_downloads_folder: /volume1/storage/downloads
+    sonarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     sonarr_pid: "999"
     sonarr_gid: "10"
+    sonarr_memory: "1g"
+    sonarr_memory_swap: "1g"
 
 - name: Install radarr
   tags: always
@@ -113,9 +120,11 @@
   vars:
     radarr_movies_folder: /volume1/storage/movies
     radarr_transmission_downloads_folder: /volume1/storage/downloads
-    radarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    radarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     radarr_pid: "999"
     radarr_gid: "10"
+    radarr_memory: "1g"
+    radarr_memory_swap: "1g"
 
 - name: Install lidarr
   tags: always
@@ -127,9 +136,11 @@
   vars:
     lidarr_music_folder: /volume1/storage/music
     lidarr_transmission_downloads_folder: /volume1/storage/downloads
-    lidarr_sabnzbd_downoads_folder: /volume1/storage/downloads/complete
+    lidarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
     lidarr_pid: "999"
     lidarr_gid: "10"
+    lidarr_memory: "1g"
+    lidarr_memory_swap: "1g"
 
 - name: Install prowlarr
   tags: always
@@ -141,6 +152,8 @@
   vars:
     prowlarr_pid: "999"
     prowlarr_gid: "10"
+    prowlarr_memory: "1g"
+    prowlarr_memory_swap: "1g"
 
 - name: Install flaresolverr
   tags: always
