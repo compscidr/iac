@@ -16,7 +16,7 @@
     mode: '755'
     owner: "steam"
   loop:
-    - /etc/cs2
+    - /volume1/storage/cs2
 
 - name: Deploy cs2 server
   tags: cs2_gameserver
@@ -26,7 +26,7 @@
     image: joedwards32/cs2
     pull: true
     volumes:
-      - "/etc/cs2:/home/steam/cs2-dedicated/"
+      - "/volume1/storage/cs2:/home/steam/cs2-dedicated/"
     ports:
       - "29015:27015/tcp"
       - "29015:27015/udp"
