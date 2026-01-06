@@ -1,0 +1,19 @@
+common_gui_terminal_emulators_ubuntu:
+  - kitty               # gpu enabled
+  - rxvt-unicode        # hate this one
+  - alacritty           # opengl enabled, cross platform, no tabs
+  - terminator          # kind of like a tmux behavior built in
+  - stterm              # https://st.suckless.org/
+  - foot                # wayland native (should probably only install on ubuntu)
+  - tilda               # uses a weird full screen setup.
+  - cool-retro-term
+  - terminology
+  - sakura              # simple, multiple tabs
+
+common_gui_terminal_emulators_macos:
+  # Cross-platform (also on Ubuntu)
+  - kitty               # gpu enabled, cross-platform
+  - alacritty           # opengl enabled, cross platform, no tabs
+  # macOS-specific options
+  - iterm2              # popular macOS terminal
+  - warp                # modern AI-powered terminal

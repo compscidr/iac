@@ -1,3 +1,18 @@
+# Dotfile packages to stow on each platform
+common_cli_dotfile_packages_ubuntu:
+  - autostart    # GUI app autostart
+  - bashrc       # Bash shell config
+  - nano         # Text editor
+  - profile      # Shell profile
+  - tmux         # Terminal multiplexer
+  - variety      # Wallpaper manager
+
+common_cli_dotfile_packages_macos:
+  - nano         # Text editor (cross-platform)
+  - tmux         # Terminal multiplexer (cross-platform)
+  # Skip: autostart (Linux GUI), bashrc (use zsh), profile (Ubuntu-specific), variety (Linux GUI)
+  # Consider adding: fish/ or zshrc/ directories to your dotfiles repo for shell configs
+
 common_cli_prereq_packages_ubuntu:
   - gpg-agent
   - ssh

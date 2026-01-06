@@ -45,7 +45,7 @@
     name: "{{ username }}"
     password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
     comment: "{{ fullname }}"
-    shell: /bin/bash
+    shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
     groups: "{{ 'admin' if ansible_os_family == 'Darwin' else 'sudo' }}"
     skeleton: "/etc/skel"
@@ -266,29 +266,32 @@
   ansible.builtin.file:
     dest: ~/.bashrc
     state: absent
-  when: bash_test.stat is defined and bash_test.stat.islnk is false
+  when: bash_test.stat.exists and not bash_test.stat.islnk
 
 
-- name: Build directories list
-  tags: dotfiles
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.find:
-    paths: [~/dotfiles/]
-    recurse: false
-    file_type: directory
-  register: files
-
-- name: Deploy dotfiles
+- name: Deploy dotfiles (Ubuntu/Debian)
   become: true
   become_user: "{{ username }}"
   tags: dotfiles
-  with_items: "{{ files.files }}"
-  ansible.builtin.command: "{{ '/opt/homebrew/bin/stow' if ansible_os_family == 'Darwin' else 'stow' }} {{ item.path | basename }}"
+  with_items: "{{ common_cli_dotfile_packages_ubuntu }}"
+  ansible.builtin.command: "stow {{ item }}"
   register: dotfiles_result
   changed_when: "'changed' in dotfiles_result.stdout"
   args:
     chdir: ~/dotfiles
+  when: ansible_os_family == "Debian"
+
+- name: Deploy dotfiles (macOS)
+  become: true
+  become_user: "{{ username }}"
+  tags: dotfiles
+  with_items: "{{ common_cli_dotfile_packages_macos }}"
+  ansible.builtin.command: "/opt/homebrew/bin/stow {{ item }}"
+  register: dotfiles_result
+  changed_when: "'changed' in dotfiles_result.stdout"
+  args:
+    chdir: ~/dotfiles
+  when: ansible_os_family == "Darwin"
 
 # https://github.com/jorgebucaran/fisher
 - name: Check if fisher install needed
