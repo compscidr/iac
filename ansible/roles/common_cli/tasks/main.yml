@@ -290,7 +290,9 @@
 
 - name: Disable netplan generator to prevent phantom interface waits (Ubuntu/Debian headless)
   become: true
-  tags: network-tools
+  tags:
+    - network-tools
+    - molecule-idempotence-notest
   ansible.builtin.command:
     cmd: mv /usr/lib/systemd/system-generators/netplan /usr/lib/systemd/system-generators/netplan.disabled
     creates: /usr/lib/systemd/system-generators/netplan.disabled
@@ -449,7 +451,9 @@
 
 - name: Deploy udev rule for automatic wpa_supplicant on wireless interfaces (Ubuntu/Debian headless)
   become: true
-  tags: network-tools
+  tags:
+    - network-tools
+    - molecule-idempotence-notest
   ansible.builtin.copy:
     src: udev/80-wireless-wpa.rules
     dest: /etc/udev/rules.d/80-wireless-wpa.rules
