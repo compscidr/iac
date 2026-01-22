@@ -62,8 +62,8 @@
     path: "{{ item }}"
     state: directory
     mode: '755'
-    owner: root
-    group: root
+    owner: jason
+    group: admin
   loop:
     - /volume1/storage/
     - /volume1/storage/downloads
@@ -79,24 +79,24 @@
     path: "/etc/transmission/"
     state: directory
     mode: '755'
-    owner: root
-    group: root
+    owner: jason
+    group: admin
 
 - name: Set transmission nordvpn credentials
   tags: transmission
   become: true
   ansible.builtin.copy:
     mode: '755'
-    owner: root
-    group: root
+    owner: jason
+    group: admin
     dest: "/etc/transmission/.env"
     content: |
       TRANSMISSION_WEB_UI=transmission-web-control
       OPENVPN_PROVIDER=NORDVPN
       NORDVPN_PROTOCOL=udp
-      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault=onepassword_vault) }}
-      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault=onepassword_vault) }}
-      NORDVPN_COUNTRY:=US
+      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}
+      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
+      NORDVPN_COUNTRY=US
       NORDVPN_CATEGORY=P2P
       LOCAL_NETWORK=192.168.0.0/24
       HEALTH_CHECK_HOST=8.8.8.8
@@ -113,8 +113,8 @@
     transmission_downloads_folder: /volume1/storage/downloads
     transmission_pid: "999"
     transmission_gid: "10"
-    transmission_memory: "1g"
-    transmission_memory_swap: "1g"
+    transmission_memory: "5g"
+    transmission_memory_swap: "5g"
 
 - name: Install plex
   tags: always
@@ -146,8 +146,8 @@
     sabnzbd_pid: "999"
     sabnzbd_gid: "10"
     sabnzbd_download_folder: /volume1/storage/downloads
-    sabnzbd_memory: "1g"
-    sabnzbd_memory_swap: "1g"
+    sabnzbd_memory: "5g"
+    sabnzbd_memory_swap: "5g"
 
 - name: Install sonarr
   tags: always
@@ -160,7 +160,7 @@
     sonarr_folder: /etc/sonarr
     sonarr_tv_folder: /volume1/storage/tv
     sonarr_transmissions_downloads_folder: /volume1/storage/downloads
-    sonarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
+    sonarr_sabnzbd_downloads_folder: /volume1/storage/downloads
     sonarr_pid: "999"
     sonarr_gid: "10"
     sonarr_memory: "1g"
@@ -176,27 +176,27 @@
   vars:
     radarr_movies_folder: /volume1/storage/movies
     radarr_transmission_downloads_folder: /volume1/storage/downloads
-    radarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
+    radarr_sabnzbd_downloads_folder: /volume1/storage/downloads
     radarr_pid: "999"
     radarr_gid: "10"
     radarr_memory: "1g"
     radarr_memory_swap: "1g"
 
-- name: Install lidarr
-  tags: always
-  ansible.builtin.include_role:
-    name: compscidr.media_server.lidarr
-    apply:
-      become: true
-      tags: lidarr
-  vars:
-    lidarr_music_folder: /volume1/storage/music
-    lidarr_transmission_downloads_folder: /volume1/storage/downloads
-    lidarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
-    lidarr_pid: "999"
-    lidarr_gid: "10"
-    lidarr_memory: "1g"
-    lidarr_memory_swap: "1g"
+# - name: Install lidarr
+#   tags: always
+#   ansible.builtin.include_role:
+#     name: compscidr.media_server.lidarr
+#     apply:
+#       become: true
+#       tags: lidarr
+#   vars:
+#     lidarr_music_folder: /volume1/storage/music
+#     lidarr_transmission_downloads_folder: /volume1/storage/downloads
+#     lidarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
+#     lidarr_pid: "999"
+#     lidarr_gid: "10"
+#     lidarr_memory: "1g"
+#     lidarr_memory_swap: "1g"
 
 - name: Install prowlarr
   tags: always
@@ -256,6 +256,94 @@
     network_mode: bridge
     published_ports:
       - "3306:3306"
+    restart_policy: unless-stopped
+    memory: "1g"
+    memory_swap: "1g"
+
+- name: Create slskd config folder
+  tags: slskd
+  become: true
+  ansible.builtin.file:
+    path: /etc/slskd
+    state: directory
+    owner: 999
+    group: 10
+    mode: '0755'
+
+- name: Install slskd
+  tags: slskd
+  become: true
+  community.docker.docker_container:
+    name: slskd
+    image: slskd/slskd:latest
+    pull: true
+    volumes:
+      - /volume1/storage/music:/music:rw
+      - /volume1/storage/downloads/complete/music:/downloads:rw
+      - /volume1/storage/downloads/incomplete:/incomplete:rw
+      - /etc/slskd:/app
+    env:
+      PUID: "999"
+      PGID: "10"
+    user: "999:10"
+    ports:
+      - "5030:5030"
+      - "5031:5031"
+      - "50300:50300"
+    restart_policy: unless-stopped
+    memory: 1g
+
+- name: Create soularr config folder
+  tags: soularr
+  become: true
+  ansible.builtin.file:
+    path: /etc/soularr
+    state: directory
+    owner: 999
+    group: 10
+    mode: '0755'
+
+- name: Install soularr
+  tags: soularr
+  become: true
+  community.docker.docker_container:
+    name: soularr
+    image: mrusse08/soularr:latest
+    user: "999:10"
+    pull: true
+    volumes:
+      - /volume1/storage/downloads/complete/music:/downloads:rw
+      - /etc/soularr:/data
+    restart_policy: unless-stopped
+    memory: 1g
+
+- name: Create lidarr config folder
+  tags: lidarr
+  become: true
+  ansible.builtin.file:
+    path: /etc/lidarr
+    state: directory
+    owner: 999
+    group: 10
+    mode: '0755'
+
+- name: Deploy lidarr
+  tags: lidarr
+  become: true
+  community.docker.docker_container:
+    name: lidarr
+    image: ghcr.io/hotio/lidarr:pr-plugins
+    pull: true
+    ports:
+      - "8686:8686"
+    volumes:
+      - "/volume1/storage/music:/music:rw"
+      - "/volume1/storage/downloads:/downloads:rw"
+      - "/etc/lidarr:/config:rw"
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "999"
+      PGID: "10"
     restart_policy: unless-stopped
     memory: "1g"
     memory_swap: "1g"
