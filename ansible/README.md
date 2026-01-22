@@ -86,14 +86,16 @@ For Ubuntu 24.04+ headless servers, the playbook automatically:
 - Disables obsolete isc-dhcp-client (Ubuntu 24.04+ uses systemd-networkd's built-in DHCP)
 - Disables systemd-networkd-wait-online to prevent boot delays
 - Removes netplan and cloud-init network configurations to prevent conflicts
-- Masks wpa_supplicant@wlan0.service (temporary interface name that gets renamed)
+- Masks wpa_supplicant@wlan0.service to avoid conflicts with systemd-networkd-managed WiFi. On systems that use a temporary wlan0 name during boot, this prevents the transient wpa_supplicant unit from interfering after the interface is renamed; on systems where wlan0 is permanent, this simply disables that legacy wpa_supplicant instance.
 - Configures WiFi with wpa_supplicant using credentials from 1Password
 
 GUI systems with NetworkManager are automatically detected and skipped.
 
 ## Testing molecule locally
 
-Molecule tests require the `OP_SERVICE_ACCOUNT_TOKEN` environment variable to be set with your personal 1Password account token (to access the "Infrastructure" vault):
+Molecule tests use `OP_SERVICE_ACCOUNT_TOKEN` for non-interactive authentication, while normal playbook runs use interactive `op signin` to avoid desktop app prompts. This allows automated testing while keeping interactive workflows smooth for manual use.
+
+Set your personal 1Password account service account token:
 
 ```bash
 export OP_SERVICE_ACCOUNT_TOKEN="your-personal-account-token"

@@ -10,10 +10,22 @@
   ansible.builtin.systemd:
     name: systemd-networkd
     state: restarted
-  failed_when: false
+  register: restart_networkd_result
+  ignore_errors: true
+
+- name: Warn if systemd-networkd restart failed
+  ansible.builtin.debug:
+    msg: "Warning: Failed to restart systemd-networkd: {{ restart_networkd_result.msg | default('Unknown error') }}"
+  when: restart_networkd_result is failed
 
 - name: Reload systemd
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
-  failed_when: false
+  register: systemd_daemon_reload_result
+  ignore_errors: true
+
+- name: Warn if systemd daemon-reload failed
+  ansible.builtin.debug:
+    msg: "Warning: Failed to reload systemd daemon: {{ systemd_daemon_reload_result.msg | default('Unknown error') }}"
+  when: systemd_daemon_reload_result is failed

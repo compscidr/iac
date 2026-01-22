@@ -279,6 +279,7 @@
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
     - cloud_init_dir.stat.exists
+    - cloud_init_network_configs is defined
 
 - name: Remove old netplan configs to prevent interface name conflicts (Ubuntu/Debian headless)
   become: true
@@ -399,21 +400,30 @@
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
 
+- name: Find old interface-specific networkd configs (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.find:
+    paths: /etc/systemd/network
+    patterns: "10-*.network"
+    file_type: file
+  register: old_networkd_configs
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
 - name: Remove old interface-specific networkd configs (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.file:
-    path: "/etc/systemd/network/10-{{ item }}.network"
+    path: "{{ item.path }}"
     state: absent
-  loop:
-    - enp1s0
-    - enp6s0
-    - eth0
-    - wlp3s0
+  loop: "{{ old_networkd_configs.files | default([]) }}"
   notify: Restart systemd-networkd
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - old_networkd_configs is defined
 
 - name: Ensure /etc/wpa_supplicant directory exists (Ubuntu/Debian headless)
   become: true
@@ -429,21 +439,38 @@
 - name: Get list of wireless interfaces (Ubuntu/Debian headless)
   become: true
   tags: network-tools
-  ansible.builtin.shell: ls -1 /sys/class/net/ | grep -E '^wl' || true
+  ansible.builtin.shell: |
+    for iface in /sys/class/net/*; do
+      if [ -d "$iface/wireless" ]; then
+        basename "$iface"
+      fi
+    done
   register: wireless_interfaces
   changed_when: false
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
 
+- name: Get WiFi credentials from 1Password (Ubuntu/Debian headless)
+  tags: network-tools
+  ansible.builtin.set_fact:
+    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+  no_log: true
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+    - wireless_interfaces.stdout_lines | default([]) | length > 0
+
 - name: Generate WPA PSK hash from passphrase (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.shell: |
-    wpa_passphrase "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}" "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
+    wpa_passphrase "{{ wifi_ssid }}" "{{ wifi_passphrase }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
   register: wifi_psk_hash
   changed_when: false
   no_log: true
+  failed_when: wifi_psk_hash.stdout is not defined or (wifi_psk_hash.stdout | trim) == ''
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
@@ -452,6 +479,9 @@
 - name: Deploy wpa_supplicant configuration for each wireless interface (Ubuntu/Debian headless)
   become: true
   tags: network-tools
+  # Note: This task deploys config files regardless of systemd running state.
+  # Files are needed for initial setup before first boot, and systemd service
+  # startup (checked later) handles when services actually start.
   ansible.builtin.template:
     src: wpa_supplicant.conf.j2
     dest: "/etc/wpa_supplicant/wpa_supplicant-{{ item }}.conf"
@@ -459,9 +489,9 @@
     owner: root
     group: root
   vars:
-    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
     wifi_psk: "{{ wifi_psk_hash.stdout }}"
   loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
+  no_log: true
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
@@ -584,6 +614,7 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
+    # Pinned commit adds op-personal and op-work aliases for 1Password multi-account support
     version: a3ee5c273a083319041daba79989860a59e72f50
 
 - name: Test .bashrc file to see if its a symlink
