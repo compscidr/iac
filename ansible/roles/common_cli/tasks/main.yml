@@ -437,6 +437,16 @@
     - use_systemd_networkd | default(false)
     - wireless_interfaces.stdout_lines | default([]) | length > 0
 
+- name: Check if udev rules directory exists (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.stat:
+    path: /etc/udev/rules.d
+  register: udev_rules_dir
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
 - name: Deploy udev rule for automatic wpa_supplicant on wireless interfaces (Ubuntu/Debian headless)
   become: true
   tags: network-tools
@@ -449,6 +459,7 @@
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - udev_rules_dir.stat.exists
 
 - name: Reload udev rules (Ubuntu/Debian headless)
   become: true
@@ -458,6 +469,7 @@
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - udev_rules_dir.stat.exists
 
 - name: Create wpa_supplicant override directory (Ubuntu/Debian headless)
   become: true
