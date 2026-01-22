@@ -92,8 +92,12 @@ For Ubuntu 24.04+ headless servers, the playbook automatically:
 GUI systems with NetworkManager are automatically detected and skipped.
 
 ## Testing molecule locally
-Inside the ansible directory:
-```
+
+Molecule tests require the `OP_SERVICE_ACCOUNT_TOKEN` environment variable to be set with your personal 1Password account token (to access the "Infrastructure" vault):
+
+```bash
+export OP_SERVICE_ACCOUNT_TOKEN="your-personal-account-token"
+cd ansible
 python -m venv venv
 . venv/bin/activate
 pip install molecule molecule-docker passlib

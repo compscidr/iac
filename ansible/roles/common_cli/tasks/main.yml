@@ -232,6 +232,16 @@
     use_systemd_networkd: "{{ networkmanager_check.rc != 0 }}"
   when: ansible_os_family == "Debian"
 
+- name: Check if cloud-init is installed (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.stat:
+    path: /etc/cloud/cloud.cfg.d
+  register: cloud_init_dir
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
 - name: Disable cloud-init network management (Ubuntu/Debian headless)
   become: true
   tags: network-tools
@@ -242,6 +252,7 @@
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - cloud_init_dir.stat.exists
 
 - name: Remove cloud-init cached network config (Ubuntu/Debian headless)
   become: true
@@ -252,6 +263,7 @@
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - cloud_init_dir.stat.exists
 
 - name: Remove old netplan configs to prevent interface name conflicts (Ubuntu/Debian headless)
   become: true
