@@ -32,6 +32,7 @@ common_cli_tools_ubuntu:
   - fzf                     # command line fuzzy finder
   - git                     # code repos
   - htop                    # better top (uses mouse for example)
+  - jq                      # command line JSON processor
   - lm-sensors              # suggested installed with htop
   - nano                    # simple command line editor
   - neofetch                # cli system info
@@ -58,6 +59,7 @@ common_cli_tools_macos:
   - fzf                     # command line fuzzy finder
   - git                     # code repos
   - htop                    # better top (uses mouse for example)
+  - jq                      # command line JSON processor
   # lm-sensors - Linux-specific, not applicable on macOS
   - nano                    # simple command line editor
   - neofetch                # cli system info
@@ -75,7 +77,7 @@ common_cli_network_tools_ubuntu:
   - arp-scan                # for ip <-> mac map search
   - dnsutils                # dig
   - ethtool                 # gets info like link speed
-  - isc-dhcp-client         # dhcp client
+  # isc-dhcp-client removed - Ubuntu 24.04+ uses systemd-networkd built-in DHCP
   - iftop                   # network top
   - iptables-persistent     # boot-time loader for netfilter rules
   - iotop                   # disk top
@@ -90,6 +92,7 @@ common_cli_network_tools_ubuntu:
   - traceroute              # traceroute
   - fail2ban                # https://help.ubuntu.com/community/Fail2ban
   - whois                   # whois
+  - wpasupplicant           # WiFi authentication for systemd-networkd
 
 common_cli_network_tools_macos:
   # avahi-utils - Bonjour/mDNS built-in, use dns-sd command

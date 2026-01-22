@@ -26,7 +26,7 @@
     image: compscidr/digitalocean-dyndns
     pull: true
     env:
-      DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
+      DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
       DOMAIN: "jasonernst.com"
       NAME: "{{ dyndns_name }}"
       SLEEP_INTERVAL: "60"

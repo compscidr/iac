@@ -1,0 +1,4 @@
+---
+# Global variables for all hosts
+# Note: Use --ask-become-pass when running playbooks to provide sudo password
+# Automatic 1Password lookup causes too many desktop app prompts

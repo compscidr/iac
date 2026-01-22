@@ -16,6 +16,33 @@
       become: true
   tags: always
 
+- name: Check if 1Password settings file exists (Ubuntu/Debian)
+  tags: 1password
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.stat:
+    path: "~/.config/1Password/settings/settings.json"
+  register: onepassword_settings
+  when: ansible_os_family == "Debian"
+
+- name: Enable 1Password CLI integration (Ubuntu/Debian)
+  tags: 1password
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    if jq -e '."developers.cliSharedLockState.enabled" == true' ~/.config/1Password/settings/settings.json > /dev/null 2>&1; then
+      echo "1Password CLI integration already enabled"
+    else
+      jq '."developers.cliSharedLockState.enabled" = true' ~/.config/1Password/settings/settings.json > ~/.config/1Password/settings/settings.json.tmp && \
+        mv ~/.config/1Password/settings/settings.json.tmp ~/.config/1Password/settings/settings.json
+      echo "1Password CLI integration enabled"
+    fi
+  when:
+    - ansible_os_family == "Debian"
+    - onepassword_settings.stat.exists
+  register: cli_integration_result
+  changed_when: '"1Password CLI integration enabled" in cli_integration_result.stdout'
+
 - name: Install discord apt repo (Ubuntu/Debian)
   tags: discord
   become: true
