@@ -320,6 +320,17 @@
     - use_systemd_networkd | default(false)
     - wpa_supplicant_service.stat.exists
 
+- name: Check if systemd is running (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.command: systemctl is-system-running
+  register: systemd_running
+  failed_when: false
+  changed_when: false
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
 - name: Ensure systemd-networkd is enabled and started (Ubuntu/Debian headless)
   become: true
   tags: network-tools
@@ -330,6 +341,7 @@
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
+    - systemd_running.rc == 0 or systemd_running.stdout in ['running', 'degraded']
 
 - name: Disable systemd-networkd-wait-online to avoid boot delays (Ubuntu/Debian headless)
   become: true
@@ -484,6 +496,7 @@
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
     - wireless_interfaces.stdout_lines | default([]) | length > 0
+    - systemd_running.rc == 0 or systemd_running.stdout in ['running', 'degraded']
 
 - name: Check if colima is running (macOS)
   tags: docker
