@@ -61,22 +61,22 @@ op-personal  # Use this for personal infrastructure
 
 Run all the roles in the common playbook:
 ```bash
-ansible-playbook -i inventory.yml common.yml
+ansible-playbook -i inventory.yml common.yml --ask-become-pass
 ```
 
 Run specific roles by tag in the common playbook:
 ```bash
-ansible-playbook -i inventory.yml common.yml --tags sometag
+ansible-playbook -i inventory.yml common.yml --tags sometag --ask-become-pass
 ```
 
 Run all roles in the common playbook on a specific machine:
 ```bash
-ansible-playbook -i inventory.yml common.yml --limit ubuntu-beast
+ansible-playbook -i inventory.yml common.yml --limit ubuntu-beast --ask-become-pass
 ```
 
 Run all roles in the common playbook on a specific machine that requires an ssh password:
 ```bash
-ansible-playbook -i inventory.yml common.yml --ask-pass --limit nas.local
+ansible-playbook -i inventory.yml common.yml --ask-pass --ask-become-pass --limit nas.local
 ```
 
 ## Networking Configuration

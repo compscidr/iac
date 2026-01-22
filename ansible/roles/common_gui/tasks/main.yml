@@ -30,8 +30,8 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    jq '."developers.cliSharedLockState.enabled" = true' ~/.config/1Password/settings/settings.json > ~/.config/1Password/settings/settings.json.tmp
-    mv ~/.config/1Password/settings/settings.json.tmp ~/.config/1Password/settings/settings.json
+    jq '."developers.cliSharedLockState.enabled" = true' ~/.config/1Password/settings/settings.json > ~/.config/1Password/settings/settings.json.tmp && \
+      mv ~/.config/1Password/settings/settings.json.tmp ~/.config/1Password/settings/settings.json
   when:
     - ansible_os_family == "Debian"
     - onepassword_settings.stat.exists

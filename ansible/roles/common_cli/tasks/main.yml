@@ -254,12 +254,27 @@
     - use_systemd_networkd | default(false)
     - cloud_init_dir.stat.exists
 
+- name: Find cloud-init cached network configs (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.find:
+    paths: /var/lib/cloud/instances
+    patterns: network-config.json
+    file_type: file
+    recurse: true
+  register: cloud_init_network_configs
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+    - cloud_init_dir.stat.exists
+
 - name: Remove cloud-init cached network config (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.file:
-    path: /var/lib/cloud/instances/iid-datasource-none/network-config.json
+    path: "{{ item.path }}"
     state: absent
+  loop: "{{ cloud_init_network_configs.files | default([]) }}"
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
@@ -421,6 +436,19 @@
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
 
+- name: Generate WPA PSK hash from passphrase (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.shell: |
+    wpa_passphrase "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}" "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
+  register: wifi_psk_hash
+  changed_when: false
+  no_log: true
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+    - wireless_interfaces.stdout_lines | default([]) | length > 0
+
 - name: Deploy wpa_supplicant configuration for each wireless interface (Ubuntu/Debian headless)
   become: true
   tags: network-tools
@@ -432,7 +460,7 @@
     group: root
   vars:
     wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    wifi_psk: "{{ wifi_psk_hash.stdout }}"
   loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
   when:
     - ansible_os_family == "Debian"
