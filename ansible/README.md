@@ -30,30 +30,66 @@ ssh-import-id gh:compscidr
 
 ## Credentials / Secrets
 For any plays which deploy secrets / credentials, all of these are managed by 1password.
-The plays are setup to lookup the secrets using 1password cli (op). In order for this 
+The plays are setup to lookup the secrets using 1password cli (op). In order for this
 to work, you must login to onepassword in the terminal you are doing the deploying from.
 
-You can do this: `eval $(op signin)` in order to login, and enter your 1password password.
+### First-time setup
+On your first run, before the dotfiles are deployed, sign in manually:
+```bash
+eval $(op signin --account CZG3A4373RA2FC5W5JKFUMYILI)  # Personal account
+```
 
-Once this is done successfully, machines will be deployed with a service account token to
-their environment and they will not need this step any longer for self-deploying or to
-deploy to other machines
+### After dotfiles are deployed
+Once the common.yml playbook has run, you'll have convenient aliases:
+```bash
+op-personal  # Sign into personal account (ernstjason1@gmail.com)
+op-work      # Sign into work account (jason@bumpapp.xyz)
+```
 
-After this, you can run any of the example commands below.
+The session lasts 30 minutes, so you can run multiple playbooks without re-authenticating.
+
+After signing in, you can run any of the example commands below. You'll still need to use
+`--ask-become-pass` to provide your sudo password (typing it once per playbook run is simpler
+than dealing with 1Password desktop app prompts for every secret lookup).
 
 ## Example commands
 
-Run all the roles in the common playbook:
-`ansible-playbook -i inventory.yml common.yml --ask-become-pass`
+**Important:** Always sign in to 1Password first:
+```bash
+op-personal  # Use this for personal infrastructure
+```
 
-Run specific roles by tag in the common playbook
-`ansible-playbook -i inventory.yml common.yml --ask-become-pass --tags sometag`
+Run all the roles in the common playbook:
+```bash
+ansible-playbook -i inventory.yml common.yml
+```
+
+Run specific roles by tag in the common playbook:
+```bash
+ansible-playbook -i inventory.yml common.yml --tags sometag
+```
 
 Run all roles in the common playbook on a specific machine:
-`ansible-playbook -i inventory.yml common.yml --ask-become-pass --limit ubuntu-beast`
+```bash
+ansible-playbook -i inventory.yml common.yml --limit ubuntu-beast
+```
 
 Run all roles in the common playbook on a specific machine that requires an ssh password:
-`ansible-playbook -i inventory.yml common.yml --ask-become-pass --ask-pass --limit nas.local`
+```bash
+ansible-playbook -i inventory.yml common.yml --ask-pass --limit nas.local
+```
+
+## Networking Configuration
+
+For Ubuntu 24.04+ headless servers, the playbook automatically:
+- Configures systemd-networkd with wildcard interface matching (works with any interface names)
+- Disables obsolete isc-dhcp-client (Ubuntu 24.04+ uses systemd-networkd's built-in DHCP)
+- Disables systemd-networkd-wait-online to prevent boot delays
+- Removes netplan and cloud-init network configurations to prevent conflicts
+- Masks wpa_supplicant@wlan0.service (temporary interface name that gets renamed)
+- Configures WiFi with wpa_supplicant using credentials from 1Password
+
+GUI systems with NetworkManager are automatically detected and skipped.
 
 ## Testing molecule locally
 Inside the ansible directory:

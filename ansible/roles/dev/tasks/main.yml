@@ -226,7 +226,7 @@
   become: true
   tags: doctl
   ansible.builtin.copy:
-    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure') }}"
+    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
 
@@ -253,8 +253,8 @@
   tags: aws
   ansible.builtin.copy:
     content: |
-      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault='Infrastructure') }}
-      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault='Infrastructure') }}
+      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
       AWS_DEFAULT_REGION=us-west-1
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
@@ -308,15 +308,25 @@
     pkg:
       - tailscale
 
-# note: this will require a restart to apply changes
-- name: Set op service account token
+# Remove global OP service account token - use interactive signin instead
+- name: Remove global op service account token file
   tags: 1password
   become: true
-  ansible.builtin.copy:
-    content: |
-      OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault='Infrastructure') }}
-    dest: /etc/environment.d/90-op.conf
-    mode: "644"
+  ansible.builtin.file:
+    path: /etc/environment.d/90-op.conf
+    state: absent
+
+# DISABLED: Service account tokens should not be set globally
+# Use interactive signin instead: op signin --account <account-id>
+# For automation, set the token inline: OP_SERVICE_ACCOUNT_TOKEN=xxx command
+# - name: Set op service account token
+#   tags: 1password
+#   become: true
+#   ansible.builtin.copy:
+#     content: |
+#       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+#     dest: /etc/environment.d/90-op.conf
+#     mode: "644"
 
 - name: Install pipx for Python package management
   tags: ansible
@@ -367,7 +377,7 @@
       vars:
         github_cli_user: "{{ username }}"
         github_cli_username: "compscidr"
-        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure') }}"
+        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
   # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
   tags: always
 

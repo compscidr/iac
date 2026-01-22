@@ -4,3 +4,14 @@
 - name: Reset ssh connection
   ansible.builtin.meta:
     reset_connection
+
+- name: Restart systemd-networkd
+  become: true
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    state: restarted
+
+- name: Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true

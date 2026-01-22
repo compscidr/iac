@@ -1,0 +1,19 @@
+# Managed by Ansible - do not edit manually
+# Matches all wireless interfaces
+[Match]
+Name=wl*
+
+[Link]
+# Don't wait for this interface during boot (WiFi takes time to connect)
+RequiredForOnline=no
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+
+[DHCPv4]
+UseDNS=yes
+UseRoutes=yes
+
+# Ignore carrier status - wpa_supplicant will manage the connection
+IgnoreCarrierLoss=3s

@@ -43,7 +43,7 @@
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') | password_hash('sha512') }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') | password_hash('sha512') }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -66,7 +66,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure') }}\n"
+    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}\n"
     dest: "~/.ssh/id_rsa"
     mode: "0600"
 
@@ -84,7 +84,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure') }}"
+    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
@@ -194,6 +194,15 @@
     state: present
   when: ansible_os_family == "Darwin"
 
+- name: Remove obsolete isc-dhcp-client (Ubuntu/Debian)
+  become: true
+  tags: network-tools
+  ansible.builtin.apt:
+    name: isc-dhcp-client
+    state: absent
+    purge: true
+  when: ansible_os_family == "Debian"
+
 - name: Install network tools (Ubuntu/Debian)
   become: true
   tags: network-tools
@@ -207,6 +216,240 @@
     name: "{{ common_cli_network_tools_macos }}"
     state: present
   when: ansible_os_family == "Darwin"
+
+- name: Check if NetworkManager is installed and active (Ubuntu/Debian)
+  become: true
+  tags: network-tools
+  ansible.builtin.command: systemctl is-active NetworkManager
+  register: networkmanager_check
+  failed_when: false
+  changed_when: false
+  when: ansible_os_family == "Debian"
+
+- name: Set fact for using systemd-networkd (Ubuntu/Debian)
+  tags: network-tools
+  ansible.builtin.set_fact:
+    use_systemd_networkd: "{{ networkmanager_check.rc != 0 }}"
+  when: ansible_os_family == "Debian"
+
+- name: Disable cloud-init network management (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    content: "network: {config: disabled}\n"
+    dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    mode: "0644"
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Remove cloud-init cached network config (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.file:
+    path: /var/lib/cloud/instances/iid-datasource-none/network-config.json
+    state: absent
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Remove old netplan configs to prevent interface name conflicts (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.file:
+    path: "/etc/netplan/{{ item }}"
+    state: absent
+  loop:
+    - 00-installer-config-wifi.yaml
+    - 50-cloud-init.yaml
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Disable netplan generator to prevent phantom interface waits (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.command:
+    cmd: mv /usr/lib/systemd/system-generators/netplan /usr/lib/systemd/system-generators/netplan.disabled
+    creates: /usr/lib/systemd/system-generators/netplan.disabled
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Mask wpa_supplicant for wlan0 temporary interface name (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.systemd:
+    name: wpa_supplicant@wlan0.service
+    masked: true
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Ensure systemd-networkd is enabled and started (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    enabled: true
+    state: started
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Disable systemd-networkd-wait-online to avoid boot delays (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.systemd:
+    name: systemd-networkd-wait-online
+    enabled: false
+    masked: true
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Deploy systemd-networkd configuration for wired interfaces (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    src: systemd-networkd/20-wired.network
+    dest: /etc/systemd/network/20-wired.network
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Restart systemd-networkd
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Deploy systemd-networkd configuration for wireless interfaces (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    src: systemd-networkd/25-wireless.network
+    dest: /etc/systemd/network/25-wireless.network
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Restart systemd-networkd
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Remove old interface-specific networkd configs (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.file:
+    path: "/etc/systemd/network/10-{{ item }}.network"
+    state: absent
+  loop:
+    - enp1s0
+    - enp6s0
+    - eth0
+    - wlp3s0
+  notify: Restart systemd-networkd
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Ensure /etc/wpa_supplicant directory exists (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.file:
+    path: /etc/wpa_supplicant
+    state: directory
+    mode: "0755"
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Get list of wireless interfaces (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.shell: ls -1 /sys/class/net/ | grep -E '^wl' || true
+  register: wireless_interfaces
+  changed_when: false
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Deploy wpa_supplicant configuration for each wireless interface (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.template:
+    src: wpa_supplicant.conf.j2
+    dest: "/etc/wpa_supplicant/wpa_supplicant-{{ item }}.conf"
+    mode: "0600"
+    owner: root
+    group: root
+  vars:
+    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+  loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+    - wireless_interfaces.stdout_lines | default([]) | length > 0
+
+- name: Deploy udev rule for automatic wpa_supplicant on wireless interfaces (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    src: udev/80-wireless-wpa.rules
+    dest: /etc/udev/rules.d/80-wireless-wpa.rules
+    mode: "0644"
+    owner: root
+    group: root
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Reload udev rules (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.command: udevadm control --reload-rules
+  changed_when: false
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Create wpa_supplicant override directory (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.file:
+    path: /etc/systemd/system/wpa_supplicant@.service.d
+    state: directory
+    mode: "0755"
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Deploy wpa_supplicant service override to not block boot (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    src: systemd/wpa_supplicant@.service.d/override.conf
+    dest: /etc/systemd/system/wpa_supplicant@.service.d/override.conf
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Reload systemd
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
+- name: Enable and start wpa_supplicant for each wireless interface (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.systemd:
+    name: "wpa_supplicant@{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+    - wireless_interfaces.stdout_lines | default([]) | length > 0
 
 - name: Check if colima is running (macOS)
   tags: docker
@@ -249,7 +492,7 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    version: 41540b8f09babd44a7e1bcc63912157bf770261d
+    version: a3ee5c273a083319041daba79989860a59e72f50
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfile

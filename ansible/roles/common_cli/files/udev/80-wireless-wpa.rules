@@ -1,0 +1,3 @@
+# Managed by Ansible - do not edit manually
+# Automatically enable wpa_supplicant for wireless interfaces
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wl*", RUN+="/bin/systemctl --no-block start wpa_supplicant@%k.service"

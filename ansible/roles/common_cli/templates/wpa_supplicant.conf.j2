@@ -1,0 +1,12 @@
+# Managed by Ansible - do not edit manually
+# WPA supplicant configuration for WiFi authentication
+
+ctrl_interface=/run/wpa_supplicant
+update_config=1
+
+network={
+    ssid="{{ wifi_ssid }}"
+    psk="{{ wifi_passphrase }}"
+    key_mgmt=WPA-PSK
+    priority=1
+}
