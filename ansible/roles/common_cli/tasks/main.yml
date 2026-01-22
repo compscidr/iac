@@ -470,6 +470,7 @@
   tags: network-tools
   ansible.builtin.command: udevadm control --reload-rules
   changed_when: false
+  failed_when: false
   when:
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
