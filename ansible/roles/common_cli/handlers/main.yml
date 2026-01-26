@@ -29,3 +29,14 @@
   ansible.builtin.debug:
     msg: "Warning: Failed to reload systemd daemon: {{ systemd_daemon_reload_result.msg | default('Unknown error') }}"
   when: systemd_daemon_reload_result is failed
+
+- name: Apply sysctl settings
+  become: true
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/10-ipv6-privacy.conf
+  register: sysctl_apply_result
+  ignore_errors: true
+
+- name: Warn if sysctl apply failed
+  ansible.builtin.debug:
+    msg: "Warning: Failed to apply sysctl settings: {{ sysctl_apply_result.msg | default('Unknown error') }}"
+  when: sysctl_apply_result is failed

@@ -400,6 +400,20 @@
     - ansible_os_family == "Debian"
     - use_systemd_networkd | default(false)
 
+- name: Deploy sysctl config to disable IPv6 privacy extensions (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.copy:
+    src: sysctl.d/10-ipv6-privacy.conf
+    dest: /etc/sysctl.d/10-ipv6-privacy.conf
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Apply sysctl settings
+  when:
+    - ansible_os_family == "Debian"
+    - use_systemd_networkd | default(false)
+
 - name: Find old interface-specific networkd configs (Ubuntu/Debian headless)
   become: true
   tags: network-tools
