@@ -1,20 +1,27 @@
 ---
-- name: Install prereqs
+- name: Install prereqs (Ubuntu/Debian)
   become: true
   tags: prereqs
   ansible.builtin.apt:
     update_cache: true
     pkg:
       - python3-debian
+  when: ansible_os_family == "Debian"
 
-- name: Install android tools
+- name: Install android tools (Ubuntu/Debian)
   tags: android
   become: true
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - adb
-      - android-sdk-platform-tools-common
+    pkg: "{{ dev_android_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install android tools (macOS)
+  tags: android
+  community.general.homebrew:
+    name: "{{ dev_android_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Add user to group plugdev for adb
   become: true
@@ -23,6 +30,7 @@
     name: "{{ username }}"
     groups: plugdev
     append: true
+  when: ansible_os_family == "Debian"
 
 - name: Create man directories for java installation
   tags: java
@@ -34,33 +42,39 @@
   loop:
     - 1
     - 7
+  when: ansible_os_family == "Debian"
 
-- name: Install java tools
+- name: Install java tools (Ubuntu/Debian)
   tags: java
   become: true
   ansible.builtin.apt:
-    pkg:
-      - openjdk-21-jdk-headless
+    pkg: "{{ dev_java_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
 
-- name: Install cpp development tools
+- name: Install java tools (macOS)
+  tags: java
+  community.general.homebrew:
+    name: "{{ dev_java_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install cpp development tools (Ubuntu/Debian)
   become: true
   tags: cpp
   ansible.builtin.apt:
-    pkg:
-      - build-essential
-      - cmake
-      - autoconf
-      - strace
-      - ltrace
-      - valgrind
-      - hotspot
-      - heaptrack
-      - clang-format
-      - clang-tidy
-      - pkg-config
+    pkg: "{{ dev_cpp_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install cpp development tools (macOS)
+  tags: cpp
+  community.general.homebrew:
+    name: "{{ dev_cpp_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Install ubuntu-specific development tools (perf)
   become: true
+  tags: cpp
   ansible.builtin.apt:
     pkg:
       - linux-tools-common
@@ -69,30 +83,47 @@
 
 - name: Install debian-specific development tools (perf)
   become: true
+  tags: cpp
   ansible.builtin.apt:
     pkg:
       - linux-perf
   when: ansible_distribution == 'Debian'
 
-- name: Install golang tools
+- name: Install golang tools (Ubuntu/Debian)
   tags: golang
   become: true
   ansible.builtin.apt:
-    pkg:
-      - golang
+    pkg: "{{ dev_golang_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
 
-- name: Install node development tools
+- name: Install golang tools (macOS)
+  tags: golang
+  community.general.homebrew:
+    name: "{{ dev_golang_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install node development tools (Ubuntu/Debian)
   become: true
   tags:
     - node
     - npm
   ansible.builtin.apt:
-    pkg:
-      - npm
+    pkg: "{{ dev_node_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install node development tools (macOS)
+  tags:
+    - node
+    - npm
+  community.general.homebrew:
+    name: "{{ dev_node_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 # yarn: https://www.itzgeek.com/how-tos/linux/ubuntu-how-tos/how-to-install-yarn-on-ubuntu-22-04-ubuntu-20-04.html
 # https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
-- name: Install yarn node.js package
+- name: Install yarn node.js package (Ubuntu/Debian)
   become: true
   tags:
     - yarn
@@ -101,8 +132,21 @@
   community.general.npm:
     name: yarn
     global: true
+  when: ansible_os_family == "Debian"
 
-- name: Install tldr node package # https://tldr.sh/
+- name: Install yarn node.js package (macOS)
+  tags:
+    - yarn
+    - node
+    - npm
+  community.general.npm:
+    name: yarn
+    global: true
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:{{ ansible_env.PATH }}"
+  when: ansible_os_family == "Darwin"
+
+- name: Install tldr node package (Ubuntu/Debian) # https://tldr.sh/
   become: true
   tags:
     - tldr
@@ -111,6 +155,19 @@
   community.general.npm:
     name: tldr
     global: true
+  when: ansible_os_family == "Debian"
+
+- name: Install tldr node package (macOS) # https://tldr.sh/
+  tags:
+    - tldr
+    - node
+    - npm
+  community.general.npm:
+    name: tldr
+    global: true
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:{{ ansible_env.PATH }}"
+  when: ansible_os_family == "Darwin"
 
 - name: Check if php ppa repository exists
   tags: php
@@ -118,6 +175,7 @@
   ansible.builtin.stat:
     path: /etc/apt/sources.list.d/php-ppa.sources
   register: dev_php_ppa_repo_exists
+  when: ansible_os_family == "Debian"
 
 - name: Check if php ppa gpg key exists
   tags: php
@@ -125,6 +183,7 @@
   ansible.builtin.stat:
     path: /usr/share/keyrings/php-ppa.asc
   register: dev_php_ppa_key_exists
+  when: ansible_os_family == "Debian"
 
 - name: Download PHP PPA GPG key
   become: true
@@ -133,7 +192,9 @@
     url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
     dest: /usr/share/keyrings/php-ppa.asc
     mode: '0644'
-  when: not dev_php_ppa_key_exists.stat.exists
+  when:
+    - ansible_os_family == "Debian"
+    - not dev_php_ppa_key_exists.stat.exists
 
 - name: Add php ppa repository
   become: true
@@ -147,45 +208,68 @@
     components: [main]
     signed_by: "/usr/share/keyrings/php-ppa.asc"
     enabled: true
-  when: not dev_php_ppa_repo_exists.stat.exists
+  when:
+    - ansible_os_family == "Debian"
+    - not dev_php_ppa_repo_exists.stat.exists
 
 # todo: see why this is failing molecule
-- name: Install php and php dev tools
+- name: Install php and php dev tools (Ubuntu/Debian)
   tags: php
   become: true
   ansible.builtin.import_role:
     name: geerlingguy.php
+  when: ansible_os_family == "Debian"
 
-- name: Install python development tools
+- name: Install php (macOS)
+  tags: php
+  community.general.homebrew:
+    name: php
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install python development tools (Ubuntu/Debian)
   become: true
   tags: python
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - python3-dev
-      - python3-pip
-      - python3-venv
-      - python3-setuptools
-      - python-is-python3
-      - python3-poetry
-      - python3-passlib
-      - pipx
+    pkg: "{{ dev_python_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
 
-- name: Install rust development tools
+- name: Install python development tools (macOS)
+  tags: python
+  community.general.homebrew:
+    name: "{{ dev_python_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install rust development tools (Ubuntu/Debian)
   tags: rust
   become: true
   ansible.builtin.apt:
-    pkg:
-      - rustc
-      - cargo
+    pkg: "{{ dev_rust_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
  # - rustup # conflicts with rustc and cargo apparently
 
-- name: Install ruby development tools
+- name: Install rust development tools (macOS)
+  tags: rust
+  community.general.homebrew:
+    name: "{{ dev_rust_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install ruby development tools (Ubuntu/Debian)
   tags: ruby
   become: true
   ansible.builtin.apt:
-    pkg:
-      - ruby-full
+    pkg: "{{ dev_ruby_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install ruby development tools (macOS)
+  tags: ruby
+  community.general.homebrew:
+    name: "{{ dev_ruby_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Create zig directory if it does not exist
   tags: zig
@@ -194,8 +278,9 @@
     path: /opt/zig
     state: directory
     mode: '0755'
+  when: ansible_os_family == "Debian"
 
-- name: Install zig development tools
+- name: Install zig development tools (Ubuntu/Debian)
   tags: zig
   become: true
   ansible.builtin.unarchive:
@@ -203,6 +288,7 @@
     dest: /opt/zig
     extra_opts: ['--strip-components=1', '--show-stored-names']
     remote_src: true
+  when: ansible_os_family == "Debian"
 
 - name: Symlink zig program to /usr/local/bin
   tags: zig
@@ -211,8 +297,16 @@
     src: /opt/zig/zig
     dest: /usr/local/bin/zig
     state: link
+  when: ansible_os_family == "Debian"
 
-- name: Install dotcl (digital ocean ctl)
+- name: Install zig development tools (macOS)
+  tags: zig
+  community.general.homebrew:
+    name: "{{ dev_misc_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install dotcl (digital ocean ctl) (Ubuntu/Debian)
   become: true
   tags: doctl
   ansible.builtin.unarchive:
@@ -220,25 +314,44 @@
       [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz"
     dest: /usr/local/bin
     remote_src: true
+  when: ansible_os_family == "Debian"
+
+- name: Install dotcl (digital ocean ctl) (macOS)
+  tags: doctl
+  community.general.homebrew:
+    name: doctl
+    state: present
+  when: ansible_os_family == "Darwin"
 
 # note: this will require a restart to apply changes
-- name: Set digitalocean access token
+- name: Set digitalocean access token (Ubuntu/Debian)
   become: true
   tags: doctl
   ansible.builtin.copy:
     content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
+  when: ansible_os_family == "Debian"
 
-- name: Download awscli
+- name: Set digitalocean access token (macOS)
+  tags: doctl
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    line: "export DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    create: true
+    mode: "0644"
+  when: ansible_os_family == "Darwin"
+
+- name: Download awscli (Ubuntu/Debian)
   become: true
   tags: aws
   ansible.builtin.unarchive:
     src: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}.zip"
     dest: /tmp
     remote_src: true
+  when: ansible_os_family == "Debian"
 
-- name: Install awscli
+- name: Install awscli (Ubuntu/Debian)
   become: true
   tags: aws
   ansible.builtin.command: ./install --update
@@ -246,9 +359,17 @@
     chdir: "/tmp/aws"
   register: dev_awscli_status
   changed_when: "'changed' in dev_awscli_status.stdout"
+  when: ansible_os_family == "Debian"
+
+- name: Install awscli (macOS)
+  tags: aws
+  community.general.homebrew:
+    name: awscli
+    state: present
+  when: ansible_os_family == "Darwin"
 
 # note: this will require a restart to apply changes
-- name: Set aws access token
+- name: Set aws access token (Ubuntu/Debian)
   become: true
   tags: aws
   ansible.builtin.copy:
@@ -259,6 +380,21 @@
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
     mode: "644"
+  when: ansible_os_family == "Debian"
+
+- name: Set aws access token (macOS)
+  tags: aws
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    create: true
+    mode: "0644"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - AWS"
+    block: |
+      export AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      export AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      export AWS_DEFAULT_REGION=us-west-1
+      export AWS_DEFAULT_OUTPUT=json
+  when: ansible_os_family == "Darwin"
 
 - name: Add hashicorp repository
   become: true
@@ -272,8 +408,9 @@
     components: [main]
     signed_by: "https://apt.releases.hashicorp.com/gpg"
     enabled: true
+  when: ansible_os_family == "Debian"
 
-- name: Install hashicorp tools
+- name: Install hashicorp tools (Ubuntu/Debian)
   become: true
   tags:
     - hashicorp
@@ -282,10 +419,36 @@
     - packer
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - vagrant
-      - terraform
-      - packer
+    pkg: "{{ dev_hashicorp_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Tap hashicorp formulae (macOS)
+  tags: hashicorp
+  community.general.homebrew_tap:
+    name: hashicorp/tap
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install terraform (macOS)
+  tags:
+    - hashicorp
+    - terraform
+  community.general.homebrew:
+    name: hashicorp/tap/terraform
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Install packer (macOS)
+  tags:
+    - hashicorp
+    - packer
+  community.general.homebrew:
+    name: hashicorp/tap/packer
+    state: present
+  when: ansible_os_family == "Darwin"
+
+# Note: Vagrant installation skipped on macOS - installer hangs via Homebrew
+# TODO: Move to GUI dev tools role and install via official DMG
 
 - name: Add tailscale repository
   become: true
@@ -299,14 +462,22 @@
     components: [main]
     signed_by: "https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_distribution_release }}.noarmor.gpg"
     enabled: true
+  when: ansible_os_family == "Debian"
 
-- name: Install tailscale tools
+- name: Install tailscale tools (Ubuntu/Debian)
   become: true
   tags: tailscale
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - tailscale
+    pkg: "{{ dev_tailscale_packages_ubuntu }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install tailscale tools (macOS)
+  tags: tailscale
+  community.general.homebrew:
+    name: "{{ dev_tailscale_packages_macos }}"
+    state: present
+  when: ansible_os_family == "Darwin"
 
 # Remove global OP service account token - use interactive signin instead
 - name: Remove global op service account token file
@@ -328,12 +499,20 @@
 #     dest: /etc/environment.d/90-op.conf
 #     mode: "644"
 
-- name: Install pipx for Python package management
+- name: Install pipx for Python package management (Ubuntu/Debian)
   tags: ansible
   become: true
   ansible.builtin.apt:
     name: pipx
     state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install pipx for Python package management (macOS)
+  tags: ansible
+  community.general.homebrew:
+    name: pipx
+    state: present
+  when: ansible_os_family == "Darwin"
 
 - name: Install ansible tools via pipx
   tags: ansible
@@ -346,6 +525,20 @@
     cmd: pipx install {{ item }}
     creates: /home/jason/.local/bin/{{ item }}
   with_items: "{{ pipx_packages }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install ansible tools via pipx (macOS)
+  tags: ansible
+  vars:
+    pipx_packages:
+      - ansible-lint
+  ansible.builtin.command:
+    cmd: pipx install {{ item }}
+    creates: "{{ ansible_env.HOME }}/.local/bin/{{ item }}"
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:{{ ansible_env.PATH }}"
+  with_items: "{{ pipx_packages }}"
+  when: ansible_os_family == "Darwin"
 
 - name: Copy userspace icmp socket permission file
   become: true
@@ -356,8 +549,9 @@
     mode: '0644'
     owner: "root"
     group: "root"
+  when: ansible_os_family == "Debian"
 
-- name: Download and install speedtest from Ookla
+- name: Download and install speedtest from Ookla (Ubuntu/Debian)
   tags: speedtest
   become: true
   ansible.builtin.unarchive:
@@ -367,8 +561,16 @@
     exclude:
       - speedtest.5
       - speedtest.md
+  when: ansible_os_family == "Debian"
 
-- name: Github CLI
+- name: Install speedtest (macOS)
+  tags: speedtest
+  community.general.homebrew:
+    name: speedtest-cli
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Github CLI (Ubuntu/Debian)
   ansible.builtin.include_role:
     name: compscidr.github_cli.github_cli
     apply:
@@ -379,7 +581,28 @@
         github_cli_username: "compscidr"
         github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
   # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
+  when: ansible_os_family == "Debian"
   tags: always
+
+- name: Install GitHub CLI (macOS)
+  tags: gh
+  community.general.homebrew:
+    name: gh
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Configure GitHub CLI authentication (macOS)
+  tags: gh
+  ansible.builtin.command:
+    cmd: gh auth login --with-token
+    stdin: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:{{ ansible_env.PATH }}"
+  register: gh_auth_result
+  changed_when: "'Logged in' in gh_auth_result.stderr"
+  failed_when: false
+  when: ansible_os_family == "Darwin"
+  # Note: Token may need 'read:org' scope. If authentication fails, run manually: gh auth login
 
 # https://github.com/dlvhdr/gh-dash
 # - name: Github CLI gh dash extension
