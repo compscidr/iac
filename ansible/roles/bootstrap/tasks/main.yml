@@ -93,7 +93,6 @@
   become: true
   tags: [bootstrap, ssh]
   ansible.builtin.known_hosts:
-    hash_host: true
     name: github.com
     key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
     path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
