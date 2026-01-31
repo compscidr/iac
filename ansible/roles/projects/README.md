@@ -36,15 +36,12 @@ Automatic via Let's Encrypt companion. Each service defines:
 
 ## Prerequisites
 
-- **bootstrap** role must be run first (creates user, installs Docker)
-- **SSH key** must be deployed to server for cloning private repos:
-  - For servers: Run `common_cli` role first, OR
-  - Manually add deploy key to GitHub repos
+- **bootstrap** role must be run first (creates user, installs Docker, deploys SSH key)
 
 ## Usage
 
 ```bash
-# After Terraform + bootstrap + common_cli (for SSH keys)
+# After Terraform + bootstrap
 ansible-playbook -i inventory.yml projects.yml
 ```
 

@@ -76,3 +76,46 @@
   when:
     - bootstrap_docker_enabled
     - ansible_os_family == "Debian"
+
+# SSH key for cloning private repos (e.g., projects role)
+- name: Ensure SSH directory exists
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_username }}/.ssh"
+    state: directory
+    mode: "0700"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+
+- name: Add GitHub to known hosts
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
+    state: present
+  when: bootstrap_ssh_key_enabled
+
+- name: Fix known_hosts ownership
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+
+- name: Deploy SSH private key from 1Password
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_ssh_private_key }}\n"
+    dest: "/home/{{ bootstrap_username }}/.ssh/id_rsa"
+    mode: "0600"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+  no_log: true
