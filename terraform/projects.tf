@@ -24,6 +24,7 @@ resource "digitalocean_droplet" "projects" {
 
   user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
     tailscale_authkey = data.onepassword_item.tailscale.credential
+    hostname          = "projects.jasonernst.com"
   })
 }
 

@@ -14,6 +14,7 @@ resource "digitalocean_droplet" "mail-jasonernst-com" {
 
   user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
     tailscale_authkey = data.onepassword_item.tailscale.credential
+    hostname          = "mail.jasonernst.com"
   })
 }
 
