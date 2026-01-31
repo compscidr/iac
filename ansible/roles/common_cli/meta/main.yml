@@ -1,0 +1,7 @@
+---
+# Role dependencies
+dependencies:
+  - role: bootstrap
+    vars:
+      # Workstations get password from 1Password
+      bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"

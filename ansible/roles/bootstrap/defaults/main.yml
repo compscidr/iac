@@ -8,6 +8,12 @@ bootstrap_user_groups:
   - sudo
   - docker
 
+# Password - set to enable password auth (for workstations)
+# If empty, user will have no password (SSH key only, NOPASSWD sudo)
+# For workstations, set via 1Password lookup in inventory/playbook:
+#   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') }}"
+bootstrap_user_password: ""
+
 # SSH key - can be overridden or fetched from 1Password
 # If empty, will try to copy from root's authorized_keys
 bootstrap_ssh_public_key: ""
