@@ -1,0 +1,10 @@
+---
+# Projects playbook - deploys toy projects to consolidated droplet
+# Usage: ansible-playbook -i inventory.yml projects.yml
+
+- name: Deploy projects
+  hosts: projects.jasonernst.com
+  vars_files:
+    - vars/user.yml
+  roles:
+    - projects

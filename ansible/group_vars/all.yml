@@ -1,4 +1,15 @@
 ---
 # Global variables for all hosts
+
+# 1Password settings (personal account)
+# Used in all onepassword lookups across roles
+onepassword_account_id: "CZG3A4373RA2FC5W5JKFUMYILI"
+onepassword_vault: "Infrastructure"
+
+# Bootstrap defaults (servers): no password, NOPASSWD sudo
+# Override per group in group_vars/<group>.yml or per host in inventory
+# Example for workstations (see group_vars/dev.yml):
+#   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', ...) }}"
+
 # Note: Use --ask-become-pass when running playbooks to provide sudo password
 # Automatic 1Password lookup causes too many desktop app prompts

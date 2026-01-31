@@ -1,0 +1,6 @@
+---
+# Dev workstations - password from 1Password
+# SSH keys handled by common_cli role, not bootstrap
+
+# Password enables normal sudo (prompts for password)
+bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"

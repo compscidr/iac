@@ -1,35 +1,84 @@
-## Prerequisites on the terraform deploy machine
-AWS and Digital Ocean credentials should be setup via the `development/ops` ansible role in advance.
-This will also setup the terraform tool.
+# Terraform Infrastructure
 
-## Terraform Commands:
+Manages DigitalOcean infrastructure for jasonernst.com and related projects.
 
-To start:
-`terraform init`
+## Prerequisites
 
-To plan:
-`terraform plan`
+1. **1Password CLI** with desktop app integration enabled
+2. **Terraform** installed
+3. **DigitalOcean Spaces bucket** for remote state: `terraform-state-jasonernst`
+4. **1Password items** in `Infrastructure` vault:
+   - `DO Spaces` - Spaces access key (username) and secret (credential)
+   - `DigitalOcean` - API token (credential)
+   - `Github SSH` - SSH public key
+   - `Tailscale` - Auth key (credential)
+   - `System Account` - Username for server user
 
-To apply:
-`terraform apply`
+## Usage
 
-To show state:
-`terraform show terraform.tfstate`
+Use the `./tf` wrapper script — it injects 1Password credentials automatically:
 
-To destroy:
-`terraform plan -destroy -out=terraform.tfplan`
+```bash
+# Initialize (first time or after provider changes)
+./tf init
 
-to make the destroy plan and `terraform apply terraform.tfplan`
+# Preview changes
+./tf plan
 
-Ansible automatically runs as part of the terraform script, but this guide
-was used to update the terraform to work together:
-https://www.digitalocean.com/community/tutorials/how-to-use-ansible-with-terraform-for-configuration-management
+# Apply changes
+./tf apply
 
-## Prep for ansible
-For DigitalOcean, you'll want to do an `ssh root@www.jasonernst.com` and for aws, `ssh ubuntu@lp.jasonernst.com`.
-You'll likely have to clear out any old ssh keys before using ansible.
+# Import existing resources
+./tf import digitalocean_domain.default jasonernst.com
+```
 
-Then for ansible:
-`ansible-playbook playbook.yml -i inventory.yml -u root --limit www.jasonernst.com --tags user`
-and
-`ansible-playbook playbook.yml -i inventory.yml -u ubuntu --limit lp.jasonernst.com --tags user`
+## Provisioning Flow
+
+```
+1. ./tf apply
+   └─ Creates droplet with cloud-init
+   └─ Cloud-init installs Tailscale, joins tailnet
+
+2. Droplet appears on your Tailscale network
+
+3. Run Ansible bootstrap (via Tailscale SSH):
+   cd ../ansible
+   ansible-playbook -i inventory.yml bootstrap.yml --limit <hostname> -u root
+   # Creates user, installs Docker, deploys SSH key for private repos
+
+4. Deploy your application:
+   # For projects droplet:
+   ansible-playbook -i inventory.yml projects.yml
+   
+   # For jasonernst.com:
+   ansible-playbook -i inventory.yml jasonernst_com.yml
+```
+
+## File Structure
+
+| File | Purpose |
+|------|---------|
+| `provider.tf` | Providers (DO, 1Password), SSH key, Tailscale authkey |
+| `jasonernst-com.tf` | Personal site droplet + domain + DNS |
+| `mail.tf` | Mail server droplet + DNS + firewall |
+| `projects.tf` | Toy projects droplet (ping4, ping6, dumpers, darksearch) |
+| `cloud-init/tailscale.yml` | Cloud-init template for Tailscale setup |
+| `tf` | Wrapper script (injects 1Password creds) |
+| `.env.op` | 1Password secret references |
+
+## Remote State
+
+State is stored in DigitalOcean Spaces (S3-compatible):
+- Bucket: `terraform-state-jasonernst`
+- Key: `iac/terraform.tfstate`
+- Region: `sfo3`
+
+The `./tf` wrapper handles Spaces authentication via 1Password.
+
+## CI/CD
+
+GitHub Actions runs on every PR:
+1. `terraform fmt -check` - Formatting
+2. `terraform validate` - Configuration validation
+3. `tflint` - Best practices
+4. `terraform plan` - Full plan (uses 1Password service account)

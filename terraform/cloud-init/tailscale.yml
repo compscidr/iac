@@ -1,0 +1,9 @@
+#cloud-config
+# Minimal cloud-init: just install Tailscale for remote access
+# Full provisioning (user, docker) done via Ansible bootstrap after
+
+package_update: true
+
+runcmd:
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  - tailscale up --authkey=${tailscale_authkey} --ssh

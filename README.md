@@ -1,25 +1,78 @@
-[![ansible lint](https://github.com/compscidr/iac/actions/workflows/verify.yml/badge.svg)](https://github.com/compscidr/iac/actions/workflows/verify.yml)
+[![verify](https://github.com/compscidr/iac/actions/workflows/verify.yml/badge.svg)](https://github.com/compscidr/iac/actions/workflows/verify.yml)
 [![ansible lint rules](https://img.shields.io/badge/Ansible--lint-rules%20table-blue.svg)](https://ansible.readthedocs.io/projects/lint/rules/)
 
 # Infrastructure as Code
-There are several goals of this project
-1. a friction-less way to get back to normal after a fresh install of an OS for
-local devices, and use a common set of expectations for all devices in my fleet
-2. a way to easily provision and deploy cloud resources
-3. a minimal amount of secret management by using 1password
+
+Goals:
+1. Friction-less recovery after fresh OS install for local devices
+2. Easy cloud resource provisioning with Terraform
+3. Minimal secret management via 1Password
+
+## Quick Start
+
+### Server Provisioning
+```bash
+# 1. Create infrastructure (Tailscale auto-installs via cloud-init)
+cd terraform
+./tf apply
+
+# 2. Wait for droplet to appear on Tailscale
+
+# 3. Bootstrap server (via Tailscale SSH)
+cd ../ansible
+ansible-playbook -i inventory.yml bootstrap.yml --limit <hostname> -u root
+```
+
+### Workstation Setup
+```bash
+cd ansible
+op-personal  # Sign into 1Password
+ansible-playbook -i inventory.yml common.yml --limit <hostname> --ask-become-pass
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     1Password                            │
+│  (SSH keys, passwords, Tailscale authkey, API tokens)   │
+└─────────────────────────────────────────────────────────┘
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+┌─────────────────────┐       ┌─────────────────────┐
+│     Terraform       │       │      Ansible        │
+│  (cloud resources)  │       │   (configuration)   │
+├─────────────────────┤       ├─────────────────────┤
+│ • Droplets          │       │ • bootstrap role    │
+│ • DNS records       │       │   (servers)         │
+│ • Firewalls         │       │ • common_cli role   │
+│ • VPCs              │       │   (workstations)    │
+│ • Cloud-init        │       │                     │
+│   (Tailscale)       │       │                     │
+└─────────────────────┘       └─────────────────────┘
+```
 
 ## Opinionated Stuff
 - I hate snaps. Wherever possible I use apt on ubuntu.
+- SSH access via Tailscale SSH (no public SSH keys on servers)
+- All secrets from 1Password (no hardcoded values)
 
 ## Terraform
-Used to provision cloud resources (currently on digital ocean and aws):
-- compute, dns entries
-- todo: firewall / vpc configs
+Provisions DigitalOcean cloud resources:
+- Droplets with cloud-init (Tailscale auto-setup)
+- DNS records
+- Firewalls
+- VPCs
+- Remote state in DO Spaces
 
 [Read more](terraform/README.md)
 
 ## Ansible
-Used to provision software, services and configuration to all of the machines in my fleet.
+Configures all machines in the fleet:
+- `bootstrap` role: minimal server setup (user + Docker + SSH keys)
+- `common_cli` role: full workstation setup (Tailscale + dev tools + dotfiles)
+
 [Read more](ansible/README.md)
 
 ## Vagrant

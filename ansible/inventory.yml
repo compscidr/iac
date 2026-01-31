@@ -1,59 +1,49 @@
+# Local hosts use .local (mDNS) - works on LAN even if Tailscale is down
+# Cloud hosts use FQDN
+# Use --limit 'ubuntu-beast*' to match by prefix
+
 ungrouped:
   hosts:
     jasonernst.com:
+    nas.local:
+    mail.jasonernst.com:
+    projects.jasonernst.com:
+
 academic_gui:
   hosts:
-    ubuntu-beast:
     ubuntu-beast.local:
+
 dev:
   hosts:
-    Jasons-MacBook-Air.local:
-    Jasons-MacBook-Air:
-    ubuntu-beast:
+    jasons-macbook-air.local:
     ubuntu-beast.local:
-    ubuntu-silverstone:
     ubuntu-silverstone.local:
-    ubuntu-cube:
     ubuntu-cube.local:
-    ubuntu-work-laptop:
     ubuntu-work-laptop.local:
-    ubuntu-asus-laptop:
     ubuntu-asus-laptop.local:
-    ubuntu-toshiba-laptop:
-    ubuntu-toshiba-mini-laptop:
+    ubuntu-toshiba-laptop.local:
+    ubuntu-toshiba-mini-laptop.local:
+
 dev_gui:
   hosts:
-    ubuntu-beast:
     ubuntu-beast.local:
-    ubuntu-work-laptop:
     ubuntu-work-laptop.local:
-    ubuntu-asus-laptop:
     ubuntu-asus-laptop.local:
+
 gui:
   hosts:
-    Jasons-MacBook-Air.local:
-    Jasons-MacBook-Air:
-    ubuntu-beast:
+    jasons-macbook-air.local:
     ubuntu-beast.local:
-    ubuntu-work-laptop:
     ubuntu-work-laptop.local:
-    ubuntu-asus-laptop:
     ubuntu-asus-laptop.local:
+
 android_runner:
   hosts:
-    ubuntu-silverstone:
     ubuntu-silverstone.local:
-    ubuntu-cube:
     ubuntu-cube.local:
+
 java_runner:
   hosts:
-    ubuntu-silverstone:
     ubuntu-silverstone.local:
-    ubuntu-cube:
     ubuntu-cube.local:
-nas:
-  hosts:
-    nas.local:
-mail:
-  hosts:
-    mail.jasonernst.com:
+

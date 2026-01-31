@@ -2,6 +2,53 @@
 
 > **📖 Dependency Management**: This project uses a dual workflow for dependency management. See [DEPENDENCIES.md](DEPENDENCIES.md) for details on installing external roles and collections for Molecule vs. standalone playbook execution.
 
+## Roles Overview
+
+### Core Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `bootstrap` | Minimal server setup: user + Docker + SSH keys | Servers (via Tailscale SSH) |
+| `common_cli` | CLI tools, Tailscale, dotfiles, dev environment | Workstations |
+| `common_gui` | GUI apps, fonts, desktop settings | GUI machines |
+
+### Development Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `dev` | Dev tools: SDKs, IDEs, languages | `dev` group |
+| `dev_gui` | GUI dev tools: VS Code, Android Studio | `dev_gui` group |
+| `academic_gui` | Academic tools: LaTeX, Zotero | `academic_gui` group |
+
+### Service Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `jasonernst_com` | Personal website (goblog) | www.jasonernst.com |
+| `stalwart` | Stalwart mail server | mail.jasonernst.com |
+| `media_server` | Plex, Sonarr, Radarr, etc. | NAS |
+| `home_assistant` | Home automation | NAS |
+| `dyndns` | Dynamic DNS updater | NAS, workstations |
+
+### Game Server Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `rust_game` | Rust game server | NAS |
+| `cs2_game` | Counter-Strike 2 server | NAS |
+
+### Server Provisioning Flow
+
+```
+1. Terraform creates droplet with cloud-init (installs Tailscale)
+2. Droplet joins your Tailscale network
+3. Run bootstrap via Tailscale SSH:
+   ansible-playbook -i inventory.yml bootstrap.yml --limit <hostname> -u root
+4. Deploy your application
+```
+
+### Workstation Setup
+
+```bash
+ansible-playbook -i inventory.yml common.yml --limit <hostname> --ask-become-pass
+```
+
 ## Requirements / Bootstrapping Host Machine
 The machine running the ansible plays requires ansible >= 3.2. 
 Note, this doesn't have to be the target machine where you are deploying things to.

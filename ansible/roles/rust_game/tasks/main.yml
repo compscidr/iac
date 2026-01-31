@@ -15,7 +15,7 @@
     rust_gameserver_query_port: 27016
     rust_gameserver_rcon_port: 27017
     rust_gameserver_app_port: 27082
-    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "weekly"
     rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
@@ -55,7 +55,7 @@
     rust_gameserver_query_port: 28016
     rust_gameserver_rcon_port: 28017
     rust_gameserver_app_port: 28082
-    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "monthly"
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001

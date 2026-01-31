@@ -5,7 +5,7 @@
     github_runner_install_docker: false
     github_runner_java: true
     github_runner_java_mount_usb: true
-    github_runner_personal_access_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    github_runner_personal_access_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml

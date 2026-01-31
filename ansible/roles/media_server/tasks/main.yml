@@ -1,4 +1,60 @@
 ---
+# Nginx reverse proxy + LetsEncrypt for SSL certs
+- name: Create nginx config directory
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: /volume1/storage/docker/nginx/conf.d
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Copy nginx config
+  tags: nginx
+  become: true
+  ansible.builtin.copy:
+    content: "client_max_body_size 100m;"
+    dest: /volume1/storage/docker/nginx/conf.d/client_max_body_size.conf
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy Nginx Reverse Proxy
+  tags: nginx
+  become: true
+  community.docker.docker_container:
+    name: nginx-proxy
+    image: jwilder/nginx-proxy
+    published_ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /volume1/storage/docker/nginx/conf.d:/etc/nginx/conf.d
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - nginx-dhparam:/etc/nginx/dhparam
+      - nginx-certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    network_mode: bridge
+    restart_policy: unless-stopped
+
+- name: Deploy LetsEncrypt companion
+  tags: letsencrypt
+  become: true
+  community.docker.docker_container:
+    name: letsencrypt
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - nginx-certs:/etc/nginx/certs:rw
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env:
+      NGINX_PROXY_CONTAINER: "nginx-proxy"
+    network_mode: bridge
+    restart_policy: unless-stopped
+
 - name: Create media folders
   tags: plex, transmission, sabnzbd, sonarr, radarr, lidarr
   become: true
@@ -38,8 +94,8 @@
       TRANSMISSION_WEB_UI=transmission-web-control
       OPENVPN_PROVIDER=NORDVPN
       NORDVPN_PROTOCOL=udp
-      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault='Infrastructure') }}
-      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault='Infrastructure') }}
+      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault=onepassword_vault) }}
+      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault=onepassword_vault) }}
       NORDVPN_COUNTRY:=US
       NORDVPN_CATEGORY=P2P
       LOCAL_NETWORK=192.168.0.0/24
@@ -164,3 +220,42 @@
       tags: flaresolverr
   vars:
     flare_port: 8191
+
+- name: Install ombi
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.ombi
+    apply:
+      become: true
+      tags: ombi
+  vars:
+    ombi_virtual_host: "ombi.jasonernst.com"
+    ombi_letsencrypt_email: "ernstjason1@gmail.com"
+
+# MySQL database (used by Ombi)
+- name: Create MySQL data directory
+  tags: mysql
+  become: true
+  ansible.builtin.file:
+    path: /volume1/storage/docker/mysql
+    state: directory
+    mode: '755'
+    owner: '999'
+    group: '999'
+
+- name: Deploy MySQL
+  tags: mysql
+  become: true
+  community.docker.docker_container:
+    name: mysql
+    image: mysql:8
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    volumes:
+      - /volume1/storage/docker/mysql:/var/lib/mysql
+    network_mode: bridge
+    published_ports:
+      - "3306:3306"
+    restart_policy: unless-stopped
+    memory: "1g"
+    memory_swap: "1g"

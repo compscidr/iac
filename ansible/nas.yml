@@ -1,6 +1,6 @@
 ---
 - name: Services for nas.local
-  hosts: nas
+  hosts: nas.local
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml

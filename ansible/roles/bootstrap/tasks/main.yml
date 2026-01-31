@@ -1,0 +1,121 @@
+---
+# Bootstrap role - minimal server provisioning
+# Creates user and installs Docker
+# Run after Tailscale is already installed (via cloud-init for servers)
+
+- name: Create docker group
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.group:
+    name: docker
+    state: present
+  when: bootstrap_docker_enabled
+
+- name: Create user (without password - servers)
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.user:
+    name: "{{ bootstrap_username }}"
+    shell: "{{ bootstrap_user_shell }}"
+    groups: "{{ bootstrap_user_groups | join(',') }}"
+    append: true
+    create_home: true
+  when: bootstrap_user_password | length == 0
+
+- name: Create user (with password - workstations)
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.user:
+    name: "{{ bootstrap_username }}"
+    password: "{{ bootstrap_user_password | password_hash('sha512') }}"
+    shell: "{{ bootstrap_user_shell }}"
+    groups: "{{ bootstrap_user_groups | join(',') }}"
+    append: true
+    create_home: true
+    update_password: on_create
+  when: bootstrap_user_password | length > 0
+
+- name: Allow passwordless sudo (servers - no password set)
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_username }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/{{ bootstrap_username }}"
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: bootstrap_user_password | length == 0
+
+- name: Allow sudo with password (workstations - password set)
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/{{ bootstrap_username }}"
+    state: absent
+  when: bootstrap_user_password | length > 0
+
+- name: Install Docker (Ubuntu/Debian)
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+    update_cache: true
+  when:
+    - bootstrap_docker_enabled
+    - ansible_os_family == "Debian"
+
+- name: Ensure Docker service is running
+  become: true
+  tags: [bootstrap, docker, molecule-notest]  # Skip in molecule (systemd doesn't work in containers)
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+  when:
+    - bootstrap_docker_enabled
+    - ansible_os_family == "Debian"
+
+# SSH key for cloning private repos (e.g., projects role)
+- name: Ensure SSH directory exists
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_username }}/.ssh"
+    state: directory
+    mode: "0700"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+
+- name: Add GitHub to known hosts
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
+    state: present
+  when: bootstrap_ssh_key_enabled
+
+- name: Fix known_hosts ownership
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+
+- name: Deploy SSH private key from 1Password
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_ssh_private_key }}\n"
+    dest: "/home/{{ bootstrap_username }}/.ssh/id_rsa"
+    mode: "0600"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+  when: bootstrap_ssh_key_enabled
+  no_log: true

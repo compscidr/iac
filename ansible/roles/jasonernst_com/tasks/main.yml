@@ -109,8 +109,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
     dest: /opt/goblog/prod/.env
     mode: '644'
     owner: root
@@ -123,8 +123,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
     dest: /opt/goblog/staging/.env
     mode: '644'
     owner: root
@@ -174,32 +174,4 @@
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
-- name: Create database directory on host
-  tags: db
-  become: true
-  ansible.builtin.file:
-    path: /opt/goblog/mysql
-    state: directory
-    mode: '755'
-    owner: '999'
-    group: '999'
-
-- name: Deploy mysql db
-  tags: db
-  community.docker.docker_container:
-    name: db
-    image: mysql
-    env:
-      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-    volumes:
-      - /opt/goblog/mysql:/var/lib/mysql
-    network_mode: host
-    restart_policy: unless-stopped
-
-# todo: fix this
-# - name: Adds a crontab entry to to backup website
-#   ansible.builtin.cron:
-#     name: "backup www.jasonernst.com"
-#     minute: "0"
-#     hour: "3"
-#     job: "rsync -av --delete /opt/goblog/prod/ ubuntu-server:/storage/backup/www.jasonernst.com/"
+# MySQL moved to media_server role (used by Ombi on NAS)

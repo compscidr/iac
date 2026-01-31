@@ -38,12 +38,35 @@
       become: true
   tags: always
 
+# Tailscale for workstations (servers get Tailscale via cloud-init)
+# Note: This is intentionally idempotent - the 'creates' argument prevents
+# re-installation on servers where Tailscale is already installed via cloud-init.
+# This allows the same role to handle both server and workstation scenarios.
+- name: Install Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Connect to Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ tailscale_authkey }}"
+  vars:
+    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+  register: tailscale_up
+  changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
+  failed_when: false
+
 - name: Add the user
   tags: user
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') | password_hash('sha512') }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) | password_hash('sha512') }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -66,7 +89,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}\n"
+    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault=onepassword_vault, account_id=onepassword_account_id) }}\n"
     dest: "~/.ssh/id_rsa"
     mode: "0600"
 
@@ -84,7 +107,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
@@ -454,8 +477,8 @@
 - name: Get WiFi credentials from 1Password (Ubuntu/Debian headless)
   tags: network-tools
   ansible.builtin.set_fact:
-    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"
@@ -594,16 +617,7 @@
     - ansible_os_family == "Darwin"
     - colima_status.rc != 0
 
-- name: Add github to known hosts so the following bit doesn't fail
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  ansible.builtin.known_hosts:
-    hash_host: true
-    name: github.com
-    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
-    path: ~/.ssh/known_hosts
-    state: present
+# GitHub known_hosts is handled by bootstrap role
 
 # https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
 # without version pinning we get lint errors
@@ -614,8 +628,8 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    # Pinned commit adds op-personal and op-work aliases for 1Password multi-account support
-    version: a3ee5c273a083319041daba79989860a59e72f50
+    # Pinned commit adds host completions for ansible/ssh + 1Password aliases
+    version: db0b6d19751265214f23f0e94535b794ad1f1ef2
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfile

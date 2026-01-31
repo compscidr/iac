@@ -1,0 +1,22 @@
+---
+# Bootstrap playbook - minimal server provisioning
+# Run AFTER cloud-init has installed Tailscale
+#
+# Usage (via Tailscale SSH from your machine):
+#   ansible-playbook -i inventory.yml bootstrap.yml --limit <host> -u root
+#
+# What it does:
+#   - Creates user (from 1Password)
+#   - Installs Docker
+#   - Deploys SSH key for private repo access
+#
+# Note: Tailscale is handled separately:
+#   - Servers: cloud-init (Terraform user_data)
+#   - Workstations: common_cli role
+
+- name: Bootstrap server
+  hosts: all
+  gather_facts: true
+
+  roles:
+    - bootstrap

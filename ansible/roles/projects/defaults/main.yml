@@ -1,0 +1,18 @@
+---
+# Projects role defaults
+
+projects_base_path: /opt/projects
+projects_letsencrypt_email: "ernstjason1@gmail.com"
+
+# Project repos
+projects_repos:
+  - name: network-tools
+    repo: git@github.com:compscidr/network-tools.git
+    domains:
+      - ping4.network
+      - ping6.network
+      - dumpers.xyz
+  - name: darksearch
+    repo: git@github.com:compscidr/darksearch.xyz.git
+    domains:
+      - darksearch.xyz
