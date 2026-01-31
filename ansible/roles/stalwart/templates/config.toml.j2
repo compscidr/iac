@@ -3,7 +3,7 @@
 
 [server]
 hostname = "{{ stalwart_hostname }}"
-max-connections = 8192
+max-connections = 1024  # Conservative for 512MB RAM
 
 [server.listener.smtp]
 bind = ["[::]:{{ stalwart_smtp_port }}"]

@@ -5,7 +5,7 @@ resource "digitalocean_droplet" "mail-jasonernst-com" {
   image    = "ubuntu-24-04-x64"
   name     = "mail-jasonernst-com"
   region   = "sfo2"
-  size     = "s-1vcpu-2gb"
+  size     = "s-1vcpu-512mb-10gb"  # $4/mo - sufficient for Stalwart with 2 users
   ipv6     = true
   vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
   ssh_keys = [28506911]
