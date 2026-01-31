@@ -1,48 +1,49 @@
-# Hostnames are Tailscale MagicDNS names (work from anywhere on tailnet)
-# Use --limit <hostname> to target specific hosts
+# Local hosts use .local (mDNS) - works on LAN even if Tailscale is down
+# Cloud hosts use FQDN
+# Use --limit 'ubuntu-beast*' to match by prefix
 
 ungrouped:
   hosts:
     jasonernst.com:
-    nas:
+    nas.local:
     mail.jasonernst.com:
     projects.jasonernst.com:
 
 academic_gui:
   hosts:
-    ubuntu-beast:
+    ubuntu-beast.local:
 
 dev:
   hosts:
-    jasons-macbook-air:
-    ubuntu-beast:
-    ubuntu-silverstone:
-    ubuntu-cube:
-    ubuntu-work-laptop:
-    ubuntu-asus-laptop:
-    ubuntu-toshiba-laptop:
-    ubuntu-toshiba-mini-laptop:
+    jasons-macbook-air.local:
+    ubuntu-beast.local:
+    ubuntu-silverstone.local:
+    ubuntu-cube.local:
+    ubuntu-work-laptop.local:
+    ubuntu-asus-laptop.local:
+    ubuntu-toshiba-laptop.local:
+    ubuntu-toshiba-mini-laptop.local:
 
 dev_gui:
   hosts:
-    ubuntu-beast:
-    ubuntu-work-laptop:
-    ubuntu-asus-laptop:
+    ubuntu-beast.local:
+    ubuntu-work-laptop.local:
+    ubuntu-asus-laptop.local:
 
 gui:
   hosts:
-    jasons-macbook-air:
-    ubuntu-beast:
-    ubuntu-work-laptop:
-    ubuntu-asus-laptop:
+    jasons-macbook-air.local:
+    ubuntu-beast.local:
+    ubuntu-work-laptop.local:
+    ubuntu-asus-laptop.local:
 
 android_runner:
   hosts:
-    ubuntu-silverstone:
-    ubuntu-cube:
+    ubuntu-silverstone.local:
+    ubuntu-cube.local:
 
 java_runner:
   hosts:
-    ubuntu-silverstone:
-    ubuntu-cube:
+    ubuntu-silverstone.local:
+    ubuntu-cube.local:
 
