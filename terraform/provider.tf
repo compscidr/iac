@@ -16,7 +16,7 @@ terraform {
     endpoint                    = "sfo3.digitaloceanspaces.com"
     bucket                      = "terraform-state-jasonernst"
     key                         = "iac/terraform.tfstate"
-    region                      = "us-east-1"  # Required but ignored by DO
+    region                      = "us-east-1" # Required but ignored by DO
     skip_credentials_validation = true
     skip_metadata_api_check     = true
     skip_region_validation      = true
