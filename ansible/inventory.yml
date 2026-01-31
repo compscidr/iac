@@ -1,57 +1,48 @@
+# Hostnames are Tailscale MagicDNS names (work from anywhere on tailnet)
+# Use --limit <hostname> to target specific hosts
+
 ungrouped:
   hosts:
     jasonernst.com:
-    nas.local:
+    nas:
     mail.jasonernst.com:
     projects.jasonernst.com:
+
 academic_gui:
   hosts:
     ubuntu-beast:
-    ubuntu-beast.local:
+
 dev:
   hosts:
-    Jasons-MacBook-Air.local:
-    Jasons-MacBook-Air:
+    jasons-macbook-air:
     ubuntu-beast:
-    ubuntu-beast.local:
     ubuntu-silverstone:
-    ubuntu-silverstone.local:
     ubuntu-cube:
-    ubuntu-cube.local:
     ubuntu-work-laptop:
-    ubuntu-work-laptop.local:
     ubuntu-asus-laptop:
-    ubuntu-asus-laptop.local:
     ubuntu-toshiba-laptop:
     ubuntu-toshiba-mini-laptop:
+
 dev_gui:
   hosts:
     ubuntu-beast:
-    ubuntu-beast.local:
     ubuntu-work-laptop:
-    ubuntu-work-laptop.local:
     ubuntu-asus-laptop:
-    ubuntu-asus-laptop.local:
+
 gui:
   hosts:
-    Jasons-MacBook-Air.local:
-    Jasons-MacBook-Air:
+    jasons-macbook-air:
     ubuntu-beast:
-    ubuntu-beast.local:
     ubuntu-work-laptop:
-    ubuntu-work-laptop.local:
     ubuntu-asus-laptop:
-    ubuntu-asus-laptop.local:
+
 android_runner:
   hosts:
     ubuntu-silverstone:
-    ubuntu-silverstone.local:
     ubuntu-cube:
-    ubuntu-cube.local:
+
 java_runner:
   hosts:
     ubuntu-silverstone:
-    ubuntu-silverstone.local:
     ubuntu-cube:
-    ubuntu-cube.local:
-    
+
