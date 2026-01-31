@@ -54,3 +54,6 @@ java_runner:
 nas:
   hosts:
     nas.local:
+mail:
+  hosts:
+    mail.jasonernst.com:
