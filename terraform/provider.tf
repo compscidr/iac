@@ -29,10 +29,10 @@ terraform {
   }
 }
 
-# 1Password provider - uses CLI/desktop app integration
-provider "onepassword" {
-  account = "CZG3A4373RA2FC5W5JKFUMYILI"
-}
+# 1Password provider
+# - CI: uses OP_SERVICE_ACCOUNT_TOKEN env var
+# - Local: uses CLI/desktop app integration (default signed-in account)
+provider "onepassword" {}
 
 # Get SSH key from 1Password
 data "onepassword_item" "github_ssh" {
