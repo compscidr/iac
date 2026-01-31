@@ -15,7 +15,9 @@ terraform {
   # Remote state in DigitalOcean Spaces (S3-compatible)
   # Create bucket first: doctl spaces create terraform-state --region sfo3
   backend "s3" {
-    endpoint                    = "sfo3.digitaloceanspaces.com"
+    endpoints = {
+      s3 = "https://sfo3.digitaloceanspaces.com"
+    }
     bucket                      = "terraform-state-jasonernst"
     key                         = "iac/terraform.tfstate"
     region                      = "us-east-1" # Required but ignored by DO
