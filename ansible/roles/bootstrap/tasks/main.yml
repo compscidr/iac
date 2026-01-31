@@ -68,7 +68,7 @@
 
 - name: Ensure Docker service is running
   become: true
-  tags: [bootstrap, docker]
+  tags: [bootstrap, docker, molecule-notest]  # Skip in molecule (systemd doesn't work in containers)
   ansible.builtin.systemd:
     name: docker
     enabled: true
@@ -76,4 +76,3 @@
   when:
     - bootstrap_docker_enabled
     - ansible_os_family == "Debian"
-    - ansible_service_mgr == "systemd"  # Skip in containers without systemd
