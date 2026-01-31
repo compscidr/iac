@@ -34,10 +34,17 @@ Automatic via Let's Encrypt companion. Each service defines:
 - `LETSENCRYPT_HOST` — domains to get SSL certs for
 - `LETSENCRYPT_EMAIL` — email for cert notifications
 
+## Prerequisites
+
+- **bootstrap** role must be run first (creates user, installs Docker)
+- **SSH key** must be deployed to server for cloning private repos:
+  - For servers: Run `common_cli` role first, OR
+  - Manually add deploy key to GitHub repos
+
 ## Usage
 
 ```bash
-# After Terraform + bootstrap
+# After Terraform + bootstrap + common_cli (for SSH keys)
 ansible-playbook -i inventory.yml projects.yml
 ```
 

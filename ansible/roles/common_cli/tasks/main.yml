@@ -39,6 +39,9 @@
   tags: always
 
 # Tailscale for workstations (servers get Tailscale via cloud-init)
+# Note: This is intentionally idempotent - the 'creates' argument prevents
+# re-installation on servers where Tailscale is already installed via cloud-init.
+# This allows the same role to handle both server and workstation scenarios.
 - name: Install Tailscale
   become: true
   tags: [tailscale]

@@ -56,8 +56,6 @@ jobs:
       - name: Terraform Init
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           # Get DO Spaces credentials from 1Password for backend
           export AWS_ACCESS_KEY_ID=$(op read "op://Infrastructure/DO Spaces/username")
