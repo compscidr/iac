@@ -94,6 +94,5 @@
     state: present
     pull: always
   environment:
-    VIRTUAL_HOST: "darksearch.xyz,www.darksearch.xyz"
-    LETSENCRYPT_HOST: "darksearch.xyz"
+    # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
