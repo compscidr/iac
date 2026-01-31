@@ -112,11 +112,18 @@ resource "digitalocean_record" "darksearch-CNAME-www" {
 }
 
 # ============================================================================
-# Firewall - minimal exposure (SSH via Tailscale only)
+# Firewall - minimal exposure
 # ============================================================================
 resource "digitalocean_firewall" "projects" {
   name        = "projects-fw"
   droplet_ids = [digitalocean_droplet.projects.id]
+
+  # SSH
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
 
   # HTTP (ACME/Let's Encrypt challenges)
   inbound_rule {

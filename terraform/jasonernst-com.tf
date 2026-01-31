@@ -71,10 +71,17 @@ resource "digitalocean_record" "TXT-maven" {
   value  = "7mi6gm0pb0"
 }
 
-# Firewall - minimal exposure (SSH via Tailscale only)
+# Firewall - minimal exposure
 resource "digitalocean_firewall" "www" {
   name        = "www-jasonernst-com-fw"
   droplet_ids = [digitalocean_droplet.www-jasonernst-com.id]
+
+  # SSH
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
 
   # HTTP (ACME/Let's Encrypt challenges)
   inbound_rule {

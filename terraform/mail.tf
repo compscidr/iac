@@ -76,7 +76,12 @@ resource "digitalocean_firewall" "mail" {
 
   droplet_ids = [digitalocean_droplet.mail-jasonernst-com.id]
 
-  # SSH via Tailscale only - no public SSH
+  # SSH
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
 
   # SMTP (inbound mail from other servers)
   inbound_rule {
