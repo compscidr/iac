@@ -69,25 +69,6 @@ State is stored in DigitalOcean Spaces (S3-compatible):
 
 The `./tf` wrapper handles Spaces authentication via 1Password.
 
-## Importing Existing Resources
-
-To import existing resources into Terraform state:
-
-```bash
-# Domains (import these first to avoid DNS outage)
-./tf import digitalocean_domain.default jasonernst.com
-./tf import digitalocean_domain.ping4-network ping4.network
-./tf import digitalocean_domain.ping6-network ping6.network
-./tf import digitalocean_domain.dumpers-xyz dumpers.xyz
-./tf import digitalocean_domain.darksearch-xyz darksearch.xyz
-
-# VPCs
-./tf import digitalocean_vpc.www-jasonernst-vpc <vpc-uuid>
-
-# Droplets
-./tf import digitalocean_droplet.www-jasonernst-com <droplet-id>
-```
-
 ## CI/CD
 
 GitHub Actions runs on every PR:
