@@ -1,6 +1,9 @@
 ---
 # Mail server deployment playbook
 # Usage: ansible-playbook -i inventory.yml mail.yml
+#
+# Requires 1Password CLI (op) authenticated and item 'stalwart-admin' in Infrastructure vault
+# with fields: username, password
 
 - name: Deploy Stalwart Mail Server
   hosts: mail
@@ -8,8 +11,9 @@
   vars:
     stalwart_domain: jasonernst.com
     stalwart_hostname: mail.jasonernst.com
-    # Admin password - retrieve from 1Password
-    # stalwart_admin_password: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='password') }}"
+    # Admin credentials from 1Password (Infrastructure vault)
+    stalwart_admin_user: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='username', vault='Infrastructure') }}"
+    stalwart_admin_password: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='password', vault='Infrastructure') }}"
   roles:
     - common_cli
     - stalwart
