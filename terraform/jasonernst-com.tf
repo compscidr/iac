@@ -13,6 +13,10 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
   ipv6     = true
   vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
+
+  user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
+    tailscale_authkey = data.onepassword_item.tailscale.credential
+  })
 }
 
 resource "digitalocean_domain" "default" {

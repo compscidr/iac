@@ -11,6 +11,10 @@ resource "digitalocean_droplet" "mail-jasonernst-com" {
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 
   tags = ["mail", "jasonernst-com"]
+
+  user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
+    tailscale_authkey = data.onepassword_item.tailscale.credential
+  })
 }
 
 # A record for mail.jasonernst.com

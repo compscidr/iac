@@ -21,6 +21,10 @@ resource "digitalocean_droplet" "projects" {
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 
   tags = ["projects"]
+
+  user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
+    tailscale_authkey = data.onepassword_item.tailscale.credential
+  })
 }
 
 # ============================================================================

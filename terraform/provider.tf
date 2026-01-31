@@ -36,6 +36,12 @@ data "onepassword_item" "github_ssh" {
   title = "Github SSH"
 }
 
+# Get Tailscale authkey from 1Password
+data "onepassword_item" "tailscale" {
+  vault = "Infrastructure"
+  title = "Tailscale"
+}
+
 # Upload the public key to DigitalOcean
 resource "digitalocean_ssh_key" "github" {
   name       = "github-ssh"
