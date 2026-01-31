@@ -71,6 +71,44 @@ resource "digitalocean_record" "TXT-maven" {
   value  = "7mi6gm0pb0"
 }
 
+# Firewall - minimal exposure (SSH via Tailscale only)
+resource "digitalocean_firewall" "www" {
+  name        = "www-jasonernst-com-fw"
+  droplet_ids = [digitalocean_droplet.www-jasonernst-com.id]
+
+  # HTTP (ACME/Let's Encrypt challenges)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "80"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # HTTPS
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Outbound - allow all (updates, Tailscale, etc.)
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}
+
 output "droplet_ip_addresses" {
   value = digitalocean_droplet.www-jasonernst-com.ipv4_address
 }

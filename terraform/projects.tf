@@ -112,6 +112,46 @@ resource "digitalocean_record" "darksearch-CNAME-www" {
 }
 
 # ============================================================================
+# Firewall - minimal exposure (SSH via Tailscale only)
+# ============================================================================
+resource "digitalocean_firewall" "projects" {
+  name        = "projects-fw"
+  droplet_ids = [digitalocean_droplet.projects.id]
+
+  # HTTP (ACME/Let's Encrypt challenges)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "80"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # HTTPS
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Outbound - allow all (updates, Tailscale, etc.)
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}
+
+# ============================================================================
 # Outputs
 # ============================================================================
 output "projects_ip" {
