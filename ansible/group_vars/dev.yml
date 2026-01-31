@@ -1,8 +1,6 @@
 ---
-# Dev workstations - full setup from 1Password
+# Dev workstations - password from 1Password
+# SSH keys handled by common_cli role, not bootstrap
 
 # Password enables normal sudo (prompts for password)
 bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-
-# SSH private key for git push, etc.
-bootstrap_ssh_private_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"

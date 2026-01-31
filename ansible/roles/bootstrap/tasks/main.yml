@@ -1,6 +1,7 @@
 ---
-# Bootstrap role - minimal server/workstation provisioning
-# Creates user, sets up SSH, installs Docker and Tailscale
+# Bootstrap role - minimal server provisioning
+# Creates user, installs Docker and Tailscale
+# SSH access via Tailscale SSH (no traditional SSH keys needed)
 
 - name: Create docker group
   become: true
@@ -51,61 +52,6 @@
     path: "/etc/sudoers.d/{{ bootstrap_username }}"
     state: absent
   when: bootstrap_user_password | length > 0
-
-- name: Ensure SSH directory exists
-  become: true
-  tags: [bootstrap, ssh]
-  ansible.builtin.file:
-    path: "/home/{{ bootstrap_username }}/.ssh"
-    state: directory
-    owner: "{{ bootstrap_username }}"
-    group: "{{ bootstrap_username }}"
-    mode: "0700"
-
-- name: Copy SSH public key (from variable)
-  become: true
-  tags: [bootstrap, ssh]
-  ansible.builtin.copy:
-    content: "{{ bootstrap_ssh_public_key }}\n"
-    dest: "/home/{{ bootstrap_username }}/.ssh/authorized_keys"
-    owner: "{{ bootstrap_username }}"
-    group: "{{ bootstrap_username }}"
-    mode: "0600"
-  when: bootstrap_ssh_public_key | length > 0
-
-- name: Copy SSH public key (from root's authorized_keys)
-  become: true
-  tags: [bootstrap, ssh]
-  ansible.builtin.copy:
-    src: /root/.ssh/authorized_keys
-    dest: "/home/{{ bootstrap_username }}/.ssh/authorized_keys"
-    remote_src: true
-    owner: "{{ bootstrap_username }}"
-    group: "{{ bootstrap_username }}"
-    mode: "0600"
-  when: bootstrap_ssh_public_key | length == 0
-
-- name: Copy SSH private key (for git, etc.)
-  become: true
-  tags: [bootstrap, ssh]
-  ansible.builtin.copy:
-    content: "{{ bootstrap_ssh_private_key }}\n"
-    dest: "/home/{{ bootstrap_username }}/.ssh/id_rsa"
-    owner: "{{ bootstrap_username }}"
-    group: "{{ bootstrap_username }}"
-    mode: "0600"
-  when: bootstrap_ssh_private_key | length > 0
-
-- name: Add GitHub to known hosts
-  become: true
-  become_user: "{{ bootstrap_username }}"
-  tags: [bootstrap, ssh]
-  ansible.builtin.known_hosts:
-    name: github.com
-    key: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
-    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
-    state: present
-  when: bootstrap_github_known_hosts
 
 - name: Install Docker (Ubuntu/Debian)
   become: true
