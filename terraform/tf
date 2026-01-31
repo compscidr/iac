@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Wrapper script to run Terraform with 1Password credentials
+# Usage: ./tf <command> [args...]
+# Examples:
+#   ./tf init
+#   ./tf plan
+#   ./tf apply
+#   ./tf import digitalocean_droplet.www-jasonernst-com 274961346
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if ! command -v op &> /dev/null; then
+    echo "Error: 1Password CLI (op) is not installed"
+    exit 1
+fi
+
+exec op run --env-file="$SCRIPT_DIR/.env.op" -- terraform "$@"
