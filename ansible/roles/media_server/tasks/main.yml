@@ -164,3 +164,31 @@
       tags: flaresolverr
   vars:
     flare_port: 8191
+
+# MySQL database (used by Ombi)
+- name: Create MySQL data directory
+  tags: mysql
+  become: true
+  ansible.builtin.file:
+    path: /volume1/docker/mysql
+    state: directory
+    mode: '755'
+    owner: '999'
+    group: '999'
+
+- name: Deploy MySQL
+  tags: mysql
+  become: true
+  community.docker.docker_container:
+    name: mysql
+    image: mysql:8
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    volumes:
+      - /volume1/docker/mysql:/var/lib/mysql
+    network_mode: bridge
+    published_ports:
+      - "3306:3306"
+    restart_policy: unless-stopped
+    memory: "1g"
+    memory_swap: "1g"
