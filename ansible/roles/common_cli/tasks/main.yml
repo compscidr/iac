@@ -617,16 +617,7 @@
     - ansible_os_family == "Darwin"
     - colima_status.rc != 0
 
-- name: Add github to known hosts so the following bit doesn't fail
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  ansible.builtin.known_hosts:
-    hash_host: true
-    name: github.com
-    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
-    path: ~/.ssh/known_hosts
-    state: present
+# GitHub known_hosts is handled by bootstrap role
 
 # https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
 # without version pinning we get lint errors
