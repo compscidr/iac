@@ -2,6 +2,29 @@
 
 > **📖 Dependency Management**: This project uses a dual workflow for dependency management. See [DEPENDENCIES.md](DEPENDENCIES.md) for details on installing external roles and collections for Molecule vs. standalone playbook execution.
 
+## Roles Overview
+
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `bootstrap` | Minimal server setup: user + Docker | Servers (via Tailscale SSH after cloud-init) |
+| `common_cli` | Full workstation setup: bootstrap + Tailscale + SSH keys + dev tools | Workstations |
+
+### Server Provisioning Flow
+
+```
+1. Terraform creates droplet with cloud-init (installs Tailscale)
+2. Droplet joins your Tailscale network
+3. Run bootstrap via Tailscale SSH:
+   ansible-playbook -i inventory.yml bootstrap.yml --limit <hostname> -u root
+4. Deploy your application
+```
+
+### Workstation Setup
+
+```bash
+ansible-playbook -i inventory.yml common.yml --limit <hostname> --ask-become-pass
+```
+
 ## Requirements / Bootstrapping Host Machine
 The machine running the ansible plays requires ansible >= 3.2. 
 Note, this doesn't have to be the target machine where you are deploying things to.
