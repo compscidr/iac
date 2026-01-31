@@ -7,8 +7,8 @@
 ### Core Roles
 | Role | Purpose | Used By |
 |------|---------|---------|
-| `bootstrap` | Minimal server setup: user + Docker | Servers (via Tailscale SSH) |
-| `common_cli` | CLI tools, SSH keys, Tailscale, dotfiles (depends on bootstrap) | All machines |
+| `bootstrap` | Minimal server setup: user + Docker + SSH keys | Servers (via Tailscale SSH) |
+| `common_cli` | CLI tools, Tailscale, dotfiles, dev environment | Workstations |
 | `common_gui` | GUI apps, fonts, desktop settings | GUI machines |
 
 ### Development Roles

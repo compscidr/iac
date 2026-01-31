@@ -44,8 +44,14 @@ Use the `./tf` wrapper script — it injects 1Password credentials automatically
 3. Run Ansible bootstrap (via Tailscale SSH):
    cd ../ansible
    ansible-playbook -i inventory.yml bootstrap.yml --limit <hostname> -u root
+   # Creates user, installs Docker, deploys SSH key for private repos
 
-4. Deploy your application
+4. Deploy your application:
+   # For projects droplet:
+   ansible-playbook -i inventory.yml projects.yml
+   
+   # For jasonernst.com:
+   ansible-playbook -i inventory.yml jasonernst_com.yml
 ```
 
 ## File Structure

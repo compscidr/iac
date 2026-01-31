@@ -70,8 +70,8 @@ Provisions DigitalOcean cloud resources:
 
 ## Ansible
 Configures all machines in the fleet:
-- `bootstrap` role: minimal server setup (user + Docker)
-- `common_cli` role: full workstation setup (Tailscale + dev tools + SSH keys)
+- `bootstrap` role: minimal server setup (user + Docker + SSH keys)
+- `common_cli` role: full workstation setup (Tailscale + dev tools + dotfiles)
 
 [Read more](ansible/README.md)
 
