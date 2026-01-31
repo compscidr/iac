@@ -16,7 +16,14 @@ Manages DigitalOcean infrastructure for jasonernst.com and related projects.
 
 ## Usage
 
-Use the `./tf` wrapper script — it injects 1Password credentials automatically:
+Use the `./tf` wrapper script — it injects 1Password credentials automatically.
+
+**First, sign into 1Password:**
+```bash
+op-personal   # or: eval $(op signin)
+```
+
+Then use the wrapper:
 
 ```bash
 # Initialize (first time or after provider changes)
