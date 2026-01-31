@@ -3,7 +3,7 @@
 # Usage: ansible-playbook -i inventory.yml projects.yml
 
 - name: Deploy projects
-  hosts: projects
+  hosts: projects.jasonernst.com
   vars_files:
     - vars/user.yml
   roles:

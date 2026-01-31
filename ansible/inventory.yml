@@ -1,9 +1,9 @@
 ungrouped:
   hosts:
     jasonernst.com:
-projects:
-  hosts:
-    projects:
+    nas.local:
+    mail.jasonernst.com:
+    projects.jasonernst.com:
 academic_gui:
   hosts:
     ubuntu-beast:
@@ -54,9 +54,4 @@ java_runner:
     ubuntu-silverstone.local:
     ubuntu-cube:
     ubuntu-cube.local:
-nas:
-  hosts:
-    nas.local:
-mail:
-  hosts:
-    mail.jasonernst.com:
+    
