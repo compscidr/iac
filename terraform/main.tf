@@ -65,7 +65,7 @@ resource "digitalocean_record" "CNAME-dev" {
   value = "@"
 }
 
-resource "digitalocean_record" "txt" {
+resource "digitalocean_record" "TXT-keybase" {
   domain = digitalocean_domain.default.name
   type = "TXT"
   name = "@"
@@ -73,7 +73,7 @@ resource "digitalocean_record" "txt" {
 }
 
 # maven verification record
-resource "digitalocean_record" "txt" {
+resource "digitalocean_record" "TXT-maven" {
   domain = digitalocean_domain.default.name
   type = "TXT"
   name = "@"
