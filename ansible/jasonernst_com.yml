@@ -6,7 +6,3 @@
     - vars/user.yml
   roles:
     - jasonernst_com
-    - role: compscidr.media_server.ombi
-      vars:
-        ombi_virtual_host: "ombi.jasonernst.com"
-        ombi_letsencrypt_email: "ernstjason1@gmail.com"

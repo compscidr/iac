@@ -7,6 +7,10 @@
     - vars/secrets.yml
   roles:
     - media_server
+    - role: compscidr.media_server.ombi
+      vars:
+        ombi_virtual_host: "ombi.jasonernst.com"
+        ombi_letsencrypt_email: "ernstjason1@gmail.com"
     - home_assistant
     - rust_game
     - cs2_game
