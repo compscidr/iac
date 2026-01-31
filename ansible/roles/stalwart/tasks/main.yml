@@ -1,0 +1,112 @@
+---
+# Stalwart Mail Server installation and configuration
+
+- name: Install required packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - ufw
+    state: present
+    update_cache: true
+
+- name: Create stalwart data directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Check if Stalwart is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/stalwart-mail
+  register: stalwart_binary
+
+- name: Download and install Stalwart
+  become: true
+  when: not stalwart_binary.stat.exists
+  block:
+    - name: Download Stalwart install script
+      ansible.builtin.get_url:
+        url: https://get.stalw.art/install.sh
+        dest: /tmp/stalwart-install.sh
+        mode: '0755'
+
+    - name: Run Stalwart installer
+      ansible.builtin.shell: |
+        /tmp/stalwart-install.sh --prefix {{ stalwart_data_dir }} --component all-in-one
+      args:
+        creates: /usr/local/bin/stalwart-mail
+
+- name: Configure UFW for mail services
+  become: true
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "{{ stalwart_smtp_port }}"
+    - "{{ stalwart_submission_port }}"
+    - "{{ stalwart_submissions_port }}"
+    - "{{ stalwart_imap_port }}"
+    - "{{ stalwart_imaps_port }}"
+    - "{{ stalwart_http_port }}"
+    - "{{ stalwart_http_management_port }}"
+    - "22"  # SSH
+
+- name: Enable UFW
+  become: true
+  community.general.ufw:
+    state: enabled
+    policy: deny
+
+- name: Deploy Stalwart configuration
+  become: true
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: "{{ stalwart_data_dir }}/etc/config.toml"
+    mode: '0640'
+    owner: root
+    group: root
+  notify: Restart stalwart
+
+- name: Create systemd service file
+  become: true
+  ansible.builtin.template:
+    src: stalwart-mail.service.j2
+    dest: /etc/systemd/system/stalwart-mail.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart stalwart
+
+- name: Enable and start Stalwart service
+  become: true
+  ansible.builtin.systemd:
+    name: stalwart-mail
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for Stalwart to be ready
+  ansible.builtin.wait_for:
+    port: "{{ stalwart_http_management_port }}"
+    timeout: 60
+
+- name: Display post-install instructions
+  ansible.builtin.debug:
+    msg: |
+      Stalwart Mail Server installed successfully!
+      
+      Next steps:
+      1. Access admin panel: https://{{ stalwart_hostname }}:{{ stalwart_http_management_port }}
+      2. Generate DKIM key: stalwart-cli -u https://localhost:{{ stalwart_http_management_port }} dkim generate {{ stalwart_dkim_selector }} {{ stalwart_domain }}
+      3. Update the DKIM DNS record in Terraform with the generated public key
+      4. Create user accounts via admin panel or CLI
+      
+      Test commands:
+      - Check SMTP: telnet {{ stalwart_hostname }} 25
+      - Check IMAP: openssl s_client -connect {{ stalwart_hostname }}:993

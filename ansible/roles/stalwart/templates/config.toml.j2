@@ -1,0 +1,143 @@
+# Stalwart Mail Server Configuration
+# Managed by Ansible - do not edit directly
+
+[server]
+hostname = "{{ stalwart_hostname }}"
+max-connections = 8192
+
+[server.listener.smtp]
+bind = ["[::]:{{ stalwart_smtp_port }}"]
+protocol = "smtp"
+
+[server.listener.submission]
+bind = ["[::]:{{ stalwart_submission_port }}"]
+protocol = "smtp"
+
+[server.listener.submissions]
+bind = ["[::]:{{ stalwart_submissions_port }}"]
+protocol = "smtp"
+tls.implicit = true
+
+[server.listener.imap]
+bind = ["[::]:{{ stalwart_imap_port }}"]
+protocol = "imap"
+
+[server.listener.imaps]
+bind = ["[::]:{{ stalwart_imaps_port }}"]
+protocol = "imap"
+tls.implicit = true
+
+[server.listener.https]
+bind = ["[::]:{{ stalwart_http_port }}"]
+protocol = "http"
+tls.implicit = true
+
+[server.listener.management]
+bind = ["[::]:{{ stalwart_http_management_port }}"]
+protocol = "http"
+
+# Storage configuration
+[store."rocksdb"]
+type = "rocksdb"
+path = "{{ stalwart_data_dir }}/data"
+
+[storage]
+data = "rocksdb"
+fts = "rocksdb"
+blob = "rocksdb"
+lookup = "rocksdb"
+directory = "internal"
+
+# Internal directory for user management
+[directory."internal"]
+type = "internal"
+store = "rocksdb"
+
+# ACME (Let's Encrypt) for TLS certificates
+{% if stalwart_acme_enabled %}
+[acme."letsencrypt"]
+directory = "https://acme-v02.api.letsencrypt.org/directory"
+contact = ["mailto:{{ stalwart_acme_contact }}"]
+domains = ["{{ stalwart_hostname }}"]
+challenge = "tls-alpn-01"
+
+[certificate."default"]
+cert = "%{file:{{ stalwart_data_dir }}/etc/certs/{{ stalwart_hostname }}.crt}%"
+private-key = "%{file:{{ stalwart_data_dir }}/etc/certs/{{ stalwart_hostname }}.key}%"
+default = true
+{% endif %}
+
+# Authentication
+[authentication]
+fail2ban = "101/1d"
+
+[session.auth]
+mechanisms = ["PLAIN", "LOGIN"]
+directory = "internal"
+
+# DKIM signing
+[signature."{{ stalwart_dkim_selector }}"]
+private-key = "%{file:{{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key}%"
+domain = "{{ stalwart_domain }}"
+selector = "{{ stalwart_dkim_selector }}"
+headers = ["From", "To", "Date", "Subject", "Message-ID"]
+algorithm = "ed25519-sha256"
+canonicalization = "relaxed/relaxed"
+set-body-length = false
+report = true
+
+# Spam filtering with Sieve
+[sieve.trusted]
+from-name = "Sieve Daemon"
+from-addr = "sieve@{{ stalwart_domain }}"
+return-path = ""
+hostname = "{{ stalwart_hostname }}"
+no-capability-check = false
+
+[sieve.trusted.limits]
+name-length = 512
+max-scripts = 256
+script-size = 102400
+string-length = 4096
+variable-name-length = 32
+variable-size = 4096
+nested-blocks = 15
+nested-tests = 15
+nested-foreverypart = 3
+match-variables = 30
+local-variables = 128
+header-size = 1024
+includes = 3
+nested-includes = 3
+cpu = 5000
+redirects = 1
+received-headers = 10
+outgoing-messages = 3
+
+# Queue configuration
+[queue]
+path = "{{ stalwart_data_dir }}/queue"
+
+[queue.schedule]
+retry = "[2m, 5m, 10m, 15m, 30m, 1h, 2h]"
+notify = "[1d, 3d]"
+expire = "5d"
+
+# Reporting
+[report]
+path = "{{ stalwart_data_dir }}/reports"
+
+[report.analysis]
+addresses = ["postmaster@{{ stalwart_domain }}"]
+
+# Logging
+[tracing."stdout"]
+type = "stdout"
+level = "info"
+ansi = false
+enable = true
+
+[tracing."journal"]
+type = "journal"
+level = "info"
+enable = true

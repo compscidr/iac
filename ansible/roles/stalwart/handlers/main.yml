@@ -1,0 +1,11 @@
+---
+- name: Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart stalwart
+  become: true
+  ansible.builtin.systemd:
+    name: stalwart-mail
+    state: restarted

@@ -1,0 +1,29 @@
+---
+# Stalwart Mail Server defaults
+
+stalwart_version: "latest"
+stalwart_domain: "jasonernst.com"
+stalwart_hostname: "mail.jasonernst.com"
+
+# Data directory
+stalwart_data_dir: "/opt/stalwart-mail"
+
+# Admin credentials - override in vault/1password
+stalwart_admin_user: "admin"
+# stalwart_admin_password: set via 1password
+
+# DKIM selector
+stalwart_dkim_selector: "stalwart"
+
+# TLS - use Let's Encrypt via ACME
+stalwart_acme_enabled: true
+stalwart_acme_contact: "postmaster@{{ stalwart_domain }}"
+
+# Ports
+stalwart_smtp_port: 25
+stalwart_submission_port: 587
+stalwart_submissions_port: 465
+stalwart_imap_port: 143
+stalwart_imaps_port: 993
+stalwart_http_port: 443
+stalwart_http_management_port: 8080

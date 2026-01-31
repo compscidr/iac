@@ -54,3 +54,7 @@ java_runner:
 nas:
   hosts:
     nas.local:
+mail:
+  hosts:
+    # Add mail.jasonernst.com after terraform apply creates the droplet
+    # mail.jasonernst.com:

@@ -1,0 +1,15 @@
+---
+# Mail server deployment playbook
+# Usage: ansible-playbook -i inventory.yml mail.yml
+
+- name: Deploy Stalwart Mail Server
+  hosts: mail
+  become: true
+  vars:
+    stalwart_domain: jasonernst.com
+    stalwart_hostname: mail.jasonernst.com
+    # Admin password - retrieve from 1Password
+    # stalwart_admin_password: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='password') }}"
+  roles:
+    - common_cli
+    - stalwart
