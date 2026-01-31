@@ -54,21 +54,6 @@ Use the `./tf` wrapper script — it injects 1Password credentials automatically
    ansible-playbook -i inventory.yml jasonernst_com.yml
 ```
 
-## Importing Existing Resources
-
-If domains or other resources already exist in DigitalOcean, import them before applying:
-
-```bash
-# Projects droplet domains
-./tf import digitalocean_domain.ping4-network ping4.network
-./tf import digitalocean_domain.ping6-network ping6.network
-./tf import digitalocean_domain.dumpers-xyz dumpers.xyz
-./tf import digitalocean_domain.darksearch-xyz darksearch.xyz
-
-# Main site
-./tf import digitalocean_domain.default jasonernst.com
-```
-
 ## File Structure
 
 | File | Purpose |
