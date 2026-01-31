@@ -3,7 +3,7 @@
 # Secrets fetched from 1Password Infrastructure vault
 
 # User configuration - username from 1Password
-bootstrap_username: "{{ lookup('community.general.onepassword', 'System Account', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+bootstrap_username: "{{ lookup('community.general.onepassword', 'System Account', field='username', vault='Infrastructure', account_id=onepassword_account_id) }}"
 bootstrap_user_shell: /bin/bash
 bootstrap_user_groups:
   - sudo
@@ -17,4 +17,4 @@ bootstrap_docker_enabled: true
 
 # SSH key for cloning private repos
 bootstrap_ssh_key_enabled: true
-bootstrap_ssh_private_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+bootstrap_ssh_private_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id=onepassword_account_id) }}"
