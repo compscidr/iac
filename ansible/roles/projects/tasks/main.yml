@@ -73,8 +73,7 @@
     state: present
     pull: always
   environment:
-    VIRTUAL_HOST: "ping4.network,ping6.network,dumpers.xyz,www.ping4.network,www.ping6.network,www.dumpers.xyz"
-    LETSENCRYPT_HOST: "ping4.network,ping6.network,dumpers.xyz"
+    # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
 
 # Clone and deploy darksearch
