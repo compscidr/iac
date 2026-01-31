@@ -1,14 +1,17 @@
 ---
 # Bootstrap playbook - minimal server provisioning
-# Can be run standalone or via cloud-init ansible-pull
+# Run AFTER cloud-init has installed Tailscale
 #
-# Usage:
-#   ansible-playbook -i inventory.yml bootstrap.yml --limit <host>
+# Usage (via Tailscale SSH from your machine):
+#   ansible-playbook -i inventory.yml bootstrap.yml --limit <host> -u root
 #
-# Or via ansible-pull (cloud-init):
-#   ansible-pull -U https://github.com/compscidr/iac.git -d /tmp/iac ansible/bootstrap.yml
+# What it does:
+#   - Creates user (from 1Password)
+#   - Installs Docker
 #
-# All secrets (username, tailscale authkey) fetched from 1Password Infrastructure vault
+# Note: Tailscale is handled separately:
+#   - Servers: cloud-init (Terraform user_data)
+#   - Workstations: common_cli role
 
 - name: Bootstrap server
   hosts: all

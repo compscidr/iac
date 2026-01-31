@@ -1,7 +1,7 @@
 ---
 # Bootstrap role - minimal server provisioning
-# Creates user, installs Docker and Tailscale
-# SSH access via Tailscale SSH (no traditional SSH keys needed)
+# Creates user and installs Docker
+# Run after Tailscale is already installed (via cloud-init for servers)
 
 - name: Create docker group
   become: true
@@ -76,33 +76,3 @@
   when:
     - bootstrap_docker_enabled
     - ansible_os_family == "Debian"
-
-- name: Install Tailscale
-  become: true
-  tags: [bootstrap, tailscale]
-  ansible.builtin.shell: |
-    curl -fsSL https://tailscale.com/install.sh | sh
-  args:
-    creates: /usr/bin/tailscale
-  when: bootstrap_tailscale_enabled
-
-- name: Connect to Tailscale (with authkey)
-  become: true
-  tags: [bootstrap, tailscale]
-  ansible.builtin.command:
-    cmd: "tailscale up --authkey={{ bootstrap_tailscale_authkey }}"
-  when:
-    - bootstrap_tailscale_enabled
-    - bootstrap_tailscale_authkey | length > 0
-  register: tailscale_up
-  changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
-  failed_when: false
-
-- name: Tailscale status (manual setup needed if no authkey)
-  become: true
-  tags: [bootstrap, tailscale]
-  ansible.builtin.debug:
-    msg: "Tailscale installed but not connected. Run 'sudo tailscale up' manually to authenticate."
-  when:
-    - bootstrap_tailscale_enabled
-    - bootstrap_tailscale_authkey | length == 0

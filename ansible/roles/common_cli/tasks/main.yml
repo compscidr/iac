@@ -38,6 +38,26 @@
       become: true
   tags: always
 
+# Tailscale for workstations (servers get Tailscale via cloud-init)
+- name: Install Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Connect to Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ tailscale_authkey }}"
+  vars:
+    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+  register: tailscale_up
+  changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
+  failed_when: false
+
 - name: Add the user
   tags: user
   become: true

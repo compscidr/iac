@@ -12,9 +12,5 @@ bootstrap_user_groups:
 # Password - empty for servers (NOPASSWD sudo), set in group_vars/dev.yml for workstations
 bootstrap_user_password: ""
 
-# Tailscale - authkey from 1Password
-bootstrap_tailscale_enabled: true
-bootstrap_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-
 # Docker
 bootstrap_docker_enabled: true
