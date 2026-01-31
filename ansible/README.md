@@ -4,10 +4,34 @@
 
 ## Roles Overview
 
+### Core Roles
 | Role | Purpose | Used By |
 |------|---------|---------|
-| `bootstrap` | Minimal server setup: user + Docker | Servers (via Tailscale SSH after cloud-init) |
-| `common_cli` | Full workstation setup: bootstrap + Tailscale + SSH keys + dev tools | Workstations |
+| `bootstrap` | Minimal server setup: user + Docker | Servers (via Tailscale SSH) |
+| `common_cli` | CLI tools, SSH keys, Tailscale, dotfiles (depends on bootstrap) | All machines |
+| `common_gui` | GUI apps, fonts, desktop settings | GUI machines |
+
+### Development Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `dev` | Dev tools: SDKs, IDEs, languages | `dev` group |
+| `dev_gui` | GUI dev tools: VS Code, Android Studio | `dev_gui` group |
+| `academic_gui` | Academic tools: LaTeX, Zotero | `academic_gui` group |
+
+### Service Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `jasonernst_com` | Personal website (goblog) | www.jasonernst.com |
+| `stalwart` | Stalwart mail server | mail.jasonernst.com |
+| `media_server` | Plex, Sonarr, Radarr, etc. | NAS |
+| `home_assistant` | Home automation | NAS |
+| `dyndns` | Dynamic DNS updater | NAS, workstations |
+
+### Game Server Roles
+| Role | Purpose | Used By |
+|------|---------|---------|
+| `rust_game` | Rust game server | NAS |
+| `cs2_game` | Counter-Strike 2 server | NAS |
 
 ### Server Provisioning Flow
 
