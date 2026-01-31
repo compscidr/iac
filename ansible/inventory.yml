@@ -1,6 +1,9 @@
 ungrouped:
   hosts:
     jasonernst.com:
+projects:
+  hosts:
+    projects:
 academic_gui:
   hosts:
     ubuntu-beast:

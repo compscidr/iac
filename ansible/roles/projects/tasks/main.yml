@@ -1,0 +1,100 @@
+---
+# Projects role - deploys toy projects to consolidated droplet
+# - ping4.network, ping6.network, dumpers.xyz (network-tools repo)
+# - darksearch.xyz (darksearch repo)
+
+# Nginx reverse proxy + LetsEncrypt for SSL
+- name: Create nginx config directory
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '755'
+
+- name: Deploy Nginx Reverse Proxy
+  tags: nginx
+  become: true
+  community.docker.docker_container:
+    name: nginx-proxy
+    image: jwilder/nginx-proxy
+    published_ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/conf.d:/etc/nginx/conf.d
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - nginx-certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    network_mode: bridge
+    restart_policy: unless-stopped
+
+- name: Deploy LetsEncrypt companion
+  tags: letsencrypt
+  become: true
+  community.docker.docker_container:
+    name: letsencrypt
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - nginx-certs:/etc/nginx/certs:rw
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env:
+      NGINX_PROXY_CONTAINER: "nginx-proxy"
+    network_mode: bridge
+    restart_policy: unless-stopped
+
+# Create projects directory
+- name: Create projects base directory
+  tags: projects
+  become: true
+  ansible.builtin.file:
+    path: "{{ projects_base_path }}"
+    state: directory
+    mode: '755'
+
+# Clone and deploy network-tools (ping4, ping6, dumpers)
+- name: Clone network-tools repo
+  tags: [projects, network-tools]
+  become: true
+  ansible.builtin.git:
+    repo: git@github.com:compscidr/network-tools.git
+    dest: "{{ projects_base_path }}/network-tools"
+    version: main
+    accept_hostkey: true
+
+- name: Deploy network-tools stack
+  tags: [projects, network-tools]
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ projects_base_path }}/network-tools"
+    state: present
+    pull: always
+  environment:
+    VIRTUAL_HOST: "ping4.network,ping6.network,dumpers.xyz,www.ping4.network,www.ping6.network,www.dumpers.xyz"
+    LETSENCRYPT_HOST: "ping4.network,ping6.network,dumpers.xyz"
+    LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+
+# Clone and deploy darksearch
+- name: Clone darksearch repo
+  tags: [projects, darksearch]
+  become: true
+  ansible.builtin.git:
+    repo: git@github.com:compscidr/darksearch.xyz.git
+    dest: "{{ projects_base_path }}/darksearch"
+    version: main
+    accept_hostkey: true
+
+- name: Deploy darksearch stack
+  tags: [projects, darksearch]
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ projects_base_path }}/darksearch"
+    state: present
+    pull: always
+  environment:
+    VIRTUAL_HOST: "darksearch.xyz,www.darksearch.xyz"
+    LETSENCRYPT_HOST: "darksearch.xyz"
+    LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
