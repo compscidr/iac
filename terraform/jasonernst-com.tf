@@ -52,6 +52,21 @@ resource "digitalocean_record" "CNAME-dev" {
   value  = "@"
 }
 
+# projects.jasonernst.com -> projects droplet
+resource "digitalocean_record" "A-projects" {
+  domain = digitalocean_domain.default.name
+  type   = "A"
+  name   = "projects"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "AAAA-projects" {
+  domain = digitalocean_domain.default.name
+  type   = "AAAA"
+  name   = "projects"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
 resource "digitalocean_record" "TXT-keybase" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
