@@ -164,12 +164,13 @@
       Stalwart Mail Server v{{ stalwart_version }} installed successfully!
       
       Binaries verified with SHA256 checksum.
+      Admin account pre-configured from 1Password (user: {{ stalwart_admin_user }})
       
       Next steps:
       1. SSH tunnel to access admin: ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
-      2. Open http://localhost:8080 in browser
+      2. Open http://localhost:8080 in browser (login with 1Password credentials)
       3. Generate DKIM key via admin UI or CLI:
-         stalwart-cli -u http://localhost:8080 domain create {{ stalwart_domain }}
+         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> domain create {{ stalwart_domain }}
       4. Update the DKIM DNS record in Terraform with the generated public key
       5. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
       

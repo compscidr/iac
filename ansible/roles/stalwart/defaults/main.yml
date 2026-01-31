@@ -16,9 +16,10 @@ stalwart_hostname: "mail.jasonernst.com"
 # Data directory
 stalwart_data_dir: "/opt/stalwart-mail"
 
-# Admin credentials - override in vault/1password
+# Admin credentials - MUST be set via 1Password lookup in playbook
+# These are configured in [authentication.fallback-admin] section
 stalwart_admin_user: "admin"
-# stalwart_admin_password: set via 1password
+stalwart_admin_password: ""  # Required - set in mail.yml from 1Password
 
 # DKIM selector
 stalwart_dkim_selector: "stalwart"

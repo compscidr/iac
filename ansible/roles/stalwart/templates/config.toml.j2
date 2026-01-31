@@ -75,6 +75,11 @@ default = true
 [authentication]
 fail2ban = "101/1d"
 
+# Fallback admin account - configured via Ansible from 1Password
+[authentication.fallback-admin]
+user = "{{ stalwart_admin_user }}"
+secret = "{{ stalwart_admin_password }}"
+
 [session.auth]
 mechanisms = ["PLAIN", "LOGIN"]
 directory = "internal"

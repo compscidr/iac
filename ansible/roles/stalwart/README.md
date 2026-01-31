@@ -42,23 +42,25 @@ Key variables:
 
 ## Post-Installation
 
+Admin account is pre-configured from 1Password (`stalwart-admin` item in Infrastructure vault).
+
 1. SSH tunnel to access admin panel:
    ```bash
    ssh -L 8080:localhost:8080 root@mail.jasonernst.com
    ```
 
-2. Open http://localhost:8080 in your browser
+2. Open http://localhost:8080 and login with your 1Password credentials
 
 3. Create domain and generate DKIM key:
    ```bash
-   stalwart-cli -u http://localhost:8080 domain create jasonernst.com
+   stalwart-cli -u http://localhost:8080 -c admin:<password> domain create jasonernst.com
    ```
 
 4. Update DKIM DNS record in Terraform with the generated public key
 
 5. Create user accounts:
    ```bash
-   stalwart-cli -u http://localhost:8080 account create kai@jasonernst.com
+   stalwart-cli -u http://localhost:8080 -c admin:<password> account create kai@jasonernst.com
    ```
 
 ## Testing
