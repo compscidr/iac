@@ -2,6 +2,13 @@
 
 Installs and configures [Stalwart Mail Server](https://stalw.art/) - a modern, fast, and secure all-in-one mail server.
 
+## Version
+
+Currently pinned to **v0.15.4** with SHA256 checksum verification.
+
+To update: change `stalwart_version` and checksums in `defaults/main.yml`.
+Get checksums from [GitHub releases](https://github.com/stalwartlabs/mail-server/releases).
+
 ## Features
 
 - SMTP (port 25, 587 with STARTTLS, 465 implicit TLS)

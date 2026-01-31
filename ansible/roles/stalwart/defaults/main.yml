@@ -1,7 +1,15 @@
 ---
 # Stalwart Mail Server defaults
 
-stalwart_version: "latest"
+# Version pinning for reproducible builds
+stalwart_version: "0.15.4"
+stalwart_server_checksum: "sha256:6e4bd106b36554fa461f831fc477b55888f8b8b30b5a509bcdbd62dcf633a4ba"
+stalwart_cli_checksum: "sha256:6b66782a1862121e94e1956f35d0dae70ca90203c8843eed1945971a7ec45c29"
+
+# Download URLs (GitHub releases)
+stalwart_server_url: "https://github.com/stalwartlabs/stalwart/releases/download/v{{ stalwart_version }}/stalwart-x86_64-unknown-linux-gnu.tar.gz"
+stalwart_cli_url: "https://github.com/stalwartlabs/stalwart/releases/download/v{{ stalwart_version }}/stalwart-cli-x86_64-unknown-linux-gnu.tar.gz"
+
 stalwart_domain: "jasonernst.com"
 stalwart_hostname: "mail.jasonernst.com"
 

@@ -30,6 +30,7 @@
     group: stalwart
   loop:
     - "{{ stalwart_data_dir }}"
+    - "{{ stalwart_data_dir }}/bin"
     - "{{ stalwart_data_dir }}/etc"
     - "{{ stalwart_data_dir }}/etc/dkim"
     - "{{ stalwart_data_dir }}/etc/certs"
@@ -37,30 +38,62 @@
     - "{{ stalwart_data_dir }}/queue"
     - "{{ stalwart_data_dir }}/reports"
 
-- name: Check if Stalwart is already installed
+- name: Check if Stalwart server is already installed
   ansible.builtin.stat:
     path: /usr/local/bin/stalwart-mail
   register: stalwart_binary
 
-- name: Download and install Stalwart
+- name: Download and install Stalwart (with checksum verification)
   become: true
   when: not stalwart_binary.stat.exists
   block:
-    - name: Download Stalwart install script
+    - name: Download Stalwart server tarball
       ansible.builtin.get_url:
-        url: https://get.stalw.art/install.sh
-        dest: /tmp/stalwart-install.sh
-        mode: '0755'
-      # Note: Checksum verification recommended for production
-      # checksum: "sha256:{{ stalwart_install_checksum }}"
+        url: "{{ stalwart_server_url }}"
+        dest: /tmp/stalwart-server.tar.gz
+        mode: '0644'
+        checksum: "{{ stalwart_server_checksum }}"
 
-    - name: Run Stalwart installer
-      ansible.builtin.shell: |
-        /tmp/stalwart-install.sh --prefix {{ stalwart_data_dir }} --component all-in-one
-      args:
-        creates: /usr/local/bin/stalwart-mail
+    - name: Download Stalwart CLI tarball
+      ansible.builtin.get_url:
+        url: "{{ stalwart_cli_url }}"
+        dest: /tmp/stalwart-cli.tar.gz
+        mode: '0644'
+        checksum: "{{ stalwart_cli_checksum }}"
 
-    - name: Fix ownership after install
+    - name: Extract Stalwart server
+      ansible.builtin.unarchive:
+        src: /tmp/stalwart-server.tar.gz
+        dest: "{{ stalwart_data_dir }}/bin"
+        remote_src: true
+
+    - name: Extract Stalwart CLI
+      ansible.builtin.unarchive:
+        src: /tmp/stalwart-cli.tar.gz
+        dest: "{{ stalwart_data_dir }}/bin"
+        remote_src: true
+
+    - name: Create symlink for stalwart-mail
+      ansible.builtin.file:
+        src: "{{ stalwart_data_dir }}/bin/stalwart-mail"
+        dest: /usr/local/bin/stalwart-mail
+        state: link
+
+    - name: Create symlink for stalwart-cli
+      ansible.builtin.file:
+        src: "{{ stalwart_data_dir }}/bin/stalwart-cli"
+        dest: /usr/local/bin/stalwart-cli
+        state: link
+
+    - name: Clean up downloaded tarballs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/stalwart-server.tar.gz
+        - /tmp/stalwart-cli.tar.gz
+
+    - name: Fix ownership
       ansible.builtin.file:
         path: "{{ stalwart_data_dir }}"
         state: directory
@@ -128,7 +161,9 @@
 - name: Display post-install instructions
   ansible.builtin.debug:
     msg: |
-      Stalwart Mail Server installed successfully!
+      Stalwart Mail Server v{{ stalwart_version }} installed successfully!
+      
+      Binaries verified with SHA256 checksum.
       
       Next steps:
       1. SSH tunnel to access admin: ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
