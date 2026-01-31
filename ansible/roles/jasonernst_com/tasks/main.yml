@@ -109,8 +109,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
     dest: /opt/goblog/prod/.env
     mode: '644'
     owner: root
@@ -123,8 +123,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}
+      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
     dest: /opt/goblog/staging/.env
     mode: '644'
     owner: root

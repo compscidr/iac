@@ -250,7 +250,7 @@
     name: mysql
     image: mysql:8
     env:
-      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
     volumes:
       - /volume1/storage/docker/mysql:/var/lib/mysql
     network_mode: bridge

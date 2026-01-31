@@ -56,7 +56,7 @@
   ansible.builtin.command:
     cmd: "tailscale up --authkey={{ tailscale_authkey }}"
   vars:
-    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure', account_id=onepassword_account_id) }}"
   register: tailscale_up
   changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
   failed_when: false
@@ -66,7 +66,7 @@
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') | password_hash('sha512') }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id=onepassword_account_id) | password_hash('sha512') }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -89,7 +89,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}\n"
+    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id=onepassword_account_id) }}\n"
     dest: "~/.ssh/id_rsa"
     mode: "0600"
 
@@ -107,7 +107,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault='Infrastructure', account_id=onepassword_account_id) }}"
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
@@ -477,8 +477,8 @@
 - name: Get WiFi credentials from 1Password (Ubuntu/Debian headless)
   tags: network-tools
   ansible.builtin.set_fact:
-    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
-    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault='Infrastructure', account_id=onepassword_account_id) }}"
+    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"

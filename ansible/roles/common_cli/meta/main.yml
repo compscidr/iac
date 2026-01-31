@@ -3,5 +3,5 @@
 dependencies:
   - role: bootstrap
     # Password is host-configurable via inventory:
-    #   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
+    #   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
     # If not set, user gets NOPASSWD sudo (server-style)
