@@ -68,6 +68,94 @@ resource "digitalocean_record" "TXT-DKIM" {
 # This is critical for email deliverability
 # Note: DigitalOcean automatically sets PTR to droplet name if it matches a domain you own
 
+# DigitalOcean Cloud Firewall for mail server
+resource "digitalocean_firewall" "mail" {
+  name = "mail-jasonernst-com-fw"
+
+  droplet_ids = [digitalocean_droplet.mail-jasonernst-com.id]
+
+  # SSH
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # SMTP (inbound mail from other servers)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "25"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Submission (client mail submission)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "587"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # SMTPS (implicit TLS submission)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "465"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # IMAP
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "143"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # IMAPS (implicit TLS)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "993"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # HTTPS (webmail/admin)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # HTTP (ACME challenges)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "80"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Management UI (consider restricting to your IP)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "8080"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Allow all outbound
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}
+
 output "mail_droplet_ip" {
   value = digitalocean_droplet.mail-jasonernst-com.ipv4_address
 }
