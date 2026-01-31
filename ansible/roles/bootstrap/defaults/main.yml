@@ -1,22 +1,20 @@
 ---
 # Bootstrap role defaults
+# Secrets fetched from 1Password Infrastructure vault
 
-# User configuration
-bootstrap_username: jason
+# User configuration - username from 1Password
+bootstrap_username: "{{ lookup('community.general.onepassword', 'System Account', field='username', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
 bootstrap_user_shell: /bin/bash
 bootstrap_user_groups:
   - sudo
   - docker
 
-# Password - set to enable password auth (for workstations)
-# If empty, user will have no password (SSH key only, NOPASSWD sudo)
-# For workstations, set via 1Password lookup in inventory/playbook:
-#   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') }}"
+# Password - empty for servers (NOPASSWD sudo), set in group_vars/dev.yml for workstations
 bootstrap_user_password: ""
 
-# Tailscale
+# Tailscale - authkey from 1Password
 bootstrap_tailscale_enabled: true
-bootstrap_tailscale_authkey: ""  # Set via 1Password lookup or env var
+bootstrap_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
 
 # Docker
 bootstrap_docker_enabled: true
