@@ -56,5 +56,4 @@ nas:
     nas.local:
 mail:
   hosts:
-    # Add mail.jasonernst.com after terraform apply creates the droplet
-    # mail.jasonernst.com:
+    mail.jasonernst.com:

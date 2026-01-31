@@ -171,7 +171,7 @@
       3. Generate DKIM key via admin UI or CLI:
          stalwart-cli -u http://localhost:8080 domain create {{ stalwart_domain }}
       4. Update the DKIM DNS record in Terraform with the generated public key
-      5. Create user accounts (e.g., kai@{{ stalwart_domain }})
+      5. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
       
       Test commands:
       - Check SMTP: telnet {{ stalwart_hostname }} 25
