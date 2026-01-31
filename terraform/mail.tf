@@ -8,7 +8,7 @@ resource "digitalocean_droplet" "mail-jasonernst-com" {
   size     = "s-1vcpu-512mb-10gb"  # $4/mo - sufficient for Stalwart with 2 users
   ipv6     = true
   vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
-  ssh_keys = [28506911]
+  ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 
   tags = ["mail", "jasonernst-com"]
 }

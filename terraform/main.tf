@@ -6,23 +6,13 @@ resource "digitalocean_vpc" "www-jasonernst-vpc" {
 
 # size chart: https://developers.digitalocean.com/documentation/changelog/api-v2/new-size-slugs-for-droplet-plan-changes/
 resource "digitalocean_droplet" "www-jasonernst-com" {
-  image = "ubuntu-20-04-x64"
-  name = "www-jasonernst-com"
-  region = "sfo2"
-  size = "s-1vcpu-2gb"
-  ipv6 = true
+  image    = "ubuntu-24-04-x64"
+  name     = "www-jasonernst-com"
+  region   = "sfo2"
+  size     = "s-1vcpu-2gb"
+  ipv6     = true
   vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
-  ssh_keys = [28506911]
-}
-
-resource "digitalocean_droplet" "lp-jasonernst-com" {
-  image = "ubuntu-20-04-x64"
-  name = "lp-jasonernst-com"
-  region = "sfo2"
-  size = "s-1vcpu-2gb"
-  ipv6 = true
-  vpc_uuid = digitalocean_vpc.www-jasonernst-vpc.id
-  ssh_keys = [28506911]
+  ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 }
 
 resource "digitalocean_domain" "default" {
@@ -44,13 +34,6 @@ resource "digitalocean_record" "CNAME-www" {
   value = "@"
 }
 
-resource "digitalocean_record" "CNAME-ombi" {
-  domain = digitalocean_domain.default.name
-  type = "CNAME"
-  name = "ombi"
-  value = "@"
-}
-
 resource "digitalocean_record" "CNAME-staging" {
   domain = digitalocean_domain.default.name
   type = "CNAME"
@@ -67,9 +50,17 @@ resource "digitalocean_record" "CNAME-dev" {
 
 resource "digitalocean_record" "TXT-keybase" {
   domain = digitalocean_domain.default.name
-  type = "TXT"
-  name = "@"
-  value = "keybase-site-verification=YuSsvhu0S_6Oy2jZeTSr9ZojN-hYTcSl4HlWTvYxZBw"
+  type   = "TXT"
+  name   = "@"
+  value  = "keybase-site-verification=YuSsvhu0S_6Oy2jZeTSr9ZojN-hYTcSl4HlWTvYxZBw"
+}
+
+# Google site verification
+resource "digitalocean_record" "TXT-google" {
+  domain = digitalocean_domain.default.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=RoGJzQFlM7_9E-aX1L6ly6A_ztGlKSywHyen151HrBE"
 }
 
 # maven verification record
@@ -78,20 +69,6 @@ resource "digitalocean_record" "TXT-maven" {
   type = "TXT"
   name = "@"
   value = "7mi6gm0pb0"
-}
-
-resource "digitalocean_record" "A-home" {
-  domain = digitalocean_domain.default.name
-  type = "A"
-  name = "home"
-  value = "98.207.181.75"
-}
-
-resource "digitalocean_record" "CNAME-lp" {
-  domain = digitalocean_domain.default.name
-  type = "A"
-  name = "lp"
-  value = digitalocean_droplet.lp-jasonernst-com.ipv4_address
 }
 
 output "droplet_ip_addresses" {
