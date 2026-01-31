@@ -1,9 +1,10 @@
 ---
 # Global variables for all hosts
 
-# 1Password account ID (personal account)
+# 1Password settings (personal account)
 # Used in all onepassword lookups across roles
 onepassword_account_id: "CZG3A4373RA2FC5W5JKFUMYILI"
+onepassword_vault: "Infrastructure"
 
 # Bootstrap defaults (servers): no password, NOPASSWD sudo
 # Override per group in group_vars/<group>.yml or per host in inventory

@@ -94,8 +94,8 @@
       TRANSMISSION_WEB_UI=transmission-web-control
       OPENVPN_PROVIDER=NORDVPN
       NORDVPN_PROTOCOL=udp
-      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault='Infrastructure') }}
-      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault='Infrastructure') }}
+      OPENVPN_USERNAME={{ lookup('community.general.onepassword', 'NordVPN Manual', field='username', vault=onepassword_vault) }}
+      OPENVPN_PASSWORD={{ lookup('community.general.onepassword', 'NordVPN Manual', field='credential', vault=onepassword_vault) }}
       NORDVPN_COUNTRY:=US
       NORDVPN_CATEGORY=P2P
       LOCAL_NETWORK=192.168.0.0/24
@@ -250,7 +250,7 @@
     name: mysql
     image: mysql:8
     env:
-      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+      MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     volumes:
       - /volume1/storage/docker/mysql:/var/lib/mysql
     network_mode: bridge

@@ -32,9 +32,9 @@
       - "29015:27015/udp"
       - "29020:27020/udp"
     env:
-      SRCDS_TOKEN: "{{ lookup('community.general.onepassword', 'CS2 Steam', field='credential', vault='Infrastructure', account_id=onepassword_account_id) }}"
+      SRCDS_TOKEN: "{{ lookup('community.general.onepassword', 'CS2 Steam', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
       CS2_SERVERNAME: "California CS2"
-      CS2_RCONPW: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+      CS2_RCONPW: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
       CS2_SERVER_HIBERNATE: "1"
       CS2_GAMEALIAS: "casual"
     devices:
