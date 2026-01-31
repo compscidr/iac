@@ -170,7 +170,7 @@
   tags: mysql
   become: true
   ansible.builtin.file:
-    path: /volume1/docker/mysql
+    path: /volume1/storage/docker/mysql
     state: directory
     mode: '755'
     owner: '999'
@@ -185,7 +185,7 @@
     env:
       MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
     volumes:
-      - /volume1/docker/mysql:/var/lib/mysql
+      - /volume1/storage/docker/mysql:/var/lib/mysql
     network_mode: bridge
     published_ports:
       - "3306:3306"
