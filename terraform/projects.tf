@@ -4,6 +4,13 @@
 # - dumpers.xyz (https://github.com/compscidr/network-tools)
 # - darksearch.xyz (https://github.com/compscidr/darksearch.xyz)
 
+# VPC for sfo3 region
+resource "digitalocean_vpc" "sfo3-vpc" {
+  name     = "projects-vpc"
+  region   = "sfo3"
+  ip_range = "10.10.20.0/24"
+}
+
 resource "digitalocean_droplet" "projects" {
   image    = "ubuntu-24-04-x64"
   name     = "projects"
@@ -14,13 +21,6 @@ resource "digitalocean_droplet" "projects" {
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 
   tags = ["projects"]
-}
-
-# VPC for sfo3 region
-resource "digitalocean_vpc" "sfo3-vpc" {
-  name     = "projects-vpc"
-  region   = "sfo3"
-  ip_range = "10.10.20.0/24"
 }
 
 # ============================================================================
