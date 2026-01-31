@@ -76,3 +76,4 @@
   when:
     - bootstrap_docker_enabled
     - ansible_os_family == "Debian"
+    - ansible_service_mgr == "systemd"  # Skip in containers without systemd
