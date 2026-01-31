@@ -9,6 +9,20 @@ terraform {
       version = "~> 2.0"
     }
   }
+
+  # Remote state in DigitalOcean Spaces (S3-compatible)
+  # Create bucket first: doctl spaces create terraform-state --region sfo3
+  backend "s3" {
+    endpoint                    = "sfo3.digitaloceanspaces.com"
+    bucket                      = "terraform-state-jasonernst"
+    key                         = "iac/terraform.tfstate"
+    region                      = "us-east-1"  # Required but ignored by DO
+    skip_credentials_validation = true
+    skip_metadata_api_check     = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
+  }
 }
 
 # 1Password provider - uses CLI/desktop app integration
