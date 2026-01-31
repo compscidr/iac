@@ -1,0 +1,21 @@
+---
+# Bootstrap playbook - minimal server provisioning
+# Can be run standalone or via cloud-init ansible-pull
+#
+# Usage:
+#   ansible-playbook -i inventory.yml bootstrap.yml --limit <host>
+#
+# Or via ansible-pull (cloud-init):
+#   ansible-pull -U https://github.com/compscidr/iac.git -d /tmp/iac ansible/bootstrap.yml
+
+- name: Bootstrap server
+  hosts: all
+  gather_facts: true
+
+  vars:
+    # Override these via inventory, extra-vars, or 1Password lookup
+    bootstrap_username: jason
+    # bootstrap_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault='Infrastructure') }}"
+
+  roles:
+    - bootstrap

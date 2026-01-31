@@ -1,0 +1,23 @@
+---
+# Bootstrap role defaults
+
+# User configuration
+bootstrap_username: jason
+bootstrap_user_shell: /bin/bash
+bootstrap_user_groups:
+  - sudo
+  - docker
+
+# SSH key - can be overridden or fetched from 1Password
+# If empty, will try to copy from root's authorized_keys
+bootstrap_ssh_public_key: ""
+
+# Tailscale
+bootstrap_tailscale_enabled: true
+bootstrap_tailscale_authkey: ""  # Set via 1Password lookup or env var
+
+# Docker
+bootstrap_docker_enabled: true
+
+# GitHub known hosts
+bootstrap_github_known_hosts: true

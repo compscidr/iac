@@ -1,0 +1,128 @@
+---
+# Bootstrap role - minimal server/workstation provisioning
+# Creates user, sets up SSH, installs Docker and Tailscale
+
+- name: Create docker group
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.group:
+    name: docker
+    state: present
+  when: bootstrap_docker_enabled
+
+- name: Create user with NOPASSWD sudo
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.user:
+    name: "{{ bootstrap_username }}"
+    shell: "{{ bootstrap_user_shell }}"
+    groups: "{{ bootstrap_user_groups | join(',') }}"
+    append: true
+    create_home: true
+
+- name: Allow passwordless sudo
+  become: true
+  tags: [bootstrap, user]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_username }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/{{ bootstrap_username }}"
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Ensure SSH directory exists
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.file:
+    path: "/home/{{ bootstrap_username }}/.ssh"
+    state: directory
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+    mode: "0700"
+
+- name: Copy SSH public key (from variable)
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_ssh_public_key }}\n"
+    dest: "/home/{{ bootstrap_username }}/.ssh/authorized_keys"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+    mode: "0600"
+  when: bootstrap_ssh_public_key | length > 0
+
+- name: Copy SSH public key (from root's authorized_keys)
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.copy:
+    src: /root/.ssh/authorized_keys
+    dest: "/home/{{ bootstrap_username }}/.ssh/authorized_keys"
+    remote_src: true
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+    mode: "0600"
+  when: bootstrap_ssh_public_key | length == 0
+
+- name: Add GitHub to known hosts
+  become: true
+  become_user: "{{ bootstrap_username }}"
+  tags: [bootstrap, ssh]
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+    path: "/home/{{ bootstrap_username }}/.ssh/known_hosts"
+    state: present
+  when: bootstrap_github_known_hosts
+
+- name: Install Docker (Ubuntu/Debian)
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+    update_cache: true
+  when:
+    - bootstrap_docker_enabled
+    - ansible_os_family == "Debian"
+
+- name: Ensure Docker service is running
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+  when:
+    - bootstrap_docker_enabled
+    - ansible_os_family == "Debian"
+
+- name: Install Tailscale
+  become: true
+  tags: [bootstrap, tailscale]
+  ansible.builtin.shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+  when: bootstrap_tailscale_enabled
+
+- name: Connect to Tailscale (with authkey)
+  become: true
+  tags: [bootstrap, tailscale]
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ bootstrap_tailscale_authkey }}"
+  when:
+    - bootstrap_tailscale_enabled
+    - bootstrap_tailscale_authkey | length > 0
+  register: tailscale_up
+  changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
+  failed_when: false
+
+- name: Tailscale status (manual setup needed if no authkey)
+  become: true
+  tags: [bootstrap, tailscale]
+  ansible.builtin.debug:
+    msg: "Tailscale installed but not connected. Run 'sudo tailscale up' manually to authenticate."
+  when:
+    - bootstrap_tailscale_enabled
+    - bootstrap_tailscale_authkey | length == 0
