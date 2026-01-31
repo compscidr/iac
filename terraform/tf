@@ -16,4 +16,10 @@ if ! command -v op &> /dev/null; then
     exit 1
 fi
 
+# Set 1Password account for CLI integration (local runs)
+# CI uses OP_SERVICE_ACCOUNT_TOKEN instead
+if [ -z "$OP_SERVICE_ACCOUNT_TOKEN" ]; then
+    export OP_ACCOUNT="CZG3A4373RA2FC5W5JKFUMYILI"
+fi
+
 exec op run --env-file="$SCRIPT_DIR/.env.op" -- terraform "$@"
