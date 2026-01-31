@@ -85,6 +85,17 @@
     mode: "0600"
   when: bootstrap_ssh_public_key | length == 0
 
+- name: Copy SSH private key (for git, etc.)
+  become: true
+  tags: [bootstrap, ssh]
+  ansible.builtin.copy:
+    content: "{{ bootstrap_ssh_private_key }}\n"
+    dest: "/home/{{ bootstrap_username }}/.ssh/id_rsa"
+    owner: "{{ bootstrap_username }}"
+    group: "{{ bootstrap_username }}"
+    mode: "0600"
+  when: bootstrap_ssh_private_key | length > 0
+
 - name: Add GitHub to known hosts
   become: true
   become_user: "{{ bootstrap_username }}"

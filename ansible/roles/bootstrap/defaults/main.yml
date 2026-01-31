@@ -14,9 +14,14 @@ bootstrap_user_groups:
 #   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure') }}"
 bootstrap_user_password: ""
 
-# SSH key - can be overridden or fetched from 1Password
+# SSH authorized_keys (public key) - for logging IN as this user
 # If empty, will try to copy from root's authorized_keys
 bootstrap_ssh_public_key: ""
+
+# SSH private key - for user to SSH OUT (e.g., to GitHub)
+# Set via 1Password lookup in group_vars for workstations:
+#   bootstrap_ssh_private_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault='Infrastructure', account_id='...') }}"
+bootstrap_ssh_private_key: ""
 
 # Tailscale
 bootstrap_tailscale_enabled: true
