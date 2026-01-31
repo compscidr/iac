@@ -1,4 +1,10 @@
 ---
 # Global variables for all hosts
+
+# Bootstrap defaults (servers): no password, NOPASSWD sudo
+# Override per group in group_vars/<group>.yml or per host in inventory
+# Example for workstations (see group_vars/dev.yml):
+#   bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', ...) }}"
+
 # Note: Use --ask-become-pass when running playbooks to provide sudo password
 # Automatic 1Password lookup causes too many desktop app prompts

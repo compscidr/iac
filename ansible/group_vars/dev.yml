@@ -1,0 +1,4 @@
+---
+# Dev workstations - set user password from 1Password
+# This enables normal sudo (prompts for password)
+bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault='Infrastructure', account_id='CZG3A4373RA2FC5W5JKFUMYILI') }}"
