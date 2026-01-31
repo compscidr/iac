@@ -39,11 +39,12 @@ resource "digitalocean_record" "MX" {
 }
 
 # SPF record - authorize mail server to send on behalf of domain
+# Using 'mx' mechanism which covers mail.jasonernst.com
 resource "digitalocean_record" "TXT-SPF" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "@"
-  value  = "v=spf1 mx a:mail.jasonernst.com -all"
+  value  = "v=spf1 mx -all"
 }
 
 # DMARC record - policy for handling failed authentication
@@ -55,13 +56,14 @@ resource "digitalocean_record" "TXT-DMARC" {
 }
 
 # DKIM record - placeholder, update after Stalwart generates the key
-# Run: stalwart-cli dkim generate <selector> jasonernst.com
+# Stalwart uses ed25519 by default for better security
+# Run: stalwart-cli -u http://localhost:8080 domain create jasonernst.com
 # Then update this value with the generated public key
 resource "digitalocean_record" "TXT-DKIM" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "stalwart._domainkey"
-  value  = "v=DKIM1; k=rsa; p=REPLACE_WITH_GENERATED_PUBLIC_KEY"
+  value  = "v=DKIM1; k=ed25519; p=REPLACE_WITH_GENERATED_PUBLIC_KEY"
 }
 
 # Reverse DNS (PTR) - set via DigitalOcean console or API
@@ -88,7 +90,7 @@ resource "digitalocean_firewall" "mail" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # Submission (client mail submission)
+  # Submission (client mail submission with STARTTLS)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "587"
@@ -102,7 +104,7 @@ resource "digitalocean_firewall" "mail" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # IMAP
+  # IMAP (with STARTTLS)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "143"
@@ -116,26 +118,22 @@ resource "digitalocean_firewall" "mail" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # HTTPS (webmail/admin)
+  # HTTPS (webmail)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "443"
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # HTTP (ACME challenges)
+  # HTTP (ACME certificate challenges)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "80"
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # Management UI (consider restricting to your IP)
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "8080"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
+  # Note: Management UI (8080) intentionally NOT exposed
+  # Access via SSH tunnel: ssh -L 8080:localhost:8080 root@mail.jasonernst.com
 
   # Allow all outbound
   outbound_rule {

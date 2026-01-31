@@ -12,6 +12,7 @@ protocol = "smtp"
 [server.listener.submission]
 bind = ["[::]:{{ stalwart_submission_port }}"]
 protocol = "smtp"
+tls.implicit = false  # STARTTLS required for secure auth
 
 [server.listener.submissions]
 bind = ["[::]:{{ stalwart_submissions_port }}"]
@@ -32,8 +33,10 @@ bind = ["[::]:{{ stalwart_http_port }}"]
 protocol = "http"
 tls.implicit = true
 
+# Management interface - localhost only for security
+# Access via SSH tunnel: ssh -L 8080:localhost:8080 root@mail.jasonernst.com
 [server.listener.management]
-bind = ["[::]:{{ stalwart_http_management_port }}"]
+bind = ["127.0.0.1:{{ stalwart_http_management_port }}"]
 protocol = "http"
 
 # Storage configuration
@@ -60,10 +63,11 @@ directory = "https://acme-v02.api.letsencrypt.org/directory"
 contact = ["mailto:{{ stalwart_acme_contact }}"]
 domains = ["{{ stalwart_hostname }}"]
 challenge = "tls-alpn-01"
+renew-before = "30d"
 
 [certificate."default"]
-cert = "%{file:{{ stalwart_data_dir }}/etc/certs/{{ stalwart_hostname }}.crt}%"
-private-key = "%{file:{{ stalwart_data_dir }}/etc/certs/{{ stalwart_hostname }}.key}%"
+acme = "letsencrypt"
+domains = ["{{ stalwart_hostname }}"]
 default = true
 {% endif %}
 
@@ -75,7 +79,8 @@ fail2ban = "101/1d"
 mechanisms = ["PLAIN", "LOGIN"]
 directory = "internal"
 
-# DKIM signing
+# DKIM signing - key generated post-install via stalwart-cli
+# Run: stalwart-cli -u http://localhost:8080 domain create jasonernst.com
 [signature."{{ stalwart_dkim_selector }}"]
 private-key = "%{file:{{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key}%"
 domain = "{{ stalwart_domain }}"
