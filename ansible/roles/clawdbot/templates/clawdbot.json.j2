@@ -1,6 +1,10 @@
 {
-  "_comment": "Placeholder config - run 'clawdbot setup' or migrate existing config",
   "gateway": {
-    "port": {{ clawdbot_port }}
+    "port": {{ clawdbot_port }},
+    "auth": {
+{% if clawdbot_tailscale_serve %}
+      "allowTailscale": true
+{% endif %}
+    }
   }
 }
