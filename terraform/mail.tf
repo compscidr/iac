@@ -43,13 +43,12 @@ resource "digitalocean_record" "MX" {
   priority = 10
 }
 
-# SPF record - authorize mail server to send on behalf of domain
-# Using 'mx' mechanism which covers mail.jasonernst.com
+# SPF record - authorize mail server and SendGrid to send on behalf of domain
 resource "digitalocean_record" "TXT-SPF" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "@"
-  value  = "v=spf1 mx -all"
+  value  = "v=spf1 mx include:sendgrid.net -all"
 }
 
 # DMARC record - policy for handling failed authentication
@@ -70,6 +69,43 @@ resource "digitalocean_record" "TXT-DKIM" {
   type   = "TXT"
   name   = "ed25519._domainkey"
   value  = "v=DKIM1; k=ed25519; p=fUU6C7whZBmzcatZ6PyeOUHQcaDTHzs/jSl2uubePKI="
+}
+
+# SendGrid DNS records for domain authentication and link branding
+resource "digitalocean_record" "CNAME-sendgrid-url" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "url8795"
+  value  = "sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-59516169" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "59516169"
+  value  = "sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-em" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "em3384"
+  value  = "u59516169.wl170.sendgrid.net."
+}
+
+# SendGrid DKIM records
+resource "digitalocean_record" "CNAME-sendgrid-dkim-s1" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "s1._domainkey"
+  value  = "s1.domainkey.u59516169.wl170.sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-dkim-s2" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "s2._domainkey"
+  value  = "s2.domainkey.u59516169.wl170.sendgrid.net."
 }
 
 # Reverse DNS (PTR) - set via DigitalOcean console or API
