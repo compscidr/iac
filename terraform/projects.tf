@@ -121,6 +121,13 @@ resource "digitalocean_record" "dumpers-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "dumpers-TXT-google" {
+  domain = digitalocean_domain.dumpers-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=MYH3G6qTPmCB1G_65oeTILw0sCcJGqPXvXC3vXxgYpQ"
+}
+
 # ============================================================================
 # darksearch.xyz
 # ============================================================================
