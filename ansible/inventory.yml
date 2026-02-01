@@ -47,3 +47,13 @@ java_runner:
     ubuntu-silverstone.local:
     ubuntu-cube.local:
 
+linux:
+  hosts:
+    ubuntu-beast.local:
+    ubuntu-silverstone.local:
+    ubuntu-cube.local:
+    ubuntu-work-laptop.local:
+    ubuntu-asus-laptop.local:
+    ubuntu-toshiba-laptop.local:
+    ubuntu-toshiba-mini-laptop.local:
+
