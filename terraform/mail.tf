@@ -87,3 +87,80 @@ resource "digitalocean_record" "CNAME-sendgrid-dkim-s2" {
   name   = "s2._domainkey"
   value  = "s2.domainkey.u59516169.wl170.sendgrid.net."
 }
+
+# Mail client auto-configuration records
+resource "digitalocean_record" "CNAME-autoconfig" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "autoconfig"
+  value  = "mail.jasonernst.com."
+}
+
+resource "digitalocean_record" "CNAME-autodiscover" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "autodiscover"
+  value  = "mail.jasonernst.com."
+}
+
+# SRV records for mail client auto-discovery
+resource "digitalocean_record" "SRV-autodiscover" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_autodiscover._tcp"
+  value    = "mail.jasonernst.com."
+  priority = 10
+  weight   = 1
+  port     = 443
+}
+
+resource "digitalocean_record" "SRV-submissions" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_submissions._tcp"
+  value    = "mail.jasonernst.com."
+  priority = 10
+  weight   = 1
+  port     = 465
+}
+
+resource "digitalocean_record" "SRV-imaps" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_imaps._tcp"
+  value    = "mail.jasonernst.com."
+  priority = 10
+  weight   = 1
+  port     = 993
+}
+
+# Disable plaintext protocols (SRV with target "." means not available)
+resource "digitalocean_record" "SRV-imap-disabled" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_imap._tcp"
+  value    = "."
+  priority = 0
+  weight   = 0
+  port     = 0
+}
+
+resource "digitalocean_record" "SRV-pop3-disabled" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_pop3._tcp"
+  value    = "."
+  priority = 0
+  weight   = 0
+  port     = 0
+}
+
+resource "digitalocean_record" "SRV-submission-disabled" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_submission._tcp"
+  value    = "."
+  priority = 0
+  weight   = 0
+  port     = 0
+}
