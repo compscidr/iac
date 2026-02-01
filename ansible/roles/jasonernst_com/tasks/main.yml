@@ -46,6 +46,9 @@
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
+    # recreate: true ensures containers move to nginx-proxy network
+    # Can be removed after migration is complete
+    recreate: true
     published_ports:
       - "80:80"
       - "443:443"
@@ -70,6 +73,7 @@
   community.docker.docker_container:
     name: letsencrypt
     image: jrcs/letsencrypt-nginx-proxy-companion
+    recreate: true
     volumes:
       - certs:/etc/nginx/certs:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -190,6 +194,7 @@
   community.docker.docker_container:
     name: www.jasonernst.com
     image: compscidr/goblog:v0.1.44
+    recreate: true
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
@@ -215,6 +220,7 @@
   community.docker.docker_container:
     name: staging.jasonernst.com
     image: compscidr/goblog:v0.1.46
+    recreate: true
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
