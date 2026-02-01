@@ -1,0 +1,4 @@
+# Linux-specific settings
+# Use bash explicitly to support bash-specific features like 'set -o pipefail'
+# (Ubuntu's /bin/sh is dash which doesn't support this)
+ansible_shell_executable: /bin/bash
