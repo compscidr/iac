@@ -15,5 +15,4 @@
   gather_facts: true
 
   roles:
-    - jasonernst_com  # Sets up nginx-proxy network and containers
     - mailu
