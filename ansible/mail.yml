@@ -14,6 +14,18 @@
   hosts: www
   gather_facts: true
 
+  pre_tasks:
+    - name: Ensure nginx-proxy network exists
+      become: true
+      community.docker.docker_network:
+        name: nginx-proxy
+        state: present
+
+    - name: Ensure certs volume exists
+      become: true
+      community.docker.docker_volume:
+        name: certs
+        state: present
+
   roles:
-    - jasonernst_com  # Ensures nginx-proxy network exists and containers are connected
     - mailu
