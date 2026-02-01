@@ -19,9 +19,9 @@ mailu_admin_password: "{{ lookup('community.general.onepassword', 'Mailu Admin',
 # Initial user accounts (created on first run)
 mailu_users:
   - user: jason
-    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - jason', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+    password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - jason', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
   - user: kai
-    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - kai', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+    password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
 
 # Features
 mailu_webmail: roundcube  # roundcube, snappymail, or none
