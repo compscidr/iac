@@ -149,12 +149,7 @@ resource "digitalocean_firewall" "projects" {
   name        = "projects-fw"
   droplet_ids = [digitalocean_droplet.projects.id]
 
-  # SSH
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "22"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
+  # SSH access via Tailscale only - no public port 22
 
   # HTTP (ACME/Let's Encrypt challenges)
   inbound_rule {

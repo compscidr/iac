@@ -116,12 +116,7 @@ resource "digitalocean_firewall" "www" {
   name        = "www-jasonernst-com-fw"
   droplet_ids = [digitalocean_droplet.www-jasonernst-com.id]
 
-  # SSH
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "22"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
+  # SSH access via Tailscale only - no public port 22
 
   # HTTP (ACME/Let's Encrypt challenges)
   inbound_rule {
