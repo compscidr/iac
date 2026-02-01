@@ -142,21 +142,23 @@ expire = "5d"
 {% if stalwart_sendgrid_enabled %}
 # SendGrid SMTP relay for outbound mail delivery
 # Improves deliverability by using SendGrid's trusted IP reputation
-[remote."sendgrid"]
+[queue.route."sendgrid"]
+type = "relay"
 address = "smtp.sendgrid.net"
 port = 587
 protocol = "smtp"
-tls.implicit = false
-tls.starttls = "require"
 
-[remote."sendgrid".auth]
+[queue.route."sendgrid".tls]
+implicit = false
+
+[queue.route."sendgrid".auth]
 username = "{{ stalwart_sendgrid_username }}"
 secret = "{{ stalwart_sendgrid_api_key }}"
 
-# Route non-local outbound mail through SendGrid
-[queue.outbound]
-next-hop = [ { if = "!is_local_domain('', rcpt_domain)", then = "'sendgrid'" },
-             { else = false } ]
+# Route strategy: local delivery for local domains, SendGrid for everything else
+[queue.strategy]
+route = [ { if = "is_local_domain('', rcpt_domain)", then = "'local'" },
+          { else = "'sendgrid'" } ]
 {% endif %}
 
 # Reporting
