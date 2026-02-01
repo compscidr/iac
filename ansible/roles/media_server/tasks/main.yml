@@ -1,4 +1,11 @@
 ---
+# Ensure network variables are set before including roles
+- name: Set media network defaults
+  tags: always
+  ansible.builtin.set_fact:
+    media_storage_network_enabled: true
+    media_storage_network_name: "media"
+
 # Initialize media_user facts (UID/GID detection) before other tasks
 # This runs media_storage which depends on media_user
 - name: Initialize media storage and user facts
