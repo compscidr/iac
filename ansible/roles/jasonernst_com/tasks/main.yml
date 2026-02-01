@@ -63,6 +63,15 @@
       ENABLE_IPV6: "true"
       DEFAULT_HOST: "jasonernst.com"
 
+- name: Ensure nginx-proxy container is connected to nginx-proxy network
+  tags: [nginx, network]
+  become: true
+  ansible.builtin.command:
+    cmd: docker network connect nginx-proxy nginx-proxy
+  register: connect_nginx_proxy
+  changed_when: connect_nginx_proxy.rc == 0
+  failed_when: false
+
 - name: Deploy LetsEncrypt companion to the proxy
   tags: letsencrypt
   vars:
@@ -79,6 +88,15 @@
     restart_policy: unless-stopped
     env:
       ENABLE_IPV6: "true"
+
+- name: Ensure letsencrypt container is connected to nginx-proxy network
+  tags: [letsencrypt, network]
+  become: true
+  ansible.builtin.command:
+    cmd: docker network connect nginx-proxy letsencrypt
+  register: connect_letsencrypt
+  changed_when: connect_letsencrypt.rc == 0
+  failed_when: false
 
 
 - name: Create production /opt/goblog directory on host
@@ -208,6 +226,15 @@
       LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
+- name: Ensure www.jasonernst.com container is connected to nginx-proxy network
+  tags: [website, network]
+  become: true
+  ansible.builtin.command:
+    cmd: docker network connect nginx-proxy www.jasonernst.com
+  register: connect_www
+  changed_when: connect_www.rc == 0
+  failed_when: false
+
 - name: Deploy staging.jasonernst.com
   tags: website
   vars:
@@ -232,5 +259,14 @@
       VIRTUAL_PORT: "7000"
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
+
+- name: Ensure staging.jasonernst.com container is connected to nginx-proxy network
+  tags: [website, network]
+  become: true
+  ansible.builtin.command:
+    cmd: docker network connect nginx-proxy staging.jasonernst.com
+  register: connect_staging
+  changed_when: connect_staging.rc == 0
+  failed_when: false
 
 # MySQL moved to media_server role (used by Ombi on NAS)
