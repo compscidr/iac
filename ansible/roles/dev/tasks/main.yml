@@ -320,6 +320,28 @@
       - terraform
       - packer
 
+# Cleanup old tailscale repo configurations (conflicting keyring paths)
+- name: Remove old tailscale repo file (sources.list.d)
+  become: true
+  tags: tailscale
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/tailscale.list
+    state: absent
+
+- name: Remove old tailscale keyring (archive-keyring)
+  become: true
+  tags: tailscale
+  ansible.builtin.file:
+    path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    state: absent
+
+- name: Remove old tailscale keyring (keyrings dir)
+  become: true
+  tags: tailscale
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/tailscale.gpg
+    state: absent
+
 - name: Add tailscale repository
   become: true
   tags: tailscale
