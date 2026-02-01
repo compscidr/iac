@@ -1,0 +1,5 @@
+# fnm role defaults
+fnm_node_version: "22"  # LTS version to install
+fnm_set_default: true   # Set as default version
+fnm_cleanup_apt: true   # Remove apt nodejs/npm packages
+fnm_configure_shell: true  # Add shell integration to bashrc/zshrc (disable if using dotfiles)

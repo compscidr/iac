@@ -81,36 +81,69 @@
     pkg:
       - golang
 
-- name: Install node development tools
-  become: true
+# Node.js via fnm (Fast Node Manager)
+- name: Install fnm and Node.js
   tags:
     - node
     - npm
-  ansible.builtin.apt:
-    pkg:
-      - npm
+    - fnm
+  ansible.builtin.include_role:
+    name: fnm
 
 # yarn: https://www.itzgeek.com/how-tos/linux/ubuntu-how-tos/how-to-install-yarn-on-ubuntu-22-04-ubuntu-20-04.html
-# https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
-- name: Install yarn node.js package
+- name: Check if yarn is installed
   become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    eval "$(fnm env)" 2>/dev/null || true
+    which yarn || echo "not found"
+  register: yarn_check
+  changed_when: false
   tags:
     - yarn
     - node
     - npm
-  community.general.npm:
-    name: yarn
-    global: true
 
-- name: Install tldr node package # https://tldr.sh/
+- name: Install yarn via fnm npm
   become: true
+  become_user: "{{ username }}"
+  tags:
+    - yarn
+    - node
+    - npm
+  ansible.builtin.shell: |
+    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    eval "$(fnm env)"
+    npm install -g yarn
+  when: "'not found' in yarn_check.stdout"
+
+- name: Check if tldr is installed
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    eval "$(fnm env)" 2>/dev/null || true
+    which tldr || echo "not found"
+  register: tldr_check
+  changed_when: false
   tags:
     - tldr
     - node
     - npm
-  community.general.npm:
-    name: tldr
-    global: true
+
+- name: Install tldr via fnm npm # https://tldr.sh/
+  become: true
+  become_user: "{{ username }}"
+  tags:
+    - tldr
+    - node
+    - npm
+  ansible.builtin.shell: |
+    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    eval "$(fnm env)"
+    npm install -g tldr
+  when: "'not found' in tldr_check.stdout"
 
 - name: Check if php ppa repository exists
   tags: php

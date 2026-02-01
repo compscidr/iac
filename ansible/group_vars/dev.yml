@@ -4,3 +4,6 @@
 
 # Password enables normal sudo (prompts for password)
 bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+
+# fnm: don't modify shell configs (managed by dotfiles repo)
+fnm_configure_shell: false
