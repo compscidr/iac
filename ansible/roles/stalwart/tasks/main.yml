@@ -75,7 +75,7 @@
 
     - name: Create symlink for stalwart-mail
       ansible.builtin.file:
-        src: "{{ stalwart_data_dir }}/bin/stalwart-mail"
+        src: "{{ stalwart_data_dir }}/bin/stalwart"
         dest: /usr/local/bin/stalwart-mail
         state: link
 
