@@ -44,7 +44,7 @@ ansible-playbook -i inventory.yml common.yml --limit <hostname> --ask-become-pas
 │     Terraform       │       │      Ansible        │
 │  (cloud resources)  │       │   (configuration)   │
 ├─────────────────────┤       ├─────────────────────┤
-│ • Droplets          │       │ • bootstrap (all)   │
+│ • Droplets          │       │ • bootstrap         │
 │ • DNS records       │       │ • common_cli        │
 │ • Firewalls         │       │ • dev / dev_gui     │
 │ • VPCs              │       │ • media_server      │
