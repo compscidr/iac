@@ -1,0 +1,48 @@
+---
+# Mailu role defaults
+
+# Domain configuration
+mailu_domain: jasonernst.com
+mailu_hostname: mail.jasonernst.com
+
+# Installation path
+mailu_install_path: /opt/mailu
+
+# Secret key (override in vault or host vars!)
+mailu_secret_key: "{{ lookup('community.general.onepassword', 'Mailu Secret Key', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Admin account
+mailu_admin_user: admin
+mailu_admin_password: "{{ lookup('community.general.onepassword', 'Mailu Admin', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Initial user accounts (created on first run)
+mailu_users:
+  - user: jason
+    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - jason', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+  - user: kai
+    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - kai', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Features
+mailu_webmail: roundcube  # roundcube, snappymail, or none
+mailu_antivirus: false    # ClamAV uses lots of RAM
+mailu_webdav: false
+mailu_fetchmail: false
+
+# TLS configuration
+mailu_tls_flavor: letsencrypt  # letsencrypt, cert, mail, mail-letsencrypt, notls
+
+# Rate limiting
+mailu_message_ratelimit: "200/day"
+mailu_message_ratelimit_exemption: ""
+
+# Subnet (Docker network)
+mailu_subnet: 192.168.203.0/24
+
+# Ports (adjust if conflicts)
+mailu_http_port: 80
+mailu_https_port: 443
+mailu_smtp_port: 25
+mailu_smtps_port: 465
+mailu_submission_port: 587
+mailu_imap_port: 143
+mailu_imaps_port: 993

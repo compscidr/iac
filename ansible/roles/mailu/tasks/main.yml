@@ -1,0 +1,96 @@
+---
+# Mailu mail server deployment
+
+- name: Create Mailu directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ mailu_install_path }}"
+    state: directory
+    mode: '755'
+
+- name: Create Mailu data directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ mailu_install_path }}/{{ item }}"
+    state: directory
+    mode: '755'
+  loop:
+    - data
+    - dkim
+    - mail
+    - overrides
+    - redis
+    - webmail
+
+- name: Deploy mailu.env
+  become: true
+  ansible.builtin.template:
+    src: mailu.env.j2
+    dest: "{{ mailu_install_path }}/mailu.env"
+    mode: '600'
+  notify: Restart Mailu
+
+- name: Deploy docker-compose.yml
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ mailu_install_path }}/docker-compose.yml"
+    mode: '644'
+  notify: Restart Mailu
+
+- name: Start Mailu stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ mailu_install_path }}"
+    state: present
+    pull: always
+
+- name: Wait for Mailu to be ready
+  become: true
+  ansible.builtin.wait_for:
+    port: "{{ mailu_https_port }}"
+    delay: 10
+    timeout: 120
+
+- name: Create admin user
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      docker compose exec -T admin flask mailu admin
+      {{ mailu_admin_user }} {{ mailu_domain }} {{ mailu_admin_password }}
+  args:
+    chdir: "{{ mailu_install_path }}"
+  register: admin_result
+  changed_when: "'created' in admin_result.stdout"
+  failed_when: false  # May fail if user exists
+
+- name: Create mail users
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      docker compose exec -T admin flask mailu user
+      {{ item.user }} {{ mailu_domain }} {{ item.password }}
+  args:
+    chdir: "{{ mailu_install_path }}"
+  loop: "{{ mailu_users }}"
+  register: user_result
+  changed_when: "'created' in user_result.stdout"
+  failed_when: false  # May fail if user exists
+  no_log: true  # Hide passwords
+
+- name: Get DKIM public key
+  become: true
+  ansible.builtin.command:
+    cmd: cat "{{ mailu_install_path }}/dkim/{{ mailu_domain }}.{{ mailu_domain }}.key"
+  register: dkim_key
+  changed_when: false
+  failed_when: false
+
+- name: Display DKIM key for DNS
+  ansible.builtin.debug:
+    msg: |
+      Add this DKIM record to DNS:
+      Name: dkim._domainkey.{{ mailu_domain }}
+      Type: TXT
+      Value: {{ dkim_key.stdout | default('DKIM key not yet generated - restart admin container') }}
+  when: dkim_key.stdout is defined and dkim_key.stdout | length > 0
