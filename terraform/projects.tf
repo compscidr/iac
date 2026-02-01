@@ -32,8 +32,16 @@ resource "digitalocean_droplet" "projects" {
 # ping4.network
 # ============================================================================
 resource "digitalocean_domain" "ping4-network" {
-  name       = "ping4.network"
-  ip_address = digitalocean_droplet.projects.ipv4_address
+  name = "ping4.network"
+  # Note: Don't use ip_address here - it only sets A record at creation time
+  # and won't update if the droplet IP changes. Use explicit records instead.
+}
+
+resource "digitalocean_record" "ping4-A" {
+  domain = digitalocean_domain.ping4-network.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
 }
 
 resource "digitalocean_record" "ping4-AAAA" {
@@ -54,8 +62,14 @@ resource "digitalocean_record" "ping4-CNAME-www" {
 # ping6.network
 # ============================================================================
 resource "digitalocean_domain" "ping6-network" {
-  name       = "ping6.network"
-  ip_address = digitalocean_droplet.projects.ipv4_address
+  name = "ping6.network"
+}
+
+resource "digitalocean_record" "ping6-A" {
+  domain = digitalocean_domain.ping6-network.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
 }
 
 resource "digitalocean_record" "ping6-AAAA" {
@@ -76,8 +90,14 @@ resource "digitalocean_record" "ping6-CNAME-www" {
 # dumpers.xyz
 # ============================================================================
 resource "digitalocean_domain" "dumpers-xyz" {
-  name       = "dumpers.xyz"
-  ip_address = digitalocean_droplet.projects.ipv4_address
+  name = "dumpers.xyz"
+}
+
+resource "digitalocean_record" "dumpers-A" {
+  domain = digitalocean_domain.dumpers-xyz.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
 }
 
 resource "digitalocean_record" "dumpers-AAAA" {
@@ -98,8 +118,14 @@ resource "digitalocean_record" "dumpers-CNAME-www" {
 # darksearch.xyz
 # ============================================================================
 resource "digitalocean_domain" "darksearch-xyz" {
-  name       = "darksearch.xyz"
-  ip_address = digitalocean_droplet.projects.ipv4_address
+  name = "darksearch.xyz"
+}
+
+resource "digitalocean_record" "darksearch-A" {
+  domain = digitalocean_domain.darksearch-xyz.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
 }
 
 resource "digitalocean_record" "darksearch-AAAA" {
