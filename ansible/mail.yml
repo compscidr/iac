@@ -6,7 +6,7 @@
 # with fields: username, password
 
 - name: Deploy Stalwart Mail Server
-  hosts: mail.jasonernst.com
+  hosts: mail
   become: true
   vars:
     stalwart_domain: jasonernst.com
