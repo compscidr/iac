@@ -11,7 +11,7 @@ resource "digitalocean_droplet" "clawdbot" {
   image    = "ubuntu-24-04-x64"
   name     = "clawdbot"
   region   = "sfo3"
-  size     = "s-1vcpu-2gb"  # $12/mo - plenty for Clawdbot
+  size     = "s-1vcpu-2gb" # $12/mo - plenty for Clawdbot
   ipv6     = true
   vpc_uuid = digitalocean_vpc.clawdbot-vpc.id
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
