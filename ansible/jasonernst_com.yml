@@ -6,3 +6,4 @@
     - vars/user.yml
   roles:
     - jasonernst_com
+    - mailu
