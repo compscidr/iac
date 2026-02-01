@@ -1,0 +1,9 @@
+---
+# Media user/group for UID/GID auto-detection
+# These must exist on the target system
+media_user_user: jason
+media_user_group: admin
+
+# Base storage path for all media directories
+# The media_storage role will create subdirectories (downloads, tv, movies, music)
+media_storage_base_path: /volume1/storage
