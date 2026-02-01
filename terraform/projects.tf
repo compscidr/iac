@@ -86,6 +86,13 @@ resource "digitalocean_record" "ping6-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "ping6-TXT-google" {
+  domain = digitalocean_domain.ping6-network.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=QFKakZHMJSkSTb5MB0ZC9epKnzkh7Bzpp_bPnHoMrA0"
+}
+
 # ============================================================================
 # dumpers.xyz
 # ============================================================================
