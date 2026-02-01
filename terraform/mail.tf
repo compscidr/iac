@@ -43,20 +43,12 @@ resource "digitalocean_record" "TXT-DMARC" {
 }
 
 # DKIM record for Mailu
-# Mailu generates its DKIM key automatically on first run.
-# After deploying Mailu, get the key and update this value.
-#
-# To get the DKIM key after deployment:
-#   ssh www "cat /opt/mailu/dkim/jasonernst.com.dkim.key"
+# Generated via Mailu admin UI: https://mail.jasonernst.com/admin
 resource "digitalocean_record" "TXT-DKIM" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "dkim._domainkey"
-  value  = "v=DKIM1; k=rsa; p=PLACEHOLDER_UPDATE_AFTER_MAILU_DEPLOYMENT"
-
-  lifecycle {
-    ignore_changes = [value] # Allow manual updates without terraform overwriting
-  }
+  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwoq0cBEGBSux4sWE2AVkhMhfkjq3q1AHidf0OhzMb0tByDvYm8iGIvEvmH8ZjKjyJMhZGPwgkjomQ7/glVUTQ0RqbjCODt8Z+Ch9OcLc3vwFv5Zd18wCuiu7KlaaaP2zWJMheCfNm16Oroqs0kQJ9m/RVB2UQWHJmu0cjtdVbIu6ICEyd/yY42GXR1wMWKPqYIagZU8dYau7NDHwJJCKmtybKWNLkpMZq19KC4XxrjzvKcCZuhhM6sbxw9hpoTA1Tj708nYHMg5rS+GHrUA8T4DqJDBjWhXfVfkmRQnK0lwV5A12KAifOjWu4L5+B10y2SE7jojnxQ1rHwHwPLwUHwIDAQAB"
 }
 
 # SendGrid DNS records for domain authentication and link branding
