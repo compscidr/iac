@@ -27,5 +27,22 @@
         name: certs
         state: present
 
+    # Connect existing containers to nginx-proxy network (idempotent - fails silently if already connected)
+    - name: Connect nginx-proxy container to nginx-proxy network
+      become: true
+      ansible.builtin.command:
+        cmd: docker network connect nginx-proxy nginx-proxy
+      register: connect_nginx
+      changed_when: connect_nginx.rc == 0
+      failed_when: false
+
+    - name: Connect letsencrypt container to nginx-proxy network
+      become: true
+      ansible.builtin.command:
+        cmd: docker network connect nginx-proxy letsencrypt
+      register: connect_letsencrypt
+      changed_when: connect_letsencrypt.rc == 0
+      failed_when: false
+
   roles:
     - mailu
