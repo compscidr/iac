@@ -56,7 +56,7 @@ resource "digitalocean_record" "TXT-DKIM" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "dkim._domainkey"
-  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwoq0cBEGBSux4sWE2AVkhMhfkjq3q1AHidf0OhzMb0tByDvYm8iGIvEvmH8ZjKjyJMhZGPwgkjomQ7/glVUTQ0RqbjCODt8Z+Ch9OcLc3vwFv5Zd18wCuiu7KlaaaP2zWJMheCfNm16Oroqs0kQJ9m/RVB2UQWHJmu0cjtdVbIu6ICEyd/yY42GXR1wMWKPqYIagZU8dYau7NDHwJJCKmtybKWNLkpMZq19KC4XxrjzvKcCZuhhM6sbxw9hpoTA1Tj708nYHMg5rS+GHrUA8T4DqJDBjWhXfVfkmRQnK0lwV5A12KAifOjWu4L5+B10y2SE7jojnxQ1rHwHwPLwUHwIDAQAB"
+  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwoq0cBEGBSux4sWE2AVkhMhfkjq3q1AHidf0OhzMb0tByDvYm8iGIvEvmH8ZjKjyJMhZGPwgkjomQ7/glVUTQ0RqbjCODt8Z+Ch9OcLc3vwFv5Zd18wCuiu7KlaaaP2zWJMheCfNml6Oroqs0kQJ9m/RVB2UQWHJmu0cjtdVbIu6ICEyd/yY42GXR1wMWKPqYIagZU8dYau7NDHwJJCKmtybKWNLkpMZql9KC4XxrjzvKcCZuhhM6sbxw9hpoTAlTj708nYHMg5rS+GHrUA8T4DqJDBjWhXfVfkmRQnK0lwV5A12KAifOjWu4L5+Bl0y2SE7jojnxQ1rHwHWPLwUHwIDAQAB"
 }
 
 # SendGrid DNS records for domain authentication and link branding
