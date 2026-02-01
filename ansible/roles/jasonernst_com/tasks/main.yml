@@ -130,6 +130,50 @@
     owner: root
     group: root
 
+- name: Create production database file if not exists
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/prod/database.db
+    state: touch
+    mode: '644'
+    owner: root
+    group: root
+    modification_time: preserve
+    access_time: preserve
+
+- name: Create staging database file if not exists
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/staging/database.db
+    state: touch
+    mode: '644'
+    owner: root
+    group: root
+    modification_time: preserve
+    access_time: preserve
+
+- name: Create production uploads directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/prod/uploads
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Create staging uploads directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/staging/uploads
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
 - name: Deploy www.jasonernst.com
   tags: website
   vars:
