@@ -181,7 +181,7 @@
   tags: slack
   become: true
   ansible.builtin.apt:
-    deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.43.51/slack-desktop-4.43.51-amd64.deb
+    deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.47.69/slack-desktop-4.47.69-amd64.deb
   when: ansible_os_family == "Debian"
 
 - name: Install slack (macOS)
