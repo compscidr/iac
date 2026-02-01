@@ -109,6 +109,16 @@
         owner: stalwart
         group: stalwart
 
+# Always ensure binaries are executable (runs even if install was skipped)
+- name: Ensure Stalwart binaries are executable
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0755'
+  loop:
+    - "{{ stalwart_data_dir }}/bin/stalwart"
+    - "{{ stalwart_data_dir }}/bin/stalwart-cli"
+
 - name: Configure UFW for mail services
   become: true
   community.general.ufw:
