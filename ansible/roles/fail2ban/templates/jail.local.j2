@@ -43,7 +43,7 @@ enabled = true
 filter = nginx-botsearch
 port = http,https
 logpath = /var/log/nginx/access.log
-maxretry = 2
+maxretry = {{ fail2ban_nginx_botsearch_maxretry | default(2) }}
 {% endif %}
 
 {% if fail2ban_nginx_botscan_enabled %}
