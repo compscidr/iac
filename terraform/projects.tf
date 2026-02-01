@@ -86,6 +86,13 @@ resource "digitalocean_record" "ping6-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "ping6-TXT-google" {
+  domain = digitalocean_domain.ping6-network.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=QFKakZHMJSkSTb5MB0ZC9epKnzkh7Bzpp_bPnHoMrA0"
+}
+
 # ============================================================================
 # dumpers.xyz
 # ============================================================================
@@ -114,6 +121,13 @@ resource "digitalocean_record" "dumpers-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "dumpers-TXT-google" {
+  domain = digitalocean_domain.dumpers-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=MYH3G6qTPmCB1G_65oeTILw0sCcJGqPXvXC3vXxgYpQ"
+}
+
 # ============================================================================
 # darksearch.xyz
 # ============================================================================
@@ -140,6 +154,13 @@ resource "digitalocean_record" "darksearch-CNAME-www" {
   type   = "CNAME"
   name   = "www"
   value  = "@"
+}
+
+resource "digitalocean_record" "darksearch-TXT-google" {
+  domain = digitalocean_domain.darksearch-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=J6xMjc70juAif4t0FOuNIOApZH1VSwDgB-X0Oo7Zvso"
 }
 
 # ============================================================================
