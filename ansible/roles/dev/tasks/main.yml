@@ -81,7 +81,16 @@
     pkg:
       - golang
 
-- name: Install node development tools
+- name: Check if npm is already installed
+  ansible.builtin.command: which npm
+  register: npm_check
+  changed_when: false
+  failed_when: false
+  tags:
+    - node
+    - npm
+
+- name: Install node development tools (skip if npm exists)
   become: true
   tags:
     - node
@@ -89,6 +98,7 @@
   ansible.builtin.apt:
     pkg:
       - npm
+  when: npm_check.rc != 0
 
 # yarn: https://www.itzgeek.com/how-tos/linux/ubuntu-how-tos/how-to-install-yarn-on-ubuntu-22-04-ubuntu-20-04.html
 # https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
