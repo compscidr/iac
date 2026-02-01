@@ -20,7 +20,13 @@ clawdbot_config_file: "{{ clawdbot_config_dir }}/clawdbot.json"
 
 # 1Password integration
 clawdbot_op_service_account_token: ""  # Set via vault or extra-vars
-clawdbot_op_vault: "Clawdbot"          # Vault name for secrets
+clawdbot_op_vault: "openclaw"          # Vault name for secrets
+# Items in vault:
+#   - "openclaw anthropic" - Anthropic API key
+#   - "github" - GitHub credentials  
+#   - "openai - text embedding for memory search" - OpenAI embeddings
+#   - "discord clawdbot" - Discord bot token
+#   - "mail.jasonernst.com - kai" - Email credentials
 
 # Tailscale Serve (recommended for web UI auth)
 clawdbot_tailscale_serve: true
