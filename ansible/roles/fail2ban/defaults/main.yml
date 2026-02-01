@@ -1,0 +1,27 @@
+---
+# Fail2ban defaults
+
+# Ban time in seconds (default: 1 hour)
+fail2ban_bantime: 3600
+
+# Find time - time window to count failures (default: 10 minutes)
+fail2ban_findtime: 600
+
+# Max retries before ban
+fail2ban_maxretry: 5
+
+# Ignored IPs (never ban these)
+fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - ::1
+
+# Enable SSH jail
+fail2ban_ssh_enabled: true
+
+# Enable nginx jails
+fail2ban_nginx_enabled: true
+
+# Aggressive bot scanning filter (blocks PHP probing, etc.)
+fail2ban_nginx_botscan_enabled: true
+fail2ban_nginx_botscan_maxretry: 3
+fail2ban_nginx_botscan_bantime: 86400  # 24 hours for scanners

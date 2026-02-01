@@ -1,0 +1,59 @@
+# Fail2ban local configuration
+# Managed by Ansible - do not edit manually
+
+[DEFAULT]
+# Ban settings
+bantime = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+
+# Never ban these IPs
+ignoreip = {{ fail2ban_ignoreip | join(' ') }}
+
+# Ban action (use iptables)
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+
+{% if fail2ban_ssh_enabled %}
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = {{ fail2ban_maxretry }}
+{% endif %}
+
+{% if fail2ban_nginx_enabled %}
+[nginx-http-auth]
+enabled = true
+filter = nginx-http-auth
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = {{ fail2ban_maxretry }}
+
+[nginx-limit-req]
+enabled = true
+filter = nginx-limit-req
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = {{ fail2ban_maxretry }}
+
+[nginx-botsearch]
+enabled = true
+filter = nginx-botsearch
+port = http,https
+logpath = /var/log/nginx/access.log
+maxretry = 2
+{% endif %}
+
+{% if fail2ban_nginx_botscan_enabled %}
+[nginx-botscan]
+enabled = true
+filter = nginx-botscan
+port = http,https
+logpath = /var/log/nginx/access.log
+          /var/log/nginx/*access.log
+maxretry = {{ fail2ban_nginx_botscan_maxretry }}
+bantime = {{ fail2ban_nginx_botscan_bantime }}
+findtime = 60
+{% endif %}

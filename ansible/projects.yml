@@ -7,4 +7,5 @@
   vars_files:
     - vars/user.yml
   roles:
+    - fail2ban
     - projects
