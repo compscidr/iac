@@ -628,8 +628,8 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    # Pinned commit adds host completions for ansible/ssh + 1Password aliases
-    version: db0b6d19751265214f23f0e94535b794ad1f1ef2
+    # Pinned commit adds service account token switching for 1Password
+    version: 49042043ccd73d5fdd3c61ae9082f126af3da664
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfile
