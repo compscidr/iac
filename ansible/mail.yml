@@ -1,17 +1,17 @@
 ---
-# Mail server playbook - deploys Mailu
+# Mail server playbook - deploys Mailu on www droplet (consolidated)
 #
 # Usage:
-#   ansible-playbook -i inventory.yml mail.yml --limit mail
+#   ansible-playbook -i inventory.yml mail.yml --limit www
 #
 # After deployment:
-#   1. Get DKIM key: ssh mail "cat /opt/mailu/dkim/jasonernst.com.dkim.key"
+#   1. Get DKIM key: ssh www "cat /opt/mailu/dkim/jasonernst.com.dkim.key"
 #   2. Update the DKIM DNS record in DigitalOcean
 #   3. Access webmail at https://mail.jasonernst.com/webmail
 #   4. Access admin at https://mail.jasonernst.com/admin
 
-- name: Deploy Mailu mail server
-  hosts: mail
+- name: Deploy Mailu mail server (consolidated on www)
+  hosts: www
   gather_facts: true
 
   roles:

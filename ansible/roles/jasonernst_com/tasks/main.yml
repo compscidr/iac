@@ -32,6 +32,13 @@
     owner: root
     group: root
 
+- name: Create nginx-proxy network
+  tags: [nginx, network]
+  become: true
+  community.docker.docker_network:
+    name: nginx-proxy
+    state: present
+
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
   vars:
@@ -49,7 +56,8 @@
       - dhparam:/etc/nginx/dhparam
       - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
     env:
       ENABLE_IPV6: "true"
@@ -66,7 +74,8 @@
       - certs:/etc/nginx/certs:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
     volumes_from: nginx-proxy
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
     env:
       ENABLE_IPV6: "true"
@@ -190,7 +199,8 @@
       - source: /opt/goblog/prod/.env
         target: /go/src/github.com/compscidr/goblog/.env
         type: bind
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "www.jasonernst.com,jasonernst.com"
@@ -214,7 +224,8 @@
       - source: /opt/goblog/staging/.env
         target: /go/src/github.com/compscidr/goblog/.env
         type: bind
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "staging.jasonernst.com"

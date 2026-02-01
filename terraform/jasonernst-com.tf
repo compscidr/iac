@@ -107,7 +107,7 @@ resource "digitalocean_record" "TXT-maven" {
   value  = "7mi6gm0pb0"
 }
 
-# Firewall - minimal exposure
+# Firewall - www + mail (consolidated)
 resource "digitalocean_firewall" "www" {
   name        = "www-jasonernst-com-fw"
   droplet_ids = [digitalocean_droplet.www-jasonernst-com.id]
@@ -130,6 +130,41 @@ resource "digitalocean_firewall" "www" {
   inbound_rule {
     protocol         = "tcp"
     port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # SMTP (inbound mail from other servers)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "25"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # SMTPS (implicit TLS submission)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "465"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # Submission (client mail submission with STARTTLS)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "587"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # IMAP (with STARTTLS)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "143"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # IMAPS (implicit TLS)
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "993"
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
