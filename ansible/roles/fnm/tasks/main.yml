@@ -18,6 +18,19 @@
     - fnm_cleanup_apt | default(true)
     - ansible_os_family == "Debian"
 
+- name: Install fnm dependencies (unzip, curl)
+  become: true
+  tags:
+    - fnm
+    - node
+  ansible.builtin.apt:
+    pkg:
+      - unzip
+      - curl
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
 - name: Check if fnm is installed
   become: true
   become_user: "{{ username }}"
