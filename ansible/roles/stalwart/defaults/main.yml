@@ -28,6 +28,11 @@ stalwart_dkim_selector: "ed25519"
 stalwart_acme_enabled: true
 stalwart_acme_contact: "postmaster@{{ stalwart_domain }}"
 
+# SendGrid SMTP relay (for outbound mail delivery)
+stalwart_sendgrid_enabled: false
+stalwart_sendgrid_username: "apikey"
+stalwart_sendgrid_api_key: ""
+
 # Ports
 stalwart_smtp_port: 25
 stalwart_submission_port: 587
