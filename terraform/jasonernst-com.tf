@@ -21,8 +21,16 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
 }
 
 resource "digitalocean_domain" "default" {
-  name       = "jasonernst.com"
-  ip_address = digitalocean_droplet.www-jasonernst-com.ipv4_address
+  name = "jasonernst.com"
+  # Note: Don't use ip_address here - it only sets A record at creation time
+  # and won't update if the droplet IP changes. Use explicit records instead.
+}
+
+resource "digitalocean_record" "A" {
+  domain = digitalocean_domain.default.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.www-jasonernst-com.ipv4_address
 }
 
 resource "digitalocean_record" "AAAA" {
