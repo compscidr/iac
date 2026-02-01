@@ -1,5 +1,5 @@
 ---
-# Mailu mail server deployment
+# Mailu mail server deployment (consolidated on www with nginx-proxy)
 
 - name: Create Mailu directory
   become: true
@@ -19,8 +19,15 @@
     - dkim
     - mail
     - overrides
+    - overrides/nginx
+    - overrides/dovecot
+    - overrides/postfix
+    - overrides/rspamd
+    - overrides/roundcube
     - redis
     - webmail
+    - filter
+    - mailqueue
 
 - name: Deploy mailu.env
   become: true
@@ -48,7 +55,7 @@
 - name: Wait for Mailu to be ready
   become: true
   ansible.builtin.wait_for:
-    port: "{{ mailu_https_port }}"
+    port: 443  # nginx-proxy handles HTTPS
     delay: 10
     timeout: 120
 
@@ -63,6 +70,7 @@
   register: admin_result
   changed_when: "'created' in admin_result.stdout"
   failed_when: false  # May fail if user exists
+  no_log: true  # Hide admin password
 
 - name: Create mail users
   become: true
@@ -74,14 +82,14 @@
     chdir: "{{ mailu_install_path }}"
   loop: "{{ mailu_users }}"
   register: user_result
-  changed_when: "'created' in user_result.stdout"
+  changed_when: false  # Can't reliably detect from looped command
   failed_when: false  # May fail if user exists
   no_log: true  # Hide passwords
 
 - name: Get DKIM public key
   become: true
   ansible.builtin.command:
-    cmd: cat "{{ mailu_install_path }}/dkim/{{ mailu_domain }}.{{ mailu_domain }}.key"
+    cmd: cat "{{ mailu_install_path }}/dkim/{{ mailu_domain }}.dkim.key"
   register: dkim_key
   changed_when: false
   failed_when: false

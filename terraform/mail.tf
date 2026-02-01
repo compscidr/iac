@@ -55,7 +55,7 @@ resource "digitalocean_record" "TXT-DKIM" {
   value  = "v=DKIM1; k=rsa; p=PLACEHOLDER_UPDATE_AFTER_MAILU_DEPLOYMENT"
 
   lifecycle {
-    ignore_changes = [value]  # Allow manual updates without terraform overwriting
+    ignore_changes = [value] # Allow manual updates without terraform overwriting
   }
 }
 
