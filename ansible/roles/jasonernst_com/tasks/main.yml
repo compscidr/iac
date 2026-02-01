@@ -180,7 +180,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.46
+    image: compscidr/goblog:v0.1.44
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
