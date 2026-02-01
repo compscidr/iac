@@ -1,0 +1,6 @@
+---
+- name: Restart Mailu
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ mailu_install_path }}"
+    state: restarted

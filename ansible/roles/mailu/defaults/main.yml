@@ -1,0 +1,108 @@
+---
+# Mailu role defaults
+# Configured to run behind nginx-proxy (consolidated on www droplet)
+
+# Domain configuration
+mailu_domain: jasonernst.com
+mailu_hostname: mail.jasonernst.com
+
+# Installation path
+mailu_install_path: /opt/mailu
+
+# Secret key (override in vault or host vars!)
+mailu_secret_key: "{{ lookup('community.general.onepassword', 'Mailu Secret Key', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Admin account
+mailu_admin_user: admin
+mailu_admin_password: "{{ lookup('community.general.onepassword', 'Mailu Admin', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Initial user accounts (created on first run)
+mailu_users:
+  - user: jason
+    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - jason', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+  - user: kai
+    password: "{{ lookup('community.general.onepassword', 'Stalwart Mail - kai', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# Features
+mailu_webmail: roundcube  # roundcube, snappymail, or none
+mailu_antivirus: false    # ClamAV uses lots of RAM
+mailu_webdav: false
+mailu_fetchmail: false
+
+# Rate limiting
+mailu_message_ratelimit: "200/day"
+mailu_message_ratelimit_exemption: ""
+
+# =============================================================================
+# Docker network configuration (internal to Docker - no external mapping)
+# =============================================================================
+# These are INTERNAL Docker network addresses. They don't need to match your
+# server's actual IP or any external network. Docker creates an isolated virtual
+# network for Mailu containers to communicate with each other.
+#
+# You only need to change these if they conflict with an existing Docker network
+# on this host (unlikely with these defaults).
+
+# Private subnet for Mailu's internal container network
+mailu_subnet: 192.168.203.0/24
+
+# Static IP for Mailu's Unbound DNS resolver container (must be within mailu_subnet)
+# All other Mailu containers use this as their DNS server for internal resolution
+# (e.g., resolving container hostnames like "front", "admin", "smtp")
+mailu_resolver_ip: 192.168.203.254
+
+# nginx-proxy network subnet - used for REAL_IP_FROM to trust X-Forwarded-For headers
+# Should match the subnet of your nginx-proxy Docker network
+mailu_nginx_proxy_subnet: "172.18.0.0/16"
+
+# Mail ports (bound to host - no conflict with nginx-proxy)
+# HTTP/HTTPS are NOT bound - nginx-proxy handles those
+mailu_smtp_port: 25
+mailu_smtps_port: 465
+mailu_submission_port: 587
+mailu_imap_port: 143
+mailu_imaps_port: 993
+
+# =============================================================================
+# Image versions - pinned to specific digests for supply chain security
+# Update these when upgrading Mailu
+# =============================================================================
+mailu_version: "2024.06"
+
+# Image digests (pinned for security)
+# To update: docker manifest inspect ghcr.io/mailu/<image>:<version> | jq '.manifests[0].digest'
+mailu_images:
+  nginx:
+    image: ghcr.io/mailu/nginx
+    digest: "sha256:bbea70496ce3c118bc1b7f29036461d174d7d6d8a70df92c46f04b87fc845707"
+  admin:
+    image: ghcr.io/mailu/admin
+    digest: "sha256:1248dbc28b42257e1b55bc7a0dbb9da5be0fcc0e7371d8197db3f3dbf74fc687"
+  dovecot:
+    image: ghcr.io/mailu/dovecot
+    digest: "sha256:6300d70c0bce20096c2028179ef38ed09c3ae71d1b1e935bc00588afb80bd903"
+  postfix:
+    image: ghcr.io/mailu/postfix
+    digest: "sha256:70c2ab26c8f61a127defc738743b5b8e85bed3c25c4b82f400e8568deebdeaa7"
+  unbound:
+    image: ghcr.io/mailu/unbound
+    digest: "sha256:cca8c49980fcb1cf625eed8d4760bc4079b5e9e7481480fe9038df90ae591a78"
+  rspamd:
+    image: ghcr.io/mailu/rspamd
+    digest: "sha256:c23e39835bd987e3d53f5a334a1de5cfcd945cf928bd8b16ecfcbe63de0ef1ee"
+  clamav:
+    image: ghcr.io/mailu/clamav
+    # Note: clamav uses different versioning (2.0 not 2024.06)
+    digest: "sha256:3a255e78332e263d4fbccc87cc1df32a6903013ee5e4170f93aa4d43326db087"
+  webmail:
+    image: ghcr.io/mailu/webmail
+    digest: "sha256:61144bd0d6a17e8afd41f01c5f68e15ffa2536c1edc90dad57d5469b336b5f46"
+  oletools:
+    image: ghcr.io/mailu/oletools
+    digest: "sha256:4b46db0165e7568bdc6c5d5550376b127d314cf3f2f911bf076cb30c723db7ad"
+  radicale:
+    image: ghcr.io/mailu/radicale
+    digest: "sha256:574361c9fb16b7dd9ad417948ad9ee14ec046c61cc48f765b118e4d7d7462e9e"
+  fetchmail:
+    image: ghcr.io/mailu/fetchmail
+    digest: "sha256:f9f1385196f5b5c4bda9fcf21e0d089392cdeec7435c1c664001494900684427"
