@@ -1,6 +1,6 @@
 ---
 - name: Services for www.jasonernst.com
-  hosts: jasonernst.com
+  hosts: www
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
