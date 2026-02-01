@@ -53,6 +53,14 @@ resource "digitalocean_record" "CNAME-dev" {
   value  = "@"
 }
 
+# ombi.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
+resource "digitalocean_record" "CNAME-ombi" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "ombi"
+  value  = "nas.jasonernst.com."
+}
+
 # projects.jasonernst.com -> projects droplet
 resource "digitalocean_record" "A-projects" {
   domain = digitalocean_domain.default.name
