@@ -14,9 +14,6 @@
     name: compscidr.media_server.media_storage
     apply:
       become: true
-  vars:
-    media_storage_network_enabled: "{{ media_storage_network_enabled | default(true) }}"
-    media_storage_network_name: "{{ media_storage_network_name | default('media') }}"
 
 # Nginx reverse proxy + LetsEncrypt for SSL certs
 - name: Create nginx config directory
