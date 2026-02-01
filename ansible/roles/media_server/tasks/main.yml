@@ -56,7 +56,8 @@
       - nginx-dhparam:/etc/nginx/dhparam
       - nginx-certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    network_mode: bridge
+    networks:
+      - name: media
     restart_policy: unless-stopped
 
 - name: Deploy LetsEncrypt companion
@@ -72,7 +73,8 @@
       - /var/run/docker.sock:/var/run/docker.sock:ro
     env:
       NGINX_PROXY_CONTAINER: "nginx-proxy"
-    network_mode: bridge
+    networks:
+      - name: media
     restart_policy: unless-stopped
 
 # Media storage folders are now created automatically by the media_storage role
