@@ -45,6 +45,24 @@
     mode: '644'
   notify: Restart Mailu
 
+# nginx-proxy stores certs as <domain>.crt/<domain>.key
+# Mailu expects cert.pem/key.pem - create symlinks
+- name: Create cert.pem symlink for Mailu
+  become: true
+  ansible.builtin.file:
+    src: "{{ mailu_hostname }}.crt"
+    dest: /var/lib/docker/volumes/certs/_data/cert.pem
+    state: link
+    force: true
+
+- name: Create key.pem symlink for Mailu
+  become: true
+  ansible.builtin.file:
+    src: "{{ mailu_hostname }}.key"
+    dest: /var/lib/docker/volumes/certs/_data/key.pem
+    state: link
+    force: true
+
 - name: Start Mailu stack
   become: true
   community.docker.docker_compose_v2:
