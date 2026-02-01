@@ -248,7 +248,7 @@
   become: true
   community.docker.docker_container:
     name: mysql
-    image: mysql:8
+    image: mysql:9
     env:
       MYSQL_ROOT_PASSWORD: "{{ lookup('community.general.onepassword', 'mysql_root', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     volumes:
