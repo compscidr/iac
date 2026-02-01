@@ -3,6 +3,7 @@
 
 projects_base_path: /opt/projects
 projects_letsencrypt_email: "ernstjason1@gmail.com"
+projects_git_user: jason  # User with SSH keys for cloning private repos
 
 # Project repos
 projects_repos:
