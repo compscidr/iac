@@ -177,12 +177,22 @@
       - libfuse2
   when: ansible_os_family == "Debian"
 
+- name: Check if slack is installed (Ubuntu/Debian)
+  tags: slack
+  ansible.builtin.command: dpkg -s slack-desktop
+  register: slack_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == "Debian"
+
 - name: Install slack (Ubuntu/Debian)
   tags: slack
   become: true
   ansible.builtin.apt:
     deb: https://downloads.slack-edge.com/desktop-releases/linux/x64/4.43.51/slack-desktop-4.43.51-amd64.deb
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - slack_check.rc != 0
 
 - name: Install slack (macOS)
   tags: slack
