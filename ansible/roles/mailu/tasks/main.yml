@@ -1,18 +1,6 @@
 ---
 # Mailu mail server deployment (consolidated on www with nginx-proxy)
 
-- name: Ensure nginx-proxy network exists
-  become: true
-  community.docker.docker_network:
-    name: nginx-proxy
-    state: present
-
-- name: Ensure certs volume exists (shared with nginx-proxy/letsencrypt)
-  become: true
-  community.docker.docker_volume:
-    name: certs
-    state: present
-
 - name: Create Mailu directory
   become: true
   ansible.builtin.file:
