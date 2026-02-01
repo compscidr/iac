@@ -82,6 +82,8 @@
   become: true
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/network-tools"
+    files:
+      - docker-compose.yml  # Explicitly exclude override file
     state: present
     pull: always
   environment:
@@ -104,6 +106,8 @@
   become: true
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/darksearch"
+    files:
+      - docker-compose.yml  # Explicitly exclude override file
     state: present
     pull: always
   environment:
