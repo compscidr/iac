@@ -84,8 +84,9 @@ secret = "{{ stalwart_admin_password }}"
 mechanisms = ["PLAIN", "LOGIN"]
 directory = "internal"
 
-# DKIM signing - key generated post-install via stalwart-cli
-# Run: stalwart-cli -u http://localhost:8080 domain create jasonernst.com
+# DKIM signing - key generated via openssl post-install
+# Generate key: openssl genpkey -algorithm ed25519 -out {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
+# Get public key: openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
 [signature."{{ stalwart_dkim_selector }}"]
 private-key = "%{file:{{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key}%"
 domain = "{{ stalwart_domain }}"
@@ -95,6 +96,11 @@ algorithm = "ed25519-sha256"
 canonicalization = "relaxed/relaxed"
 set-body-length = false
 report = true
+
+# Enable DKIM signing for outbound mail (not from external SMTP relay)
+[auth.dkim]
+sign = [ { if = "listener != 'smtp'", then = "['{{ stalwart_dkim_selector }}']" },
+         { else = false } ]
 
 # Spam filtering with Sieve
 [sieve.trusted]

@@ -21,8 +21,8 @@ stalwart_data_dir: "/opt/stalwart-mail"
 stalwart_admin_user: "admin"
 stalwart_admin_password: ""  # Required - set in mail.yml from 1Password
 
-# DKIM selector
-stalwart_dkim_selector: "stalwart"
+# DKIM selector - must match DNS record (ed25519._domainkey.domain.com)
+stalwart_dkim_selector: "ed25519"
 
 # TLS - use Let's Encrypt via ACME
 stalwart_acme_enabled: true
