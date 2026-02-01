@@ -15,4 +15,5 @@
   gather_facts: true
 
   roles:
+    - jasonernst_com  # Ensures nginx-proxy network exists and containers are connected
     - mailu
