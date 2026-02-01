@@ -43,13 +43,12 @@ resource "digitalocean_record" "MX" {
   priority = 10
 }
 
-# SPF record - authorize mail server to send on behalf of domain
-# Using 'mx' mechanism which covers mail.jasonernst.com
+# SPF record - authorize mail server and SendGrid to send on behalf of domain
 resource "digitalocean_record" "TXT-SPF" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "@"
-  value  = "v=spf1 mx -all"
+  value  = "v=spf1 mx include:sendgrid.net -all"
 }
 
 # DMARC record - policy for handling failed authentication
@@ -60,14 +59,53 @@ resource "digitalocean_record" "TXT-DMARC" {
   value  = "v=DMARC1; p=quarantine; rua=mailto:postmaster@jasonernst.com; ruf=mailto:postmaster@jasonernst.com; fo=1"
 }
 
-# DKIM record for ed25519 signature
-# Generated with: stalwart-cli -u http://localhost:8080 -c admin:<password> dkim create ed25519 jasonernst.com
-# Get public key: stalwart-cli -u http://localhost:8080 -c admin:<password> dkim get-public-key ed25519-jasonernst.com
+# DKIM record for ed25519 signing
+# The private key is generated via openssl on the mail server:
+#   openssl genpkey -algorithm ed25519 -out /opt/stalwart-mail/etc/dkim/jasonernst.com.key
+# Extract public key for DNS with:
+#   openssl pkey -in /opt/stalwart-mail/etc/dkim/jasonernst.com.key -pubout 2>/dev/null | openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
 resource "digitalocean_record" "TXT-DKIM" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "ed25519._domainkey"
-  value  = "v=DKIM1; k=ed25519; p=BTSzGlAVg1po2Q9pbhqszjeuswH1RuyY30leO/u8VuQ="
+  value  = "v=DKIM1; k=ed25519; p=fUU6C7whZBmzcatZ6PyeOUHQcaDTHzs/jSl2uubePKI="
+}
+
+# SendGrid DNS records for domain authentication and link branding
+resource "digitalocean_record" "CNAME-sendgrid-url" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "url8795"
+  value  = "sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-59516169" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "59516169"
+  value  = "sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-em" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "em3384"
+  value  = "u59516169.wl170.sendgrid.net."
+}
+
+# SendGrid DKIM records
+resource "digitalocean_record" "CNAME-sendgrid-dkim-s1" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "s1._domainkey"
+  value  = "s1.domainkey.u59516169.wl170.sendgrid.net."
+}
+
+resource "digitalocean_record" "CNAME-sendgrid-dkim-s2" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "s2._domainkey"
+  value  = "s2.domainkey.u59516169.wl170.sendgrid.net."
 }
 
 # Reverse DNS (PTR) - set via DigitalOcean console or API
