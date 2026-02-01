@@ -54,11 +54,14 @@
     path: "{{ projects_base_path }}"
     state: directory
     mode: '755'
+    owner: "{{ projects_git_user }}"
+    group: "{{ projects_git_user }}"
 
 # Clone and deploy network-tools (ping4, ping6, dumpers)
 - name: Clone network-tools repo
   tags: [projects, network-tools]
   become: true
+  become_user: "{{ projects_git_user }}"
   ansible.builtin.git:
     repo: git@github.com:compscidr/network-tools.git
     dest: "{{ projects_base_path }}/network-tools"
@@ -80,6 +83,7 @@
 - name: Clone darksearch repo
   tags: [projects, darksearch]
   become: true
+  become_user: "{{ projects_git_user }}"
   ansible.builtin.git:
     repo: git@github.com:compscidr/darksearch.xyz.git
     dest: "{{ projects_base_path }}/darksearch"
