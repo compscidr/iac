@@ -5,9 +5,13 @@ resource "digitalocean_vpc" "www-jasonernst-vpc" {
 }
 
 # size chart: https://developers.digitalocean.com/documentation/changelog/api-v2/new-size-slugs-for-droplet-plan-changes/
+# Note: The Terraform resource identifier remains "www-jasonernst-com" for historical reasons
+# and because this droplet also serves the main site (www.jasonernst.com). The droplet's
+# display name is set to "mail.jasonernst.com" to enable automatic PTR record creation
+# by DigitalOcean for mail deliverability.
 resource "digitalocean_droplet" "www-jasonernst-com" {
   image    = "ubuntu-24-04-x64"
-  name     = "www-jasonernst-com"
+  name     = "mail.jasonernst.com"
   region   = "sfo2"
   size     = "s-1vcpu-2gb"
   ipv6     = true
