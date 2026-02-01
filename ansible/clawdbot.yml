@@ -18,7 +18,7 @@
     fnm_node_version: "22"
     fnm_set_default: true
     # clawdbot role vars
-    clawdbot_workspace_repo: "git@github.com:compscidr/clawd.git"
+    clawdbot_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
     clawdbot_tailscale_serve: true
   roles:
     - fnm       # Install Node.js via fnm
