@@ -11,5 +11,5 @@
     fail2ban_nginx_enabled: true
     fail2ban_nginx_botscan_enabled: true
   roles:
-    - fail2ban
-    - projects
+    - projects   # Deploy nginx first so logs exist
+    - fail2ban   # Then fail2ban can monitor logs
