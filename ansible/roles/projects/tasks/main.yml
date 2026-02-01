@@ -12,6 +12,13 @@
     state: directory
     mode: '755'
 
+- name: Create nginx-proxy network
+  tags: [nginx, network]
+  become: true
+  community.docker.docker_network:
+    name: nginx-proxy
+    state: present
+
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
   become: true
@@ -27,7 +34,8 @@
       - nginx-html:/usr/share/nginx/html
       - nginx-certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
 
 - name: Deploy LetsEncrypt companion
@@ -43,7 +51,8 @@
       - /var/run/docker.sock:/var/run/docker.sock:ro
     env:
       NGINX_PROXY_CONTAINER: "nginx-proxy"
-    network_mode: bridge
+    networks:
+      - name: nginx-proxy
     restart_policy: unless-stopped
 
 # Create projects directory
