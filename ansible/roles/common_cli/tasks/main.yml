@@ -629,7 +629,7 @@
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
     # Pinned commit adds service account token switching + npm-global PATH
-    version: 17dbe626b7f2e48e15d518c6e7513fbd6f77e6f0
+    version: b93601386e1ee952d46a6cb8d55124e31c48ca0a
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfile
