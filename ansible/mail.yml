@@ -14,6 +14,10 @@
     # Admin credentials from 1Password (Infrastructure vault)
     stalwart_admin_user: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='username', vault=onepassword_vault) }}"
     stalwart_admin_password: "{{ lookup('community.general.onepassword', 'stalwart-admin', field='password', vault=onepassword_vault) }}"
+    # SendGrid SMTP relay credentials from 1Password
+    stalwart_sendgrid_enabled: true
+    stalwart_sendgrid_username: "{{ lookup('community.general.onepassword', 'SendGrid', field='username', vault=onepassword_vault) }}"
+    stalwart_sendgrid_api_key: "{{ lookup('community.general.onepassword', 'SendGrid', field='credential', vault=onepassword_vault) }}"
   roles:
     - common_cli
     - stalwart

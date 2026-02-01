@@ -139,6 +139,26 @@ retry = "[2m, 5m, 10m, 15m, 30m, 1h, 2h]"
 notify = "[1d, 3d]"
 expire = "5d"
 
+{% if stalwart_sendgrid_enabled %}
+# SendGrid SMTP relay for outbound mail delivery
+# Improves deliverability by using SendGrid's trusted IP reputation
+[remote."sendgrid"]
+address = "smtp.sendgrid.net"
+port = 587
+protocol = "smtp"
+tls.implicit = false
+tls.starttls = "require"
+
+[remote."sendgrid".auth]
+username = "{{ stalwart_sendgrid_username }}"
+secret = "{{ stalwart_sendgrid_api_key }}"
+
+# Route non-local outbound mail through SendGrid
+[queue.outbound]
+next-hop = [ { if = "!is_local_domain('', rcpt_domain)", then = "'sendgrid'" },
+             { else = false } ]
+{% endif %}
+
 # Reporting
 [report]
 path = "{{ stalwart_data_dir }}/reports"
