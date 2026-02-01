@@ -30,7 +30,7 @@ clawdbot_op_vault: "openclaw"          # Vault name Clawdbot accesses at runtime
 
 # Tailscale Serve (recommended for web UI auth)
 clawdbot_tailscale_serve: true
-clawdbot_bind: "localhost"  # Bind to localhost when using Tailscale Serve
+clawdbot_bind: "loopback"  # Bind to loopback when using Tailscale Serve
 clawdbot_port: 18789
 
 # Gateway options
