@@ -187,11 +187,14 @@
       Next steps:
       1. SSH tunnel to access admin: ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
       2. Open http://localhost:8080 in browser (login with 1Password credentials)
-      3. Generate DKIM key via admin UI or CLI:
-         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> domain create {{ stalwart_domain }}
-      4. Update the DKIM DNS record in Terraform with the generated public key
-      5. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
+      3. Generate DKIM key via CLI:
+         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> dkim create ed25519 {{ stalwart_domain }}
+      4. Get the public key for DNS:
+         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> dkim get-public-key ed25519-{{ stalwart_domain }}
+      5. Add DNS TXT record: ed25519._domainkey.{{ stalwart_domain }} with value "v=DKIM1; k=ed25519; p=<public_key>"
+      6. Create user accounts in the web UI (Settings -> Accounts)
       
       Test commands:
       - Check SMTP: telnet {{ stalwart_hostname }} 25
       - Check IMAP: openssl s_client -connect {{ stalwart_hostname }}:993
+      - Verify DKIM DNS: dig TXT ed25519._domainkey.{{ stalwart_domain }}
