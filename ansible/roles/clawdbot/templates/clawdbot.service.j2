@@ -13,10 +13,8 @@ WorkingDirectory={{ clawdbot_workspace_path }}
 Environment="PATH=/home/{{ clawdbot_user }}/.local/share/fnm/aliases/default/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="FNM_DIR=/home/{{ clawdbot_user }}/.local/share/fnm"
 
-{% if clawdbot_op_service_account_token | length > 0 %}
-# 1Password service account
-Environment="OP_SERVICE_ACCOUNT_TOKEN={{ clawdbot_op_service_account_token }}"
-{% endif %}
+# 1Password service account token loaded from root-only file (mode 0600)
+EnvironmentFile=-/etc/clawdbot/op.env
 
 # Gateway command
 ExecStart=/home/{{ clawdbot_user }}/.local/share/fnm/aliases/default/bin/clawdbot gateway --bind {{ clawdbot_bind }} {{ clawdbot_gateway_extra_args }}
@@ -29,7 +27,7 @@ RestartSec=10
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths={{ clawdbot_workspace_path }} {{ clawdbot_config_dir }} /home/{{ clawdbot_user }}/.clawdbot
+ReadWritePaths={{ clawdbot_workspace_path }} {{ clawdbot_config_dir }}
 
 [Install]
 WantedBy=multi-user.target

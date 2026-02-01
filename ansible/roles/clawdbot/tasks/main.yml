@@ -1,6 +1,20 @@
 ---
 # Clawdbot installation and configuration
 
+# Check current clawdbot version
+- name: Check current clawdbot version
+  become: true
+  become_user: "{{ clawdbot_user }}"
+  ansible.builtin.shell: |
+    export PATH="/home/{{ clawdbot_user }}/.local/share/fnm:$PATH"
+    eval "$(fnm env)"
+    clawdbot --version 2>/dev/null || echo "not installed"
+  register: clawdbot_current_version
+  changed_when: false
+  tags:
+    - clawdbot
+    - install
+
 # Install clawdbot globally via npm
 - name: Install clawdbot via npm
   become: true
@@ -8,24 +22,10 @@
   ansible.builtin.shell: |
     export PATH="/home/{{ clawdbot_user }}/.local/share/fnm:$PATH"
     eval "$(fnm env)"
-    npm install -g {{ clawdbot_npm_package }}
+    npm install -g {{ clawdbot_npm_package }}{% if clawdbot_version | length > 0 %}@{{ clawdbot_version }}{% endif %}
+
   register: npm_install
   changed_when: "'added' in npm_install.stdout or 'up to date' not in npm_install.stdout"
-  when: clawdbot_install_method == "npm"
-  tags:
-    - clawdbot
-    - install
-
-# Verify clawdbot is installed
-- name: Check clawdbot installation
-  become: true
-  become_user: "{{ clawdbot_user }}"
-  ansible.builtin.shell: |
-    export PATH="/home/{{ clawdbot_user }}/.local/share/fnm:$PATH"
-    eval "$(fnm env)"
-    clawdbot --version
-  register: clawdbot_version
-  changed_when: false
   tags:
     - clawdbot
     - install
@@ -66,6 +66,38 @@
     mode: "0600"
     force: false  # Don't overwrite if config already exists
   notify: Restart clawdbot
+  tags:
+    - clawdbot
+    - config
+
+# Create directory for environment file
+- name: Create clawdbot etc directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/clawdbot
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  tags:
+    - clawdbot
+    - config
+
+# Deploy 1Password service account token (root-only for security)
+- name: Deploy 1Password environment file
+  become: true
+  ansible.builtin.copy:
+    content: |
+      # 1Password service account token for Clawdbot
+      # Managed by Ansible - do not edit
+      OP_SERVICE_ACCOUNT_TOKEN={{ clawdbot_op_service_account_token }}
+    dest: /etc/clawdbot/op.env
+    owner: root
+    group: root
+    mode: "0600"
+  when: clawdbot_op_service_account_token | length > 0
+  notify: Restart clawdbot
+  no_log: true  # Don't log the token
   tags:
     - clawdbot
     - config

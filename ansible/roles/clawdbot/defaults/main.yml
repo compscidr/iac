@@ -9,10 +9,9 @@ clawdbot_workspace_repo: ""  # Required: git repo for workspace (e.g., git@githu
 clawdbot_workspace_path: "/home/{{ clawdbot_user }}/clawd"
 
 # Installation
-clawdbot_install_method: "npm"  # npm or git
+clawdbot_install_method: "npm"  # npm only for now (git not implemented)
 clawdbot_npm_package: "clawdbot"
-clawdbot_git_repo: "https://github.com/clawdbot/clawdbot.git"
-clawdbot_git_branch: "main"
+clawdbot_version: ""  # Pin to specific version, e.g., "1.2.3" (empty = latest)
 
 # Config location
 clawdbot_config_dir: "/home/{{ clawdbot_user }}/.clawdbot"
