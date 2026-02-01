@@ -19,9 +19,10 @@ clawdbot_config_dir: "/home/{{ clawdbot_user }}/.clawdbot"
 clawdbot_config_file: "{{ clawdbot_config_dir }}/clawdbot.json"
 
 # 1Password integration
-clawdbot_op_service_account_token: ""  # Set via vault or extra-vars
-clawdbot_op_vault: "openclaw"          # Vault name for secrets
-# Items in vault:
+# Service account token fetched from Infrastructure vault, allows Clawdbot to access openclaw vault at runtime
+clawdbot_op_service_account_token: "{{ lookup('community.general.onepassword', 'Clawdbot Service Account', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+clawdbot_op_vault: "openclaw"          # Vault name Clawdbot accesses at runtime
+# Items in openclaw vault:
 #   - "openclaw anthropic" - Anthropic API key
 #   - "github" - GitHub credentials  
 #   - "openai - text embedding for memory search" - OpenAI embeddings
