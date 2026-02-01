@@ -185,16 +185,27 @@
       Admin account pre-configured from 1Password (user: {{ stalwart_admin_user }})
       
       Next steps:
-      1. SSH tunnel to access admin: ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
-      2. Open http://localhost:8080 in browser (login with 1Password credentials)
-      3. Generate DKIM key via CLI:
-         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> dkim create ed25519 {{ stalwart_domain }}
-      4. Get the public key for DNS:
-         stalwart-cli -u http://localhost:8080 -c {{ stalwart_admin_user }}:<password> dkim get-public-key ed25519-{{ stalwart_domain }}
-      5. Add DNS TXT record: ed25519._domainkey.{{ stalwart_domain }} with value "v=DKIM1; k=ed25519; p=<public_key>"
-      6. Create user accounts in the web UI (Settings -> Accounts)
+      1. Generate DKIM key:
+         sudo openssl genpkey -algorithm ed25519 -out {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
+         sudo chown stalwart:stalwart {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
+         sudo chmod 600 {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
+      
+      2. Get public key for DNS:
+         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
+      
+      3. Update Terraform with the public key in mail.tf (ed25519._domainkey.{{ stalwart_domain }})
+         Then run: terraform apply
+      
+      4. Restart Stalwart to pick up the key:
+         sudo systemctl restart stalwart-mail
+      
+      5. Access admin UI via SSH tunnel:
+         ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
+         Then open http://localhost:8080 (login with 1Password credentials)
+      
+      6. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
       
       Test commands:
       - Check SMTP: telnet {{ stalwart_hostname }} 25
       - Check IMAP: openssl s_client -connect {{ stalwart_hostname }}:993
-      - Verify DKIM DNS: dig TXT ed25519._domainkey.{{ stalwart_domain }}
+      - Test DKIM: dig TXT {{ stalwart_dkim_selector }}._domainkey.{{ stalwart_domain }} +short
