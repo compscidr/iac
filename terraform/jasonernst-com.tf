@@ -7,7 +7,7 @@ resource "digitalocean_vpc" "www-jasonernst-vpc" {
 # size chart: https://developers.digitalocean.com/documentation/changelog/api-v2/new-size-slugs-for-droplet-plan-changes/
 resource "digitalocean_droplet" "www-jasonernst-com" {
   image    = "ubuntu-24-04-x64"
-  name     = "www-jasonernst-com"
+  name     = "mail.jasonernst.com"
   region   = "sfo2"
   size     = "s-1vcpu-2gb"
   ipv6     = true
