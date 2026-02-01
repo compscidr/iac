@@ -39,6 +39,16 @@
     name: nginx-proxy
     state: present
 
+- name: Create nginx log directory for fail2ban
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: /var/log/nginx
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
   vars:
@@ -56,6 +66,7 @@
       - dhparam:/etc/nginx/dhparam
       - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /var/log/nginx:/var/log/nginx
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped

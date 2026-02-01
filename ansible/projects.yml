@@ -6,6 +6,10 @@
   hosts: projects
   vars_files:
     - vars/user.yml
+  vars:
+    # Enable nginx fail2ban jails (logs mounted from Docker)
+    fail2ban_nginx_enabled: true
+    fail2ban_nginx_botscan_enabled: true
   roles:
     - fail2ban
     - projects

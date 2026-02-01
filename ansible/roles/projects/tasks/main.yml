@@ -12,6 +12,16 @@
     state: directory
     mode: '755'
 
+- name: Create nginx log directory for fail2ban
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: /var/log/nginx
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
 - name: Create nginx-proxy network
   tags: [nginx, network]
   become: true
@@ -34,6 +44,7 @@
       - nginx-html:/usr/share/nginx/html
       - nginx-certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /var/log/nginx:/var/log/nginx
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped
