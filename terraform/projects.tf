@@ -149,6 +149,13 @@ resource "digitalocean_record" "darksearch-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "darksearch-TXT-google" {
+  domain = digitalocean_domain.darksearch-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=J6xMjc70juAif4t0FOuNIOApZH1VSwDgB-X0Oo7Zvso"
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
