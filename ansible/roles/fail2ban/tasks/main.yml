@@ -1,0 +1,37 @@
+---
+# Fail2ban installation and configuration
+
+- name: Install fail2ban
+  become: true
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+
+- name: Create fail2ban local config
+  become: true
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '644'
+  notify: Restart fail2ban
+
+- name: Create nginx-botscan filter
+  become: true
+  ansible.builtin.template:
+    src: nginx-botscan.conf.j2
+    dest: /etc/fail2ban/filter.d/nginx-botscan.conf
+    owner: root
+    group: root
+    mode: '644'
+  when: fail2ban_nginx_botscan_enabled
+  notify: Restart fail2ban
+
+- name: Ensure fail2ban is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: started
+    enabled: true

@@ -12,6 +12,41 @@
     state: directory
     mode: '755'
 
+- name: Create nginx log directory for fail2ban
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: /var/log/nginx
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Create empty nginx log files (fail2ban requires them to exist)
+  tags: nginx
+  become: true
+  ansible.builtin.file:
+    path: "/var/log/nginx/{{ item }}"
+    state: touch
+    mode: '644'
+    owner: root
+    group: root
+    modification_time: preserve
+    access_time: preserve
+  loop:
+    - access.log
+    - error.log
+
+- name: Deploy nginx logging config (enable file logging for fail2ban)
+  tags: nginx
+  become: true
+  ansible.builtin.copy:
+    src: nginx-logging.conf
+    dest: /etc/nginx/conf.d/logging.conf
+    owner: root
+    group: root
+    mode: '644'
+
 - name: Create nginx-proxy network
   tags: [nginx, network]
   become: true
@@ -34,6 +69,7 @@
       - nginx-html:/usr/share/nginx/html
       - nginx-certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /var/log/nginx:/var/log/nginx
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped

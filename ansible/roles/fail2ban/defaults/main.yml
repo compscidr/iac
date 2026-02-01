@@ -1,0 +1,34 @@
+---
+# Fail2ban defaults
+
+# Ban time in seconds (default: 1 hour)
+fail2ban_bantime: 3600
+
+# Find time - time window to count failures (default: 10 minutes)
+fail2ban_findtime: 600
+
+# Max retries before ban
+fail2ban_maxretry: 5
+
+# Ignored IPs (never ban these)
+# Includes Tailscale CGNAT range to avoid banning admin access
+fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - ::1
+  - 100.64.0.0/10  # Tailscale CGNAT range
+
+# Enable SSH jail (disabled by default - Tailscale only, port 22 blocked at firewall)
+fail2ban_ssh_enabled: false
+
+# Enable nginx jails
+# Note: For Docker-based nginx (like nginx-proxy), logs must be mounted to host
+# AND nginx must be configured to write logs to files (not just stdout).
+# Set to true if nginx file logging is properly configured.
+fail2ban_nginx_enabled: false
+
+# Aggressive bot scanning filter (blocks PHP probing, etc.)
+# Requires nginx logs at /var/log/nginx/access.log
+fail2ban_nginx_botscan_enabled: false
+fail2ban_nginx_botscan_maxretry: 3
+fail2ban_nginx_botscan_findtime: 600  # 10 minutes to catch slower scans
+fail2ban_nginx_botscan_bantime: 86400  # 24 hours for scanners

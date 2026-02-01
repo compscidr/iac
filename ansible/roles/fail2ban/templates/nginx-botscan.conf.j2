@@ -1,0 +1,18 @@
+# Fail2ban filter for nginx bot scanning / vulnerability probing
+# Managed by Ansible - do not edit manually
+
+[Definition]
+
+# Matches common vulnerability scanning patterns:
+# - PHP file probing (*.php, *.php7, etc.)
+# - WordPress admin paths
+# - Common shell/backdoor filenames
+# - Sensitive file probing (.env, .git, etc.)
+
+failregex = ^<HOST> .* "(GET|POST|HEAD) .*\.(php|php7|phtml|asp|aspx|jsp|cgi)(\?|/| |").*" (400|403|404|405|500|502|503) .*$
+            ^<HOST> .* "(GET|POST|HEAD) .*/wp-(admin|content|includes|login).*" (400|403|404|405|500|502|503) .*$
+            ^<HOST> .* "(GET|POST|HEAD) .*/(admin|manager|administrator|phpmyadmin|pma|mysql|shell|config).*" (400|403|404|405|500|502|503) .*$
+            ^<HOST> .* "(GET|POST|HEAD) .*\.(env|bak|old|backup|sql|db|conf|ini|log)(\?|/| |").*" (400|403|404|405|500|502|503) .*$
+            ^<HOST> .* "(GET|POST|HEAD) .*/\.(git|svn).*" (400|403|404|405|500|502|503) .*$
+
+ignoreregex = 
