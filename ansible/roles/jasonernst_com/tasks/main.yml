@@ -14,12 +14,12 @@
   become: true
   ansible.builtin.copy:
     content: "client_max_body_size 100m;"
-    dest: /etc/nginx/conf.d
+    dest: /etc/nginx/conf.d/client_max_body_size.conf
     mode: '644'
     owner: root
     group: root
 
-- name: Enable IPv6 for docker daemon
+- name: Configure docker daemon logging
   become: true
   tags: docker
   ansible.builtin.copy:
@@ -39,8 +39,9 @@
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
-    default_host_ip: ""
-    published_ports: 80:80,443:443
+    published_ports:
+      - "80:80"
+      - "443:443"
     volumes:
       - /etc/nginx/conf.d:/etc/nginx/conf.d
       - vhost:/etc/nginx/vhost.d
@@ -71,7 +72,7 @@
       ENABLE_IPV6: "true"
 
 
-- name: Create prodcuction /opt/goblog directory on host
+- name: Create production /opt/goblog directory on host
   tags: website
   become: true
   ansible.builtin.file:
@@ -98,7 +99,6 @@
     src: /opt/goblog/prod/
     dest: /opt/goblog/staging
     remote_src: true
-    mode: '644'
     owner: root
     group: root
 
@@ -132,6 +132,8 @@
 
 - name: Deploy www.jasonernst.com
   tags: website
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: www.jasonernst.com
     image: compscidr/goblog:v0.1.46
@@ -154,6 +156,8 @@
 
 - name: Deploy staging.jasonernst.com
   tags: website
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3-docker"
   community.docker.docker_container:
     name: staging.jasonernst.com
     image: compscidr/goblog:v0.1.46
