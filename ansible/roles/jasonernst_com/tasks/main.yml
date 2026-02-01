@@ -35,7 +35,7 @@
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
   vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+    ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
@@ -58,7 +58,7 @@
 - name: Deploy LetsEncrypt companion to the proxy
   tags: letsencrypt
   vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+    ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: letsencrypt
     image: jrcs/letsencrypt-nginx-proxy-companion
@@ -133,7 +133,7 @@
 - name: Deploy www.jasonernst.com
   tags: website
   vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+    ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: www.jasonernst.com
     image: compscidr/goblog:v0.1.46
@@ -157,7 +157,7 @@
 - name: Deploy staging.jasonernst.com
   tags: website
   vars:
-    ansible_python_interpreter: "/usr/bin/env python3-docker"
+    ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: staging.jasonernst.com
     image: compscidr/goblog:v0.1.46
