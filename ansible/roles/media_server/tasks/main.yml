@@ -207,90 +207,36 @@
     memory: "1g"
     memory_swap: "1g"
 
-- name: Create slskd config folder
-  tags: slskd
-  become: true
-  ansible.builtin.file:
-    path: /etc/slskd
-    state: directory
-    owner: "{{ media_user_uid }}"
-    group: "{{ media_user_gid }}"
-    mode: '0755'
-
 - name: Install slskd
-  tags: slskd
-  become: true
-  community.docker.docker_container:
-    name: slskd
-    image: slskd/slskd:latest
-    pull: true
-    volumes:
-      - "{{ media_storage_base_path }}/music:/music:rw"
-      - "{{ media_storage_base_path }}/downloads/complete/music:/downloads:rw"
-      - "{{ media_storage_base_path }}/downloads/incomplete:/incomplete:rw"
-      - /etc/slskd:/app
-    env:
-      PUID: "{{ media_user_uid }}"
-      PGID: "{{ media_user_gid }}"
-    user: "{{ media_user_uid }}:{{ media_user_gid }}"
-    ports:
-      - "5030:5030"
-      - "5031:5031"
-      - "50300:50300"
-    restart_policy: unless-stopped
-    memory: 1g
-
-- name: Create soularr config folder
-  tags: soularr
-  become: true
-  ansible.builtin.file:
-    path: /etc/soularr
-    state: directory
-    owner: "{{ media_user_uid }}"
-    group: "{{ media_user_gid }}"
-    mode: '0755'
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.slskd
+    apply:
+      become: true
+      tags: slskd
+  vars:
+    slskd_memory: "1g"
+    slskd_memory_swap: "1g"
 
 - name: Install soularr
-  tags: soularr
-  become: true
-  community.docker.docker_container:
-    name: soularr
-    image: mrusse08/soularr:latest
-    user: "{{ media_user_uid }}:{{ media_user_gid }}"
-    pull: true
-    volumes:
-      - "{{ media_storage_base_path }}/downloads/complete/music:/downloads:rw"
-      - /etc/soularr:/data
-    restart_policy: unless-stopped
-    memory: 1g
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.soularr
+    apply:
+      become: true
+      tags: soularr
+  vars:
+    soularr_memory: "1g"
+    soularr_memory_swap: "1g"
 
-- name: Create lidarr config folder
-  tags: lidarr
-  become: true
-  ansible.builtin.file:
-    path: /etc/lidarr
-    state: directory
-    owner: "{{ media_user_uid }}"
-    group: "{{ media_user_gid }}"
-    mode: '0755'
-
-- name: Deploy lidarr
-  tags: lidarr
-  become: true
-  community.docker.docker_container:
-    name: lidarr
-    image: ghcr.io/hotio/lidarr:pr-plugins
-    pull: true
-    ports:
-      - "8686:8686"
-    volumes:
-      - "{{ media_storage_base_path }}/music:/music:rw"
-      - "{{ media_storage_base_path }}/downloads:/downloads:rw"
-      - "/etc/lidarr:/config:rw"
-    env:
-      TZ: "America/Los_Angeles"
-      PUID: "{{ media_user_uid }}"
-      PGID: "{{ media_user_gid }}"
-    restart_policy: unless-stopped
-    memory: "1g"
-    memory_swap: "1g"
+- name: Install lidarr
+  tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.lidarr
+    apply:
+      become: true
+      tags: lidarr
+  vars:
+    lidarr_plugins: true
+    lidarr_memory: "1g"
+    lidarr_memory_swap: "1g"
