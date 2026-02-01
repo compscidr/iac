@@ -4,7 +4,7 @@
   tags: nginx
   become: true
   ansible.builtin.file:
-    path: /volume1/storage/docker/nginx/conf.d
+    path: /etc/nginx/conf.d
     state: directory
     mode: '755'
     owner: root
@@ -15,7 +15,7 @@
   become: true
   ansible.builtin.copy:
     content: "client_max_body_size 100m;"
-    dest: /volume1/storage/docker/nginx/conf.d/client_max_body_size.conf
+    dest: /etc/nginx/conf.d/client_max_body_size.conf
     mode: '644'
     owner: root
     group: root
@@ -30,7 +30,7 @@
       - "80:80"
       - "443:443"
     volumes:
-      - /volume1/storage/docker/nginx/conf.d:/etc/nginx/conf.d
+      - /etc/nginx/conf.d:/etc/nginx/conf.d
       - nginx-vhost:/etc/nginx/vhost.d
       - nginx-html:/usr/share/nginx/html
       - nginx-dhparam:/etc/nginx/dhparam
@@ -182,22 +182,6 @@
     radarr_memory: "1g"
     radarr_memory_swap: "1g"
 
-# - name: Install lidarr
-#   tags: always
-#   ansible.builtin.include_role:
-#     name: compscidr.media_server.lidarr
-#     apply:
-#       become: true
-#       tags: lidarr
-#   vars:
-#     lidarr_music_folder: /volume1/storage/music
-#     lidarr_transmission_downloads_folder: /volume1/storage/downloads
-#     lidarr_sabnzbd_downloads_folder: /volume1/storage/downloads/complete
-#     lidarr_pid: "999"
-#     lidarr_gid: "10"
-#     lidarr_memory: "1g"
-#     lidarr_memory_swap: "1g"
-
 - name: Install prowlarr
   tags: always
   ansible.builtin.include_role:
@@ -231,17 +215,6 @@
   vars:
     ombi_virtual_host: "ombi.jasonernst.com"
     ombi_letsencrypt_email: "ernstjason1@gmail.com"
-
-# MySQL database (used by Ombi)
-- name: Create MySQL data directory
-  tags: mysql
-  become: true
-  ansible.builtin.file:
-    path: /volume1/storage/docker/mysql
-    state: directory
-    mode: '755'
-    owner: '999'
-    group: '999'
 
 - name: Deploy MySQL
   tags: mysql
