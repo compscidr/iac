@@ -60,15 +60,14 @@ resource "digitalocean_record" "TXT-DMARC" {
   value  = "v=DMARC1; p=quarantine; rua=mailto:postmaster@jasonernst.com; ruf=mailto:postmaster@jasonernst.com; fo=1"
 }
 
-# DKIM record - placeholder, update after Stalwart generates the key
-# Stalwart uses ed25519 by default for better security
-# Run: stalwart-cli -u http://localhost:8080 domain create jasonernst.com
-# Then update this value with the generated public key
+# DKIM record for ed25519 signature
+# Generated with: stalwart-cli -u http://localhost:8080 -c admin:<password> dkim create ed25519 jasonernst.com
+# Get public key: stalwart-cli -u http://localhost:8080 -c admin:<password> dkim get-public-key ed25519-jasonernst.com
 resource "digitalocean_record" "TXT-DKIM" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
-  name   = "stalwart._domainkey"
-  value  = "v=DKIM1; k=ed25519; p=REPLACE_WITH_GENERATED_PUBLIC_KEY"
+  name   = "ed25519._domainkey"
+  value  = "v=DKIM1; k=ed25519; p=BTSzGlAVg1po2Q9pbhqszjeuswH1RuyY30leO/u8VuQ="
 }
 
 # Reverse DNS (PTR) - set via DigitalOcean console or API
