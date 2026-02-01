@@ -39,7 +39,15 @@ resource "digitalocean_record" "TXT-DMARC" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=quarantine; rua=mailto:admin@jasonernst.com; ruf=mailto:admin@jasonernst.com; fo=1"
+  value  = "v=DMARC1; p=reject; rua=mailto:admin@jasonernst.com; ruf=mailto:admin@jasonernst.com; adkim=s; aspf=s"
+}
+
+# DMARC report record - allows receiving DMARC reports for this domain
+resource "digitalocean_record" "TXT-DMARC-report" {
+  domain = digitalocean_domain.default.name
+  type   = "TXT"
+  name   = "jasonernst.com._report._dmarc"
+  value  = "v=DMARC1;"
 }
 
 # DKIM record for Mailu
@@ -132,6 +140,16 @@ resource "digitalocean_record" "SRV-imaps" {
   priority = 10
   weight   = 1
   port     = 993
+}
+
+resource "digitalocean_record" "SRV-pop3s" {
+  domain   = digitalocean_domain.default.name
+  type     = "SRV"
+  name     = "_pop3s._tcp"
+  value    = "mail.jasonernst.com."
+  priority = 10
+  weight   = 1
+  port     = 995
 }
 
 # Disable plaintext protocols (SRV with target "." means not available)
