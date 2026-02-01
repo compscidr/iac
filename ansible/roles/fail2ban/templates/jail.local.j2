@@ -55,5 +55,5 @@ logpath = /var/log/nginx/access.log
           /var/log/nginx/*access.log
 maxretry = {{ fail2ban_nginx_botscan_maxretry }}
 bantime = {{ fail2ban_nginx_botscan_bantime }}
-findtime = 60
+findtime = {{ fail2ban_nginx_botscan_findtime }}
 {% endif %}

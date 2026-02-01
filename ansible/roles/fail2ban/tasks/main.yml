@@ -13,6 +13,8 @@
   ansible.builtin.template:
     src: jail.local.j2
     dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
     mode: '644'
   notify: Restart fail2ban
 
@@ -21,6 +23,8 @@
   ansible.builtin.template:
     src: nginx-botscan.conf.j2
     dest: /etc/fail2ban/filter.d/nginx-botscan.conf
+    owner: root
+    group: root
     mode: '644'
   when: fail2ban_nginx_botscan_enabled
   notify: Restart fail2ban

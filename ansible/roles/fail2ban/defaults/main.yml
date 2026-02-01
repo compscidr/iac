@@ -19,9 +19,13 @@ fail2ban_ignoreip:
 fail2ban_ssh_enabled: false
 
 # Enable nginx jails
-fail2ban_nginx_enabled: true
+# Note: For Docker-based nginx (like nginx-proxy), logs must be mounted to host
+# or this should be disabled. Set to false for Docker nginx setups.
+fail2ban_nginx_enabled: false
 
 # Aggressive bot scanning filter (blocks PHP probing, etc.)
-fail2ban_nginx_botscan_enabled: true
+# Requires nginx logs at /var/log/nginx/access.log
+fail2ban_nginx_botscan_enabled: false
 fail2ban_nginx_botscan_maxretry: 3
+fail2ban_nginx_botscan_findtime: 300
 fail2ban_nginx_botscan_bantime: 86400  # 24 hours for scanners
