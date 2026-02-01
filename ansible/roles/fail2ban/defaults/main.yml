@@ -15,8 +15,8 @@ fail2ban_ignoreip:
   - 127.0.0.1/8
   - ::1
 
-# Enable SSH jail
-fail2ban_ssh_enabled: true
+# Enable SSH jail (disabled by default - Tailscale only, port 22 blocked at firewall)
+fail2ban_ssh_enabled: false
 
 # Enable nginx jails
 fail2ban_nginx_enabled: true
