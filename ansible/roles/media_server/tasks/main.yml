@@ -1,8 +1,12 @@
 ---
-# Ensure network variables are set before including roles
-- name: Set media network defaults
+# Ensure variables are set before including roles
+# (Role defaults don't pass through to included collection roles)
+- name: Set media defaults
   tags: always
   ansible.builtin.set_fact:
+    media_user_user: jason
+    media_user_group: admin
+    media_storage_base_path: /volume1/storage
     media_storage_network_enabled: true
     media_storage_network_name: "media"
 
