@@ -58,6 +58,13 @@ resource "digitalocean_record" "ping4-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "ping4-TXT-google" {
+  domain = digitalocean_domain.ping4-network.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=tYGJr6hwuEromHNYRe3XDvQONqSYLVYtaPVjBslZF0Q"
+}
+
 # ============================================================================
 # ping6.network
 # ============================================================================
