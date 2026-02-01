@@ -73,9 +73,17 @@
         dest: "{{ stalwart_data_dir }}/bin"
         remote_src: true
 
+    - name: Make binaries executable
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '0755'
+      loop:
+        - "{{ stalwart_data_dir }}/bin/stalwart"
+        - "{{ stalwart_data_dir }}/bin/stalwart-cli"
+
     - name: Create symlink for stalwart-mail
       ansible.builtin.file:
-        src: "{{ stalwart_data_dir }}/bin/stalwart-mail"
+        src: "{{ stalwart_data_dir }}/bin/stalwart"
         dest: /usr/local/bin/stalwart-mail
         state: link
 
