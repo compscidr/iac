@@ -628,8 +628,8 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    # Pinned commit adds fnm (Fast Node Manager) shell integration
-    version: fbad7a24d01ffed7d70138d42b50be3c1c6c5db6
+    # Pinned commit adds cargo/rustup env (and fnm)
+    version: 13cc0d7a9f5e7d753c8b824202d5eef6bebb3f30
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfiles
