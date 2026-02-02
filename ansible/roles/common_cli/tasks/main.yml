@@ -8,12 +8,14 @@
   when: ansible_os_family == "Debian"
 
 - name: Check if Homebrew is installed (macOS)
+  tags: homebrew
   ansible.builtin.stat:
     path: /opt/homebrew/bin/brew
   register: homebrew_check
   when: ansible_os_family == "Darwin"
 
 - name: Install Homebrew (macOS)
+  tags: homebrew
   ansible.builtin.shell: |
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   args:
@@ -31,12 +33,12 @@
   when: ansible_os_family == "Darwin"
 
 - name: Install 1password CLI
+  tags: 1password
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword_cli
     apply:
       tags: 1password
       become: true
-  tags: always
 
 # Tailscale for workstations (servers get Tailscale via cloud-init)
 # Note: This is intentionally idempotent - the 'creates' argument prevents
@@ -628,8 +630,8 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    # Pinned commit adds cargo/rustup env (and fnm)
-    version: 13cc0d7a9f5e7d753c8b824202d5eef6bebb3f30
+    # Pinned commit adds bun, cargo/rustup, fnm env
+    version: 480a3f2e395e3b652531a87cce241ccfa061453e
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfiles
@@ -675,6 +677,7 @@
 
 # https://github.com/jorgebucaran/fisher
 - name: Check if fisher install needed
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
@@ -686,6 +689,7 @@
   ignore_errors: true
 
 - name: Download fisher
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.get_url:
@@ -695,6 +699,7 @@
   when: fisher_status is failed
 
 - name: Install fisher
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
@@ -705,6 +710,7 @@
   changed_when: "'changed ' in fisher_installed.stdout"
 
 - name: Check if forgit is installed
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
@@ -716,6 +722,7 @@
   ignore_errors: true
 
 - name: Install forgit
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
@@ -727,6 +734,7 @@
   changed_when: "'changed' in forgit_install.stdout"
 
 - name: Check if bobthefish is installed
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
@@ -738,6 +746,7 @@
   ignore_errors: true
 
 - name: Install bobthefish
+  tags: fish
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
