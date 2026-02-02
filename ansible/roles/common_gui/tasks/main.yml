@@ -9,12 +9,12 @@
   when: ansible_os_family == "Debian"
 
 - name: Install 1password
+  tags: 1password
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword
     apply:
       tags: 1password
       become: true
-  tags: always
 
 - name: Check if 1Password settings file exists (Ubuntu/Debian)
   tags: 1password
@@ -142,7 +142,7 @@
   when: ansible_os_family == "Darwin"
 
 - name: Install spotify apt repo (Ubuntu/Debian)
-  tags: always
+  tags: spotify
   ansible.builtin.include_role:
     name: compscidr.spotify.spotify
     apply:
@@ -192,7 +192,7 @@
   when: ansible_os_family == "Darwin"
 
 - name: Check if keybase is already installed (Ubuntu/Debian)
-  tags: always
+  tags: keybase
   become: true
   ansible.builtin.stat:
     path: /usr/bin/keybase
@@ -208,7 +208,7 @@
   when:
     - ansible_os_family == "Debian"
     - not keybase_installed.stat.exists
-  tags: always
+  tags: keybase
 
 - name: Install keybase (macOS)
   tags: keybase

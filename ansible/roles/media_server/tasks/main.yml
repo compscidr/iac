@@ -110,7 +110,7 @@
       HEALTH_CHECK_HOST=8.8.8.8
 
 - name: Install transmission
-  tags: always
+  tags: transmission
   ansible.builtin.include_role:
     name: compscidr.media_server.transmission
     apply:
@@ -122,7 +122,7 @@
     transmission_memory_swap: "5g"
 
 - name: Install plex
-  tags: always
+  tags: plex
   ansible.builtin.include_role:
     name: compscidr.media_server.plex
     apply:
@@ -138,7 +138,7 @@
     plex_network_mode: "host"
 
 - name: Install sabnzbd
-  tags: always
+  tags: sabnzbd
   ansible.builtin.include_role:
     name: compscidr.media_server.sabnzbd
     apply:
@@ -149,7 +149,7 @@
     sabnzbd_memory_swap: "5g"
 
 - name: Install sonarr
-  tags: always
+  tags: sonarr
   ansible.builtin.include_role:
     name: compscidr.media_server.sonarr
     apply:
@@ -161,7 +161,7 @@
     sonarr_memory_swap: "1g"
 
 - name: Install radarr
-  tags: always
+  tags: radarr
   ansible.builtin.include_role:
     name: compscidr.media_server.radarr
     apply:
@@ -172,7 +172,7 @@
     radarr_memory_swap: "1g"
 
 - name: Install prowlarr
-  tags: always
+  tags: prowlarr
   ansible.builtin.include_role:
     name: compscidr.media_server.prowlarr
     apply:
@@ -183,7 +183,7 @@
     prowlarr_memory_swap: "1g"
 
 - name: Install flaresolverr
-  tags: always
+  tags: flaresolverr
   ansible.builtin.include_role:
     name: compscidr.media_server.flaresolverr
     apply:
@@ -193,7 +193,7 @@
     flare_port: 8191
 
 - name: Install ombi
-  tags: always
+  tags: ombi
   ansible.builtin.include_role:
     name: compscidr.media_server.ombi
     apply:
@@ -204,7 +204,7 @@
     ombi_letsencrypt_email: "ernstjason1@gmail.com"
 
 - name: Install slskd
-  tags: always
+  tags: slskd
   ansible.builtin.include_role:
     name: compscidr.media_server.slskd
     apply:
@@ -215,7 +215,7 @@
     slskd_memory_swap: "1g"
 
 - name: Install soularr
-  tags: always
+  tags: soularr
   ansible.builtin.include_role:
     name: compscidr.media_server.soularr
     apply:
@@ -226,7 +226,7 @@
     soularr_memory_swap: "1g"
 
 - name: Install lidarr
-  tags: always
+  tags: lidarr
   ansible.builtin.include_role:
     name: compscidr.media_server.lidarr
     apply:

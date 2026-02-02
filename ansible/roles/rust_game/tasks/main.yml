@@ -1,5 +1,5 @@
 - name: Install rust weekly server
-  tags: always
+  tags: rust-weekly
   ansible.builtin.include_role:
     name: compscidr.rust_gameserver.rust_gameserver
     apply:
@@ -39,7 +39,7 @@
 #      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
 
 - name: Install rust monthly server
-  tags: always
+  tags: rust-monthly
   ansible.builtin.include_role:
     name: compscidr.rust_gameserver.rust_gameserver
     apply:

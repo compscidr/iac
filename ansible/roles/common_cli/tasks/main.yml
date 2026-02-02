@@ -33,12 +33,12 @@
   when: ansible_os_family == "Darwin"
 
 - name: Install 1password CLI
+  tags: 1password
   ansible.builtin.include_role:
     name: compscidr.onepassword.onepassword_cli
     apply:
       tags: 1password
       become: true
-  tags: always
 
 # Tailscale for workstations (servers get Tailscale via cloud-init)
 # Note: This is intentionally idempotent - the 'creates' argument prevents
