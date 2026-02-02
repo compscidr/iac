@@ -1,33 +1,33 @@
-# Clawdbot droplet - AI assistant
+# OpenClaw droplet - AI assistant
 # Access via Tailscale only (no public ports)
 
-resource "digitalocean_vpc" "clawdbot-vpc" {
-  name     = "clawdbot-vpc"
+resource "digitalocean_vpc" "openclaw-vpc" {
+  name     = "openclaw-vpc"
   region   = "sfo3"
   ip_range = "10.10.30.0/24"
 }
 
-resource "digitalocean_droplet" "clawdbot" {
+resource "digitalocean_droplet" "openclaw" {
   image    = "ubuntu-24-04-x64"
-  name     = "clawdbot"
+  name     = "openclaw"
   region   = "sfo3"
-  size     = "s-1vcpu-2gb" # $12/mo - plenty for Clawdbot
+  size     = "s-1vcpu-2gb" # $12/mo - plenty for OpenClaw
   ipv6     = true
-  vpc_uuid = digitalocean_vpc.clawdbot-vpc.id
+  vpc_uuid = digitalocean_vpc.openclaw-vpc.id
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
 
-  tags = ["clawdbot"]
+  tags = ["openclaw"]
 
   user_data = templatefile("${path.module}/cloud-init/tailscale.yml", {
     tailscale_authkey = data.onepassword_item.tailscale.credential
-    hostname          = "clawdbot"
+    hostname          = "openclaw"
   })
 }
 
 # Firewall - Tailscale only (no public inbound)
-resource "digitalocean_firewall" "clawdbot" {
-  name        = "clawdbot-fw"
-  droplet_ids = [digitalocean_droplet.clawdbot.id]
+resource "digitalocean_firewall" "openclaw" {
+  name        = "openclaw-fw"
+  droplet_ids = [digitalocean_droplet.openclaw.id]
 
   # No inbound rules - all access via Tailscale
 
@@ -50,10 +50,10 @@ resource "digitalocean_firewall" "clawdbot" {
   }
 }
 
-output "clawdbot_ip" {
-  value = digitalocean_droplet.clawdbot.ipv4_address
+output "openclaw_ip" {
+  value = digitalocean_droplet.openclaw.ipv4_address
 }
 
-output "clawdbot_ipv6" {
-  value = digitalocean_droplet.clawdbot.ipv6_address
+output "openclaw_ipv6" {
+  value = digitalocean_droplet.openclaw.ipv6_address
 }
