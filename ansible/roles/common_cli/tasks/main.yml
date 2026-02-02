@@ -632,7 +632,7 @@
     version: fbad7a24d01ffed7d70138d42b50be3c1c6c5db6
 
 - name: Test .bashrc file to see if its a symlink
-  tags: dotfile
+  tags: dotfiles
   become: true
   become_user: "{{ username }}"
   ansible.builtin.stat:
