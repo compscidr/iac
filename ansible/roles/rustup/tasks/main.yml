@@ -1,0 +1,135 @@
+---
+# rustup - Rust toolchain installer
+# https://rustup.rs/
+
+- name: Remove apt rust packages (cleanup old installs)
+  become: true
+  tags:
+    - rustup
+    - rust
+    - cleanup
+  ansible.builtin.apt:
+    pkg:
+      - rustc
+      - cargo
+    state: absent
+    autoremove: true
+  when:
+    - rustup_cleanup_apt | default(true)
+    - ansible_os_family == "Debian"
+
+- name: Check if rustup is installed
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: which rustup || echo "not found"
+  register: rustup_check
+  changed_when: false
+  tags:
+    - rustup
+    - rust
+
+- name: Install rustup (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+  when:
+    - ansible_system == "Linux"
+    - "'not found' in rustup_check.stdout"
+  tags:
+    - rustup
+    - rust
+
+- name: Install rustup via Homebrew (macOS)
+  community.general.homebrew:
+    name: rustup
+    state: present
+  when:
+    - ansible_os_family == "Darwin"
+    - "'not found' in rustup_check.stdout"
+  tags:
+    - rustup
+    - rust
+
+- name: Initialize rustup on macOS
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    rustup-init -y --no-modify-path
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+  when:
+    - ansible_os_family == "Darwin"
+  tags:
+    - rustup
+    - rust
+
+- name: Add cargo to bashrc (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    marker: "# {mark} ANSIBLE MANAGED - rustup"
+    block: |
+      # Rust (rustup)
+      if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+      fi
+    create: true
+  when:
+    - ansible_system == "Linux"
+    - rustup_configure_shell | default(true)
+  tags:
+    - rustup
+    - rust
+
+- name: Add cargo to zshrc (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    marker: "# {mark} ANSIBLE MANAGED - rustup"
+    block: |
+      # Rust (rustup)
+      if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+      fi
+    create: true
+  when:
+    - ansible_system == "Linux"
+    - rustup_configure_shell | default(true)
+  tags:
+    - rustup
+    - rust
+
+- name: Add cargo to zshrc (macOS)
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    marker: "# {mark} ANSIBLE MANAGED - rustup"
+    block: |
+      # Rust (rustup)
+      if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+      fi
+    create: true
+  when:
+    - ansible_os_family == "Darwin"
+    - rustup_configure_shell | default(true)
+  tags:
+    - rustup
+    - rust
+
+- name: Install Rust components
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.shell: |
+    . "$HOME/.cargo/env"
+    rustup component add {{ item }}
+  loop: "{{ rustup_components }}"
+  register: component_result
+  changed_when: "'is up to date' not in component_result.stderr"
+  tags:
+    - rustup
+    - rust

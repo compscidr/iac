@@ -1,0 +1,11 @@
+---
+# Rust components to install via rustup
+rustup_components:
+  - rust-analyzer
+
+# Add shell integration to bashrc/zshrc
+# Set to false if using dotfiles repo to manage shell config
+rustup_configure_shell: true
+
+# Remove apt rust packages (rustc, cargo) if present
+rustup_cleanup_apt: true

@@ -7,3 +7,6 @@ bootstrap_user_password: "{{ lookup('community.general.onepassword', 'System Acc
 
 # fnm: don't modify shell configs (managed by dotfiles repo)
 fnm_configure_shell: false
+
+# rustup: don't modify shell configs (managed by dotfiles repo)
+rustup_configure_shell: false
