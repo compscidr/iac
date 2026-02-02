@@ -434,8 +434,7 @@
         github_cli_user: "{{ username }}"
         github_cli_username: "compscidr"
         github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
-  # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
-  tags: always
+  tags: gh
 
 # https://github.com/dlvhdr/gh-dash
 # - name: Github CLI gh dash extension
