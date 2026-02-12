@@ -129,6 +129,7 @@
       become: true
       tags: plex
   vars:
+    plex_folder: "{{ media_storage_base_path }}/plex"
     plex_dri_devices: true
     plex_bonjour_port: 5354
     plex_claim: claim-haziyvUxG2Fb4uj5-tF1
