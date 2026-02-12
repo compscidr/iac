@@ -134,6 +134,7 @@
     plex_claim: claim-haziyvUxG2Fb4uj5-tF1
     plex_memory: "5g"
     plex_memory_swap: "5g"
+    plex_shm_size: "2g"
     # Use host mode for DLNA/UPnP discovery
     plex_network_mode: "host"
 
