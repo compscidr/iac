@@ -1,0 +1,33 @@
+---
+# Ollama LLM server deployment
+#
+# Deploys Ollama with GPU support for local LLM inference.
+# Designed for machines with NVIDIA GPUs (e.g., ubuntu-beast with RTX 5080).
+#
+# Prerequisites:
+#   1. Docker installed on target host
+#   2. NVIDIA drivers installed (for GPU support)
+#   3. Tailscale connected (for secure remote access)
+#
+# Usage:
+#   # Deploy to ubuntu-beast:
+#   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local
+#
+#   # Deploy without GPU (CPU only):
+#   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local -e ollama_gpu_enabled=false
+#
+#   # With custom models:
+#   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local \
+#     -e '{"ollama_models": ["qwen2.5:14b", "codestral:latest"]}'
+
+- name: Deploy Ollama LLM Server
+  hosts: all
+  vars_files:
+    - vars/user.yml
+  vars:
+    # Default models - good for 16GB VRAM (RTX 5080)
+    ollama_models:
+      - "qwen2.5:14b"      # General purpose, good at coding
+      - "llama3.1:8b"      # Fast fallback
+  roles:
+    - ollama

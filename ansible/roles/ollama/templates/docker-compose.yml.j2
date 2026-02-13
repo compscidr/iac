@@ -1,0 +1,36 @@
+---
+# Ollama Docker Compose configuration
+# Managed by Ansible - do not edit directly
+
+services:
+  ollama:
+    image: {{ ollama_image }}
+    container_name: {{ ollama_container_name }}
+    restart: {{ ollama_restart_policy }}
+    ports:
+      - "{{ ollama_bind_address }}:{{ ollama_port }}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+{% if ollama_gpu_enabled %}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+{% endif %}
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+{% if ollama_tailscale_only %}
+      # Note: Firewall rules should restrict to Tailscale IPs
+      # This is informational - actual restriction via iptables/ufw
+{% endif %}
+
+volumes:
+  ollama_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: {{ ollama_data_path }}/data

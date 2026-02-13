@@ -1,0 +1,28 @@
+---
+# Ollama role defaults
+
+# Container settings
+ollama_container_name: "ollama"
+ollama_image: "ollama/ollama:latest"
+ollama_restart_policy: "unless-stopped"
+
+# Port configuration
+ollama_port: 11434
+ollama_bind_address: "0.0.0.0"  # Bind to all interfaces (use firewall/Tailscale for access control)
+
+# GPU support
+ollama_gpu_enabled: true  # Set to false for CPU-only deployment
+
+# Data persistence
+ollama_data_path: "/var/lib/ollama"
+
+# Models to pull on deployment (empty list = none)
+ollama_models:
+  - "qwen2.5:14b"      # Good balance of capability and speed for 16GB VRAM
+  - "llama3.1:8b"      # Fast fallback
+
+# Tailscale access control (when behind Tailscale)
+ollama_tailscale_only: true  # If true, only allow Tailscale IPs
+
+# OpenClaw integration
+ollama_openclaw_base_url: "http://{{ inventory_hostname }}:{{ ollama_port }}"

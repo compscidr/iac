@@ -1,0 +1,160 @@
+---
+# Ollama deployment via Docker with optional GPU support
+
+# Ensure Docker is installed (assumes docker role or manual install)
+- name: Check if Docker is available
+  ansible.builtin.command: docker --version
+  register: docker_check
+  changed_when: false
+  failed_when: docker_check.rc != 0
+  tags:
+    - ollama
+    - preflight
+
+# Install NVIDIA Container Toolkit for GPU support
+- name: Check if nvidia-smi is available
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_check
+  changed_when: false
+  failed_when: false
+  when: ollama_gpu_enabled
+  tags:
+    - ollama
+    - gpu
+
+- name: Add NVIDIA Container Toolkit GPG key
+  become: true
+  ansible.builtin.apt_key:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    state: present
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  tags:
+    - ollama
+    - gpu
+
+- name: Add NVIDIA Container Toolkit repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH) /"
+    state: present
+    filename: nvidia-container-toolkit
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  tags:
+    - ollama
+    - gpu
+
+- name: Install NVIDIA Container Toolkit
+  become: true
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: true
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  notify: Restart Docker
+  tags:
+    - ollama
+    - gpu
+
+- name: Configure Docker for NVIDIA runtime
+  become: true
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  changed_when: false
+  notify: Restart Docker
+  tags:
+    - ollama
+    - gpu
+
+# Create data directories
+- name: Create Ollama data directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ ollama_data_path }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - ollama
+    - setup
+
+- name: Create Ollama model data directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ ollama_data_path }}/data"
+    state: directory
+    mode: '0755'
+  tags:
+    - ollama
+    - setup
+
+# Deploy docker-compose file
+- name: Deploy Ollama docker-compose.yml
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ ollama_data_path }}/docker-compose.yml"
+    mode: '0644'
+  notify: Restart Ollama
+  tags:
+    - ollama
+    - config
+
+# Start Ollama container
+- name: Start Ollama container
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ ollama_data_path }}"
+    state: present
+    pull: always
+  tags:
+    - ollama
+    - deploy
+
+# Wait for Ollama to be ready
+- name: Wait for Ollama API to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ ollama_port }}/api/tags"
+    method: GET
+    status_code: 200
+  register: ollama_health
+  until: ollama_health.status == 200
+  retries: 30
+  delay: 5
+  tags:
+    - ollama
+    - deploy
+
+# Pull configured models
+- name: Pull Ollama models
+  become: true
+  ansible.builtin.command:
+    cmd: "docker exec {{ ollama_container_name }} ollama pull {{ item }}"
+  loop: "{{ ollama_models }}"
+  register: model_pull
+  changed_when: "'pulling' in model_pull.stdout"
+  tags:
+    - ollama
+    - models
+
+# Display connection info
+- name: Display Ollama connection info
+  ansible.builtin.debug:
+    msg: |
+      Ollama deployed successfully!
+      
+      API endpoint: http://{{ inventory_hostname }}:{{ ollama_port }}
+      Tailscale endpoint: http://{{ inventory_hostname }}:{{ ollama_port }}
+      
+      Models available: {{ ollama_models | join(', ') }}
+      
+      To add to OpenClaw config:
+        models:
+          providers:
+            ollama:
+              baseUrl: "http://{{ inventory_hostname }}:{{ ollama_port }}/v1"
+              api: openai-completions
+              models:
+                - id: "qwen2.5:14b"
+                  name: "Qwen 2.5 14B (Local)"
+  tags:
+    - ollama
+    - info
