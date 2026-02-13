@@ -22,6 +22,11 @@ services:
 {% endif %}
     environment:
       - OLLAMA_HOST=0.0.0.0
+{% if ollama_num_gpu != -1 %}
+      - OLLAMA_NUM_GPU={{ ollama_num_gpu }}
+{% endif %}
+      # Allow large models to use system RAM for layer offloading
+      # With 128GB RAM, 70B+ models run well with partial GPU acceleration
 {% if ollama_tailscale_only %}
       # Note: Firewall rules should restrict to Tailscale IPs
       # This is informational - actual restriction via iptables/ufw

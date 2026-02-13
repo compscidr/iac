@@ -25,9 +25,10 @@
   vars_files:
     - vars/user.yml
   vars:
-    # Default models - good for 16GB VRAM (RTX 5080)
+    # Default models for high-RAM machines (128GB+ RAM, 16GB VRAM)
+    # Larger models use GPU + RAM offloading for inference
     ollama_models:
-      - "qwen2.5:14b"      # General purpose, good at coding
-      - "llama3.1:8b"      # Fast fallback
+      - "qwen2.5:72b"      # ~45GB, excellent quality, partial GPU + RAM
+      - "qwen2.5:14b"      # Fast fallback, fits entirely in VRAM
   roles:
     - ollama
