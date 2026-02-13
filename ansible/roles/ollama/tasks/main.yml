@@ -44,11 +44,19 @@
     - ollama
     - gpu
 
+- name: Set NVIDIA repo architecture
+  ansible.builtin.set_fact:
+    nvidia_repo_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  tags:
+    - ollama
+    - gpu
+
 - name: Add NVIDIA Container Toolkit repository
   become: true
   ansible.builtin.copy:
     content: |
-      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ ansible_architecture }} /
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ nvidia_repo_arch }} /
     dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
     mode: '0644'
   when: ollama_gpu_enabled and nvidia_check.rc == 0
