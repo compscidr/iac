@@ -13,13 +13,22 @@ ollama_bind_address: "0.0.0.0"  # Bind to all interfaces (use firewall/Tailscale
 # GPU support
 ollama_gpu_enabled: true  # Set to false for CPU-only deployment
 
+# CPU/RAM offloading for large models
+# Set ollama_num_gpu to control GPU layer count (0 = CPU only, -1 = auto)
+# With 128GB RAM + 16GB VRAM, can run 70B+ models with partial GPU acceleration
+ollama_num_gpu: -1  # -1 = auto (Ollama decides), 0 = CPU only, N = specific layer count
+
 # Data persistence
 ollama_data_path: "/var/lib/ollama"
 
 # Models to pull on deployment (empty list = none)
+# For machines with lots of RAM (128GB+), larger models are viable:
+#   - qwen2.5:72b (~45GB) - excellent quality, partial GPU + RAM
+#   - llama3.1:70b (~40GB) - great general purpose
+#   - deepseek-coder-v2:latest - strong at coding
 ollama_models:
-  - "qwen2.5:14b"      # Good balance of capability and speed for 16GB VRAM
-  - "llama3.1:8b"      # Fast fallback
+  - "qwen2.5:72b"      # High quality, uses GPU + RAM offload on 128GB systems
+  - "qwen2.5:14b"      # Fast fallback, fits entirely in 16GB VRAM
 
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true  # If true, only allow Tailscale IPs

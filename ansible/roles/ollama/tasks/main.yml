@@ -145,6 +145,9 @@
       Tailscale endpoint: http://{{ inventory_hostname }}:{{ ollama_port }}
       
       Models available: {{ ollama_models | join(', ') }}
+      GPU layers: {{ 'auto' if ollama_num_gpu == -1 else ollama_num_gpu }}
+      
+      Large models (70B+) will use GPU + RAM offloading automatically.
       
       To add to OpenClaw config:
         models:
@@ -153,8 +156,10 @@
               baseUrl: "http://{{ inventory_hostname }}:{{ ollama_port }}/v1"
               api: openai-completions
               models:
+                - id: "qwen2.5:72b"
+                  name: "Qwen 2.5 72B (Local)"
                 - id: "qwen2.5:14b"
-                  name: "Qwen 2.5 14B (Local)"
+                  name: "Qwen 2.5 14B (Local/Fast)"
   tags:
     - ollama
     - info
