@@ -22,11 +22,23 @@
     - ollama
     - gpu
 
-- name: Add NVIDIA Container Toolkit GPG key
+- name: Download NVIDIA Container Toolkit GPG key
   become: true
-  ansible.builtin.apt_key:
+  ansible.builtin.get_url:
     url: https://nvidia.github.io/libnvidia-container/gpgkey
-    state: present
+    dest: /tmp/nvidia-container-toolkit.gpg.key
+    mode: '0644'
+  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  tags:
+    - ollama
+    - gpu
+
+- name: Add NVIDIA Container Toolkit GPG key to keyring
+  become: true
+  ansible.builtin.shell: |
+    cat /tmp/nvidia-container-toolkit.gpg.key | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
   when: ollama_gpu_enabled and nvidia_check.rc == 0
   tags:
     - ollama
@@ -34,10 +46,11 @@
 
 - name: Add NVIDIA Container Toolkit repository
   become: true
-  ansible.builtin.apt_repository:
-    repo: "deb https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH) /"
-    state: present
-    filename: nvidia-container-toolkit
+  ansible.builtin.copy:
+    content: |
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ ansible_architecture }} /
+    dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    mode: '0644'
   when: ollama_gpu_enabled and nvidia_check.rc == 0
   tags:
     - ollama
