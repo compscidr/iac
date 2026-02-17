@@ -1,6 +1,7 @@
 ---
 - name: Common tasks for all hosts
   hosts: all
+  become: true
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
