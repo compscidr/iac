@@ -15,7 +15,7 @@ sair_adb_server_port: 5038
 # Data / repo paths
 sair_data_path: "/var/lib/sair"
 sair_repo_path: "/opt/sair"
-sair_repo_url: "https://github.com/compscidr/sair.git"
+sair_repo_url: "git@github.com:compscidr/sair.git"
 sair_repo_version: "main"
 
 # Secrets (override in playbook via 1Password lookups)
