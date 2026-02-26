@@ -5,10 +5,12 @@
 
 # --- Prerequisites ---
 
-- name: Install JDK 21 for DeviceSource build
+- name: Install JDK 21 and ADB for DeviceSource
   become: true
   ansible.builtin.apt:
-    name: openjdk-21-jdk-headless
+    name:
+      - openjdk-21-jdk-headless
+      - adb
     state: present
     update_cache: true
 

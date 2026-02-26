@@ -7,7 +7,7 @@
 #
 # Prerequisites:
 #   1. Host bootstrapped (bootstrap.yml)
-#   2. 1Password items: sair-api-key, gh-actions-runner-pat
+#   2. 1Password items: sair-api-key, gh-actions-runner-pat (also used for GHCR login; needs read:packages scope)
 #   3. Docker images built and pushed to GHCR (docker.yml workflow)
 #
 # Usage:

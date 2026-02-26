@@ -10,7 +10,6 @@ sair_runner_image: "compscidr/github-runner-android:latest"
 sair_network_name: "sair-net"
 sair_orchestrator_port: 9090
 sair_devicesource_port: 8080
-sair_adb_proxy_port: 5037
 sair_adb_server_port: 5038
 
 # Data / repo paths
