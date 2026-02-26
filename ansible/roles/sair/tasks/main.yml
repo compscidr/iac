@@ -3,6 +3,15 @@
 # - DeviceSource: systemd service on host (USB hotplug)
 # - Orchestrator, ADB Proxy, Runner: Docker Compose
 
+# --- Prerequisites ---
+
+- name: Install JDK 21 for DeviceSource build
+  become: true
+  ansible.builtin.apt:
+    name: openjdk-21-jdk-headless
+    state: present
+    update_cache: true
+
 # --- DeviceSource (host service) ---
 
 - name: Clone/update SAIR repository
@@ -62,7 +71,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ sair_data_path }}/docker-compose.yml"
-    mode: "0644"
+    mode: "0600"
   notify: Restart SAIR stack
 
 - name: Start SAIR stack
