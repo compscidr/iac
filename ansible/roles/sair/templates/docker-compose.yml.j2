@@ -1,0 +1,49 @@
+---
+services:
+  sair-orchestrator:
+    image: {{ sair_orchestrator_image }}
+    container_name: sair-orchestrator
+    restart: unless-stopped
+    networks:
+      - {{ sair_network_name }}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DEVICE_SOURCE_ADDR: "host.docker.internal:{{ sair_devicesource_port }}"
+      ORCHESTRATOR_PORT: "{{ sair_orchestrator_port }}"
+      SAIR_API_KEY: "{{ sair_api_key }}"
+
+  sair-adb-proxy:
+    image: {{ sair_adbproxy_image }}
+    container_name: sair-adb-proxy
+    restart: unless-stopped
+    networks:
+      - {{ sair_network_name }}
+    depends_on:
+      - sair-orchestrator
+    environment:
+      ORCHESTRATOR_ADDR: "sair-orchestrator:{{ sair_orchestrator_port }}"
+      SAIR_API_KEY: "{{ sair_api_key }}"
+
+  sair-runner:
+    image: {{ sair_runner_image }}
+    container_name: sair-runner
+    restart: unless-stopped
+    network_mode: "container:sair-adb-proxy"
+    depends_on:
+      - sair-adb-proxy
+    volumes:
+      - runner-data:/runner-data
+    environment:
+      ACCESS_TOKEN: "{{ sair_runner_pat }}"
+      RUNNER_NAME_PREFIX: "sair"
+      LABELS: "{{ sair_runner_labels }}"
+      REPO_URL: "{{ sair_runner_repo_url }}"
+      DISABLE_AUTO_UPDATE: "true"
+
+networks:
+  {{ sair_network_name }}:
+    driver: bridge
+
+volumes:
+  runner-data:

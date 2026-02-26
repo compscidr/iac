@@ -1,0 +1,21 @@
+[Unit]
+Description=SAIR DeviceSource
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ sair_devicesource_user }}
+
+Environment="ADB_PORT={{ sair_adb_server_port }}"
+
+# Start ADB server on the configured port before DeviceSource
+ExecStartPre=/usr/bin/adb -P {{ sair_adb_server_port }} start-server
+
+ExecStart={{ sair_repo_path }}/deviceSource/build/install/deviceSource/bin/deviceSource
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

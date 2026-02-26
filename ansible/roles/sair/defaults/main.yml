@@ -1,0 +1,33 @@
+---
+# SAIR role defaults
+
+# Container images
+sair_orchestrator_image: "ghcr.io/compscidr/sair-orchestrator:latest"
+sair_adbproxy_image: "ghcr.io/compscidr/sair-adbproxy:latest"
+sair_runner_image: "compscidr/github-runner-android:latest"
+
+# Networking
+sair_network_name: "sair-net"
+sair_orchestrator_port: 9090
+sair_devicesource_port: 8080
+sair_adb_proxy_port: 5037
+sair_adb_server_port: 5038
+
+# Data / repo paths
+sair_data_path: "/var/lib/sair"
+sair_repo_path: "/opt/sair"
+sair_repo_url: "https://github.com/compscidr/sair.git"
+sair_repo_version: "main"
+
+# Secrets (override in playbook via 1Password lookups)
+sair_api_key: ""
+sair_runner_pat: ""
+sair_ghcr_token: ""
+sair_ghcr_user: "compscidr"
+
+# GitHub runner config
+sair_runner_repo_url: "https://github.com/compscidr/sair"
+sair_runner_labels: "self-hosted,sair-enabled,linux"
+
+# DeviceSource systemd service user
+sair_devicesource_user: "{{ username }}"

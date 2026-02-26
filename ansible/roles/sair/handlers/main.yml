@@ -1,0 +1,17 @@
+---
+- name: Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart DeviceSource
+  become: true
+  ansible.builtin.systemd:
+    name: sair-devicesource
+    state: restarted
+
+- name: Restart SAIR stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ sair_data_path }}"
+    state: restarted

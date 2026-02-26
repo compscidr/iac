@@ -41,11 +41,13 @@ gui:
 android_runner:
   hosts:
     ubuntu-silverstone.local:
-    ubuntu-cube.local:
 
 java_runner:
   hosts:
     ubuntu-silverstone.local:
+
+sair:
+  hosts:
     ubuntu-cube.local:
 
 linux:
