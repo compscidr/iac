@@ -1,0 +1,25 @@
+---
+# SAIR deployment playbook
+#
+# Deploys the full SAIR stack on ubuntu-cube:
+#   - DeviceSource as a systemd service (host, USB hotplug)
+#   - Orchestrator + ADB Proxy + GitHub Runner in Docker Compose
+#
+# Prerequisites:
+#   1. Host bootstrapped (bootstrap.yml)
+#   2. 1Password items: sair-api-key, gh-actions-runner-pat (also used for GHCR login; needs read:packages scope)
+#   3. Docker images built and pushed to GHCR (docker.yml workflow)
+#
+# Usage:
+#   ansible-playbook -i inventory.yml sair.yml
+
+- name: Deploy SAIR
+  hosts: sair
+  vars_files:
+    - vars/user.yml
+  vars:
+    sair_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+  roles:
+    - sair

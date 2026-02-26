@@ -1,0 +1,84 @@
+---
+# SAIR deployment tasks
+# - DeviceSource: systemd service on host (USB hotplug)
+# - Orchestrator, ADB Proxy, Runner: Docker Compose
+
+# --- Prerequisites ---
+
+- name: Install JDK 21 and ADB for DeviceSource
+  become: true
+  ansible.builtin.apt:
+    name:
+      - openjdk-21-jdk-headless
+      - adb
+    state: present
+    update_cache: true
+
+# --- DeviceSource (host service) ---
+
+- name: Clone/update SAIR repository
+  become: true
+  ansible.builtin.git:
+    repo: "{{ sair_repo_url }}"
+    dest: "{{ sair_repo_path }}"
+    version: "{{ sair_repo_version }}"
+    accept_hostkey: true
+  register: sair_repo
+
+- name: Build DeviceSource
+  become: true
+  ansible.builtin.command:
+    cmd: ./gradlew --no-daemon :deviceSource:installDist
+    chdir: "{{ sair_repo_path }}"
+  when: sair_repo.changed
+  notify: Restart DeviceSource
+
+- name: Deploy DeviceSource systemd service
+  become: true
+  ansible.builtin.template:
+    src: sair-devicesource.service.j2
+    dest: /etc/systemd/system/sair-devicesource.service
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart DeviceSource
+
+- name: Enable and start DeviceSource
+  become: true
+  ansible.builtin.systemd:
+    name: sair-devicesource
+    enabled: true
+    state: started
+
+# --- Docker services (orchestrator, proxy, runner) ---
+
+- name: Create SAIR data directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ sair_data_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ sair_ghcr_user }}"
+    password: "{{ sair_ghcr_token }}"
+  when: sair_ghcr_token | length > 0
+  no_log: true
+
+- name: Deploy SAIR docker-compose.yml
+  become: true
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ sair_data_path }}/docker-compose.yml"
+    mode: "0600"
+  notify: Restart SAIR stack
+
+- name: Start SAIR stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ sair_data_path }}"
+    state: present
+    pull: always
