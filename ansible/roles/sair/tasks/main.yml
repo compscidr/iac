@@ -32,6 +32,7 @@
     repo: "{{ sair_repo_url }}"
     dest: "{{ sair_repo_path }}"
     version: "{{ sair_repo_version }}"
+    accept_hostkey: true
   register: sair_repo
 
 - name: Build DeviceSource
