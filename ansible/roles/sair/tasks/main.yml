@@ -16,17 +16,27 @@
 
 # --- DeviceSource (host service) ---
 
+- name: Create SAIR repo directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ sair_repo_path }}"
+    state: directory
+    owner: "{{ sair_devicesource_user }}"
+    group: "{{ sair_devicesource_user }}"
+    mode: "0755"
+
 - name: Clone/update SAIR repository
   become: true
+  become_user: "{{ sair_devicesource_user }}"
   ansible.builtin.git:
     repo: "{{ sair_repo_url }}"
     dest: "{{ sair_repo_path }}"
     version: "{{ sair_repo_version }}"
-    accept_hostkey: true
   register: sair_repo
 
 - name: Build DeviceSource
   become: true
+  become_user: "{{ sair_devicesource_user }}"
   ansible.builtin.command:
     cmd: ./gradlew --no-daemon :deviceSource:installDist
     chdir: "{{ sair_repo_path }}"
