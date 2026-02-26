@@ -22,6 +22,7 @@
     path: "{{ sair_repo_path }}"
     state: directory
     owner: "{{ sair_devicesource_user }}"
+    group: "{{ sair_devicesource_user }}"
     mode: "0755"
 
 - name: Clone/update SAIR repository
