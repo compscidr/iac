@@ -12,12 +12,14 @@
     dyndns_container_name: "dyndns-home"
   when: inventory_hostname == 'ubuntu-beast.local'
 
-- name: Set DynDns configuration for ubuntu-cube.local
-  tags: dyndns
-  set_fact:
-    dyndns_name: "vpn"
-    dyndns_container_name: "dyndns"
-  when: inventory_hostname == 'ubuntu-cube.local'
+# disabled till we figure out how to deal with multiple NICs flip flopping
+# between ipv6 addresses
+# - name: Set DynDns configuration for ubuntu-cube.local
+#   tags: dyndns
+#   set_fact:
+#     dyndns_name: "vpn"
+#     dyndns_container_name: "dyndns"
+#   when: inventory_hostname == 'ubuntu-cube.local'
 
 - name: Deploy DynDns
   tags: dyndns
