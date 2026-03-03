@@ -21,5 +21,15 @@
     sair_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_runners:
+      - name: "sair"
+        repo_url: "https://github.com/compscidr/sair"
+        labels: "self-hosted,sair-enabled,linux"
+      - name: "hello-java-android"
+        repo_url: "https://github.com/compscidr/hello-java-android"
+        labels: "self-hosted,sair-enabled,linux"
+      - name: "hello-kotlin-android"
+        repo_url: "https://github.com/compscidr/hello-kotlin-android"
+        labels: "self-hosted,sair-enabled,linux"
   roles:
     - sair
