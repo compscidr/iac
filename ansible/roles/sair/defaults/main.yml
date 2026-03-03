@@ -20,6 +20,12 @@ sair_repo_version: "main"
 
 # Secrets (override in playbook via 1Password lookups)
 sair_api_key: ""
+
+# Multi-tenant config (optional, overrides sair_api_key when set)
+# Format: apiKey:tenantId:tier:maxDevices,...
+sair_tenant_config: ""
+# Format: tenantId=host:port,...
+sair_device_source_config: ""
 sair_runner_pat: ""
 sair_ghcr_token: ""
 sair_ghcr_user: "compscidr"

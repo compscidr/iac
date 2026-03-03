@@ -9,9 +9,16 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      DEVICE_SOURCE_ADDR: "host.docker.internal:{{ sair_devicesource_port }}"
       ORCHESTRATOR_PORT: "{{ sair_orchestrator_port }}"
       SAIR_API_KEY: "{{ sair_api_key }}"
+{% if sair_tenant_config %}
+      SAIR_TENANT_CONFIG: "{{ sair_tenant_config }}"
+{% endif %}
+{% if sair_device_source_config %}
+      DEVICE_SOURCE_CONFIG: "{{ sair_device_source_config }}"
+{% else %}
+      DEVICE_SOURCE_ADDR: "host.docker.internal:{{ sair_devicesource_port }}"
+{% endif %}
 
   sair-adb-proxy:
     image: {{ sair_adbproxy_image }}
