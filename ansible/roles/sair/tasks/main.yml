@@ -93,3 +93,4 @@
     project_src: "{{ sair_data_path }}"
     state: present
     pull: always
+    recreate: always
