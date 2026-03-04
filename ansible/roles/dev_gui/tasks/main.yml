@@ -103,3 +103,32 @@
       tags: spotify
       become: true
   tags: spotify
+
+- name: Check if claude-desktop apt repo exists
+  tags: claude-desktop
+  become: true
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/claude-desktop.sources
+  register: claude_desktop_repo_exists
+
+- name: Install claude-desktop apt repo
+  tags: claude-desktop
+  become: true
+  ansible.builtin.deb822_repository:
+    name: claude-desktop
+    types: [deb]
+    uris: https://aaddrick.github.io/claude-desktop-debian
+    signed_by: https://aaddrick.github.io/claude-desktop-debian/KEY.gpg
+    suites: [stable]
+    components: [main]
+    state: present
+    enabled: true
+  when: not claude_desktop_repo_exists.stat.exists
+
+- name: Install claude-desktop
+  become: true
+  tags: claude-desktop
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - claude-desktop
