@@ -46,6 +46,8 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+  args:
+    creates: "/home/{{ username }}/.local/share/fnm/fnm"
   when:
     - ansible_system == "Linux"
     - "'not found' in fnm_check.stdout"
