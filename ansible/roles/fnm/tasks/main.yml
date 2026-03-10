@@ -46,8 +46,6 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
-  args:
-    creates: "{{ ansible_env.HOME }}/.local/share/fnm/fnm"
   when:
     - ansible_system == "Linux"
     - "'not found' in fnm_check.stdout"
@@ -70,11 +68,11 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.bashrc"
+    path: "/home/{{ username }}/.bashrc"
     marker: "# {mark} ANSIBLE MANAGED - fnm"
     block: |
       # fnm (Fast Node Manager)
-      FNM_PATH="{{ ansible_env.HOME }}/.local/share/fnm"
+      FNM_PATH="$HOME/.local/share/fnm"
       if [ -d "$FNM_PATH" ]; then
         export PATH="$FNM_PATH:$PATH"
         eval "$(fnm env --use-on-cd --shell bash)"
@@ -91,11 +89,11 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.zshrc"
+    path: "/home/{{ username }}/.zshrc"
     marker: "# {mark} ANSIBLE MANAGED - fnm"
     block: |
       # fnm (Fast Node Manager)
-      FNM_PATH="{{ ansible_env.HOME }}/.local/share/fnm"
+      FNM_PATH="$HOME/.local/share/fnm"
       if [ -d "$FNM_PATH" ]; then
         export PATH="$FNM_PATH:$PATH"
         eval "$(fnm env --use-on-cd --shell zsh)"
@@ -110,7 +108,7 @@
 
 - name: Add fnm to zshrc (macOS)
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.zshrc"
+    path: "/home/{{ username }}/.zshrc"
     marker: "# {mark} ANSIBLE MANAGED - fnm"
     block: |
       # fnm (Fast Node Manager) - installed via Homebrew
@@ -127,7 +125,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     fnm list 2>/dev/null | grep -q "{{ fnm_node_version }}" && echo "installed" || echo "not installed"
   register: node_version_check
   changed_when: false
@@ -139,7 +137,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     fnm install {{ fnm_node_version }}
   when: "'not installed' in node_version_check.stdout"
@@ -151,7 +149,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     fnm default {{ fnm_node_version }}
   when: fnm_set_default | default(true)

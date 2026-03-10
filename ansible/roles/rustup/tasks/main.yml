@@ -34,7 +34,7 @@
   ansible.builtin.shell: |
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
   args:
-    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+    creates: "/home/{{ username }}/.cargo/bin/rustup"
   when:
     - ansible_system == "Linux"
     - "'not found' in rustup_check.stdout"
@@ -59,7 +59,7 @@
   ansible.builtin.shell: |
     rustup-init -y --no-modify-path
   args:
-    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+    creates: "/home/{{ username }}/.cargo/bin/rustup"
   when:
     - ansible_os_family == "Darwin"
   tags:
@@ -70,7 +70,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.bashrc"
+    path: "/home/{{ username }}/.bashrc"
     marker: "# {mark} ANSIBLE MANAGED - rustup"
     block: |
       # Rust (rustup)
@@ -89,7 +89,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.zshrc"
+    path: "/home/{{ username }}/.zshrc"
     marker: "# {mark} ANSIBLE MANAGED - rustup"
     block: |
       # Rust (rustup)
@@ -106,7 +106,7 @@
 
 - name: Add cargo to zshrc (macOS)
   ansible.builtin.blockinfile:
-    path: "{{ ansible_env.HOME }}/.zshrc"
+    path: "/home/{{ username }}/.zshrc"
     marker: "# {mark} ANSIBLE MANAGED - rustup"
     block: |
       # Rust (rustup)

@@ -97,7 +97,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which yarn || echo "not found"
   register: yarn_check
@@ -115,7 +115,7 @@
     - node
     - npm
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g yarn
   when: "'not found' in yarn_check.stdout"
@@ -124,7 +124,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which tldr || echo "not found"
   register: tldr_check
@@ -142,7 +142,7 @@
     - node
     - npm
   ansible.builtin.shell: |
-    export PATH="{{ ansible_env.HOME }}/.local/share/fnm:/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g tldr
   when: "'not found' in tldr_check.stdout"
