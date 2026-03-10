@@ -2,3 +2,5 @@
 test_venv/
 .molecule-roles/
 .molecule-collections/
+.galaxy-roles/
+.galaxy-collections/
