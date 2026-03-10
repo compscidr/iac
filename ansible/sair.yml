@@ -31,5 +31,8 @@
       - name: "hello-kotlin-android"
         repo_url: "https://github.com/compscidr/hello-kotlin-android"
         labels: "self-hosted,sair-enabled,linux"
+      - name: "icmp"
+        repo_url: "https://github.com/compscidr/icmp"
+        labels: "self-hosted,sair-enabled,linux"
   roles:
     - sair

@@ -10,6 +10,7 @@ sair_runner_image: "compscidr/github-runner-android:latest"
 sair_network_name: "sair-net"
 sair_orchestrator_port: 9090
 sair_devicesource_port: 8080
+sair_dashboard_port: 8081
 sair_adb_server_port: 5038
 
 # Data / repo paths
@@ -35,6 +36,9 @@ sair_runners:
   - name: "sair"
     repo_url: "https://github.com/compscidr/sair"
     labels: "self-hosted,sair-enabled,linux"
+
+# Device acquisition (exclusive device locking for concurrent runners)
+sair_acquisition_enabled: true
 
 # DeviceSource systemd service user
 sair_devicesource_user: "{{ username }}"
