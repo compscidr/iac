@@ -1,0 +1,59 @@
+---
+# Deploy SAIR orchestrator on the projects droplet
+# - Dashboard behind nginx-proxy (HTTPS via Let's Encrypt)
+# - gRPC on port 9090 with TLS (certs from nginx-proxy Let's Encrypt volume)
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ sair_orchestrator_ghcr_user }}"
+    password: "{{ sair_orchestrator_ghcr_token }}"
+  when: sair_orchestrator_ghcr_token | length > 0
+  no_log: true
+
+- name: Build orchestrator environment
+  no_log: true
+  ansible.builtin.set_fact:
+    _sair_orchestrator_env: >-
+      {{
+        {
+          'ORCHESTRATOR_PORT': sair_orchestrator_port | string,
+          'DASHBOARD_ENABLED': 'true',
+          'SAIR_API_KEY': sair_orchestrator_api_key,
+          'VIRTUAL_HOST': sair_orchestrator_domain,
+          'VIRTUAL_PORT': sair_orchestrator_dashboard_port | string,
+          'LETSENCRYPT_HOST': sair_orchestrator_domain,
+          'LETSENCRYPT_EMAIL': sair_orchestrator_letsencrypt_email,
+          'TLS_CERT_PATH': '/certs/' + sair_orchestrator_domain + '.crt',
+          'TLS_KEY_PATH': '/certs/' + sair_orchestrator_domain + '.key',
+        }
+        | combine(
+            {'SAIR_TENANT_CONFIG': sair_orchestrator_tenant_config}
+            if sair_orchestrator_tenant_config | length > 0
+            else {}
+          )
+        | combine(
+            {'DEVICE_SOURCE_CONFIG': sair_orchestrator_device_source_config}
+            if sair_orchestrator_device_source_config | length > 0
+            else {'DEVICE_SOURCE_ADDR': sair_orchestrator_device_source_addr}
+          )
+      }}
+
+- name: Deploy SAIR orchestrator
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: sair-orchestrator
+    image: "{{ sair_orchestrator_image }}"
+    pull: true
+    restart_policy: unless-stopped
+    published_ports:
+      - "{{ sair_orchestrator_port }}:{{ sair_orchestrator_port }}"
+    networks:
+      - name: nginx-proxy
+    volumes:
+      - "nginx-certs:/certs:ro"
+    dns_servers:
+      - "100.100.100.100"  # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
+    env: "{{ _sair_orchestrator_env }}"

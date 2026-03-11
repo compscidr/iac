@@ -1,0 +1,28 @@
+---
+# Deploy SAIR portal on the projects droplet
+# Landing page + future auth/billing at sair.run
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ sair_portal_ghcr_user }}"
+    password: "{{ sair_portal_ghcr_token }}"
+  when: sair_portal_ghcr_token | length > 0
+  no_log: true
+
+- name: Deploy SAIR portal
+  become: true
+  community.docker.docker_container:
+    name: sair-portal
+    image: "{{ sair_portal_image }}"
+    pull: true
+    restart_policy: unless-stopped
+    networks:
+      - name: nginx-proxy
+    env:
+      PORTAL_PORT: "{{ sair_portal_port | string }}"
+      VIRTUAL_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"
+      VIRTUAL_PORT: "{{ sair_portal_port | string }}"
+      LETSENCRYPT_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"
+      LETSENCRYPT_EMAIL: "{{ sair_portal_letsencrypt_email }}"

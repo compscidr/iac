@@ -1,0 +1,9 @@
+---
+# SAIR portal role defaults
+
+sair_portal_image: "ghcr.io/compscidr/sair-portal:latest"
+sair_portal_port: 8080
+sair_portal_domain: "sair.run"
+sair_portal_letsencrypt_email: "ernstjason1@gmail.com"
+sair_portal_ghcr_token: ""
+sair_portal_ghcr_user: "compscidr"

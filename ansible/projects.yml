@@ -10,6 +10,12 @@
     # Enable nginx fail2ban jails (logs mounted from Docker)
     fail2ban_nginx_enabled: true
     fail2ban_nginx_botscan_enabled: true
+    # SAIR orchestrator
+    sair_orchestrator_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_orchestrator_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_portal_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   roles:
-    - projects   # Deploy nginx first so logs exist
-    - fail2ban   # Then fail2ban can monitor logs
+    - projects          # Deploy nginx first so logs exist
+    - sair-orchestrator  # SAIR orchestrator behind nginx-proxy + gRPC on :9090
+    - sair-portal        # SAIR landing page at sair.run
+    - fail2ban          # Then fail2ban can monitor logs

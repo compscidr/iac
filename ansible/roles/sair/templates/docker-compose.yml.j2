@@ -1,38 +1,14 @@
 ---
 services:
-  sair-orchestrator:
-    image: {{ sair_orchestrator_image }}
-    container_name: sair-orchestrator
-    restart: unless-stopped
-    networks:
-      - {{ sair_network_name }}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "{{ sair_dashboard_port }}:8081"
-    environment:
-      ORCHESTRATOR_PORT: "{{ sair_orchestrator_port }}"
-      DASHBOARD_ENABLED: "{{ sair_dashboard_enabled | default('true') }}"
-      SAIR_API_KEY: "{{ sair_api_key }}"
-{% if sair_tenant_config %}
-      SAIR_TENANT_CONFIG: "{{ sair_tenant_config }}"
-{% endif %}
-{% if sair_device_source_config %}
-      DEVICE_SOURCE_CONFIG: "{{ sair_device_source_config }}"
-{% else %}
-      DEVICE_SOURCE_ADDR: "host.docker.internal:{{ sair_devicesource_port }}"
-{% endif %}
-
   sair-adb-proxy:
     image: {{ sair_adbproxy_image }}
     container_name: sair-adb-proxy
     restart: unless-stopped
     networks:
       - {{ sair_network_name }}
-    depends_on:
-      - sair-orchestrator
     environment:
-      ORCHESTRATOR_ADDR: "sair-orchestrator:{{ sair_orchestrator_port }}"
+      ORCHESTRATOR_ADDR: "{{ sair_orchestrator_addr }}"
+      ORCHESTRATOR_TLS: "{{ sair_orchestrator_tls | default('true') }}"
       SAIR_API_KEY: "{{ sair_api_key }}"
       SAIR_ACQUISITION_ENABLED: "{{ sair_acquisition_enabled | default('true') }}"
 
