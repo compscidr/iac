@@ -178,6 +178,27 @@ resource "digitalocean_domain" "sair-run" {
   name = "sair.run"
 }
 
+resource "digitalocean_record" "sair-A" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "sair-AAAA" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+resource "digitalocean_record" "sair-CNAME-www" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "CNAME"
+  name   = "www"
+  value  = "@"
+}
+
 resource "digitalocean_record" "sair-orchestrator-A" {
   domain = digitalocean_domain.sair-run.name
   type   = "A"
