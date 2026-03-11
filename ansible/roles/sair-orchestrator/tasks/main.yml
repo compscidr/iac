@@ -55,9 +55,8 @@
     user: root  # key.pem is 0600 root-only in nginx-certs volume
     security_opts:
       - "no-new-privileges:true"
-    capabilities:
-      drop:
-        - ALL
+    cap_drop:
+      - ALL
     read_only: true
     tmpfs:
       - "/tmp"
