@@ -1,0 +1,19 @@
+---
+# SAIR orchestrator role defaults
+
+sair_orchestrator_image: "ghcr.io/compscidr/sair-orchestrator:latest"
+sair_orchestrator_port: 9090
+sair_orchestrator_dashboard_port: 8081
+sair_orchestrator_domain: "orchestrator.sair.run"
+sair_orchestrator_letsencrypt_email: "ernstjason1@gmail.com"
+
+# DeviceSource address (reachable from the orchestrator container)
+# Default assumes Tailscale MagicDNS resolution to ubuntu-cube
+sair_orchestrator_device_source_addr: "ubuntu-cube:8080"
+
+# Secrets (override in playbook via 1Password lookups)
+sair_orchestrator_api_key: ""
+sair_orchestrator_tenant_config: ""
+sair_orchestrator_device_source_config: ""
+sair_orchestrator_ghcr_token: ""
+sair_orchestrator_ghcr_user: "compscidr"

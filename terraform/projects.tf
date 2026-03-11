@@ -3,6 +3,7 @@
 # - ping6.network (https://github.com/compscidr/network-tools)
 # - dumpers.xyz (https://github.com/compscidr/network-tools)
 # - darksearch.xyz (https://github.com/compscidr/darksearch.xyz)
+# - orchestrator.sair.run (https://github.com/compscidr/sair)
 
 # VPC for sfo3 region
 resource "digitalocean_vpc" "sfo3-vpc" {
@@ -171,6 +172,27 @@ resource "digitalocean_record" "darksearch-TXT-google" {
 }
 
 # ============================================================================
+# sair.run
+# ============================================================================
+resource "digitalocean_domain" "sair-run" {
+  name = "sair.run"
+}
+
+resource "digitalocean_record" "sair-orchestrator-A" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "A"
+  name   = "orchestrator"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "sair-orchestrator-AAAA" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "AAAA"
+  name   = "orchestrator"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+# ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
 resource "digitalocean_firewall" "projects" {
@@ -190,6 +212,13 @@ resource "digitalocean_firewall" "projects" {
   inbound_rule {
     protocol         = "tcp"
     port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  # SAIR orchestrator gRPC
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "9090"
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 

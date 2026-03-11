@@ -2,15 +2,13 @@
 # SAIR role defaults
 
 # Container images
-sair_orchestrator_image: "ghcr.io/compscidr/sair-orchestrator:latest"
 sair_adbproxy_image: "ghcr.io/compscidr/sair-adbproxy:latest"
 sair_runner_image: "compscidr/github-runner-android:latest"
 
 # Networking
 sair_network_name: "sair-net"
-sair_orchestrator_port: 9090
+sair_orchestrator_addr: "orchestrator.sair.run:9090"
 sair_devicesource_port: 8080
-sair_dashboard_port: 8081
 sair_adb_server_port: 5038
 
 # Data / repo paths
@@ -21,12 +19,6 @@ sair_repo_version: "main"
 
 # Secrets (override in playbook via 1Password lookups)
 sair_api_key: ""
-
-# Multi-tenant config (optional, overrides sair_api_key when set)
-# Format: apiKey:tenantId:tier:maxDevices,...
-sair_tenant_config: ""
-# Format: tenantId=host:port,...
-sair_device_source_config: ""
 sair_runner_pat: ""
 sair_ghcr_token: ""
 sair_ghcr_user: "compscidr"
