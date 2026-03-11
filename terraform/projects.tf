@@ -215,7 +215,7 @@ resource "digitalocean_firewall" "projects" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # SAIR orchestrator gRPC
+  # SAIR orchestrator gRPC (public — customers connect from their infra)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "9090"

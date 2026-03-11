@@ -8,6 +8,7 @@ services:
       - {{ sair_network_name }}
     environment:
       ORCHESTRATOR_ADDR: "{{ sair_orchestrator_addr }}"
+      ORCHESTRATOR_TLS: "{{ sair_orchestrator_tls | default('true') }}"
       SAIR_API_KEY: "{{ sair_api_key }}"
       SAIR_ACQUISITION_ENABLED: "{{ sair_acquisition_enabled | default('true') }}"
 
