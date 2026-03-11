@@ -25,6 +25,9 @@
           'VIRTUAL_PORT': sair_orchestrator_dashboard_port | string,
           'LETSENCRYPT_HOST': sair_orchestrator_domain,
           'LETSENCRYPT_EMAIL': sair_orchestrator_letsencrypt_email,
+          # acme-companion stores certs under /<domain>/fullchain.pem and key.pem.
+          # Root-level <domain>.crt/.key symlinks only exist for containers routed
+          # through nginx-proxy; the orchestrator serves gRPC directly on :9090.
           'TLS_CERT_PATH': '/certs/' + sair_orchestrator_domain + '/fullchain.pem',
           'TLS_KEY_PATH': '/certs/' + sair_orchestrator_domain + '/key.pem',
         }
@@ -53,6 +56,14 @@
     networks:
       - name: nginx-proxy
     user: root  # key.pem is 0600 root-only in nginx-certs volume
+    security_opts:
+      - "no-new-privileges:true"
+    capabilities:
+      drop:
+        - ALL
+    read_only: true
+    tmpfs:
+      - "/tmp"
     volumes:
       - "nginx-certs:/certs:ro"
     dns_servers:
