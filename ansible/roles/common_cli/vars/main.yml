@@ -13,6 +13,7 @@ common_cli_dotfile_packages_macos:
   # Consider adding: fish/ or zshrc/ directories to your dotfiles repo for shell configs
 
 common_cli_prereq_packages_ubuntu:
+  - curl
   - gpg-agent
   - ssh
   - git
