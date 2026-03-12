@@ -16,8 +16,8 @@
   ansible.builtin.file:
     path: "{{ sair_portal_data_dir }}"
     state: directory
-    owner: "1000"
-    group: "1000"
+    owner: "10001"
+    group: "10001"
     mode: "0755"
 
 - name: Deploy SAIR portal
