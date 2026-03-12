@@ -121,7 +121,7 @@
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
-  loop: "{{ additional_dkim_stat.results }}"
+  loop: "{{ additional_dkim_stat.results | default([]) }}"
   when: not item.stat.exists
   register: domain_result_new
   changed_when: "'updated' in domain_result_new.stdout | default('')"
@@ -136,7 +136,7 @@
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
-  loop: "{{ additional_dkim_stat.results }}"
+  loop: "{{ additional_dkim_stat.results | default([]) }}"
   when: item.stat.exists
   register: domain_result_existing
   changed_when: "'updated' in domain_result_existing.stdout | default('')"
