@@ -28,9 +28,11 @@ services:
       - certs:/certs:ro
       - "{{ mailu_install_path }}/overrides/nginx:/overrides:ro"
     environment:
-      - VIRTUAL_HOST={{ mailu_hostname }}
+      - VIRTUAL_HOST={{ mailu_hostname }}{% for domain in mailu_additional_domains | default([]) %},mail.{{ domain.domain }}{% endfor %}
+
       - VIRTUAL_PORT=80
-      - LETSENCRYPT_HOST={{ mailu_hostname }}
+      - LETSENCRYPT_HOST={{ mailu_hostname }}{% for domain in mailu_additional_domains | default([]) %},mail.{{ domain.domain }}{% endfor %}
+
       - LETSENCRYPT_EMAIL={{ mailu_admin_email | default('admin@' + mailu_domain) }}
     networks:
       - mailu

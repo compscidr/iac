@@ -104,6 +104,35 @@
   failed_when: false  # May fail if user exists
   no_log: true  # Hide passwords
 
+- name: Import additional domains via config-import
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      echo 'domain:
+        - name: {{ item.domain }}
+          dkim_key: -generate-
+      ' | docker compose exec -T admin flask mailu config-import --update
+  args:
+    chdir: "{{ mailu_install_path }}"
+  loop: "{{ mailu_additional_domains | default([]) }}"
+  register: domain_result
+  changed_when: "'updated' in domain_result.stdout | default('')"
+  failed_when: false
+
+- name: Create additional domain users
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      docker compose exec -T admin flask mailu user
+      {{ item.1.user }} {{ item.0.domain }} {{ item.1.password }}
+  args:
+    chdir: "{{ mailu_install_path }}"
+  loop: "{{ mailu_additional_domains | default([]) | subelements('users') }}"
+  register: user_result
+  changed_when: false
+  failed_when: false  # May fail if user exists
+  no_log: true  # Hide passwords
+
 - name: Get DKIM public key
   become: true
   ansible.builtin.command:
@@ -120,3 +149,22 @@
       Type: TXT
       Value: {{ dkim_key.stdout | default('DKIM key not yet generated - restart admin container') }}
   when: dkim_key.stdout is defined and dkim_key.stdout | length > 0
+
+- name: Get DKIM public keys for additional domains
+  become: true
+  ansible.builtin.command:
+    cmd: cat "{{ mailu_install_path }}/dkim/{{ item.domain }}.dkim.key"
+  loop: "{{ mailu_additional_domains | default([]) }}"
+  register: additional_dkim_keys
+  changed_when: false
+  failed_when: false
+
+- name: Display DKIM keys for additional domains
+  ansible.builtin.debug:
+    msg: |
+      Add this DKIM record to DNS:
+      Name: dkim._domainkey.{{ item.item.domain }}
+      Type: TXT
+      Value: {{ item.stdout | default('DKIM key not yet generated - add domain in admin UI and restart') }}
+  loop: "{{ additional_dkim_keys.results | default([]) }}"
+  when: item.stdout is defined and item.stdout | length > 0
