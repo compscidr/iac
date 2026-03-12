@@ -37,6 +37,13 @@
 
 # --- Configure services ---
 
+- name: Ensure /etc/sair directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/sair
+    state: directory
+    mode: "0755"
+
 - name: Configure device source environment
   become: true
   ansible.builtin.copy:
@@ -67,6 +74,11 @@
   no_log: true  # Hide API key
 
 # --- Start services ---
+
+- name: Reload systemd after install
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: Enable and start SAIR services
   become: true
