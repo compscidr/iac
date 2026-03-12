@@ -27,7 +27,7 @@
       --systemd
       {{ '--version ' ~ sair_version if sair_version | length > 0 else '' }}
   register: sair_install
-  changed_when: "'Installed' in sair_install.stdout"
+  changed_when: sair_install.stdout is search('Installed|Updated')
 
 - name: Clean up install script
   become: true
@@ -100,6 +100,27 @@
   become: true
   community.docker.docker_container:
     name: sair-adb-proxy
+    state: absent
+
+- name: Stop and remove old runner containers
+  become: true
+  community.docker.docker_container:
+    name: "sair-runner-{{ item.name }}"
+    state: absent
+  loop: "{{ sair_runners }}"
+  failed_when: false
+
+- name: Remove old sair-net Docker network
+  become: true
+  community.docker.docker_network:
+    name: sair-net
+    state: absent
+  failed_when: false
+
+- name: Remove old docker-compose file
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/sair/docker-compose.yml
     state: absent
 
 # --- GitHub runners ---

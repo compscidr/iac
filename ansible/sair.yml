@@ -3,7 +3,7 @@
 #
 # Deploys the SAIR device stack on ubuntu-cube:
 #   - ADB server, DeviceSource, Proxy as systemd services
-#   - GitHub Runners in Docker Compose (host networking)
+#   - GitHub Runners as Docker containers (host networking)
 #
 # The orchestrator runs on the projects droplet (see projects.yml).
 #

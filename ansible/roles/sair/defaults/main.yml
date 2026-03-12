@@ -4,9 +4,6 @@
 # Version to install (empty = latest release)
 sair_version: ""
 
-# Install path for binaries (must match systemd unit ExecStart paths)
-sair_install_dir: "/usr/local/bin"
-
 # Orchestrator connection
 sair_orchestrator_addr: "orchestrator.sair.run:9090"
 sair_orchestrator_tls: true
