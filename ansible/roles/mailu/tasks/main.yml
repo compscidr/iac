@@ -104,19 +104,42 @@
   failed_when: false  # May fail if user exists
   no_log: true  # Hide passwords
 
-- name: Import additional domains via config-import
+- name: Check if additional domain DKIM key exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ mailu_install_path }}/dkim/{{ item.domain }}.dkim.key"
+  loop: "{{ mailu_additional_domains | default([]) }}"
+  register: additional_dkim_stat
+
+- name: Import additional domains with DKIM key generation (first time only)
   become: true
   ansible.builtin.shell:
     cmd: |
       echo 'domain:
-        - name: {{ item.domain }}
+        - name: {{ item.item.domain }}
           dkim_key: -generate-
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
-  loop: "{{ mailu_additional_domains | default([]) }}"
-  register: domain_result
-  changed_when: "'updated' in domain_result.stdout | default('')"
+  loop: "{{ additional_dkim_stat.results }}"
+  when: not item.stat.exists
+  register: domain_result_new
+  changed_when: "'updated' in domain_result_new.stdout | default('')"
+  failed_when: false
+
+- name: Import additional domains without regenerating DKIM key
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      echo 'domain:
+        - name: {{ item.item.domain }}
+      ' | docker compose exec -T admin flask mailu config-import --update
+  args:
+    chdir: "{{ mailu_install_path }}"
+  loop: "{{ additional_dkim_stat.results }}"
+  when: item.stat.exists
+  register: domain_result_existing
+  changed_when: "'updated' in domain_result_existing.stdout | default('')"
   failed_when: false
 
 - name: Create additional domain users
