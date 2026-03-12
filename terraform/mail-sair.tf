@@ -54,7 +54,7 @@ resource "digitalocean_record" "sair-TXT-DKIM" {
   domain = digitalocean_domain.sair-run.name
   type   = "TXT"
   name   = "dkim._domainkey"
-  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt5iRGBX4i54jYyQfFZ02XXJlFIE0vqauHm5/fv5qKg2jeVp9m78oimaw4va9uCJaOGXf8Mhwb72NxOsdkS/r5KT7fqUYMo0gxFT5kOgts2fUTiLeFMvjaSOe1YQMtivyULHSfLD5cm+LVOn2pUKxENrycfnaeQ7Qfo84sBZLxr3Fk11ElDWnb75WVESA7Y6R/AHMnc1qhlVTx4OAlNszc1PRjXknUSgyI8I5C7WzHRYty8iJzpmbJrejabJFPJZGUwUyiXmuqGlb15+jRCeVB1eUHKpyRnBrLGBhoA+3Jr2xCYDv/vgkEVvje27nNA55jEH0bpfJ4gvV8Tn8YldmHQIDAQAB"
+  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8/bhNGc+JfsAUTPlvK3b7s34jjR+lLdGdGadPhN9G0R95kMCUutTkYoL1zO60U/xRyWjXaXGMkukOyJL2sIfFqag4LjTCNX5K+TAn/kzTV5y6pLDbUCB4hyrcgbZTMbCCPCjUTYSyQFF1SmJwAAwwQ8WGLPLy+L5JEmRIsu5XVzCe5VKUxncxG/xdufllJx2TRuWxecZOmtmGgLilPa+lVsJQVFRpYuNIeIUFDM2kayqkYQYbv+mt3Edm6iR40uRNpO/8AG8Z26E+P/tL5iwXa2T8bXOiOBgVouiJaUFpO3TnQsZtp0RniSLB34M+10mK7EmryBA6rQyGY1K959GJQIDAQAB"
 }
 
 # Mail client auto-configuration
