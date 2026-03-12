@@ -14,6 +14,9 @@
     sair_orchestrator_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_orchestrator_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_portal_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_portal_smtp_username: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_portal_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_portal_smtp_from: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   roles:
     - projects          # Deploy nginx first so logs exist
     - sair-orchestrator  # SAIR orchestrator behind nginx-proxy + gRPC on :9090
