@@ -39,7 +39,7 @@
       PORTAL_BASE_URL: "https://{{ sair_portal_domain }}"
       PORTAL_DB_PATH: "/app/data/portal.db"
       SMTP_HOST: "{{ sair_portal_smtp_host }}"
-      SMTP_PORT: "{{ sair_portal_smtp_port }}"
+      SMTP_PORT: "{{ sair_portal_smtp_port | string }}"
       SMTP_USERNAME: "{{ sair_portal_smtp_username }}"
       SMTP_PASSWORD: "{{ sair_portal_smtp_password }}"
       SMTP_FROM: "{{ sair_portal_smtp_from }}"
