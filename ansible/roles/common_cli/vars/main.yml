@@ -25,7 +25,6 @@ common_cli_tools_ubuntu:
   - avahi-daemon            # mostly used for <host>.local zeroconf
   - btop                    # modern and colorful cli resource monitor
   - byobu                   # text window manager / multiplexer / devops env
-  - curl                    # http/https/gopher tool
   - docker.io               # containers
   - docker-buildx
   - docker-compose-v2       # docker compose
