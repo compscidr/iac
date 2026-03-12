@@ -17,3 +17,6 @@ sair_portal_smtp_from: ""
 
 # Data directory for SQLite database
 sair_portal_data_dir: "/opt/sair-portal/data"
+# Must match the UID/GID of the sair user in the portal container Dockerfile
+sair_portal_uid: "10001"
+sair_portal_gid: "10001"
