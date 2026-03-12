@@ -26,9 +26,6 @@ sair_ghcr_user: "compscidr"
 # GitHub runner image
 sair_runner_image: "compscidr/github-runner-android:latest"
 
-# Data path for runner docker-compose
-sair_data_path: "/var/lib/sair"
-
 # GitHub runners (list of runner containers)
 sair_runners:
   - name: "sair"

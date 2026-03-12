@@ -15,11 +15,3 @@
   ansible.builtin.systemd:
     name: sair-proxy
     state: restarted
-
-- name: Restart runner stack
-  become: true
-  community.docker.docker_compose_v2:
-    project_src: "{{ sair_data_path }}"
-    state: present
-    recreate: always
-    remove_orphans: true

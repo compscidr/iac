@@ -1,7 +1,7 @@
 ---
 # SAIR deployment tasks
 # - ADB server, DeviceSource, Proxy: systemd services via install script
-# - GitHub Runners: Docker Compose with host networking
+# - GitHub Runners: Docker containers with host networking
 
 # --- Install SAIR binaries and systemd units ---
 
@@ -96,14 +96,13 @@
     state: absent
   notify: Reload systemd
 
-# --- GitHub runners (Docker) ---
-
-- name: Create SAIR data directory
+- name: Stop and remove old Docker proxy container
   become: true
-  ansible.builtin.file:
-    path: "{{ sair_data_path }}"
-    state: directory
-    mode: "0755"
+  community.docker.docker_container:
+    name: sair-adb-proxy
+    state: absent
+
+# --- GitHub runners ---
 
 - name: Log in to GHCR
   become: true
@@ -114,19 +113,28 @@
   when: sair_ghcr_token | length > 0
   no_log: true
 
-- name: Deploy runner docker-compose.yml
+- name: Create runner data volumes
   become: true
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ sair_data_path }}/docker-compose.yml"
-    mode: "0600"
-  notify: Restart runner stack
+  community.docker.docker_volume:
+    name: "sair-runner-data-{{ item.name }}"
+  loop: "{{ sair_runners }}"
 
-- name: Start runner stack
+- name: Deploy GitHub runner containers
   become: true
-  community.docker.docker_compose_v2:
-    project_src: "{{ sair_data_path }}"
-    state: present
-    pull: always
-    recreate: always
-    remove_orphans: true
+  community.docker.docker_container:
+    name: "sair-runner-{{ item.name }}"
+    image: "{{ sair_runner_image }}"
+    state: started
+    restart_policy: unless-stopped
+    network_mode: host
+    pull: true
+    volumes:
+      - "sair-runner-data-{{ item.name }}:/runner-data"
+    env:
+      ACCESS_TOKEN: "{{ sair_runner_pat }}"
+      RUNNER_NAME_PREFIX: "sair-{{ item.name }}"
+      LABELS: "{{ item.labels }}"
+      REPO_URL: "{{ item.repo_url }}"
+      DISABLE_AUTO_UPDATE: "true"
+  loop: "{{ sair_runners }}"
+  no_log: true  # Hide runner PAT
