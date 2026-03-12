@@ -10,7 +10,7 @@ sair_portal_ghcr_user: "compscidr"
 
 # SMTP for magic link auth
 sair_portal_smtp_host: "mail.sair.run"
-sair_portal_smtp_port: "465"
+sair_portal_smtp_port: 465
 sair_portal_smtp_username: ""
 sair_portal_smtp_password: ""
 sair_portal_smtp_from: ""
