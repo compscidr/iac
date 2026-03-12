@@ -4,16 +4,14 @@
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: Restart DeviceSource
+- name: Restart device source
   become: true
   ansible.builtin.systemd:
-    name: sair-devicesource
+    name: sair-device-source
     state: restarted
 
-- name: Restart SAIR stack
+- name: Restart proxy
   become: true
-  community.docker.docker_compose_v2:
-    project_src: "{{ sair_data_path }}"
-    state: present
-    recreate: always
-    remove_orphans: true
+  ansible.builtin.systemd:
+    name: sair-proxy
+    state: restarted

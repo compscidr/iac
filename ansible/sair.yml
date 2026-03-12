@@ -2,16 +2,15 @@
 # SAIR deployment playbook
 #
 # Deploys the SAIR device stack on ubuntu-cube:
-#   - DeviceSource as a systemd service (host, USB hotplug)
-#   - ADB Proxy + GitHub Runners in Docker Compose
+#   - ADB server, DeviceSource, Proxy as systemd services
+#   - GitHub Runners as Docker containers (host networking)
 #
 # The orchestrator runs on the projects droplet (see projects.yml).
 #
 # Prerequisites:
 #   1. Host bootstrapped (bootstrap.yml)
 #   2. 1Password items: sair-api-key, gh-actions-runner-pat (also used for GHCR login; needs read:packages scope)
-#   3. Docker images built and pushed to GHCR (docker.yml workflow)
-#   4. Orchestrator deployed on projects droplet (projects.yml)
+#   3. Orchestrator deployed on projects droplet (projects.yml)
 #
 # Usage:
 #   ansible-playbook -i inventory.yml sair.yml

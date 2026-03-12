@@ -1,21 +1,18 @@
 ---
 # SAIR role defaults
 
-# Container images
-sair_adbproxy_image: "ghcr.io/compscidr/sair-adbproxy:latest"
-sair_runner_image: "compscidr/github-runner-android:latest"
+# Version to install (empty = latest release)
+sair_version: ""
 
-# Networking
-sair_network_name: "sair-net"
+# Orchestrator connection
 sair_orchestrator_addr: "orchestrator.sair.run:9090"
-sair_devicesource_port: 8080
-sair_adb_server_port: 5038
+sair_orchestrator_tls: true
 
-# Data / repo paths
-sair_data_path: "/var/lib/sair"
-sair_repo_path: "/opt/sair"
-sair_repo_url: "git@github.com:compscidr/sair.git"
-sair_repo_version: "main"
+# Ports
+sair_adb_server_port: 5038
+sair_device_source_port: 8080
+sair_proxy_adb_port: 5037
+sair_proxy_http_port: 8550
 
 # Secrets (override in playbook via 1Password lookups)
 sair_api_key: ""
@@ -23,14 +20,11 @@ sair_runner_pat: ""
 sair_ghcr_token: ""
 sair_ghcr_user: "compscidr"
 
-# GitHub runners (list of runner containers sharing the ADB proxy)
+# GitHub runner image
+sair_runner_image: "compscidr/github-runner-android:latest"
+
+# GitHub runners (list of runner containers)
 sair_runners:
   - name: "sair"
     repo_url: "https://github.com/compscidr/sair"
     labels: "self-hosted,sair-enabled,linux"
-
-# Device acquisition (exclusive device locking for concurrent runners)
-sair_acquisition_enabled: true
-
-# DeviceSource systemd service user
-sair_devicesource_user: "{{ username }}"
