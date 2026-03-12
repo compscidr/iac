@@ -23,6 +23,7 @@
 
 - name: Deploy SAIR portal
   become: true
+  no_log: true
   community.docker.docker_container:
     name: sair-portal
     image: "{{ sair_portal_image }}"
@@ -43,6 +44,9 @@
       SMTP_USERNAME: "{{ sair_portal_smtp_username }}"
       SMTP_PASSWORD: "{{ sair_portal_smtp_password }}"
       SMTP_FROM: "{{ sair_portal_smtp_from }}"
+      STRIPE_SECRET_KEY: "{{ sair_portal_stripe_secret_key }}"
+      STRIPE_WEBHOOK_SECRET: "{{ sair_portal_stripe_webhook_secret }}"
+      STRIPE_SOLO_PRICE_ID: "{{ sair_portal_stripe_solo_price_id }}"
       VIRTUAL_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"
       VIRTUAL_PORT: "{{ sair_portal_port | string }}"
       LETSENCRYPT_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"

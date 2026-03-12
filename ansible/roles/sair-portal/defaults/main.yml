@@ -15,6 +15,11 @@ sair_portal_smtp_username: ""
 sair_portal_smtp_password: ""
 sair_portal_smtp_from: ""
 
+# Stripe billing
+sair_portal_stripe_secret_key: ""
+sair_portal_stripe_webhook_secret: ""
+sair_portal_stripe_solo_price_id: ""
+
 # Data directory for SQLite database
 sair_portal_data_dir: "/opt/sair-portal/data"
 # Must match the UID/GID of the sair user in the portal container Dockerfile
