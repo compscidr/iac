@@ -1,25 +1,11 @@
 ---
 services:
-  sair-adb-proxy:
-    image: {{ sair_adbproxy_image }}
-    container_name: sair-adb-proxy
-    restart: unless-stopped
-    networks:
-      - {{ sair_network_name }}
-    environment:
-      ORCHESTRATOR_ADDR: "{{ sair_orchestrator_addr }}"
-      ORCHESTRATOR_TLS: "{{ sair_orchestrator_tls | default('true') }}"
-      SAIR_API_KEY: "{{ sair_api_key }}"
-      SAIR_ACQUISITION_ENABLED: "{{ sair_acquisition_enabled | default('true') }}"
-
 {% for runner in sair_runners %}
   sair-runner-{{ runner.name }}:
     image: {{ sair_runner_image }}
     container_name: sair-runner-{{ runner.name }}
     restart: unless-stopped
-    network_mode: "container:sair-adb-proxy"
-    depends_on:
-      - sair-adb-proxy
+    network_mode: host
     volumes:
       - runner-data-{{ runner.name }}:/runner-data
     environment:
@@ -30,10 +16,6 @@ services:
       DISABLE_AUTO_UPDATE: "true"
 
 {% endfor %}
-networks:
-  {{ sair_network_name }}:
-    driver: bridge
-
 volumes:
 {% for runner in sair_runners %}
   runner-data-{{ runner.name }}:

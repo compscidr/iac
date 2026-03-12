@@ -1,67 +1,102 @@
 ---
 # SAIR deployment tasks
-# - DeviceSource: systemd service on host (USB hotplug)
-# - Orchestrator, ADB Proxy, Runner: Docker Compose
+# - ADB server, DeviceSource, Proxy: systemd services via install script
+# - GitHub Runners: Docker Compose with host networking
 
-# --- Prerequisites ---
+# --- Install SAIR binaries and systemd units ---
 
-- name: Install JDK 21 and ADB for DeviceSource
+- name: Install ADB
   become: true
   ansible.builtin.apt:
-    name:
-      - openjdk-21-jdk-headless
-      - adb
+    name: adb
     state: present
     update_cache: true
 
-# --- DeviceSource (host service) ---
-
-- name: Create SAIR repo directory
+- name: Download SAIR install script
   become: true
-  ansible.builtin.file:
-    path: "{{ sair_repo_path }}"
-    state: directory
-    owner: "{{ sair_devicesource_user }}"
-    group: "{{ sair_devicesource_user }}"
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/compscidr/sair/main/install.sh"
+    dest: /tmp/sair-install.sh
     mode: "0755"
 
-- name: Clone/update SAIR repository
+- name: Run SAIR install script with systemd
   become: true
-  become_user: "{{ sair_devicesource_user }}"
-  ansible.builtin.git:
-    repo: "{{ sair_repo_url }}"
-    dest: "{{ sair_repo_path }}"
-    version: "{{ sair_repo_version }}"
-    accept_hostkey: true
-  register: sair_repo
-
-- name: Build DeviceSource
-  become: true
-  become_user: "{{ sair_devicesource_user }}"
   ansible.builtin.command:
-    cmd: ./gradlew --no-daemon :deviceSource:installDist
-    chdir: "{{ sair_repo_path }}"
-  when: sair_repo.changed
-  notify: Restart DeviceSource
+    cmd: >
+      bash /tmp/sair-install.sh
+      --systemd
+      {{ '--version ' ~ sair_version if sair_version | length > 0 else '' }}
+  register: sair_install
+  changed_when: "'Installed' in sair_install.stdout"
 
-- name: Deploy DeviceSource systemd service
+- name: Clean up install script
   become: true
-  ansible.builtin.template:
-    src: sair-devicesource.service.j2
-    dest: /etc/systemd/system/sair-devicesource.service
-    mode: "0644"
-  notify:
-    - Reload systemd
-    - Restart DeviceSource
+  ansible.builtin.file:
+    path: /tmp/sair-install.sh
+    state: absent
 
-- name: Enable and start DeviceSource
+# --- Configure services ---
+
+- name: Configure device source environment
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/sair/device-source.env
+    mode: "0600"
+    content: |
+      DEVICE_SOURCE_PORT={{ sair_device_source_port }}
+      ADB_PORT={{ sair_adb_server_port }}
+  notify:
+    - Restart device source
+
+- name: Configure proxy environment
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/sair/proxy.env
+    mode: "0600"
+    content: |
+      ORCHESTRATOR_ADDR={{ sair_orchestrator_addr }}
+      ORCHESTRATOR_TLS={{ sair_orchestrator_tls | lower }}
+      SAIR_API_KEY={{ sair_api_key }}
+      ADB_PROXY_PORT={{ sair_proxy_adb_port }}
+      PROXY_HTTP_PORT={{ sair_proxy_http_port }}
+      PROXY_HTTP_HOST=0.0.0.0
+      SESSION_GRACE_PERIOD_MS=30000
+      HEARTBEAT_INTERVAL_SECONDS=60
+  notify:
+    - Restart proxy
+  no_log: true  # Hide API key
+
+# --- Start services ---
+
+- name: Enable and start SAIR services
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - sair-adb-server
+    - sair-device-source
+    - sair-proxy
+
+# --- Clean up old setup ---
+
+- name: Stop and disable old DeviceSource service
   become: true
   ansible.builtin.systemd:
     name: sair-devicesource
-    enabled: true
-    state: started
+    enabled: false
+    state: stopped
+  failed_when: false
 
-# --- Docker services (orchestrator, proxy, runner) ---
+- name: Remove old DeviceSource service unit
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/sair-devicesource.service
+    state: absent
+  notify: Reload systemd
+
+# --- GitHub runners (Docker) ---
 
 - name: Create SAIR data directory
   become: true
@@ -79,15 +114,15 @@
   when: sair_ghcr_token | length > 0
   no_log: true
 
-- name: Deploy SAIR docker-compose.yml
+- name: Deploy runner docker-compose.yml
   become: true
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ sair_data_path }}/docker-compose.yml"
     mode: "0600"
-  notify: Restart SAIR stack
+  notify: Restart runner stack
 
-- name: Start SAIR stack
+- name: Start runner stack
   become: true
   community.docker.docker_compose_v2:
     project_src: "{{ sair_data_path }}"
