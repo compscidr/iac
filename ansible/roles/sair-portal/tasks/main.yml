@@ -23,6 +23,7 @@
 
 - name: Deploy SAIR portal
   become: true
+  no_log: true
   community.docker.docker_container:
     name: sair-portal
     image: "{{ sair_portal_image }}"
