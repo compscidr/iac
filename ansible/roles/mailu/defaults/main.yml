@@ -23,6 +23,13 @@ mailu_users:
   - user: kai
     password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
 
+# Additional domains hosted on this Mailu instance
+mailu_additional_domains:
+  - domain: sair.run
+    users:
+      - user: jason
+        password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
 # Features
 mailu_webmail: roundcube  # roundcube, snappymail, or none
 mailu_antivirus: false    # ClamAV uses lots of RAM
