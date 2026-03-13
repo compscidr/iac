@@ -137,6 +137,14 @@
 
 # --- GitHub runners ---
 
+- name: Allow ICMP DGRAM sockets (needed for SOCK_DGRAM ICMP tests)
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ping_group_range
+    value: "0 2147483647"
+    sysctl_set: true
+    reload: true
+
 - name: Log in to GHCR
   become: true
   community.docker.docker_login:
@@ -161,6 +169,8 @@
     restart_policy: unless-stopped
     network_mode: host
     pull: true
+    capabilities:
+      - NET_RAW
     volumes:
       - "sair-runner-data-{{ item.name }}:/runner-data"
     env:
