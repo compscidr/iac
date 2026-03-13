@@ -213,6 +213,13 @@ resource "digitalocean_record" "sair-orchestrator-AAAA" {
   value  = digitalocean_droplet.projects.ipv6_address
 }
 
+resource "digitalocean_record" "sair-TXT-google" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=DTYRtgju-8ezjApxYlQ9__IEyyNYAgEFjEw-SWZ8lH0"
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
