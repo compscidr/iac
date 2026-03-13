@@ -24,8 +24,8 @@
     sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_runners:
-      - name: "sair"
-        repo_url: "https://github.com/compscidr/sair"
+      - name: "sair-orchestrator"
+        repo_url: "https://github.com/compscidr/sair-ochestrator"
         labels: "self-hosted,sair-enabled,linux"
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"
