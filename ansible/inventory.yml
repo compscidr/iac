@@ -49,6 +49,7 @@ java_runner:
 sair:
   hosts:
     ubuntu-cube.local:
+    ubuntu-silverstone.local:
 
 linux:
   hosts:

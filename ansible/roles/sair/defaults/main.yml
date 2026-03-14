@@ -4,6 +4,10 @@
 # Version to install (empty = latest release)
 sair_version: ""
 
+# When true, only install the ADB server systemd service (not proxy/device-source).
+# Use this on hosts where CI runs its own local sair stack.
+sair_adb_only: false
+
 # Orchestrator connection
 sair_orchestrator_addr: "orchestrator.sair.run:9090"
 sair_orchestrator_tls: true

@@ -24,7 +24,7 @@
   ansible.builtin.command:
     cmd: >
       bash /tmp/sair-install.sh
-      --systemd
+      {{ '--systemd-adb-only' if sair_adb_only else '--systemd' }}
       {{ '--version ' ~ sair_version if sair_version | length > 0 else '' }}
   register: sair_install
   changed_when: sair_install.stdout is search('Installed|Updated')
@@ -54,6 +54,7 @@
       ADB_PORT={{ sair_adb_server_port }}
   notify:
     - Restart device source
+  when: not sair_adb_only
 
 - name: Configure proxy environment
   become: true
@@ -72,6 +73,7 @@
   notify:
     - Restart proxy
   no_log: true  # Hide API key
+  when: not sair_adb_only
 
 # --- Start services ---
 
@@ -86,54 +88,7 @@
     name: "{{ item }}"
     enabled: true
     state: started
-  loop:
-    - sair-adb-server
-    - sair-device-source
-    - sair-proxy
-
-# --- Clean up old setup ---
-
-- name: Stop and disable old DeviceSource service
-  become: true
-  ansible.builtin.systemd:
-    name: sair-devicesource
-    enabled: false
-    state: stopped
-  failed_when: false
-
-- name: Remove old DeviceSource service unit
-  become: true
-  ansible.builtin.file:
-    path: /etc/systemd/system/sair-devicesource.service
-    state: absent
-  notify: Reload systemd
-
-- name: Stop and remove old Docker proxy container
-  become: true
-  community.docker.docker_container:
-    name: sair-adb-proxy
-    state: absent
-
-- name: Stop and remove old runner containers
-  become: true
-  community.docker.docker_container:
-    name: "sair-runner-{{ item.name }}"
-    state: absent
-  loop: "{{ sair_runners }}"
-  failed_when: false
-
-- name: Remove old sair-net Docker network
-  become: true
-  community.docker.docker_network:
-    name: sair-net
-    state: absent
-  failed_when: false
-
-- name: Remove old docker-compose file
-  become: true
-  ansible.builtin.file:
-    path: /var/lib/sair/docker-compose.yml
-    state: absent
+  loop: "{{ ['sair-adb-server'] if sair_adb_only else ['sair-adb-server', 'sair-device-source', 'sair-proxy'] }}"
 
 # --- GitHub runners ---
 

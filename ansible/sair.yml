@@ -1,9 +1,13 @@
 ---
 # SAIR deployment playbook
 #
-# Deploys the SAIR device stack on ubuntu-cube:
+# Deploys the SAIR device stack on hosts in the sair group:
 #   - ADB server, DeviceSource, Proxy as systemd services
 #   - GitHub Runners as Docker containers (host networking)
+#
+# ubuntu-cube: runs hello-java-android, hello-kotlin-android, icmp runners
+# ubuntu-silverstone: runs sair-orchestrator runner (dedicated to avoid
+#   port/device conflicts with the live sair stack during integration tests)
 #
 # The orchestrator runs on the projects droplet (see projects.yml).
 #
@@ -15,8 +19,8 @@
 # Usage:
 #   ansible-playbook -i inventory.yml sair.yml
 
-- name: Deploy SAIR
-  hosts: sair
+- name: Deploy SAIR on ubuntu-cube
+  hosts: ubuntu-cube.local
   vars_files:
     - vars/user.yml
   vars:
@@ -24,9 +28,6 @@
     sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_runners:
-      - name: "sair-orchestrator"
-        repo_url: "https://github.com/compscidr/sair-ochestrator"
-        labels: "self-hosted,sair-enabled,linux"
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"
         labels: "self-hosted,sair-enabled,linux"
@@ -35,6 +36,23 @@
         labels: "self-hosted,sair-enabled,linux"
       - name: "icmp"
         repo_url: "https://github.com/compscidr/icmp"
+        labels: "self-hosted,sair-enabled,linux"
+  roles:
+    - sair
+
+- name: Deploy SAIR on ubuntu-silverstone
+  hosts: ubuntu-silverstone.local
+  vars_files:
+    - vars/user.yml
+  vars:
+    sair_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    sair_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    # Only ADB server as systemd — CI runs its own proxy/device-source
+    sair_adb_only: true
+    sair_runners:
+      - name: "sair-orchestrator"
+        repo_url: "https://github.com/compscidr/sair-ochestrator"
         labels: "self-hosted,sair-enabled,linux"
   roles:
     - sair
