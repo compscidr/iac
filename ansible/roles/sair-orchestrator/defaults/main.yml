@@ -11,6 +11,9 @@ sair_orchestrator_letsencrypt_email: "ernstjason1@gmail.com"
 # Default assumes Tailscale MagicDNS resolution to ubuntu-cube
 sair_orchestrator_device_source_addr: "ubuntu-cube:8080"
 
+# Portal database path (for API key validation)
+sair_orchestrator_portal_db_dir: "/opt/sair-portal/data"
+
 # Secrets (override in playbook via 1Password lookups)
 sair_orchestrator_api_key: ""
 sair_orchestrator_tenant_config: ""

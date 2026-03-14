@@ -27,6 +27,7 @@
           'LETSENCRYPT_EMAIL': sair_orchestrator_letsencrypt_email,
           'TLS_CERT_PATH': '/certs/' + sair_orchestrator_domain + '/fullchain.pem',
           'TLS_KEY_PATH': '/certs/' + sair_orchestrator_domain + '/key.pem',
+          'PORTAL_DB_PATH': '/portal-data/portal.db',
         }
         | combine(
             {'SAIR_TENANT_CONFIG': sair_orchestrator_tenant_config}
@@ -62,6 +63,7 @@
       - "/tmp"
     volumes:
       - "nginx-certs:/certs:ro"
+      - "{{ sair_orchestrator_portal_db_dir }}:/portal-data:ro"
     dns_servers:
       - "100.100.100.100"  # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
     env: "{{ _sair_orchestrator_env }}"
