@@ -64,7 +64,6 @@
     content: |
       ORCHESTRATOR_ADDR={{ sair_orchestrator_addr }}
       ORCHESTRATOR_TLS={{ sair_orchestrator_tls | lower }}
-      DEVICE_SOURCE_ADDR=localhost:{{ sair_device_source_port }}
       SAIR_API_KEY={{ sair_api_key }}
       ADB_PROXY_PORT={{ sair_proxy_adb_port }}
       PROXY_HTTP_PORT={{ sair_proxy_http_port }}
