@@ -18,8 +18,7 @@
     state: directory
     owner: "{{ sair_portal_uid }}"
     group: "{{ sair_portal_gid }}"
-    mode: "0700"
-    recurse: true
+    mode: "0775"
 
 - name: Deploy SAIR portal
   become: true
@@ -28,6 +27,7 @@
     name: sair-portal
     image: "{{ sair_portal_image }}"
     pull: true
+    recreate: true
     restart_policy: unless-stopped
     networks:
       - name: nginx-proxy

@@ -21,7 +21,7 @@
     sair_portal_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - SAIR', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
     sair_portal_stripe_solo_price_id: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   roles:
-    - projects          # Deploy nginx first so logs exist
-    - sair-orchestrator  # SAIR orchestrator behind nginx-proxy + gRPC on :9090
-    - sair-portal        # SAIR landing page at sair.run
-    - fail2ban          # Then fail2ban can monitor logs
+    - { role: projects, tags: [projects] }
+    - { role: sair-orchestrator, tags: [sair-orchestrator, sair] }
+    - { role: sair-portal, tags: [sair-portal, sair] }
+    - { role: fail2ban, tags: [fail2ban] }

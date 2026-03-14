@@ -34,11 +34,6 @@
             if sair_orchestrator_tenant_config | length > 0
             else {}
           )
-        | combine(
-            {'DEVICE_SOURCE_CONFIG': sair_orchestrator_device_source_config}
-            if sair_orchestrator_device_source_config | length > 0
-            else {'DEVICE_SOURCE_ADDR': sair_orchestrator_device_source_addr}
-          )
       }}
 
 - name: Deploy SAIR orchestrator
@@ -48,6 +43,7 @@
     name: sair-orchestrator
     image: "{{ sair_orchestrator_image }}"
     pull: true
+    recreate: true
     restart_policy: unless-stopped
     published_ports:
       - "{{ sair_orchestrator_port }}:{{ sair_orchestrator_port }}"
@@ -58,12 +54,14 @@
       - "no-new-privileges:true"
     cap_drop:
       - ALL
+    capabilities:
+      - DAC_OVERRIDE  # needed to read/write portal.db owned by portal UID
     read_only: true
     tmpfs:
-      - "/tmp"
+      - "/tmp:exec"
     volumes:
       - "nginx-certs:/certs:ro"
-      - "{{ sair_orchestrator_portal_db_dir }}:/portal-data:ro"
+      - "{{ sair_orchestrator_portal_db_dir }}:/portal-data"
     dns_servers:
       - "100.100.100.100"  # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
     env: "{{ _sair_orchestrator_env }}"
