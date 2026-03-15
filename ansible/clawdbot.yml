@@ -9,12 +9,12 @@
 # Usage:
 #   ansible-playbook -i inventory.yml clawdbot.yml
 
-- import_playbook: tailscale_check.yml
-
 - name: Deploy Clawdbot
   hosts: clawdbot
   vars_files:
     - vars/user.yml
+  pre_tasks:
+    - ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     # fnm role vars
     fnm_node_version: "22"

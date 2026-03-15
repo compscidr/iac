@@ -1,12 +1,13 @@
 ---
-- import_playbook: tailscale_check.yml
-
 - name: Common tasks for all hosts
   hosts: all
   become: true
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
+  pre_tasks:
+    - ansible.builtin.include_tasks: tailscale_check.yml
+      when: inventory_hostname in groups['tailscale'] | default([])
   roles:
     - compscidr.gpg
     - common_cli

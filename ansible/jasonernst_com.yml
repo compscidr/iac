@@ -1,11 +1,11 @@
 ---
-- import_playbook: tailscale_check.yml
-
 - name: Services for www.jasonernst.com
   hosts: www
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
+  pre_tasks:
+    - ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     # Enable nginx fail2ban jails (logs mounted from Docker)
     fail2ban_nginx_enabled: true

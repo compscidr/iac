@@ -1,22 +1,31 @@
 ---
-# Import this at the top of any playbook that targets Tailscale hosts:
-#   - import_playbook: tailscale_check.yml
-- name: Verify Tailscale is connected
-  hosts: localhost
-  connection: local
-  gather_facts: false
+# Include in pre_tasks of any play targeting Tailscale hosts:
+#   pre_tasks:
+#     - ansible.builtin.include_tasks: tailscale_check.yml
 
-  tasks:
-    - name: Check Tailscale status
-      ansible.builtin.command:
-        cmd: tailscale status
-      register: tailscale_status
-      changed_when: false
-      failed_when: false
+- name: Check Tailscale status
+  ansible.builtin.command:
+    cmd: tailscale status
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  delegate_to: localhost
+  run_once: true
 
-    - name: Fail if Tailscale is not connected
-      ansible.builtin.fail:
-        msg: >-
-          Tailscale is not running or not authenticated.
-          Run 'tailscale up' or 'sudo tailscale login' to connect.
-      when: tailscale_status.rc != 0
+- name: Fail if Tailscale CLI is not installed
+  ansible.builtin.fail:
+    msg: >-
+      Tailscale CLI not found. Install it first:
+      https://tailscale.com/download
+  when: tailscale_status.rc == 2
+  delegate_to: localhost
+  run_once: true
+
+- name: Fail if Tailscale is not connected
+  ansible.builtin.fail:
+    msg: >-
+      Tailscale is not running or not authenticated.
+      Run 'tailscale up' or 'sudo tailscale login' to connect.
+  when: tailscale_status.rc != 0
+  delegate_to: localhost
+  run_once: true
