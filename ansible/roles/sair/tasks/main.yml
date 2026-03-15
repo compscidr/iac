@@ -52,6 +52,7 @@
     content: |
       DEVICE_SOURCE_PORT={{ sair_device_source_port }}
       ADB_PORT={{ sair_adb_server_port }}
+      SAIR_API_KEY={{ sair_api_key }}
   notify:
     - Restart device source
   when: not sair_adb_only
