@@ -1,4 +1,6 @@
 ---
+- import_playbook: tailscale_check.yml
+
 - name: Common tasks for all hosts
   hosts: all
   become: true

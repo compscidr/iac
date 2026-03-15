@@ -1,4 +1,6 @@
 ---
+- import_playbook: tailscale_check.yml
+
 - name: Services for www.jasonernst.com
   hosts: www
   vars_files:

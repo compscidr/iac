@@ -1,0 +1,22 @@
+---
+# Import this at the top of any playbook that targets Tailscale hosts:
+#   - import_playbook: tailscale_check.yml
+- name: Verify Tailscale is connected
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check Tailscale status
+      ansible.builtin.command:
+        cmd: tailscale status
+      register: tailscale_status
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Tailscale is not connected
+      ansible.builtin.fail:
+        msg: >-
+          Tailscale is not running or not authenticated.
+          Run 'tailscale up' or 'sudo tailscale login' to connect.
+      when: tailscale_status.rc != 0

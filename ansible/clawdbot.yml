@@ -1,6 +1,6 @@
 ---
 # Clawdbot playbook - AI assistant deployment
-# 
+#
 # Prerequisites:
 #   1. Droplet created via Terraform (with Tailscale via cloud-init)
 #   2. Bootstrap run: ansible-playbook bootstrap.yml --limit clawdbot -u root
@@ -8,6 +8,8 @@
 #
 # Usage:
 #   ansible-playbook -i inventory.yml clawdbot.yml
+
+- import_playbook: tailscale_check.yml
 
 - name: Deploy Clawdbot
   hosts: clawdbot

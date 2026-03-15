@@ -2,6 +2,8 @@
 # Projects playbook - deploys toy projects to consolidated droplet
 # Usage: ansible-playbook -i inventory.yml projects.yml
 
+- import_playbook: tailscale_check.yml
+
 - name: Deploy projects
   hosts: projects
   vars_files:
