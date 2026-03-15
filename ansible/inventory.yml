@@ -51,6 +51,13 @@ sair:
     ubuntu-cube.local:
     ubuntu-silverstone.local:
 
+tailscale:
+  hosts:
+    www:
+    mail:
+    projects:
+    clawdbot:
+
 linux:
   hosts:
     ubuntu-beast.local:
