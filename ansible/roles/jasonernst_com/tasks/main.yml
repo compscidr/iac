@@ -255,7 +255,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.1.48
+    image: compscidr/goblog:v0.1.51
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
@@ -279,6 +279,7 @@
       VIRTUAL_PORT: "7000"
       LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
+      TRUSTED_PROXIES: "172.16.0.0/12"
 
 - name: Deploy staging.jasonernst.com
   tags: website
@@ -286,7 +287,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.1.48
+    image: compscidr/goblog:v0.1.51
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
     mounts:
@@ -310,5 +311,6 @@
       VIRTUAL_PORT: "7000"
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
+      TRUSTED_PROXIES: "172.16.0.0/12"
 
 # MySQL moved to media_server role (used by Ombi on NAS)
