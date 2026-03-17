@@ -249,6 +249,13 @@ resource "digitalocean_record" "goblog-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "goblog-TXT-google" {
+  domain = digitalocean_domain.goblog-live.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=o9RuFEvJkJ1tv2ZMeeS5W-cqLy41ngst-IwZM86ltLc"
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
