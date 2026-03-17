@@ -4,6 +4,7 @@
 # - dumpers.xyz (https://github.com/compscidr/network-tools)
 # - darksearch.xyz (https://github.com/compscidr/darksearch.xyz)
 # - orchestrator.sair.run (https://github.com/compscidr/sair)
+# - goblog.live (https://github.com/goblogplatform/goblog)
 
 # VPC for sfo3 region
 resource "digitalocean_vpc" "sfo3-vpc" {
@@ -218,6 +219,34 @@ resource "digitalocean_record" "sair-TXT-google" {
   type   = "TXT"
   name   = "@"
   value  = "google-site-verification=DTYRtgju-8ezjApxYlQ9__IEyyNYAgEFjEw-SWZ8lH0"
+}
+
+# ============================================================================
+# goblog.live (https://github.com/goblogplatform/goblog)
+# ============================================================================
+resource "digitalocean_domain" "goblog-live" {
+  name = "goblog.live"
+}
+
+resource "digitalocean_record" "goblog-A" {
+  domain = digitalocean_domain.goblog-live.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "goblog-AAAA" {
+  domain = digitalocean_domain.goblog-live.name
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+resource "digitalocean_record" "goblog-CNAME-www" {
+  domain = digitalocean_domain.goblog-live.name
+  type   = "CNAME"
+  name   = "www"
+  value  = "@"
 }
 
 # ============================================================================

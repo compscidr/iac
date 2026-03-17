@@ -2,6 +2,7 @@
 # Projects role - deploys toy projects to consolidated droplet
 # - ping4.network, ping6.network, dumpers.xyz (network-tools repo)
 # - darksearch.xyz (darksearch repo)
+# - goblog.live (goblog project site)
 
 # Nginx reverse proxy + LetsEncrypt for SSL
 - name: Create nginx config directory
@@ -149,3 +150,80 @@
   environment:
     # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+
+# ============================================================================
+# goblog.live - goblog project site
+# ============================================================================
+- name: Create goblog.live directories
+  tags: [projects, goblog-live]
+  become: true
+  ansible.builtin.file:
+    path: "/opt/goblog-live/{{ item }}"
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+  loop:
+    - ""
+    - uploads
+
+- name: Create goblog.live database file if not exists
+  tags: [projects, goblog-live]
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog-live/database.db
+    state: touch
+    mode: '644'
+    owner: root
+    group: root
+    modification_time: preserve
+    access_time: preserve
+
+- name: Copy goblog.live .env
+  tags: [projects, goblog-live]
+  become: true
+  ansible.builtin.copy:
+    content: |
+      database=sqlite
+      sqlite_db=../database.db
+      client_id={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+    dest: /opt/goblog-live/.env
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Clone goblog.live site theme
+  tags: [projects, goblog-live]
+  become: true
+  ansible.builtin.git:
+    repo: https://github.com/goblogplatform/goblog-site-theme.git
+    dest: /opt/goblog-live/site-theme
+    version: main
+    force: true
+
+- name: Deploy goblog.live
+  tags: [projects, goblog-live]
+  become: true
+  community.docker.docker_container:
+    name: goblog.live
+    image: compscidr/goblog:v0.1.53
+    volumes:
+      - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+      - /opt/goblog-live/site-theme:/go/src/github.com/compscidr/goblog/themes/site
+    mounts:
+      - source: /opt/goblog-live/database.db
+        target: /go/src/github.com/compscidr/database.db
+        type: bind
+      - source: /opt/goblog-live/.env
+        target: /go/src/github.com/compscidr/goblog/.env
+        type: bind
+    networks:
+      - name: nginx-proxy
+    restart_policy: unless-stopped
+    env:
+      VIRTUAL_HOST: "goblog.live,www.goblog.live"
+      VIRTUAL_PORT: "7000"
+      LETSENCRYPT_HOST: "goblog.live,www.goblog.live"
+      LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+      TRUSTED_PROXIES: "172.16.0.0/12"
