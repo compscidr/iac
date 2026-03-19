@@ -1,0 +1,4 @@
+---
+# List of domains to redirect non-www -> www
+# Each entry needs: domain, letsencrypt_email
+www_redirects: []

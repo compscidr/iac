@@ -37,7 +37,7 @@
         type: bind
     env:
       PORTAL_PORT: "{{ sair_portal_port | string }}"
-      PORTAL_BASE_URL: "https://{{ sair_portal_domain }}"
+      PORTAL_BASE_URL: "https://www.{{ sair_portal_domain }}"
       PORTAL_DB_PATH: "/app/data/portal.db"
       SMTP_HOST: "{{ sair_portal_smtp_host }}"
       SMTP_PORT: "{{ sair_portal_smtp_port | string }}"
@@ -47,7 +47,7 @@
       STRIPE_SECRET_KEY: "{{ sair_portal_stripe_secret_key }}"
       STRIPE_WEBHOOK_SECRET: "{{ sair_portal_stripe_webhook_secret }}"
       STRIPE_SOLO_PRICE_ID: "{{ sair_portal_stripe_solo_price_id }}"
-      VIRTUAL_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"
+      VIRTUAL_HOST: "www.{{ sair_portal_domain }}"
       VIRTUAL_PORT: "{{ sair_portal_port | string }}"
-      LETSENCRYPT_HOST: "{{ sair_portal_domain }},www.{{ sair_portal_domain }}"
+      LETSENCRYPT_HOST: "www.{{ sair_portal_domain }}"
       LETSENCRYPT_EMAIL: "{{ sair_portal_letsencrypt_email }}"

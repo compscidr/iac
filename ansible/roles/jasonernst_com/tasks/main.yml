@@ -275,9 +275,9 @@
       - name: nginx-proxy
     restart_policy: unless-stopped
     env:
-      VIRTUAL_HOST: "www.jasonernst.com,jasonernst.com"
+      VIRTUAL_HOST: "www.jasonernst.com"
       VIRTUAL_PORT: "7000"
-      LETSENCRYPT_HOST: "www.jasonernst.com,jasonernst.com"
+      LETSENCRYPT_HOST: "www.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
 - name: Deploy staging.jasonernst.com

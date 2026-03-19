@@ -58,13 +58,6 @@ resource "digitalocean_record" "CNAME-staging" {
   value  = "@"
 }
 
-resource "digitalocean_record" "CNAME-dev" {
-  domain = digitalocean_domain.default.name
-  type   = "CNAME"
-  name   = "dev"
-  value  = "@"
-}
-
 # ombi.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
 resource "digitalocean_record" "CNAME-ombi" {
   domain = digitalocean_domain.default.name

@@ -1,0 +1,62 @@
+---
+# Deploy lightweight nginx containers that 301 redirect non-www -> www
+# Relies on jwilder/nginx-proxy for SSL termination and auto-config
+
+- name: Ensure nginx-proxy network exists
+  become: true
+  community.docker.docker_network:
+    name: nginx-proxy
+    state: present
+
+- name: Create redirect config directories
+  become: true
+  ansible.builtin.file:
+    path: "/opt/www-redirect/{{ item.domain }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ www_redirects }}"
+
+- name: Write redirect configs
+  become: true
+  ansible.builtin.copy:
+    content: |
+      server {
+          listen 80;
+          server_name {{ item.domain }};
+          return 301 https://www.{{ item.domain }}$request_uri;
+      }
+    dest: "/opt/www-redirect/{{ item.domain }}/default.conf"
+    mode: "0644"
+  loop: "{{ www_redirects }}"
+
+- name: Deploy www redirect containers
+  become: true
+  community.docker.docker_container:
+    name: "redirect-{{ item.domain }}"
+    image: nginx:alpine
+    restart_policy: unless-stopped
+    networks:
+      - name: nginx-proxy
+    volumes:
+      - "/opt/www-redirect/{{ item.domain }}/default.conf:/etc/nginx/conf.d/default.conf:ro"
+    env:
+      VIRTUAL_HOST: "{{ item.domain }}"
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: "{{ item.domain }}"
+      LETSENCRYPT_EMAIL: "{{ item.letsencrypt_email }}"
+  loop: "{{ www_redirects }}"
+
+- name: Clean up old vhost.d redirect files
+  become: true
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - nginx-proxy
+      - rm
+      - -f
+      - "/etc/nginx/vhost.d/{{ item.domain }}"
+      - "/etc/nginx/vhost.d/{{ item.domain }}_location"
+  changed_when: false
+  failed_when: false
+  loop: "{{ www_redirects }}"

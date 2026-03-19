@@ -222,8 +222,8 @@
       - name: nginx-proxy
     restart_policy: unless-stopped
     env:
-      VIRTUAL_HOST: "goblog.live,www.goblog.live"
+      VIRTUAL_HOST: "www.goblog.live"
       VIRTUAL_PORT: "7000"
-      LETSENCRYPT_HOST: "goblog.live,www.goblog.live"
+      LETSENCRYPT_HOST: "www.goblog.live"
       LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
       TRUSTED_PROXIES: "172.16.0.0/12"
