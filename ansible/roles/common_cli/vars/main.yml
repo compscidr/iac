@@ -2,11 +2,13 @@
 common_cli_dotfile_packages_ubuntu:
   - autostart    # GUI app autostart
   - bashrc       # Bash shell config
+  - claude       # Claude Code config
   - nano         # Text editor
   - tmux         # Terminal multiplexer
   - variety      # Wallpaper manager
 
 common_cli_dotfile_packages_macos:
+  - claude       # Claude Code config
   - nano         # Text editor (cross-platform)
   - tmux         # Terminal multiplexer (cross-platform)
   # Skip: autostart (Linux GUI), bashrc (use zsh), profile (Ubuntu-specific), variety (Linux GUI)

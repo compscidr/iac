@@ -630,8 +630,8 @@
   ansible.builtin.git:
     repo: git@github.com:compscidr/dotfiles.git
     dest: ~/dotfiles
-    # Pinned commit adds bun, cargo/rustup, fnm env
-    version: 480a3f2e395e3b652531a87cce241ccfa061453e
+    # Pinned commit adds claude stow package, bashrc.local sourcing
+    version: 307db45cc5ad7f54d98289df08cec0dbdb4b1961
 
 - name: Test .bashrc file to see if its a symlink
   tags: dotfiles
