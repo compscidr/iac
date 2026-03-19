@@ -2,6 +2,12 @@
 # Deploy lightweight nginx containers that 301 redirect non-www -> www
 # Relies on jwilder/nginx-proxy for SSL termination and auto-config
 
+- name: Ensure nginx-proxy network exists
+  become: true
+  community.docker.docker_network:
+    name: nginx-proxy
+    state: present
+
 - name: Create redirect config directories
   become: true
   ansible.builtin.file:
@@ -42,9 +48,15 @@
 
 - name: Clean up old vhost.d redirect files
   become: true
-  ansible.builtin.shell:
-    cmd: >
-      docker exec nginx-proxy rm -f /etc/nginx/vhost.d/{{ item.domain }} /etc/nginx/vhost.d/{{ item.domain }}_location
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - nginx-proxy
+      - rm
+      - -f
+      - "/etc/nginx/vhost.d/{{ item.domain }}"
+      - "/etc/nginx/vhost.d/{{ item.domain }}_location"
   changed_when: false
   failed_when: false
   loop: "{{ www_redirects }}"
