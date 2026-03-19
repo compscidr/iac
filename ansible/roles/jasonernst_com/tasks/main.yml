@@ -311,4 +311,21 @@
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
+- name: Ensure sqlite3 is installed
+  tags: website
+  become: true
+  ansible.builtin.apt:
+    name: sqlite3
+    state: present
+
+- name: Set noindex on staging to prevent search engine indexing
+  tags: website
+  become: true
+  ansible.builtin.command:
+    argv:
+      - sqlite3
+      - /opt/goblog/staging/database.db
+      - "INSERT OR REPLACE INTO settings (key, type, value) VALUES ('robots_tag', 'text', 'noindex, nofollow');"
+  changed_when: false
+
 # MySQL moved to media_server role (used by Ombi on NAS)
