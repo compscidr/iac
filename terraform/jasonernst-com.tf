@@ -66,6 +66,30 @@ resource "digitalocean_record" "CNAME-ombi" {
   value  = "nas.jasonernst.com."
 }
 
+# plex.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
+resource "digitalocean_record" "CNAME-plex" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "plex"
+  value  = "nas.jasonernst.com."
+}
+
+# radarr.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
+resource "digitalocean_record" "CNAME-radarr" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "radarr"
+  value  = "nas.jasonernst.com."
+}
+
+# sonarr.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
+resource "digitalocean_record" "CNAME-sonarr" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "sonarr"
+  value  = "nas.jasonernst.com."
+}
+
 # projects.jasonernst.com -> projects droplet
 resource "digitalocean_record" "A-projects" {
   domain = digitalocean_domain.default.name

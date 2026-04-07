@@ -133,11 +133,13 @@
     plex_dri_devices: true
     plex_bonjour_port: 5354
     plex_claim: claim-haziyvUxG2Fb4uj5-tF1
-    plex_memory: "5g"
-    plex_memory_swap: "5g"
-    plex_shm_size: "2g"
-    # Use host mode for DLNA/UPnP discovery
-    plex_network_mode: "host"
+    plex_memory: "24g"
+    plex_memory_swap: "24g"
+    plex_shm_size: "8g"
+    plex_virtual_host: "plex.jasonernst.com"
+    plex_letsencrypt_email: "ernstjason1@gmail.com"
+    plex_network_mode: "bridge"
+    plex_dlna_port: 1901
 
 - name: Install sabnzbd
   tags: sabnzbd
@@ -161,6 +163,8 @@
     sonarr_folder: /etc/sonarr
     sonarr_memory: "1g"
     sonarr_memory_swap: "1g"
+    sonarr_virtual_host: "sonarr.jasonernst.com"
+    sonarr_letsencrypt_email: "ernstjason1@gmail.com"
 
 - name: Install radarr
   tags: radarr
@@ -172,6 +176,8 @@
   vars:
     radarr_memory: "1g"
     radarr_memory_swap: "1g"
+    radarr_virtual_host: "radarr.jasonernst.com"
+    radarr_letsencrypt_email: "ernstjason1@gmail.com"
 
 - name: Install prowlarr
   tags: prowlarr
