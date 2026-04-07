@@ -77,6 +77,48 @@
       - name: media
     restart_policy: unless-stopped
 
+# NAS web UI reverse proxy (proxies nas.jasonernst.com -> host port 9999)
+- name: Create NAS proxy config directory
+  tags: nas-proxy
+  become: true
+  ansible.builtin.file:
+    path: /etc/nas-proxy
+    state: directory
+    mode: '755'
+    owner: root
+    group: root
+
+- name: Copy NAS proxy nginx config
+  tags: nas-proxy
+  become: true
+  ansible.builtin.copy:
+    src: nas-proxy.conf
+    dest: /etc/nas-proxy/default.conf
+    mode: '644'
+    owner: root
+    group: root
+
+- name: Deploy NAS web proxy
+  tags: nas-proxy
+  become: true
+  community.docker.docker_container:
+    name: nas-proxy
+    image: nginx:alpine
+    pull: true
+    volumes:
+      - /etc/nas-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro
+    env:
+      VIRTUAL_HOST: "nas.jasonernst.com"
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: "nas.jasonernst.com"
+      LETSENCRYPT_EMAIL: "{{ media_letsencrypt_email | default('ernstjason1@gmail.com') }}"
+    extra_hosts:
+      host.docker.internal: host-gateway
+    networks:
+      - name: media
+    restart_policy: unless-stopped
+    memory: "256m"
+
 # Media storage folders are now created automatically by the media_storage role
 # which is a dependency of the media roles below
 
