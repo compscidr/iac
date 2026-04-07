@@ -9,6 +9,7 @@
     media_storage_base_path: /volume1/storage
     media_storage_network_enabled: true
     media_storage_network_name: "media"
+    media_letsencrypt_email: "ernstjason1@gmail.com"
 
 # Initialize media_user facts (UID/GID detection) before other tasks
 # This runs media_storage which depends on media_user
@@ -137,7 +138,7 @@
     plex_memory_swap: "24g"
     plex_shm_size: "8g"
     plex_virtual_host: "plex.jasonernst.com"
-    plex_letsencrypt_email: "ernstjason1@gmail.com"
+    plex_letsencrypt_email: "{{ media_letsencrypt_email }}"
     plex_network_mode: "bridge"
     plex_dlna_port: 1901
 
@@ -164,7 +165,7 @@
     sonarr_memory: "1g"
     sonarr_memory_swap: "1g"
     sonarr_virtual_host: "sonarr.jasonernst.com"
-    sonarr_letsencrypt_email: "ernstjason1@gmail.com"
+    sonarr_letsencrypt_email: "{{ media_letsencrypt_email }}"
 
 - name: Install radarr
   tags: radarr
@@ -177,7 +178,7 @@
     radarr_memory: "1g"
     radarr_memory_swap: "1g"
     radarr_virtual_host: "radarr.jasonernst.com"
-    radarr_letsencrypt_email: "ernstjason1@gmail.com"
+    radarr_letsencrypt_email: "{{ media_letsencrypt_email }}"
 
 - name: Install prowlarr
   tags: prowlarr
@@ -209,7 +210,7 @@
       tags: ombi
   vars:
     ombi_virtual_host: "ombi.jasonernst.com"
-    ombi_letsencrypt_email: "ernstjason1@gmail.com"
+    ombi_letsencrypt_email: "{{ media_letsencrypt_email }}"
 
 - name: Install slskd
   tags: slskd
