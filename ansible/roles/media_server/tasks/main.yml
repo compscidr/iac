@@ -112,7 +112,7 @@
       VIRTUAL_PORT: "80"
       LETSENCRYPT_HOST: "nas.jasonernst.com"
       LETSENCRYPT_EMAIL: "{{ media_letsencrypt_email | default('ernstjason1@gmail.com') }}"
-    extra_hosts:
+    etc_hosts:
       host.docker.internal: host-gateway
     networks:
       - name: media
