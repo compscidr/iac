@@ -24,7 +24,7 @@ collections:
   - name: community.general
     version: "12.5.0"
   - name: community.docker
-    version: "5.1.0"
+    version: "5.2.0"
   - name: compscidr.media_server
     version: "1.4.0"
   - name: compscidr.github_runner
