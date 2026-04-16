@@ -4,7 +4,7 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.84.0"
+      version = "2.84.1"
     }
     onepassword = {
       source  = "1Password/onepassword"
