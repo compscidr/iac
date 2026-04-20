@@ -13,7 +13,10 @@
 
 # Mask any orphan systemd ollama.service from a previous manual install.
 # The Docker deploy below is authoritative; an active systemd unit would
-# collide on port 11434.
+# collide on port 11434. systemd refuses to mask when a real unit file
+# sits at the target path, so we stop/disable, remove the file, then mask
+# (mask creates a /dev/null symlink there). islnk check keeps the block
+# idempotent — once masked, subsequent runs see a symlink and skip.
 - name: Stat orphan systemd ollama unit
   become: true
   ansible.builtin.stat:
@@ -23,14 +26,40 @@
     - ollama
     - cleanup
 
-- name: Mask orphan systemd ollama.service
+- name: Stop and disable orphan systemd ollama.service
   become: true
   ansible.builtin.systemd:
     name: ollama
     state: stopped
     enabled: false
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Remove orphan systemd ollama unit file
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service
+    state: absent
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Mask orphan systemd ollama.service
+  become: true
+  ansible.builtin.systemd:
+    name: ollama
     masked: true
-  when: ollama_systemd_unit.stat.exists
+    daemon_reload: true
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
   tags:
     - ollama
     - cleanup

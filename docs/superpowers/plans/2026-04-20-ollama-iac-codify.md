@@ -46,12 +46,17 @@ Add a cleanup block to the role that stops, disables, and masks `/etc/systemd/sy
 
 - [ ] **Step 1: Add the cleanup block**
 
-Open `ansible/roles/ollama/tasks/main.yml`. Find the "Check if Docker is available" task (the first task in the file). Insert the following block immediately after it, before the "# Install NVIDIA Container Toolkit for GPU support" comment:
+Open `ansible/roles/ollama/tasks/main.yml`. Find the "Check if Docker is available" task (the first task in the file). Insert the following block immediately after it, before the "# Install NVIDIA Container Toolkit for GPU support" comment.
+
+Note: systemd refuses to mask a unit when a real file exists at its path (`File ... already exists`). The block below removes the orphan unit file first, then masks (which creates a `/dev/null` symlink at that path). An `islnk` guard keeps it idempotent — a masked unit's path is a symlink, so subsequent runs detect that and skip.
 
 ```yaml
 # Mask any orphan systemd ollama.service from a previous manual install.
 # The Docker deploy below is authoritative; an active systemd unit would
-# collide on port 11434.
+# collide on port 11434. systemd refuses to mask when a real unit file
+# sits at the target path, so we stop/disable, remove the file, then mask
+# (mask creates a /dev/null symlink there). islnk check keeps the block
+# idempotent — once masked, subsequent runs see a symlink and skip.
 - name: Stat orphan systemd ollama unit
   become: true
   ansible.builtin.stat:
@@ -61,14 +66,40 @@ Open `ansible/roles/ollama/tasks/main.yml`. Find the "Check if Docker is availab
     - ollama
     - cleanup
 
-- name: Mask orphan systemd ollama.service
+- name: Stop and disable orphan systemd ollama.service
   become: true
   ansible.builtin.systemd:
     name: ollama
     state: stopped
     enabled: false
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Remove orphan systemd ollama unit file
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service
+    state: absent
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Mask orphan systemd ollama.service
+  become: true
+  ansible.builtin.systemd:
+    name: ollama
     masked: true
-  when: ollama_systemd_unit.stat.exists
+    daemon_reload: true
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
   tags:
     - ollama
     - cleanup
