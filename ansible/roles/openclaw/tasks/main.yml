@@ -4,23 +4,52 @@
 # The openclaw CLI installs and manages its own user-level systemd unit
 # (~/.config/systemd/user/openclaw-gateway.service) during first-run
 # setup via `openclaw gateway`. This role only bootstraps: npm install,
-# workspace clone, op.env deploy, Tailscale Serve. On a fresh host the
-# user still needs to run the openclaw wizard once after this role
-# completes so the gateway unit is created and enabled.
+# workspace clone, Tailscale Serve. On a fresh host the user still needs
+# to run the openclaw wizard once after this role completes so the
+# gateway unit is created and enabled.
 
-# Check current openclaw version
-- name: Check current openclaw version
+# Cleanup: remove the legacy system-level clawdbot.service left behind
+# by older versions of this role. The tool now installs its own
+# user-level unit; an orphan system-level unit would sit disabled/failed
+# on previously-configured hosts and could confuse operators.
+- name: Stat legacy clawdbot systemd unit
   become: true
-  become_user: "{{ openclaw_user }}"
-  ansible.builtin.shell: |
-    export PATH="/home/{{ openclaw_user }}/.local/share/fnm:$PATH"
-    eval "$(fnm env)"
-    openclaw --version 2>/dev/null || echo "not installed"
-  register: openclaw_current_version
-  changed_when: false
+  ansible.builtin.stat:
+    path: /etc/systemd/system/clawdbot.service
+  register: legacy_clawdbot_service
   tags:
     - openclaw
-    - install
+    - cleanup
+
+- name: Stop and disable legacy clawdbot systemd unit
+  become: true
+  ansible.builtin.systemd:
+    name: clawdbot.service
+    enabled: false
+    state: stopped
+  when: legacy_clawdbot_service.stat.exists
+  tags:
+    - openclaw
+    - cleanup
+
+- name: Remove legacy clawdbot systemd unit file
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/clawdbot.service
+    state: absent
+  when: legacy_clawdbot_service.stat.exists
+  tags:
+    - openclaw
+    - cleanup
+
+- name: Reload systemd after removing legacy clawdbot unit
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: legacy_clawdbot_service.stat.exists
+  tags:
+    - openclaw
+    - cleanup
 
 # Install openclaw globally via npm
 - name: Install openclaw via npm
@@ -63,41 +92,6 @@
     path: "{{ openclaw_config_dir }}"
     state: directory
     mode: "0700"
-  tags:
-    - openclaw
-    - config
-
-# Create directory for environment file
-- name: Create openclaw etc directory
-  become: true
-  ansible.builtin.file:
-    path: /etc/clawdbot
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
-  tags:
-    - openclaw
-    - config
-
-# Deploy 1Password service account token (root-only for security)
-# NOTE: the currently-running openclaw-gateway.service user-level unit
-# does not reference this file via EnvironmentFile. Kept in case the
-# openclaw runtime reads it directly, or for a future user-level unit
-# override.conf that sources it.
-- name: Deploy 1Password environment file
-  become: true
-  ansible.builtin.copy:
-    content: |
-      # 1Password service account token for openclaw
-      # Managed by Ansible - do not edit
-      OP_SERVICE_ACCOUNT_TOKEN={{ openclaw_op_service_account_token }}
-    dest: /etc/clawdbot/op.env
-    owner: root
-    group: root
-    mode: "0600"
-  when: openclaw_op_service_account_token | length > 0
-  no_log: true  # Don't log the token
   tags:
     - openclaw
     - config
