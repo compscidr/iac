@@ -248,17 +248,19 @@
 
 - name: Create Modelfile variants when absent
   become: true
-  ansible.builtin.shell: |
-    cat {{ ollama_data_path }}/modelfiles/{{ item.name | regex_replace('[^A-Za-z0-9]', '_') }}.Modelfile \
-      | docker exec -i {{ ollama_container_name }} ollama create {{ item.name }} -f /dev/stdin
+  ansible.builtin.shell: >
+    docker exec -i {{ ollama_container_name | quote }}
+    ollama create {{ item.name | quote }} -f /dev/stdin
+    < {{ (ollama_data_path ~ '/modelfiles/'
+          ~ (item.name | regex_replace('[^A-Za-z0-9]', '_'))
+          ~ '.Modelfile') | quote }}
   loop: "{{ ollama_modelfiles }}"
   loop_control:
     label: "{{ item.name }}"
   when:
     - ollama_modelfiles | length > 0
     - item.name not in ollama_installed_tags.stdout
-  register: modelfile_create
-  changed_when: modelfile_create.rc == 0
+  changed_when: true  # Only runs when variant missing (per `when:`); success == change
   tags:
     - ollama
     - modelfiles
