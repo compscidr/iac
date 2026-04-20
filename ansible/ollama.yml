@@ -19,6 +19,13 @@
 #   # With custom models:
 #   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local \
 #     -e '{"ollama_models": ["qwen2.5:14b", "codestral:latest"]}'
+#
+# Using from clawdbot:
+#   Ollama is reachable at http://ubuntu-beast:11434 over Tailscale.
+#   To wire it into clawdbot, update the ollama provider entry in the
+#   `openclaw` 1Password vault (fetched at runtime by clawdbot).
+#   OpenAI-compatible endpoint: http://ubuntu-beast:11434/v1
+#   This integration is not managed by Ansible.
 
 - name: Deploy Ollama LLM Server
   hosts: all
