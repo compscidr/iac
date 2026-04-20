@@ -25,6 +25,9 @@
     - opencode
     - config
 
+# Ansible owns this file; re-runs overwrite hand-tuning on-host.
+# Override via role vars (opencode_models, opencode_ollama_base_url,
+# etc.) in inventory or playbook, not by editing the rendered file.
 - name: Render opencode.json
   ansible.builtin.template:
     src: opencode.json.j2
