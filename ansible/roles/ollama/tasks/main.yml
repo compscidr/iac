@@ -11,6 +11,30 @@
     - ollama
     - preflight
 
+# Mask any orphan systemd ollama.service from a previous manual install.
+# The Docker deploy below is authoritative; an active systemd unit would
+# collide on port 11434.
+- name: Stat orphan systemd ollama unit
+  become: true
+  ansible.builtin.stat:
+    path: /etc/systemd/system/ollama.service
+  register: ollama_systemd_unit
+  tags:
+    - ollama
+    - cleanup
+
+- name: Mask orphan systemd ollama.service
+  become: true
+  ansible.builtin.systemd:
+    name: ollama
+    state: stopped
+    enabled: false
+    masked: true
+  when: ollama_systemd_unit.stat.exists
+  tags:
+    - ollama
+    - cleanup
+
 # Install NVIDIA Container Toolkit for GPU support
 - name: Check if nvidia-smi is available
   ansible.builtin.command: nvidia-smi
