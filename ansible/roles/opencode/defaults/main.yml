@@ -1,0 +1,29 @@
+---
+# Opencode role defaults
+#
+# Installs opencode (opencode.ai) via its upstream install script and
+# renders an Ansible-owned opencode.json pointing at the Ollama server
+# on ubuntu-beast. Runs as the connecting user — no `become` needed.
+
+# Ollama endpoint (reachable from all dev hosts via Tailscale)
+opencode_ollama_base_url: "http://ubuntu-beast:11434/v1"
+opencode_ollama_provider_name: "Ollama (local)"
+
+# Models to expose via the ollama provider. Each entry is a dict with
+# `id` (the Ollama tag) and `name` (display name). Override per-host
+# in inventory vars if different machines should see different models.
+opencode_models:
+  - id: "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M"
+    name: "Qwen3-Coder"
+  - id: "qwen2.5:14b-32k"
+    name: "qwen2.5:14b-32k"
+
+# Tools opencode is allowed to use. Dict rendered verbatim into the
+# "tools" object of opencode.json.
+opencode_tools:
+  write: true
+  bash: true
+
+# Permission policy rendered verbatim into the "permission" object.
+opencode_permission:
+  edit: "allow"
