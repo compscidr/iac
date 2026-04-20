@@ -97,6 +97,7 @@
     mode: '644'
     owner: root
     group: root
+  notify: Restart nas-proxy container
 
 - name: Deploy NAS web proxy
   tags: nas-proxy

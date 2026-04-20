@@ -1,0 +1,7 @@
+---
+- name: Restart nas-proxy container
+  become: true
+  community.docker.docker_container:
+    name: nas-proxy
+    restart: true
+    state: started
