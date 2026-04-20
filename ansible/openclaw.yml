@@ -1,0 +1,35 @@
+---
+# Openclaw playbook - AI assistant deployment
+#
+# Targets the `clawdbot` host (the DO droplet name is unchanged since
+# the rename; only the tool inside it renamed from clawdbot → openclaw).
+#
+# Prerequisites:
+#   1. Droplet created via Terraform (with Tailscale via cloud-init)
+#   2. Bootstrap run: ansible-playbook bootstrap.yml --limit clawdbot -u root
+#   3. 1Password vault "openclaw" with API keys and service token
+#
+# Usage:
+#   ansible-playbook -i inventory.yml openclaw.yml
+#
+# Post-run: if this is a fresh install, run the `openclaw gateway`
+# wizard on the host once so the tool creates its user-level systemd
+# unit (~/.config/systemd/user/openclaw-gateway.service). Ansible does
+# not manage that unit or the openclaw.json config — the wizard does.
+
+- name: Deploy Openclaw
+  hosts: clawdbot
+  vars_files:
+    - vars/user.yml
+  pre_tasks:
+    - ansible.builtin.include_tasks: tailscale_check.yml
+  vars:
+    # fnm role vars
+    fnm_node_version: "22"
+    fnm_set_default: true
+    # openclaw role vars
+    openclaw_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
+    openclaw_tailscale_serve: true
+  roles:
+    - fnm       # Install Node.js via fnm
+    - openclaw  # Install and configure Openclaw

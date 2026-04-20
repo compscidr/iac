@@ -1,0 +1,58 @@
+---
+# Openclaw role defaults
+#
+# The openclaw CLI tool (formerly "clawdbot") manages its own user-level
+# systemd unit during first-run setup (`openclaw gateway` wizard). This
+# role is a thin bootstrap layer: install the npm package, clone the
+# workspace repo, deploy the 1Password env file (currently unreferenced
+# by the running user-level unit but preserved in case the tool reads it
+# directly), and configure Tailscale Serve. The runtime systemd unit and
+# the openclaw.json config are created by the wizard and are NOT
+# Ansible-managed.
+#
+# Directory naming note: the tool's config directory is still
+# `~/.clawdbot/` on-disk for backwards compatibility with accumulated
+# state (agents, identity, memory, etc.). Only the config filename
+# migrated to `openclaw.json`. Do not change the config_dir path
+# without a coordinated on-host migration.
+
+# User to run openclaw as (from vars/user.yml typically)
+openclaw_user: "{{ username }}"
+
+# Workspace
+openclaw_workspace_repo: ""  # Required: git repo for workspace (e.g., git@github.com:user/kai-workspace.git)
+openclaw_workspace_path: "/home/{{ openclaw_user }}/clawd"
+
+# Installation
+openclaw_install_method: "npm"  # npm only for now (git not implemented)
+openclaw_npm_package: "openclaw"
+openclaw_version: ""  # Pin to specific version, e.g., "2026.4.15" (empty = latest)
+
+# Config location
+# Directory path kept as ~/.clawdbot for on-disk backward compatibility.
+# Filename migrated to openclaw.json during the rename.
+openclaw_config_dir: "/home/{{ openclaw_user }}/.clawdbot"
+openclaw_config_file: "{{ openclaw_config_dir }}/openclaw.json"
+
+# 1Password integration
+# Service account token fetched from Infrastructure vault; clawdbot/openclaw
+# reads the `openclaw` vault at runtime for API keys (Anthropic, OpenAI, etc.)
+openclaw_op_service_account_token: >-
+  {{ lookup('community.general.onepassword', 'openclaw-sa-token',
+     field='credential', vault=onepassword_vault,
+     account_id=onepassword_account_id) }}
+openclaw_op_vault: "openclaw"          # Vault name openclaw accesses at runtime
+# Items in openclaw vault:
+#   - "openclaw anthropic" - Anthropic API key
+#   - "github" - GitHub credentials
+#   - "openai - text embedding for memory search" - OpenAI embeddings
+#   - "discord clawdbot" - Discord bot token
+#   - "mail.jasonernst.com - kai" - Email credentials
+
+# Tailscale Serve (recommended for web UI auth)
+openclaw_tailscale_serve: true
+openclaw_bind: "loopback"  # Bind to loopback when using Tailscale Serve
+openclaw_port: 18789
+
+# Gateway options
+openclaw_gateway_extra_args: ""
