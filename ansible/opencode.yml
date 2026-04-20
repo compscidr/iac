@@ -1,0 +1,23 @@
+---
+# Opencode deployment - terminal AI coding assistant
+#
+# Installs opencode on all dev hosts and configures it to use the
+# Ollama server on ubuntu-beast over Tailscale.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml opencode.yml
+#   ansible-playbook -i inventory.yml opencode.yml --limit ubuntu-beast.local
+#
+# Prerequisites:
+#   1. Host is in the `dev` inventory group
+#   2. Host can reach ubuntu-beast over Tailscale (on tailnet or via
+#      MagicDNS)
+#   3. Ollama is running on ubuntu-beast at port 11434 (deployed via
+#      ansible/ollama.yml)
+
+- name: Deploy opencode
+  hosts: dev
+  vars_files:
+    - vars/user.yml
+  roles:
+    - opencode
