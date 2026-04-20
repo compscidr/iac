@@ -32,6 +32,19 @@ ollama_models:
   - "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M"   # MoE coder, fits in VRAM
   - "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"               # MoE general, fits in VRAM
 
+# Custom Modelfile variants created locally via `ollama create`.
+# Each entry generates a new tag from `base` with the supplied PARAMETER
+# overrides. Used to produce extended-context variants of base models.
+ollama_modelfiles:
+  - name: "qwen2.5:14b-16k"
+    base: "qwen2.5:14b"
+    parameters:
+      num_ctx: 16384
+  - name: "qwen2.5:14b-32k"
+    base: "qwen2.5:14b"
+    parameters:
+      num_ctx: 32768
+
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true  # If true, only allow Tailscale IPs
 
