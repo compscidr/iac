@@ -1,12 +1,19 @@
 ---
 # Openclaw playbook - AI assistant deployment
 #
-# Targets the `clawdbot` host (the DO droplet name is unchanged since
-# the rename; only the tool inside it renamed from clawdbot → openclaw).
+# Targets the `openclaw` host. Renamed from `clawdbot` in 2026-04
+# alongside the tool rename. Existing droplets need a one-time manual
+# migration to change the on-host tailscale hostname before ansible can
+# reach them by the new name:
+#
+#   ssh clawdbot 'sudo tailscale set --hostname=openclaw && \
+#                 sudo hostnamectl set-hostname openclaw'
+#
+# After that, `openclaw.tail21090.ts.net` resolves via MagicDNS.
 #
 # Prerequisites:
 #   1. Droplet created via Terraform (with Tailscale via cloud-init)
-#   2. Bootstrap run: ansible-playbook bootstrap.yml --limit clawdbot -u root
+#   2. Bootstrap run: ansible-playbook bootstrap.yml --limit openclaw -u root
 #   3. 1Password vault "openclaw" with API keys and service token
 #
 # Usage:
@@ -18,7 +25,7 @@
 # not manage that unit or the openclaw.json config — the wizard does.
 
 - name: Deploy Openclaw
-  hosts: clawdbot
+  hosts: openclaw
   vars_files:
     - vars/user.yml
   pre_tasks:
