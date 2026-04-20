@@ -22,10 +22,14 @@
 #
 # Using from clawdbot:
 #   Ollama is reachable at http://ubuntu-beast:11434 over Tailscale.
-#   To wire it into clawdbot, update the ollama provider entry in the
-#   `openclaw` 1Password vault (fetched at runtime by clawdbot).
-#   OpenAI-compatible endpoint: http://ubuntu-beast:11434/v1
-#   This integration is not managed by Ansible.
+#   To wire it into clawdbot, add an ollama provider entry to
+#   ~/.clawdbot/clawdbot.json on the clawdbot host (via the clawdbot
+#   wizard or by editing the file directly). OpenAI-compatible endpoint:
+#   http://ubuntu-beast:11434/v1
+#   The Ansible-managed clawdbot.json template is a placeholder with
+#   force: false, so it will not overwrite the wizard-populated config.
+#   The `openclaw` 1Password vault holds the API keys/tokens clawdbot
+#   reads at runtime — it does not hold provider config.
 
 - name: Deploy Ollama LLM Server
   hosts: all

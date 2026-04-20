@@ -116,13 +116,28 @@ the Docker container on port 11434.
 
 ### 4. Clawdbot integration doc
 
+Clawdbot's model provider config (baseUrl, model list) lives in
+`~/.clawdbot/clawdbot.json` on the clawdbot host, populated by the clawdbot
+wizard on first install. The Ansible-managed `clawdbot.json.j2` template only
+contains gateway/auth config and deploys with `force: false` so it will not
+overwrite the wizard-populated file on subsequent runs.
+
+The `openclaw` 1Password vault holds the API keys and tokens clawdbot reads at
+runtime (Anthropic, OpenAI, Discord, etc.) — it does not hold provider config.
+
+`kai-workspace` is a separate repo (`compscidr/kai-workspace`) cloned by the
+clawdbot role into `/home/clawdbot/clawd`. It holds operational context
+(memory, identity, heartbeat state) — also not where provider config lives.
+
 Update the header comment of `ansible/ollama.yml` with a "Using from clawdbot"
 section:
 
 > Ollama is reachable at `http://ubuntu-beast:11434` over Tailscale. To wire it
-> into clawdbot, update the ollama provider entry in the `openclaw` 1Password
-> vault (runtime-fetched by clawdbot). The OpenAI-compatible endpoint is
-> `http://ubuntu-beast:11434/v1`. This is not managed by Ansible.
+> into clawdbot, add an ollama provider entry to `~/.clawdbot/clawdbot.json`
+> on the clawdbot host (via the clawdbot wizard or by editing directly).
+> OpenAI-compatible endpoint: `http://ubuntu-beast:11434/v1`. Not Ansible-
+> managed — the role's `clawdbot.json.j2` is a placeholder with `force: false`.
+> The `openclaw` vault holds API keys, not provider config.
 
 No code change to the clawdbot role.
 

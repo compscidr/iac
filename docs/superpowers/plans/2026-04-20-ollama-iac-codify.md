@@ -4,7 +4,7 @@
 
 **Goal:** Codify the currently-running Ollama install on `ubuntu-beast.local` so the existing `ansible/roles/ollama/` role reproduces it with no drift, including custom-context Modelfile variants, with the orphan systemd unit masked.
 
-**Architecture:** Three role-level changes (cleanup block, model defaults, Modelfile variant support) plus a documentation update in the playbook header. No new files outside the ollama role. Clawdbot → ollama integration is an out-of-band 1Password vault change, documented but not automated.
+**Architecture:** Three role-level changes (cleanup block, model defaults, Modelfile variant support) plus a documentation update in the playbook header. No new files outside the ollama role. Clawdbot → ollama integration is an out-of-band edit to `~/.clawdbot/clawdbot.json` on the clawdbot host (populated by the clawdbot wizard), documented but not automated. The `openclaw` 1Password vault holds API keys that clawdbot reads at runtime, not provider config.
 
 **Tech Stack:** Ansible, `community.docker.docker_compose_v2`, Ollama (Docker deploy at `ollama/ollama:latest`), ansible-lint for static checks. Role target: `ubuntu-beast.local` (RTX 5080, 16GB VRAM, Tailscale-connected).
 
@@ -411,7 +411,7 @@ EOF
 
 ### Task 4: Document clawdbot wiring in playbook header
 
-Add a section to the header comment of `ansible/ollama.yml` explaining how to point clawdbot at the ollama endpoint via the `openclaw` 1Password vault.
+Add a section to the header comment of `ansible/ollama.yml` explaining how to point clawdbot at the ollama endpoint. Provider config lives in `~/.clawdbot/clawdbot.json` on the clawdbot host (wizard-populated; the role's template is a placeholder with `force: false`). The `openclaw` 1Password vault holds API keys, not provider config.
 
 **Files:**
 - Modify: `ansible/ollama.yml`
@@ -445,10 +445,14 @@ In `ansible/ollama.yml`, replace the existing header comment block (the lines fr
 #
 # Using from clawdbot:
 #   Ollama is reachable at http://ubuntu-beast:11434 over Tailscale.
-#   To wire it into clawdbot, update the ollama provider entry in the
-#   `openclaw` 1Password vault (fetched at runtime by clawdbot).
-#   OpenAI-compatible endpoint: http://ubuntu-beast:11434/v1
-#   This integration is not managed by Ansible.
+#   To wire it into clawdbot, add an ollama provider entry to
+#   ~/.clawdbot/clawdbot.json on the clawdbot host (via the clawdbot
+#   wizard or by editing the file directly). OpenAI-compatible endpoint:
+#   http://ubuntu-beast:11434/v1
+#   The Ansible-managed clawdbot.json template is a placeholder with
+#   force: false, so it will not overwrite the wizard-populated config.
+#   The `openclaw` 1Password vault holds the API keys/tokens clawdbot
+#   reads at runtime — it does not hold provider config.
 ```
 
 - [ ] **Step 2: Lint**
@@ -471,9 +475,11 @@ git add ansible/ollama.yml
 git commit -m "$(cat <<'EOF'
 Document clawdbot → ollama wiring in playbook header
 
-Note that the openclaw 1Password vault is the place to add the ollama
-provider entry for clawdbot to use, since clawdbot fetches its model
-provider config from the vault at runtime.
+Clawdbot's model provider config lives in ~/.clawdbot/clawdbot.json on
+the clawdbot host, populated by the wizard on first install. The
+Ansible-managed template is a placeholder (force: false). The openclaw
+1Password vault holds API keys, not provider config — note this so
+future wiring changes happen in the right file.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -538,7 +544,7 @@ gh pr create --title "Codify Ollama IaC on ubuntu-beast" --body "$(cat <<'EOF'
 - Align `ollama_models` defaults with what's installed on ubuntu-beast; drop the redundant override in `ollama.yml`
 - Add `ollama_modelfiles` support (defaults var + `modelfile.j2` template + idempotent create tasks) to capture the `qwen2.5:14b-16k/-32k` extended-context variants
 - Mask the orphan `/etc/systemd/system/ollama.service` from a previous manual install so it cannot shadow the Docker deploy
-- Document the clawdbot → ollama wiring (1Password `openclaw` vault) in the playbook header
+- Document the clawdbot → ollama wiring (edit `~/.clawdbot/clawdbot.json` on the clawdbot host) in the playbook header
 
 ## Test plan
 - [x] `ansible-lint` clean
