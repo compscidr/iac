@@ -24,11 +24,5 @@
   hosts: all
   vars_files:
     - vars/user.yml
-  vars:
-    # Default models for high-RAM machines (128GB+ RAM, 16GB VRAM)
-    # Larger models use GPU + RAM offloading for inference
-    ollama_models:
-      - "qwen2.5:72b"      # ~45GB, excellent quality, partial GPU + RAM
-      - "qwen2.5:14b"      # Fast fallback, fits entirely in VRAM
   roles:
     - ollama
