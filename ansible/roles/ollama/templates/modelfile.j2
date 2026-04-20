@@ -1,0 +1,4 @@
+FROM {{ item.base }}
+{% for key, value in item.parameters.items() %}
+PARAMETER {{ key }} {{ value }}
+{% endfor %}

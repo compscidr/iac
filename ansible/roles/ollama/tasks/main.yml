@@ -11,6 +11,59 @@
     - ollama
     - preflight
 
+# Mask any orphan systemd ollama.service from a previous manual install.
+# The Docker deploy below is authoritative; an active systemd unit would
+# collide on port 11434. systemd refuses to mask when a real unit file
+# sits at the target path, so we stop/disable, remove the file, then mask
+# (mask creates a /dev/null symlink there). islnk check keeps the block
+# idempotent — once masked, subsequent runs see a symlink and skip.
+- name: Stat orphan systemd ollama unit
+  become: true
+  ansible.builtin.stat:
+    path: /etc/systemd/system/ollama.service
+  register: ollama_systemd_unit
+  tags:
+    - ollama
+    - cleanup
+
+- name: Stop and disable orphan systemd ollama.service
+  become: true
+  ansible.builtin.systemd:
+    name: ollama
+    state: stopped
+    enabled: false
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Remove orphan systemd ollama unit file
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service
+    state: absent
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
+- name: Mask orphan systemd ollama.service
+  become: true
+  ansible.builtin.systemd:
+    name: ollama
+    masked: true
+    daemon_reload: true
+  when:
+    - ollama_systemd_unit.stat.exists
+    - not ollama_systemd_unit.stat.islnk
+  tags:
+    - ollama
+    - cleanup
+
 # Install NVIDIA Container Toolkit for GPU support
 - name: Check if nvidia-smi is available
   ansible.builtin.command: nvidia-smi
@@ -155,6 +208,62 @@
   tags:
     - ollama
     - models
+
+# Create custom Modelfile variants (e.g. extended-context tags)
+- name: Ensure Modelfile staging directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ ollama_data_path }}/modelfiles"
+    state: directory
+    mode: '0755'
+  when: ollama_modelfiles | length > 0
+  tags:
+    - ollama
+    - modelfiles
+
+- name: List installed Ollama tags
+  become: true
+  ansible.builtin.command:
+    cmd: "docker exec {{ ollama_container_name }} ollama list"
+  register: ollama_installed_tags
+  changed_when: false
+  when: ollama_modelfiles | length > 0
+  tags:
+    - ollama
+    - modelfiles
+
+- name: Render Modelfile templates
+  become: true
+  ansible.builtin.template:
+    src: modelfile.j2
+    dest: "{{ ollama_data_path }}/modelfiles/{{ item.name | regex_replace('[^A-Za-z0-9]', '_') }}.Modelfile"
+    mode: '0644'
+  loop: "{{ ollama_modelfiles }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: ollama_modelfiles | length > 0
+  tags:
+    - ollama
+    - modelfiles
+
+- name: Create Modelfile variants when absent
+  become: true
+  ansible.builtin.shell: >
+    docker exec -i {{ ollama_container_name | quote }}
+    ollama create {{ item.name | quote }} -f /dev/stdin
+    < {{ (ollama_data_path ~ '/modelfiles/'
+          ~ (item.name | regex_replace('[^A-Za-z0-9]', '_'))
+          ~ '.Modelfile') | quote }}
+  loop: "{{ ollama_modelfiles }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - ollama_modelfiles | length > 0
+    - item.name not in ollama_installed_tags.stdout
+  changed_when: true  # Only runs when variant missing (per `when:`); success == change
+  tags:
+    - ollama
+    - modelfiles
 
 # Display connection info
 - name: Display Ollama connection info

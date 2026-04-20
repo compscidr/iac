@@ -22,13 +22,28 @@ ollama_num_gpu: -1  # -1 = auto (Ollama decides), 0 = CPU only, N = specific lay
 ollama_data_path: "/var/lib/ollama"
 
 # Models to pull on deployment (empty list = none)
-# For machines with lots of RAM (128GB+), larger models are viable:
-#   - qwen2.5:72b (~45GB) - excellent quality, partial GPU + RAM
-#   - llama3.1:70b (~40GB) - great general purpose
-#   - deepseek-coder-v2:latest - strong at coding
+# Current set reflects what runs on ubuntu-beast (RTX 5080, 16GB VRAM).
+# The MoE variants (*-A3B-*) are the sweet spot: large total params for
+# quality, 3B active params for responsiveness.
 ollama_models:
-  - "qwen2.5:72b"      # High quality, uses GPU + RAM offload on 128GB systems
-  - "qwen2.5:14b"      # Fast fallback, fits entirely in 16GB VRAM
+  - "qwen2.5:72b"                                                     # large, GPU + RAM offload
+  - "qwen2.5:14b"                                                     # fast fallback, fits in VRAM
+  - "qwen3-coder:30b"                                                 # coding, partial offload
+  - "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M"   # MoE coder, fits in VRAM
+  - "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"               # MoE general, fits in VRAM
+
+# Custom Modelfile variants created locally via `ollama create`.
+# Each entry generates a new tag from `base` with the supplied PARAMETER
+# overrides. Used to produce extended-context variants of base models.
+ollama_modelfiles:
+  - name: "qwen2.5:14b-16k"
+    base: "qwen2.5:14b"
+    parameters:
+      num_ctx: 16384
+  - name: "qwen2.5:14b-32k"
+    base: "qwen2.5:14b"
+    parameters:
+      num_ctx: 32768
 
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true  # If true, only allow Tailscale IPs

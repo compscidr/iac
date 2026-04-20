@@ -19,16 +19,21 @@
 #   # With custom models:
 #   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local \
 #     -e '{"ollama_models": ["qwen2.5:14b", "codestral:latest"]}'
+#
+# Using from clawdbot:
+#   Ollama is reachable at http://ubuntu-beast:11434 over Tailscale.
+#   To wire it into clawdbot, add an ollama provider entry to
+#   ~/.clawdbot/clawdbot.json on the clawdbot host (via the clawdbot
+#   wizard or by editing the file directly). OpenAI-compatible endpoint:
+#   http://ubuntu-beast:11434/v1
+#   The Ansible-managed clawdbot.json template is a placeholder with
+#   force: false, so it will not overwrite the wizard-populated config.
+#   The `openclaw` 1Password vault holds the API keys/tokens clawdbot
+#   reads at runtime — it does not hold provider config.
 
 - name: Deploy Ollama LLM Server
   hosts: all
   vars_files:
     - vars/user.yml
-  vars:
-    # Default models for high-RAM machines (128GB+ RAM, 16GB VRAM)
-    # Larger models use GPU + RAM offloading for inference
-    ollama_models:
-      - "qwen2.5:72b"      # ~45GB, excellent quality, partial GPU + RAM
-      - "qwen2.5:14b"      # Fast fallback, fits entirely in VRAM
   roles:
     - ollama
