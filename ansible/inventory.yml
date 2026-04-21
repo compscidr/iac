@@ -8,7 +8,7 @@ ungrouped:
     nas.local:
     mail:
     projects:
-    clawdbot:
+    openclaw:
 
 academic_gui:
   hosts:
@@ -56,7 +56,7 @@ tailscale:
     www:
     mail:
     projects:
-    clawdbot:
+    openclaw:
 
 linux:
   hosts:
