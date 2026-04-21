@@ -457,4 +457,4 @@ If the role breaks something on a host:
    ```bash
    rm -rf ~/.opencode ~/.config/opencode
    ```
-3. If the `.opencode.json` template overwrote a hand-tuned config you wanted to keep, check git history of the role defaults and restore from the `.bak` the template task should have written (Ansible's `template` module doesn't automatically backup; for this role it isn't configured to, so if you had unsaved tuning it's lost — restore from memory or the "Capture current config for reference" snapshot in Task 5 Step 1 if you took it).
+3. If the `opencode.json` template overwrote a hand-tuned config you wanted to keep: this role's `template` task is not configured with `backup: true`, so no `.bak` is written. Restore from the "Capture current config for reference" snapshot in Task 5 Step 1 (if you took it) or from memory. If ongoing preservation matters more than Ansible ownership, either add `backup: true` to the template task or flip it to `force: false`.

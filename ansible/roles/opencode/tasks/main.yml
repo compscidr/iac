@@ -1,24 +1,25 @@
 ---
 # Opencode installation and configuration
 #
-# Runs as the connecting user — no `become:`. ansible_user_dir
-# resolves to /home/<user> on Linux and /Users/<user> on macOS, so
-# the same tasks work on every host in the `dev` group without
-# platform branching.
+# Runs as the connecting user — no `become:`. ansible_facts['user_dir']
+# resolves to /home/<user> on Linux and /Users/<user> on macOS, so the
+# same tasks work on every host in the `dev` group without platform
+# branching.
 
 - name: Install opencode via upstream script
   ansible.builtin.shell: |
     set -euo pipefail
-    curl -fsSL https://opencode.ai/install | bash
+    curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/install | bash
   args:
-    creates: "{{ ansible_user_dir }}/.opencode/bin/opencode"
+    creates: "{{ ansible_facts['user_dir'] }}/.opencode/bin/opencode"
+    executable: /bin/bash
   tags:
     - opencode
     - install
 
 - name: Ensure opencode config directory exists
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/opencode"
+    path: "{{ ansible_facts['user_dir'] }}/.config/opencode"
     state: directory
     mode: '0755'
   tags:
@@ -31,7 +32,7 @@
 - name: Render opencode.json
   ansible.builtin.template:
     src: opencode.json.j2
-    dest: "{{ ansible_user_dir }}/.config/opencode/opencode.json"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/opencode/opencode.json"
     mode: '0644'
   tags:
     - opencode
