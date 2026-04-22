@@ -34,7 +34,7 @@ collections:
   - name: compscidr.github_cli
     version: "0.0.16"
   - name: compscidr.onepassword
-    version: "0.1.4"
+    version: "0.1.5"
   - name: compscidr.spotify
     version: "0.0.5"
   - name: compscidr.keybase
