@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "{{ opencode_ollama_provider_name }}",
+      "options": {
+        "baseURL": "{{ opencode_ollama_base_url }}"
+      },
+      "models": {
+{% for m in opencode_models %}
+        "{{ m.id }}": { "name": "{{ m.name }}" }{% if not loop.last %},{% endif %}
+{% endfor %}
+      }
+    }
+  },
+  "tools": {{ opencode_tools | to_nice_json }},
+  "permission": {{ opencode_permission | to_nice_json }}
+}
