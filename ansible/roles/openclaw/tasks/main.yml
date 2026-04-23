@@ -3,10 +3,11 @@
 #
 # The openclaw CLI installs and manages its own user-level systemd unit
 # (~/.config/systemd/user/openclaw-gateway.service) during first-run
-# setup via `openclaw gateway`. This role only bootstraps: npm install,
-# workspace clone, Tailscale Serve. On a fresh host the user still needs
-# to run the openclaw wizard once after this role completes so the
-# gateway unit is created and enabled.
+# setup via `openclaw gateway`. This role bootstraps: claude binary
+# install, Claude Code credential restore, npm install of openclaw,
+# workspace clone, Tailscale Serve. On a fresh host the user still
+# needs to run the openclaw wizard once after this role completes so
+# the gateway unit is created and enabled.
 
 # Cleanup: remove the legacy system-level clawdbot.service left behind
 # by older versions of this role. The tool now installs its own
@@ -50,6 +51,63 @@
   tags:
     - openclaw
     - cleanup
+
+# Install the `claude` binary via Anthropic's native installer.
+# Openclaw shells out to this binary for Claude-backed model calls;
+# without it the provider wiring fails. The installer drops a single
+# ELF at ~/.local/share/claude/versions/<ver> and symlinks
+# ~/.local/bin/claude. `creates:` makes this idempotent — upgrades are
+# handled by `claude update` on the host, not by re-running the script.
+- name: Install claude binary via upstream installer
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -fsSL https://claude.ai/install.sh | bash
+  args:
+    creates: "/home/{{ openclaw_user }}/.local/bin/claude"
+    executable: /bin/bash
+  tags:
+    - openclaw
+    - install
+    - claude
+
+# Ensure ~/.claude exists before dropping the credentials file into it.
+# Claude Code creates this dir itself on first run, but on a fresh host
+# we write the credentials *before* the binary has ever been invoked.
+- name: Ensure ~/.claude directory exists
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ openclaw_user }}/.claude"
+    state: directory
+    mode: "0755"
+  when: openclaw_claude_credentials | length > 0
+  tags:
+    - openclaw
+    - claude
+    - credentials
+
+# Restore the Claude Code OAuth blob captured from a prior `claude login`
+# web flow on this host. `force: no` means this creates the file on a
+# fresh host but never overwrites a file already on disk — Claude Code
+# refreshes tokens in-place, and a stale vault snapshot must not clobber
+# a fresh on-host token. Keeping the vault in sync is the operator's job
+# (see the R-1 pre-destroy sync ritual in ansible/openclaw.yml).
+- name: Restore Claude Code credentials
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.copy:
+    content: "{{ openclaw_claude_credentials }}"
+    dest: "/home/{{ openclaw_user }}/.claude/.credentials.json"
+    mode: "0600"
+    force: false
+  when: openclaw_claude_credentials | length > 0
+  no_log: true
+  tags:
+    - openclaw
+    - claude
+    - credentials
 
 # Install openclaw globally via npm
 - name: Install openclaw via npm
