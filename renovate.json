@@ -4,5 +4,20 @@
   ],
   "automerge": true,
   "automergeType": "pr",
-  "platformAutomerge": true
+  "platformAutomerge": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track aaddrick/claude-desktop-debian releases for the claude_desktop_tag pin in dev_gui role",
+      "fileMatch": [
+        "^ansible/roles/dev_gui/defaults/main\\.yml$"
+      ],
+      "matchStrings": [
+        "claude_desktop_tag:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "aaddrick/claude-desktop-debian",
+      "versioningTemplate": "loose"
+    }
+  ]
 }
