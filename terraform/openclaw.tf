@@ -32,6 +32,14 @@ resource "digitalocean_droplet" "openclaw" {
     tailscale_authkey = data.onepassword_item.tailscale.credential
     hostname          = "openclaw"
   })
+
+  # Don't let DO provider drift force-replace this droplet. See projects.tf
+  # for the full rationale — short version: public_networking regression in
+  # provider 2.84.1, user_data comment edits, and image slug default changes
+  # should not silently destroy a running host.
+  lifecycle {
+    ignore_changes = [public_networking, user_data, image]
+  }
 }
 
 # Firewall - Tailscale only (no public inbound)
