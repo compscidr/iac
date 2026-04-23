@@ -104,31 +104,77 @@
       become: true
   tags: spotify
 
-- name: Check if claude-desktop apt repo exists
+# Claude Desktop — installed from a pinned `.deb` on aaddrick's GitHub
+# Releases. See roles/dev_gui/defaults/main.yml for the pin + context.
+# We deliberately avoid aaddrick's apt channel (their Release file has
+# been intermittently broken) and fetch the .deb asset directly.
+- name: Remove legacy aaddrick claude-desktop apt source
   tags: claude-desktop
   become: true
-  ansible.builtin.stat:
+  ansible.builtin.file:
     path: /etc/apt/sources.list.d/claude-desktop.sources
-  register: claude_desktop_repo_exists
+    state: absent
+  register: claude_desktop_legacy_source
 
-- name: Install claude-desktop apt repo
+- name: Refresh apt cache after removing legacy claude-desktop source
   tags: claude-desktop
   become: true
-  ansible.builtin.deb822_repository:
-    name: claude-desktop
-    types: [deb]
-    uris: https://aaddrick.github.io/claude-desktop-debian
-    signed_by: https://aaddrick.github.io/claude-desktop-debian/KEY.gpg
-    suites: [stable]
-    components: [main]
-    state: present
-    enabled: true
-  when: not claude_desktop_repo_exists.stat.exists
-
-- name: Install claude-desktop
-  become: true
-  tags: claude-desktop
   ansible.builtin.apt:
     update_cache: true
-    pkg:
-      - claude-desktop
+  when: claude_desktop_legacy_source.changed
+
+# Fail fast when the host arch isn't one of the two aaddrick ships. Any
+# other value would silently pick the wrong asset URL and download a
+# bogus .deb.
+- name: Validate host architecture for claude-desktop .deb
+  tags: claude-desktop
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in ['x86_64', 'amd64', 'aarch64', 'arm64']
+    fail_msg: >-
+      claude-desktop .deb is only published for x86_64/amd64 and
+      aarch64/arm64 hosts by aaddrick; got {{ ansible_architecture }}.
+
+# Fail fast if the pinned tag doesn't match aaddrick's convention
+# (v<their>+claude<upstream>). Renovate could conceivably land a tag
+# with a different shape, at which point the regex below would silently
+# produce a broken download URL; surface the mismatch explicitly.
+- name: Validate claude_desktop_tag format
+  tags: claude-desktop
+  ansible.builtin.assert:
+    that:
+      - claude_desktop_tag is match('^v[^+]+\\+claude[^ ]+$')
+    fail_msg: >-
+      claude_desktop_tag must match `v<aaddrick>+claude<upstream>` (e.g.
+      v2.0.5+claude1.3883.0); got `{{ claude_desktop_tag }}`. Review the
+      Renovate bump and update the regex_replace below if aaddrick's
+      release naming has changed.
+
+- name: Derive claude-desktop .deb filename version (upstream-aaddrick)
+  tags: claude-desktop
+  ansible.builtin.set_fact:
+    _claude_desktop_filename_version: "{{ claude_desktop_tag | regex_replace('^v(.+)\\+claude(.+)$', '\\2-\\1') }}"
+    _claude_desktop_deb_arch: "{{ {'x86_64': 'amd64', 'amd64': 'amd64', 'aarch64': 'arm64', 'arm64': 'arm64'}[ansible_architecture] }}"
+
+- name: Query currently installed claude-desktop version
+  tags: claude-desktop
+  ansible.builtin.command: dpkg-query -f '${Version}' -W claude-desktop
+  register: claude_desktop_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Download pinned claude-desktop .deb
+  tags: claude-desktop
+  ansible.builtin.get_url:
+    url: "https://github.com/aaddrick/claude-desktop-debian/releases/download/{{ claude_desktop_tag }}/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch }}.deb"
+    dest: "/tmp/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch }}.deb"
+    mode: "0644"
+  when: claude_desktop_installed.stdout != _claude_desktop_filename_version
+
+- name: Install claude-desktop from pinned .deb
+  tags: claude-desktop
+  become: true
+  ansible.builtin.apt:
+    deb: "/tmp/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch }}.deb"
+  when: claude_desktop_installed.stdout != _claude_desktop_filename_version

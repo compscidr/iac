@@ -1,0 +1,13 @@
+---
+# Claude Desktop (community .deb from aaddrick/claude-desktop-debian).
+#
+# Anthropic does not ship a Linux build; aaddrick repackages the Windows
+# Electron bundle into a .deb. Until 2026-04-23 this role consumed their
+# `stable` apt channel, but the published Release file has been
+# intermittently unreachable. We now fetch a pinned `.deb` asset directly
+# from the GitHub release and install it with `apt install ./file.deb`.
+#
+# The tag format aaddrick uses is `v<their-version>+claude<upstream>`, e.g.
+# `v2.0.5+claude1.3883.0`. Renovate tracks this value via a custom manager
+# in `renovate.json`; bumps land as auto-merged PRs.
+claude_desktop_tag: "v2.0.5+claude1.3883.0"
