@@ -54,7 +54,7 @@ resource "digitalocean_droplet" "openclaw" {
   provisioner "local-exec" {
     when       = destroy
     on_failure = continue
-    command    = "tailscale ssh root@openclaw -- tailscale logout 2>&1 || echo 'tailscale logout failed; continuing destroy'"
+    command    = "tailscale ssh root@openclaw -- tailscale logout"
   }
 }
 
