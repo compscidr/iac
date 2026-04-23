@@ -37,6 +37,20 @@ resource "digitalocean_droplet" "projects" {
     on_failure = continue
     command    = "tailscale ssh root@projects -- tailscale logout"
   }
+
+  # Don't let DO provider drift force-replace this droplet. Concretely:
+  #   - public_networking: added in provider 2.84.1 with a hardcoded default,
+  #     triggers replacement on existing state. Upstream fix in PR #1526.
+  #     https://github.com/digitalocean/terraform-provider-digitalocean/issues/1524
+  #   - user_data: cloud-init template edits would otherwise recreate the host
+  #     just because we tweaked a comment. First-boot script only runs once.
+  #   - image: DO occasionally rolls image slug defaults; we don't want a
+  #     provider-side default change to replace a running droplet.
+  # To intentionally recreate, use `terraform apply -replace="digitalocean_droplet.projects"`
+  # or destroy+apply.
+  lifecycle {
+    ignore_changes = [public_networking, user_data, image]
+  }
 }
 
 # ============================================================================
