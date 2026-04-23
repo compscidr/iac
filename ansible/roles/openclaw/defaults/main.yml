@@ -3,19 +3,30 @@
 #
 # The openclaw CLI tool (formerly "clawdbot") manages its own user-level
 # systemd unit during first-run setup (`openclaw gateway` wizard). This
-# role is a thin bootstrap layer: install the npm package, clone the
-# workspace repo, configure Tailscale Serve, and clean up any legacy
-# system-level clawdbot.service unit left behind by older iac. The
-# runtime systemd unit and the openclaw.json config are created by the
-# wizard and are NOT Ansible-managed.
+# role is a thin bootstrap layer: install the `claude` binary (native
+# installer), restore ~/.claude/.credentials.json from 1Password,
+# install the openclaw npm package, clone the workspace repo, configure
+# Tailscale Serve, and clean up any legacy system-level clawdbot.service
+# unit left behind by older iac. The runtime systemd unit and the
+# openclaw.json config are created by the wizard and are NOT
+# Ansible-managed.
 #
-# 1Password note: this role does NOT deploy a service account token to
-# disk. The running openclaw process reads 1Password via its own
-# mechanism (local signed-in account or ~/.clawdbot/credentials/); a
-# root-owned /etc/clawdbot/op.env at mode 0600 can't be read by the
-# user-level service, so there's no point deploying one. Items clawdbot
-# consumes from the `openclaw` vault are documented below for reference:
-#   - "openclaw anthropic" - Anthropic API key
+# 1Password notes:
+#
+# This role deploys ONE secret to disk: `~/.claude/.credentials.json`,
+# populated from the `openclaw claude-code credentials` item in the
+# `openclaw` vault. That file is the OAuth blob the local `claude`
+# binary writes after a `claude login` web flow — ansible restores it
+# on reprovision so the host doesn't have to re-auth interactively.
+# The file is deployed with `force: no`, so a freshly-refreshed token
+# on an already-provisioned host is never clobbered by a stale vault
+# snapshot. See ansible/openclaw.yml for the pre-destroy sync ritual.
+#
+# This role does NOT deploy a service account token to disk. The
+# running openclaw process reads 1Password via its own mechanism
+# (local signed-in account or ~/.clawdbot/credentials/). Items openclaw
+# consumes at runtime from the `openclaw` vault (not managed by this
+# role — openclaw owns them) are documented below for reference:
 #   - "github" - GitHub credentials
 #   - "openai - text embedding for memory search" - OpenAI embeddings
 #   - "discord clawdbot" - Discord bot token
@@ -47,3 +58,9 @@ openclaw_config_dir: "/home/{{ openclaw_user }}/.clawdbot"
 # Tailscale Serve (recommended for web UI auth)
 openclaw_tailscale_serve: true
 openclaw_port: 18789
+
+# Claude Code OAuth blob (contents of ~/.claude/.credentials.json).
+# Populated by the playbook via a 1Password lookup; empty default means
+# the credential-restore task is a no-op if the playbook doesn't wire
+# it up. See ansible/openclaw.yml.
+openclaw_claude_credentials: ""

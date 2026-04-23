@@ -14,10 +14,25 @@
 # Prerequisites:
 #   1. Droplet created via Terraform (with Tailscale via cloud-init)
 #   2. Bootstrap run: ansible-playbook bootstrap.yml --limit openclaw -u root
-#   3. 1Password vault "openclaw" with API keys and service token
+#   3. 1Password vault "openclaw" with API keys and service token, plus
+#      a `openclaw claude-code credentials` item whose `credential` field
+#      holds the verbatim contents of ~/.claude/.credentials.json from
+#      a prior `claude login` on the host. Ansible restores this file on
+#      fresh hosts so Claude Code doesn't need an interactive web login.
 #
 # Usage:
 #   ansible-playbook -i inventory.yml openclaw.yml
+#
+# Pre-destroy sync (R-1) — run this on your workstation BEFORE tearing
+# down the droplet, so the 1P copy of the Claude OAuth blob is current.
+# Claude Code refreshes the access token in place; a stale 1P snapshot
+# may restore an expired/revoked token and force a manual re-login.
+#
+#   ssh openclaw 'cat ~/.claude/.credentials.json' > /tmp/openclaw-creds.json
+#   op item edit "openclaw claude-code credentials" \
+#     --vault openclaw \
+#     "credential[password]=$(cat /tmp/openclaw-creds.json)"
+#   rm /tmp/openclaw-creds.json
 #
 # Post-run: if this is a fresh install, run the `openclaw gateway`
 # wizard on the host once so the tool creates its user-level systemd
@@ -37,6 +52,7 @@
     # openclaw role vars
     openclaw_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
     openclaw_tailscale_serve: true
+    openclaw_claude_credentials: "{{ lookup('community.general.onepassword', 'openclaw claude-code credentials', field='credential', vault='openclaw', account_id=onepassword_account_id) }}"
   roles:
     - fnm       # Install Node.js via fnm
     - openclaw  # Install and configure Openclaw
