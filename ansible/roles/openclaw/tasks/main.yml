@@ -81,7 +81,7 @@
   ansible.builtin.file:
     path: "/home/{{ openclaw_user }}/.claude"
     state: directory
-    mode: "0755"
+    mode: "0700"
   when: openclaw_claude_credentials | length > 0
   tags:
     - openclaw
