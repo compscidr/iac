@@ -29,6 +29,15 @@ resource "digitalocean_droplet" "projects" {
     hostname          = "projects"
   })
 
+  # Deregister from Tailscale before the droplet is destroyed so the
+  # replacement node can claim the "projects" hostname cleanly. See
+  # openclaw.tf for rationale (tailscale ssh vs. remote-exec).
+  provisioner "local-exec" {
+    when       = destroy
+    on_failure = continue
+    command    = "tailscale ssh root@projects -- tailscale logout"
+  }
+
   # Don't let DO provider drift force-replace this droplet. Concretely:
   #   - public_networking: added in provider 2.84.1 with a hardcoded default,
   #     triggers replacement on existing state. Upstream fix in PR #1526.

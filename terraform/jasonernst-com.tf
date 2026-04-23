@@ -23,6 +23,15 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
     hostname          = "www"
   })
 
+  # Deregister from Tailscale before the droplet is destroyed so the
+  # replacement node can claim the "www" hostname cleanly. See
+  # openclaw.tf for rationale (tailscale ssh vs. remote-exec).
+  provisioner "local-exec" {
+    when       = destroy
+    on_failure = continue
+    command    = "tailscale ssh root@www -- tailscale logout"
+  }
+
   # Don't let DO provider drift force-replace this droplet. See projects.tf
   # for the full rationale — short version: public_networking regression in
   # provider 2.84.1, user_data comment edits, and image slug default changes
