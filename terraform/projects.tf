@@ -31,18 +31,11 @@ resource "digitalocean_droplet" "projects" {
 
   # Deregister from Tailscale before the droplet is destroyed so the
   # replacement node can claim the "projects" hostname cleanly. See
-  # openclaw.tf for rationale.
-  provisioner "remote-exec" {
+  # openclaw.tf for rationale (tailscale ssh vs. remote-exec).
+  provisioner "local-exec" {
     when       = destroy
     on_failure = continue
-    inline     = ["tailscale logout || true"]
-    connection {
-      type    = "ssh"
-      user    = "root"
-      host    = self.ipv4_address
-      timeout = "30s"
-      agent   = true
-    }
+    command    = "tailscale ssh root@projects -- tailscale logout 2>&1 || echo 'tailscale logout failed; continuing destroy'"
   }
 }
 

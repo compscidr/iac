@@ -33,25 +33,28 @@ resource "digitalocean_droplet" "openclaw" {
     hostname          = "openclaw"
   })
 
-  # Deregister from Tailscale before the droplet is destroyed, so the
+  # Deregister from Tailscale before the droplet is destroyed so the
   # replacement node can claim the "openclaw" hostname cleanly instead
   # of getting "-1" appended. Without this, Tailscale keeps the offline
   # node record until key expiry (~180 days) and collides with any
   # replacement that registers the same hostname.
   #
-  # Runs over SSH as root using the operator's SSH agent. If the droplet
-  # is already unreachable, `on_failure = continue` lets destroy proceed.
-  provisioner "remote-exec" {
+  # Uses `tailscale ssh` rather than the remote-exec provisioner because:
+  #   1. The DO firewall blocks public port 22; SSH only works over the
+  #      tailnet.
+  #   2. The droplets run with `tailscale up --ssh`, which authenticates
+  #      via tailnet identity, not SSH keys. Terraform's Go SSH client
+  #      can't speak that; the system `tailscale ssh` binary can.
+  #
+  # Requires: the operator running `./tf destroy` must be signed into
+  # the same tailnet with an ACL permitting `ssh` to this host as root.
+  # `on_failure = continue` keeps destroy moving if the droplet is
+  # already unreachable (worst case: fall back to the pre-PR behavior
+  # where the offline record hangs around and the replacement gets -1).
+  provisioner "local-exec" {
     when       = destroy
     on_failure = continue
-    inline     = ["tailscale logout || true"]
-    connection {
-      type    = "ssh"
-      user    = "root"
-      host    = self.ipv4_address
-      timeout = "30s"
-      agent   = true
-    }
+    command    = "tailscale ssh root@openclaw -- tailscale logout 2>&1 || echo 'tailscale logout failed; continuing destroy'"
   }
 }
 
