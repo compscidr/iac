@@ -15,18 +15,22 @@
 #
 # This role deploys ONE secret to disk: `~/.claude/.credentials.json`,
 # populated from the `openclaw claude-code credentials` item in the
-# `openclaw` vault. That file is the OAuth blob the local `claude`
-# binary writes after a `claude login` web flow — ansible restores it
-# on reprovision so the host doesn't have to re-auth interactively.
-# The file is deployed with `force: no`, so a freshly-refreshed token
-# on an already-provisioned host is never clobbered by a stale vault
-# snapshot. See ansible/openclaw.yml for the pre-destroy sync ritual.
+# `Infrastructure` vault (personal account — the default vault for
+# ansible lookups in this repo, set as `onepassword_vault` in
+# group_vars/all.yml; some playbooks override to a per-host vault).
+# That file is the OAuth blob the local `claude` binary writes after
+# a `claude login` web flow — ansible restores it on reprovision so
+# the host doesn't have to re-auth interactively. Deployed with
+# `force: no`, so a freshly-refreshed token on an already-provisioned
+# host is never clobbered by a stale vault snapshot. See
+# ansible/openclaw.yml for the pre-destroy sync ritual.
 #
 # This role does NOT deploy a service account token to disk. The
 # running openclaw process reads 1Password via its own mechanism
 # (local signed-in account or ~/.clawdbot/credentials/). Items openclaw
-# consumes at runtime from the `openclaw` vault (not managed by this
-# role — openclaw owns them) are documented below for reference:
+# consumes at runtime (from a separate `openclaw` vault on a different
+# 1P account — not touched by this role) are documented below for
+# reference:
 #   - "github" - GitHub credentials
 #   - "openai - text embedding for memory search" - OpenAI embeddings
 #   - "discord clawdbot" - Discord bot token
