@@ -123,11 +123,38 @@
     update_cache: true
   when: claude_desktop_legacy_source.changed
 
+# Fail fast when the host arch isn't one of the two aaddrick ships. Any
+# other value would silently pick the wrong asset URL and download a
+# bogus .deb.
+- name: Validate host architecture for claude-desktop .deb
+  tags: claude-desktop
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in ['x86_64', 'amd64', 'aarch64', 'arm64']
+    fail_msg: >-
+      claude-desktop .deb is only published for x86_64/amd64 and
+      aarch64/arm64 hosts by aaddrick; got {{ ansible_architecture }}.
+
+# Fail fast if the pinned tag doesn't match aaddrick's convention
+# (v<their>+claude<upstream>). Renovate could conceivably land a tag
+# with a different shape, at which point the regex below would silently
+# produce a broken download URL; surface the mismatch explicitly.
+- name: Validate claude_desktop_tag format
+  tags: claude-desktop
+  ansible.builtin.assert:
+    that:
+      - claude_desktop_tag is match('^v[^+]+\\+claude[^ ]+$')
+    fail_msg: >-
+      claude_desktop_tag must match `v<aaddrick>+claude<upstream>` (e.g.
+      v2.0.5+claude1.3883.0); got `{{ claude_desktop_tag }}`. Review the
+      Renovate bump and update the regex_replace below if aaddrick's
+      release naming has changed.
+
 - name: Derive claude-desktop .deb filename version (upstream-aaddrick)
   tags: claude-desktop
   ansible.builtin.set_fact:
     _claude_desktop_filename_version: "{{ claude_desktop_tag | regex_replace('^v(.+)\\+claude(.+)$', '\\2-\\1') }}"
-    _claude_desktop_deb_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    _claude_desktop_deb_arch: "{{ {'x86_64': 'amd64', 'amd64': 'amd64', 'aarch64': 'arm64', 'arm64': 'arm64'}[ansible_architecture] }}"
 
 - name: Query currently installed claude-desktop version
   tags: claude-desktop
