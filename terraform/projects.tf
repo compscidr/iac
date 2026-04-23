@@ -37,7 +37,8 @@ resource "digitalocean_droplet" "projects" {
   #     just because we tweaked a comment. First-boot script only runs once.
   #   - image: DO occasionally rolls image slug defaults; we don't want a
   #     provider-side default change to replace a running droplet.
-  # To intentionally recreate, use `terraform taint` or destroy+apply.
+  # To intentionally recreate, use `terraform apply -replace="digitalocean_droplet.projects"`
+  # or destroy+apply.
   lifecycle {
     ignore_changes = [public_networking, user_data, image]
   }
