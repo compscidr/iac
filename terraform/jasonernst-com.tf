@@ -22,6 +22,22 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
     tailscale_authkey = data.onepassword_item.tailscale.credential
     hostname          = "www"
   })
+
+  # Deregister from Tailscale before the droplet is destroyed so the
+  # replacement node can claim the "www" hostname cleanly. See
+  # openclaw.tf for rationale.
+  provisioner "remote-exec" {
+    when       = destroy
+    on_failure = continue
+    inline     = ["tailscale logout || true"]
+    connection {
+      type    = "ssh"
+      user    = "root"
+      host    = self.ipv4_address
+      timeout = "30s"
+      agent   = true
+    }
+  }
 }
 
 resource "digitalocean_domain" "default" {

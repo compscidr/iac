@@ -32,6 +32,27 @@ resource "digitalocean_droplet" "openclaw" {
     tailscale_authkey = data.onepassword_item.tailscale.credential
     hostname          = "openclaw"
   })
+
+  # Deregister from Tailscale before the droplet is destroyed, so the
+  # replacement node can claim the "openclaw" hostname cleanly instead
+  # of getting "-1" appended. Without this, Tailscale keeps the offline
+  # node record until key expiry (~180 days) and collides with any
+  # replacement that registers the same hostname.
+  #
+  # Runs over SSH as root using the operator's SSH agent. If the droplet
+  # is already unreachable, `on_failure = continue` lets destroy proceed.
+  provisioner "remote-exec" {
+    when       = destroy
+    on_failure = continue
+    inline     = ["tailscale logout || true"]
+    connection {
+      type    = "ssh"
+      user    = "root"
+      host    = self.ipv4_address
+      timeout = "30s"
+      agent   = true
+    }
+  }
 }
 
 # Firewall - Tailscale only (no public inbound)
