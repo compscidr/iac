@@ -73,3 +73,31 @@ openclaw_port: 18789
 # the credential-restore task is a no-op if the playbook doesn't wire
 # it up. See ansible/openclaw.yml.
 openclaw_claude_credentials: ""
+
+# PATH used by ansible tasks that invoke the `openclaw` and `node`
+# binaries (both live under fnm's default-alias bin). Ansible's
+# become_user doesn't run a login shell, so PATH is barebones unless
+# we set it explicitly.
+openclaw_path: "/home/{{ openclaw_user }}/.local/share/fnm/aliases/default/bin:/home/{{ openclaw_user }}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+# Runtime secrets / config the role applies via `openclaw` CLI after
+# `openclaw setup` writes the base config. All sourced from 1P by the
+# playbook (see ansible/openclaw.yml). Empty defaults mean the
+# corresponding tasks are skipped — the role is still usable on a
+# host where you only want the binaries deployed.
+openclaw_discord_bot_token: ""
+openclaw_discord_guild_id: ""
+openclaw_brave_api_key: ""
+
+# Plugins to install via `openclaw plugins install clawhub:<id>`.
+# 2026.5.7+ moved Discord and Brave out of the bundled set; channels
+# and tools won't work without them.
+openclaw_plugins:
+  - "@openclaw/discord"
+  - "@openclaw/brave-plugin"
+
+# Tailscale origin allowed to load the Control UI. Used when the role
+# configures `gateway.controlUi.allowedOrigins`. Defaults to the
+# `openclaw.<tailnet>.ts.net` form; override per-host if your tailnet
+# differs.
+openclaw_tailscale_origin: "https://openclaw.tail21090.ts.net"
