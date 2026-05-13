@@ -10,6 +10,10 @@ terraform {
       source  = "1Password/onepassword"
       version = "3.3.1"
     }
+    tailscale = {
+      source  = "tailscale/tailscale"
+      version = "0.21.0"
+    }
   }
 
   # Remote state in DigitalOcean Spaces (S3-compatible)
