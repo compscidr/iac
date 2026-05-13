@@ -338,6 +338,25 @@
     - config
     - brave
 
+# Enable memory-core "dreaming" mode (offline review/consolidation
+# cycle). Bundled plugin, no separate install — just a config flip.
+- name: Set memory-core dreaming.enabled
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set plugins.entries.memory-core.config.dreaming.enabled
+    {{ openclaw_dreaming_enabled | string | lower }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  register: openclaw_dreaming_set
+  changed_when: "'Updated' in (openclaw_dreaming_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - dreaming
+
 # Ensure the user-level openclaw-gateway service is enabled and running.
 # Unit file is written by `openclaw setup` above. Config changes notify
 # the `Restart openclaw-gateway` handler so a re-run only restarts when

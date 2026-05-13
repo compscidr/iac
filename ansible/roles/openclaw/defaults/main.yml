@@ -101,3 +101,10 @@ openclaw_plugins:
 # `openclaw.<tailnet>.ts.net` form; override per-host if your tailnet
 # differs.
 openclaw_tailscale_origin: "https://openclaw.tail21090.ts.net"
+
+# memory-core "dreaming" mode — the bundled memory plugin's offline
+# review/consolidation cycle. Defaults on so fresh provisions match
+# the long-running behaviour we want on this host (kai's identity +
+# memory benefit from it). Sub-fields (frequency, model, timezone,
+# phases) keep the plugin's own defaults.
+openclaw_dreaming_enabled: true
