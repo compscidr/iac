@@ -15,11 +15,15 @@
 #          - username:   <OAuth client ID>
 #          - credential: <OAuth client secret>
 #
-#   3. The first `terraform apply` will import the live ACL into
-#      `tailscale_acl.policy`. `overwrite_existing_content = true`
-#      tells the provider to take over the manually-edited policy
-#      already in the admin console (otherwise the API rejects writes
-#      when there's existing content not written by the same client).
+#   3. The first `terraform apply` will *write* the checked-in
+#      tailscale-acl.hujson over whatever policy currently lives in
+#      the admin console (no import — this is a create with
+#      `overwrite_existing_content = true`, which the API requires
+#      when there's already content not written by the same client).
+#      Make sure the HuJSON in the repo matches the live policy
+#      *before* applying, or use `tofu state import` if you need a
+#      true import. Any console-side drift after this point will be
+#      reverted on the next apply.
 #
 # Day-to-day: edit tailscale-acl.hujson, then `terraform apply`.
 # The provider validates the HuJSON server-side before applying, so a

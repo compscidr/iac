@@ -19,11 +19,13 @@
         // Your member devices - full access everywhere including tagged machines
         {"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
 
-        // Agent (clawdbot) - only Ollama + exo access on ubuntu-beast
+        // Agent (openclaw) - only Ollama + exo access on ubuntu-beast.
+        // Both services are HTTP-over-TCP; explicit `tcp:` prefix
+        // avoids any protocol-default ambiguity in the grants syntax.
         {
             "src": ["tag:agent"],
             "dst": ["100.79.121.111"],
-            "ip":  ["11434", "52415"],
+            "ip":  ["tcp:11434", "tcp:52415"],
         },
     ],
 
