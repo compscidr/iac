@@ -41,11 +41,21 @@ jobs:
         if: steps.versions.outputs.latest != steps.versions.outputs.current && steps.versions.outputs.latest != ''
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # PRs opened via the default GITHUB_TOKEN don't trigger downstream
+          # workflows (GitHub's recursive-CI safeguard), which is why earlier
+          # auto-update PRs sat with zero checks until close+reopen. Using a
+          # repo-scoped PAT in `secrets.WORKFLOW_PAT` makes the PR look like
+          # a normal user action so verify.yml fires automatically. Fall back
+          # to GITHUB_TOKEN so this workflow keeps working before the secret
+          # is configured (PRs just won't auto-trigger CI until then).
+          # To set up: GitHub → Settings → Developer settings → PATs →
+          # generate a fine-grained PAT with read+write on `Contents` and
+          # `Pull requests`, store as repo secret `WORKFLOW_PAT`.
+          token: ${{ secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
           title: "chore(deps): update Slack to ${{ steps.versions.outputs.latest }}"
           body: |
             Updates Slack from ${{ steps.versions.outputs.current }} to ${{ steps.versions.outputs.latest }}.
-            
+
             Source: [Slack Linux Downloads](https://slack.com/downloads/linux)
           branch: auto-update-slack-${{ steps.versions.outputs.latest }}
           commit-message: "chore(deps): update Slack to ${{ steps.versions.outputs.latest }}"
