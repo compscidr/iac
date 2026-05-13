@@ -139,10 +139,12 @@
     - workspace
 
 # Create config directory
-# Path kept as ~/.clawdbot for on-disk backward compatibility. Filename
-# migrated to openclaw.json. The directory accumulates bot state
-# (agents/, memory/, identity/, canvas/, credentials/, etc.) managed by
-# the openclaw runtime — not by Ansible.
+# Openclaw writes openclaw.json plus all accumulated state (agents/,
+# memory/, identity/, canvas/, devices/, flows/, logs/, tasks/, cron/,
+# extensions/, workspace/) inside ~/.openclaw. The wizard creates this
+# dir on first run, but pre-creating it with 0700 mode keeps a fresh
+# host from ever having world-readable state if openclaw is started
+# by some other path before the wizard runs.
 - name: Create openclaw config directory
   become: true
   become_user: "{{ openclaw_user }}"
@@ -155,8 +157,8 @@
     - config
 
 # The systemd unit is created by the openclaw tool itself during
-# `openclaw gateway` first-run setup. Ansible does not manage
-# /etc/systemd/system/openclaw*.service or the user-level
+# `openclaw setup` (or `openclaw onboard`) on first run. Ansible does
+# not manage /etc/systemd/system/openclaw*.service or the user-level
 # ~/.config/systemd/user/openclaw-gateway.service — the tool owns them,
 # including the embedded gateway token env var.
 

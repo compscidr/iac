@@ -37,10 +37,23 @@
 #     "credential[password]=$(cat /tmp/openclaw-creds.json)"
 #   rm /tmp/openclaw-creds.json
 #
-# Post-run: if this is a fresh install, run the `openclaw gateway`
-# wizard on the host once so the tool creates its user-level systemd
-# unit (~/.config/systemd/user/openclaw-gateway.service). Ansible does
-# not manage that unit or the openclaw.json config — the wizard does.
+# Post-run: on a fresh install the openclaw runtime config still has to
+# be set up by hand (known gap, separate from this playbook). Sketch:
+#   ssh openclaw -t openclaw setup
+#   ssh openclaw -t openclaw models auth login \
+#       --provider anthropic --method cli --set-default
+#   ssh openclaw -t openclaw plugins install clawhub:@openclaw/discord
+#   ssh openclaw -t openclaw plugins install clawhub:@openclaw/brave-plugin
+#   ssh openclaw "openclaw channels add --channel discord \
+#       --token \"$(op read 'op://openclaw/discord clawdbot/credential')\""
+#   GUILD=$(op read 'op://openclaw/discord clawdbot/username')
+#   ssh openclaw "openclaw config set channels.discord.guilds \
+#       \"{\\\"$GUILD\\\":{\\\"requireMention\\\":false}}\" --strict-json"
+#   ssh openclaw "openclaw config set gateway.controlUi.allowedOrigins \
+#       '[\"https://openclaw.tail21090.ts.net\"]'"
+#   ssh openclaw -t systemctl --user enable --now openclaw-gateway.service
+# Then open https://openclaw.tail21090.ts.net/#token=<gateway-token> and
+# approve the device pairing request via `openclaw devices approve`.
 
 - name: Deploy Openclaw
   hosts: openclaw
