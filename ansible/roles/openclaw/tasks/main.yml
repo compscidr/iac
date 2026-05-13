@@ -362,11 +362,36 @@
     - config
     - ollama
 
+# Remote exo provider config — exo speaks the OpenAI-completions API
+# at /v1 so we register it under a custom provider id `exo`. openclaw
+# accepts arbitrary provider ids in models.providers; the runtime
+# treats `exo/<model>` fallbacks as OpenAI-compat calls against the
+# configured baseUrl.
+- name: Set Exo provider baseUrl + empty models array
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set models.providers.exo
+    {{ {'baseUrl': openclaw_exo_base_url, 'models': []} | to_json | quote }}
+    --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_exo_base_url | length > 0
+  register: openclaw_exo_set
+  changed_when: "'Updated' in (openclaw_exo_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - exo
+
 # Read current fallback list so we only `add` when the model isn't
 # already present — `openclaw models fallbacks add` would silently
 # duplicate otherwise. Plain text output is parsed via substring match
 # so this is robust against the `--check` path (where the list command
-# is skipped and stdout is empty).
+# is skipped and stdout is empty). Runs whenever either Ollama or Exo
+# fallback is configured.
 - name: Read current model fallbacks
   become: true
   become_user: "{{ openclaw_user }}"
@@ -374,9 +399,9 @@
   environment:
     PATH: "{{ openclaw_path }}"
     HOME: "/home/{{ openclaw_user }}"
-  when:
-    - openclaw_ollama_base_url | length > 0
-    - openclaw_ollama_fallback_model | length > 0
+  when: >-
+    (openclaw_ollama_base_url | length > 0 and openclaw_ollama_fallback_model | length > 0)
+    or (openclaw_exo_base_url | length > 0 and openclaw_exo_fallback_model | length > 0)
   register: openclaw_fallbacks_list
   changed_when: false
   check_mode: false
@@ -384,6 +409,7 @@
     - openclaw
     - config
     - ollama
+    - exo
 
 - name: Add Ollama fallback model
   become: true
@@ -404,6 +430,26 @@
     - openclaw
     - config
     - ollama
+
+- name: Add Exo fallback model
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw models fallbacks add exo/{{ openclaw_exo_fallback_model }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when:
+    - openclaw_exo_base_url | length > 0
+    - openclaw_exo_fallback_model | length > 0
+    - ("exo/" + openclaw_exo_fallback_model)
+      not in (openclaw_fallbacks_list.stdout | default(''))
+  changed_when: true
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - exo
 
 # Enable memory-core "dreaming" mode (offline review/consolidation
 # cycle). Bundled plugin, no separate install — just a config flip.
