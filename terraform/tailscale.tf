@@ -4,7 +4,9 @@
 #
 #   1. Create an OAuth client at
 #      https://login.tailscale.com/admin/settings/oauth.
-#      Required scope: `acl` (read+write). Other scopes can stay off.
+#      Required scope: "Policy File" → Write. Other scopes can stay
+#      off. (Tailscale's UI used to call this scope `acl`; it's now
+#      `policy_file:write` in the OAuth spec.)
 #
 #   2. Store the credentials in 1Password:
 #        Vault:  Infrastructure
@@ -34,7 +36,11 @@ provider "tailscale" {
   # "-" means "the tailnet associated with the OAuth client" — works
   # for personal accounts without hardcoding the email/org name.
   tailnet = "-"
-  scopes  = ["acl"]
+  # `scopes` intentionally omitted so the provider just requests the
+  # scopes the OAuth client was generated with. Pinning to a specific
+  # string (`acl` vs `policy_file:write`) couples this config to the
+  # Tailscale OAuth scope-naming churn — the client itself already
+  # constrains what's grantable.
 }
 
 resource "tailscale_acl" "policy" {
