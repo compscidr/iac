@@ -11,17 +11,19 @@
 #
 # After that, `openclaw.tail21090.ts.net` resolves via MagicDNS.
 #
-# Prerequisites:
-#   1. Droplet created via Terraform (with Tailscale via cloud-init)
+# Prerequisites (all 1P items on the personal account ernstjason1@gmail.com):
+#   1. Droplet created via Terraform (with Tailscale via cloud-init).
 #   2. Bootstrap run: ansible-playbook bootstrap.yml --limit openclaw -u root
-#   3. 1Password `Infrastructure` vault (personal account) contains an
-#      `openclaw claude-code credentials` item whose `credential` field
-#      holds the verbatim contents of ~/.claude/.credentials.json from
-#      a prior `claude login` on the host. Ansible restores this file on
-#      fresh hosts so Claude Code doesn't need an interactive web login.
-#      Other openclaw-consumed secrets (github, openai, discord, mail,
-#      openclaw-sa-token) live in a separate openclaw vault on a
-#      different account and are not touched by this playbook.
+#   3. `Infrastructure` vault: `openclaw claude-code credentials` —
+#      `credential` field holds the verbatim contents of
+#      ~/.claude/.credentials.json from a prior `claude login` on the
+#      host. Restored on fresh hosts so Claude Code doesn't need an
+#      interactive web login.
+#   4. `openclaw` vault (separate vault on the same account):
+#        - `discord clawdbot` — `credential`=bot token, `username`=guild ID
+#        - `Brave API` — `credential`=API key
+#      These are pulled into the openclaw config via `openclaw channels
+#      add` / `openclaw config set` by the role.
 #
 # Usage:
 #   ansible-playbook -i inventory.yml openclaw.yml
@@ -37,17 +39,21 @@
 #     "credential[password]=$(cat /tmp/openclaw-creds.json)"
 #   rm /tmp/openclaw-creds.json
 #
-# Post-run: if this is a fresh install, run the `openclaw gateway`
-# wizard on the host once so the tool creates its user-level systemd
-# unit (~/.config/systemd/user/openclaw-gateway.service). Ansible does
-# not manage that unit or the openclaw.json config — the wizard does.
+# Post-run on a fresh install: the playbook brings the gateway all the
+# way up (config, auth profile, plugins, channels, brave key, systemd
+# unit). The only remaining manual step is one-time Control UI device
+# pairing — open https://openclaw.tail21090.ts.net/#token=<gateway-token>
+# in a browser (get the token via `ssh openclaw openclaw dashboard
+# --no-open`), then on the host run `openclaw devices approve --latest`
+# to approve the pairing request.
 
 - name: Deploy Openclaw
   hosts: openclaw
   vars_files:
     - vars/user.yml
   pre_tasks:
-    - ansible.builtin.include_tasks: tailscale_check.yml
+    - name: Verify Tailscale reachability to openclaw host
+      ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     # fnm role vars
     fnm_node_version: "22"
@@ -55,7 +61,35 @@
     # openclaw role vars
     openclaw_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
     openclaw_tailscale_serve: true
-    openclaw_claude_credentials: "{{ lookup('community.general.onepassword', 'openclaw claude-code credentials', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    # Claude OAuth blob — Infrastructure vault (default `onepassword_vault`).
+    openclaw_claude_credentials: >-
+      {{ lookup('community.general.onepassword',
+                'openclaw claude-code credentials',
+                field='credential',
+                vault=onepassword_vault,
+                account_id=onepassword_account_id) }}
+    # Runtime secrets — `openclaw` vault on the same personal account
+    # (separate vault, NOT the Infrastructure default). Field mappings:
+    #   discord clawdbot: credential=bot token, username=Discord guild ID
+    #   Brave API:        credential=API key
+    openclaw_discord_bot_token: >-
+      {{ lookup('community.general.onepassword',
+                'discord clawdbot',
+                field='credential',
+                vault='openclaw',
+                account_id=onepassword_account_id) }}
+    openclaw_discord_guild_id: >-
+      {{ lookup('community.general.onepassword',
+                'discord clawdbot',
+                field='username',
+                vault='openclaw',
+                account_id=onepassword_account_id) }}
+    openclaw_brave_api_key: >-
+      {{ lookup('community.general.onepassword',
+                'Brave API',
+                field='credential',
+                vault='openclaw',
+                account_id=onepassword_account_id) }}
   roles:
     - fnm       # Install Node.js via fnm
     - openclaw  # Install and configure Openclaw

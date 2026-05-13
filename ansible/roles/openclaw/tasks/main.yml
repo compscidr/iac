@@ -124,25 +124,11 @@
     - openclaw
     - install
 
-# Clone workspace repository
-- name: Clone workspace repository
-  become: true
-  become_user: "{{ openclaw_user }}"
-  ansible.builtin.git:
-    repo: "{{ openclaw_workspace_repo }}"
-    dest: "{{ openclaw_workspace_path }}"
-    version: main
-    accept_hostkey: true
-  when: openclaw_workspace_repo | length > 0
-  tags:
-    - openclaw
-    - workspace
-
-# Create config directory
-# Path kept as ~/.clawdbot for on-disk backward compatibility. Filename
-# migrated to openclaw.json. The directory accumulates bot state
-# (agents/, memory/, identity/, canvas/, credentials/, etc.) managed by
-# the openclaw runtime — not by Ansible.
+# Create config directory FIRST so the workspace clone below lands
+# inside a 0700-locked parent. Openclaw writes openclaw.json plus all
+# accumulated state (agents/, memory/, identity/, canvas/, devices/,
+# flows/, logs/, tasks/, cron/, extensions/, workspace/) here. Doctor
+# would otherwise warn about 0755 perms on a fresh host.
 - name: Create openclaw config directory
   become: true
   become_user: "{{ openclaw_user }}"
@@ -154,11 +140,352 @@
     - openclaw
     - config
 
-# The systemd unit is created by the openclaw tool itself during
-# `openclaw gateway` first-run setup. Ansible does not manage
-# /etc/systemd/system/openclaw*.service or the user-level
-# ~/.config/systemd/user/openclaw-gateway.service — the tool owns them,
-# including the embedded gateway token env var.
+# Clone the workspace repo (kai-workspace) into the openclaw state
+# dir. `update: false` makes this an initial-clone-only task — once
+# present, openclaw treats the workspace as runtime state and writes
+# to it continuously (memory updates, heartbeat-state.json, etc.), so
+# a re-run must not try to fast-forward main and clobber local changes.
+- name: Clone workspace repository
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.git:
+    repo: "{{ openclaw_workspace_repo }}"
+    dest: "{{ openclaw_workspace_path }}"
+    version: main
+    accept_hostkey: true
+    update: false
+  when: openclaw_workspace_repo | length > 0
+  tags:
+    - openclaw
+    - workspace
+
+# The user-level systemd unit at ~/.config/systemd/user/openclaw-gateway.service
+# is created by `openclaw setup` below. The unit file itself (including
+# its embedded gateway token env var) is NOT Ansible-managed — the tool
+# owns it. The role just runs setup, applies runtime config via the
+# `openclaw` CLI, and enables+starts the unit.
+
+# Enable user-systemd linger so the gateway keeps running when nobody is
+# logged in. Without this the user-level systemd manager exits on logout
+# and the openclaw service stops with it.
+- name: Enable systemd linger for openclaw user
+  become: true
+  ansible.builtin.command: loginctl enable-linger {{ openclaw_user }}
+  args:
+    creates: "/var/lib/systemd/linger/{{ openclaw_user }}"
+  tags:
+    - openclaw
+    - systemd
+
+# `openclaw setup` writes the base ~/.openclaw/openclaw.json plus the
+# user-systemd unit. Idempotent via `creates:` — re-runs of the role
+# won't reset accumulated config (channels, plugins, etc.) on hosts
+# that have been customized further by hand or by later tasks below.
+- name: Initialize openclaw config (`openclaw setup`)
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: openclaw setup
+  args:
+    creates: "{{ openclaw_config_dir }}/openclaw.json"
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  tags:
+    - openclaw
+    - config
+
+# Bind the openclaw `anthropic:claude-cli` auth profile to the local
+# `claude` binary so the agent can do Claude-backed inference. Without
+# this, openclaw has no model provider wired up and every turn fails.
+# The CLI is idempotent — re-running it just re-asserts the same
+# profile — so we don't need an explicit pre-check.
+- name: Bind anthropic:claude-cli auth profile
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw models auth login --provider anthropic --method cli --set-default
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  register: openclaw_auth_login
+  changed_when: false
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - auth
+
+# Install the external channel/tool plugins. As of openclaw 2026.5.7
+# Discord and Brave moved out of the bundled set and have to be pulled
+# from ClawHub. `creates:` on the extension dir keeps this idempotent.
+- name: Install required openclaw plugins
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: "openclaw plugins install clawhub:{{ item }}"
+  args:
+    creates: "{{ openclaw_config_dir }}/extensions/{{ item | regex_replace('^@openclaw/', '') | regex_replace('-plugin$', '') }}"
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  loop: "{{ openclaw_plugins }}"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - plugins
+
+# Point openclaw at the kai-workspace clone so the boot-md hook can
+# inject IDENTITY.md / MEMORY.md / AGENTS.md at session start. Without
+# this the agent wakes up against the empty default workspace
+# (~/.openclaw/workspace would still get auto-created but with no
+# persona). `openclaw config set` is idempotent for matching values.
+- name: Set agents.defaults.workspace
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: "openclaw config set agents.defaults.workspace {{ openclaw_workspace_path }}"
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  register: openclaw_set_workspace
+  changed_when: "'Updated' in (openclaw_set_workspace.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+
+# Allow the Tailscale-served origin to load the Control UI. Required
+# because openclaw refuses cross-origin WebSocket connects by default,
+# and Tailscale Serve fronts the gateway at https://<host>.<tailnet>.ts.net.
+- name: Set gateway.controlUi.allowedOrigins
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set gateway.controlUi.allowedOrigins
+    {{ [openclaw_tailscale_origin] | to_json | quote }} --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  register: openclaw_set_origins
+  changed_when: "'Updated' in (openclaw_set_origins.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+
+# Discord channel: add the bot account with token from 1P. The CLI
+# overwrites an existing account with the same name (default), so
+# re-running matches state to vault. Skipped if the playbook didn't
+# wire a token through.
+- name: Add Discord channel account
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw channels add --channel discord --token {{ openclaw_discord_bot_token | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_discord_bot_token | length > 0
+  register: openclaw_discord_add
+  changed_when: "'Added Discord account' in (openclaw_discord_add.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  no_log: true
+  tags:
+    - openclaw
+    - config
+    - discord
+
+# Discord guild config: requireMention=false so the bot replies to plain
+# channel messages (the 2026.5.7 plugin requires an explicit guild ID;
+# `"*"` wildcard keys are accepted by the schema but no-op at runtime).
+- name: Set Discord guild requireMention
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set channels.discord.guilds
+    {{ {openclaw_discord_guild_id: {'requireMention': false}} | to_json | quote }}
+    --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_discord_guild_id | length > 0
+  register: openclaw_discord_guild_set
+  changed_when: "'Updated' in (openclaw_discord_guild_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - discord
+
+# Brave web search API key for the brave plugin's webSearch capability.
+# Stored plaintext in openclaw.json today — fine because the file is
+# 0700 and only readable by the openclaw user. Could be migrated to a
+# SecretRef later.
+- name: Set Brave plugin apiKey
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set plugins.entries.brave.config.webSearch.apiKey
+    {{ openclaw_brave_api_key | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_brave_api_key | length > 0
+  register: openclaw_brave_set
+  changed_when: "'Updated' in (openclaw_brave_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  no_log: true
+  tags:
+    - openclaw
+    - config
+    - brave
+
+# Remote Ollama provider config — points openclaw's ollama provider at
+# the local Ollama server (ubuntu-beast over Tailscale by default).
+# Schema requires `models` to exist as an array; we leave it empty so
+# the plugin discovers models from the server. Skipped when the
+# baseUrl var is empty.
+- name: Set Ollama provider baseUrl + empty models array
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set models.providers.ollama
+    {{ {'baseUrl': openclaw_ollama_base_url, 'models': []} | to_json | quote }}
+    --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_ollama_base_url | length > 0
+  register: openclaw_ollama_set
+  changed_when: "'Updated' in (openclaw_ollama_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - ollama
+
+# Remote exo provider config — exo speaks the OpenAI-completions API
+# at /v1 so we register it under a custom provider id `exo`. openclaw
+# accepts arbitrary provider ids in models.providers; the runtime
+# treats `exo/<model>` fallbacks as OpenAI-compat calls against the
+# configured baseUrl.
+- name: Set Exo provider baseUrl + empty models array
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set models.providers.exo
+    {{ {'baseUrl': openclaw_exo_base_url, 'models': []} | to_json | quote }}
+    --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_exo_base_url | length > 0
+  register: openclaw_exo_set
+  changed_when: "'Updated' in (openclaw_exo_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - exo
+
+# Read current fallback list so we only `add` when the model isn't
+# already present — `openclaw models fallbacks add` would silently
+# duplicate otherwise. Plain text output is parsed via substring match
+# so this is robust against the `--check` path (where the list command
+# is skipped and stdout is empty). Runs whenever either Ollama or Exo
+# fallback is configured.
+- name: Read current model fallbacks
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: openclaw models fallbacks list --plain
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: >-
+    (openclaw_ollama_base_url | length > 0 and openclaw_ollama_fallback_model | length > 0)
+    or (openclaw_exo_base_url | length > 0 and openclaw_exo_fallback_model | length > 0)
+  register: openclaw_fallbacks_list
+  changed_when: false
+  check_mode: false
+  tags:
+    - openclaw
+    - config
+    - ollama
+    - exo
+
+- name: Add Ollama fallback model
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw models fallbacks add ollama/{{ openclaw_ollama_fallback_model }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when:
+    - openclaw_ollama_base_url | length > 0
+    - openclaw_ollama_fallback_model | length > 0
+    - ("ollama/" + openclaw_ollama_fallback_model)
+      not in (openclaw_fallbacks_list.stdout | default(''))
+  changed_when: true
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - ollama
+
+- name: Add Exo fallback model
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw models fallbacks add exo/{{ openclaw_exo_fallback_model }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when:
+    - openclaw_exo_base_url | length > 0
+    - openclaw_exo_fallback_model | length > 0
+    - ("exo/" + openclaw_exo_fallback_model)
+      not in (openclaw_fallbacks_list.stdout | default(''))
+  changed_when: true
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - exo
+
+# Enable memory-core "dreaming" mode (offline review/consolidation
+# cycle). Bundled plugin, no separate install — just a config flip.
+- name: Set memory-core dreaming.enabled
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set plugins.entries.memory-core.config.dreaming.enabled
+    {{ openclaw_dreaming_enabled | string | lower }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  register: openclaw_dreaming_set
+  changed_when: "'Updated' in (openclaw_dreaming_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - dreaming
+
+# Ensure the user-level openclaw-gateway service is enabled and running.
+# Unit file is written by `openclaw setup` above. Config changes notify
+# the `Restart openclaw-gateway` handler so a re-run only restarts when
+# something actually changed.
+- name: Enable and start openclaw-gateway.service (user)
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.systemd_service:
+    name: openclaw-gateway.service
+    scope: user
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags:
+    - openclaw
+    - systemd
 
 # Configure Tailscale Serve for HTTPS + auth
 - name: Configure Tailscale Serve

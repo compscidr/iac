@@ -1,0 +1,9 @@
+---
+- name: Restart openclaw-gateway
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.systemd_service:
+    name: openclaw-gateway.service
+    scope: user
+    state: restarted
+    daemon_reload: true
