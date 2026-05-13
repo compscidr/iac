@@ -108,3 +108,12 @@ openclaw_tailscale_origin: "https://openclaw.tail21090.ts.net"
 # memory benefit from it). Sub-fields (frequency, model, timezone,
 # phases) keep the plugin's own defaults.
 openclaw_dreaming_enabled: true
+
+# Remote Ollama as a backup model provider behind Claude. Empty
+# baseUrl disables the ollama-provider tasks entirely. Default points
+# at the local Ollama server on ubuntu-beast over Tailscale (no auth
+# needed — ollama is anonymous). The fallback model gets appended to
+# `models.fallbacks` so the agent falls back here if claude-cli is
+# unreachable or revoked.
+openclaw_ollama_base_url: "http://ubuntu-beast.tail21090.ts.net:11434"
+openclaw_ollama_fallback_model: "qwen2.5:14b-32k"

@@ -338,6 +338,73 @@
     - config
     - brave
 
+# Remote Ollama provider config — points openclaw's ollama provider at
+# the local Ollama server (ubuntu-beast over Tailscale by default).
+# Schema requires `models` to exist as an array; we leave it empty so
+# the plugin discovers models from the server. Skipped when the
+# baseUrl var is empty.
+- name: Set Ollama provider baseUrl + empty models array
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set models.providers.ollama
+    {{ {'baseUrl': openclaw_ollama_base_url, 'models': []} | to_json | quote }}
+    --strict-json
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_ollama_base_url | length > 0
+  register: openclaw_ollama_set
+  changed_when: "'Updated' in (openclaw_ollama_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - ollama
+
+# Read current fallback list so we only `add` when the model isn't
+# already present — `openclaw models fallbacks add` would silently
+# duplicate otherwise. Plain text output is parsed via substring match
+# so this is robust against the `--check` path (where the list command
+# is skipped and stdout is empty).
+- name: Read current model fallbacks
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: openclaw models fallbacks list --plain
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when:
+    - openclaw_ollama_base_url | length > 0
+    - openclaw_ollama_fallback_model | length > 0
+  register: openclaw_fallbacks_list
+  changed_when: false
+  check_mode: false
+  tags:
+    - openclaw
+    - config
+    - ollama
+
+- name: Add Ollama fallback model
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw models fallbacks add ollama/{{ openclaw_ollama_fallback_model }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when:
+    - openclaw_ollama_base_url | length > 0
+    - openclaw_ollama_fallback_model | length > 0
+    - ("ollama/" + openclaw_ollama_fallback_model)
+      not in (openclaw_fallbacks_list.stdout | default(''))
+  changed_when: true
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - ollama
+
 # Enable memory-core "dreaming" mode (offline review/consolidation
 # cycle). Bundled plugin, no separate install — just a config flip.
 - name: Set memory-core dreaming.enabled
