@@ -294,6 +294,27 @@
     dest: /etc/environment.d/90-aws.conf
     mode: "644"
 
+- name: Add google cloud sdk repository
+  become: true
+  tags: gcloud
+  ansible.builtin.deb822_repository:
+    name: google-cloud-sdk
+    state: present
+    types: [deb]
+    uris: "https://packages.cloud.google.com/apt"
+    suites: cloud-sdk
+    components: [main]
+    signed_by: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+    enabled: true
+
+- name: Install google cloud sdk
+  become: true
+  tags: gcloud
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - google-cloud-cli
+
 - name: Add hashicorp repository
   become: true
   tags: hashicorp
