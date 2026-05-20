@@ -60,6 +60,7 @@
     name:
       - docker.io
       - docker-compose-v2
+      - python3-docker        # Docker SDK for Python, required by community.docker.docker_container
     state: present
     update_cache: true
   when:
