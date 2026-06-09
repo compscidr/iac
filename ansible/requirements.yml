@@ -14,7 +14,7 @@ roles:
   - name: webarchitect609.jet_brains_toolbox
     version: "3.0.0"
   - name: geerlingguy.php
-    version: "6.0.0"
+    version: "6.1.0"
   - name: compscidr.lapce
     version: "0.0.4"
   - name: luizgavalda.gnome_extensions
