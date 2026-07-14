@@ -27,8 +27,8 @@
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: '644'
-    owner: root
-    group: root
+    owner: '1000'
+    group: '1000'
   loop:
     - src: files/oxide.config.json
       dest: /etc/rust/server/weekly/oxide/oxide.config.json
@@ -68,8 +68,8 @@
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: '644'
-    owner: root
-    group: root
+    owner: '1000'
+    group: '1000'
   loop:
     - src: files/oxide.config.json
       dest: /etc/rust/server/monthly/oxide/oxide.config.json
