@@ -42,6 +42,7 @@ common_cli_tools_ubuntu:
   - nvme-cli # get temperature / stats on nmves
   - powerline # prompt and statusline utility
   - screen # terminal multiplexer
+  - shellcheck # static analysis linter for shell scripts
   - stow # use this to manage dotfiles
   - tmux # terminal multiplexer
   - unzip # zip files
@@ -69,6 +70,7 @@ common_cli_tools_macos:
   # nvme-cli - Linux-specific, use smartmontools instead if needed
   - powerline-go # prompt and statusline utility
   - screen # terminal multiplexer
+  - shellcheck # static analysis linter for shell scripts
   - stow # use this to manage dotfiles
   - tmux # terminal multiplexer
   # unzip - built-in on macOS
