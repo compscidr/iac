@@ -21,6 +21,8 @@
     rust_gameserver_wipe: "weekly"
     rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
+    # Self-hosted banner (collection default points at imgbox, which went down)
+    rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
 
 - name: Copy oxide plugins
   tags: rust-weekly
@@ -63,6 +65,8 @@
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
     rust_gameserver_wipe_day_of_week: 3
+    # Self-hosted banner (collection default points at imgbox, which went down)
+    rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
 
 - name: Copy oxide plugins
   tags: rust-monthly
