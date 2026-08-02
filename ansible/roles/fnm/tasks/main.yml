@@ -41,13 +41,17 @@
     - fnm
     - node
 
+# Uses the vendor's official install script rather than get_url/uri, since the
+# script itself handles the download, extraction, and directory layout.
 - name: Install fnm via install script (Linux)
   become: true
   become_user: "{{ username }}"
-  ansible.builtin.shell: |
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
     curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
   args:
     creates: "/home/{{ username }}/.local/share/fnm/fnm"
+    executable: /bin/bash
   when:
     - ansible_system == "Linux"
     - "'not found' in fnm_check.stdout"
@@ -80,6 +84,7 @@
         eval "$(fnm env --use-on-cd --shell bash)"
       fi
     create: true
+    mode: '0644'
   when:
     - ansible_system == "Linux"
     - fnm_configure_shell | default(true)
@@ -101,6 +106,7 @@
         eval "$(fnm env --use-on-cd --shell zsh)"
       fi
     create: true
+    mode: '0644'
   when:
     - ansible_system == "Linux"
     - fnm_configure_shell | default(true)
@@ -116,6 +122,7 @@
       # fnm (Fast Node Manager) - installed via Homebrew
       eval "$(fnm env --use-on-cd --shell zsh)"
     create: true
+    mode: '0644'
   when:
     - ansible_os_family == "Darwin"
     - fnm_configure_shell | default(true)
@@ -127,8 +134,11 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.shell: |
+    set -o pipefail
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     fnm list 2>/dev/null | grep -q "{{ fnm_node_version }}" && echo "installed" || echo "not installed"
+  args:
+    executable: /bin/bash
   register: fnm_node_version_check
   changed_when: false
   tags:
@@ -142,6 +152,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     fnm install {{ fnm_node_version }}
+  changed_when: true
   when: "'not installed' in fnm_node_version_check.stdout"
   tags:
     - fnm

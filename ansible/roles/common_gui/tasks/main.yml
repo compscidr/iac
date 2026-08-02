@@ -276,6 +276,7 @@
   tags: zoom
   become: true
   ansible.builtin.command: installer -pkg /tmp/Zoom.pkg -target /
+  changed_when: true
   when:
     - ansible_os_family == "Darwin"
     - not common_gui_zoom_check.stat.exists

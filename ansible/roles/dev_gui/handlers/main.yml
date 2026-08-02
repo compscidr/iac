@@ -1,0 +1,5 @@
+---
+- name: Refresh apt cache after removing legacy claude-desktop source
+  become: true
+  ansible.builtin.apt:
+    update_cache: true

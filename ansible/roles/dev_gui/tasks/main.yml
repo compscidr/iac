@@ -114,14 +114,7 @@
   ansible.builtin.file:
     path: /etc/apt/sources.list.d/claude-desktop.sources
     state: absent
-  register: dev_gui_claude_desktop_legacy_source
-
-- name: Refresh apt cache after removing legacy claude-desktop source
-  tags: claude-desktop
-  become: true
-  ansible.builtin.apt:
-    update_cache: true
-  when: dev_gui_claude_desktop_legacy_source.changed
+  notify: Refresh apt cache after removing legacy claude-desktop source
 
 # Fail fast when the host arch isn't one of the two aaddrick ships. Any
 # other value would silently pick the wrong asset URL and download a

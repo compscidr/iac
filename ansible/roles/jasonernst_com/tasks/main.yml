@@ -145,6 +145,7 @@
     remote_src: true
     owner: root
     group: root
+    mode: preserve
 
 - name: Copy .env to prod host
   tags: website

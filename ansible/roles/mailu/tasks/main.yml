@@ -115,12 +115,14 @@
   become: true
   ansible.builtin.shell:
     cmd: |
+      set -o pipefail
       echo 'domain:
         - name: {{ item.item.domain }}
           dkim_key: -generate-
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
+    executable: /bin/bash
   loop: "{{ mailu_additional_dkim_stat.results | default([]) }}"
   when: not item.stat.exists
   register: mailu_domain_result_new
@@ -131,11 +133,13 @@
   become: true
   ansible.builtin.shell:
     cmd: |
+      set -o pipefail
       echo 'domain:
         - name: {{ item.item.domain }}
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
+    executable: /bin/bash
   loop: "{{ mailu_additional_dkim_stat.results | default([]) }}"
   when: item.stat.exists
   register: mailu_domain_result_existing

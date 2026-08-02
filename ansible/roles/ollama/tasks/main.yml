@@ -89,9 +89,11 @@
 - name: Add NVIDIA Container Toolkit GPG key to keyring
   become: true
   ansible.builtin.shell: |
+    set -o pipefail
     cat /tmp/nvidia-container-toolkit.gpg.key | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
   args:
     creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    executable: /bin/bash
   when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   tags:
     - ollama

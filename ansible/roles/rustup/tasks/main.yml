@@ -28,13 +28,17 @@
     - rustup
     - rust
 
+# Uses the vendor's official install script rather than get_url/uri, since
+# rustup-init handles toolchain selection and platform detection itself.
 - name: Install rustup (Linux)
   become: true
   become_user: "{{ username }}"
-  ansible.builtin.shell: |
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
   args:
     creates: "/home/{{ username }}/.cargo/bin/rustup"
+    executable: /bin/bash
   when:
     - ansible_system == "Linux"
     - "'not found' in rustup_check.stdout"
@@ -78,6 +82,7 @@
         . "$HOME/.cargo/env"
       fi
     create: true
+    mode: '0644'
   when:
     - ansible_system == "Linux"
     - rustup_configure_shell | default(true)
@@ -97,6 +102,7 @@
         . "$HOME/.cargo/env"
       fi
     create: true
+    mode: '0644'
   when:
     - ansible_system == "Linux"
     - rustup_configure_shell | default(true)
@@ -114,6 +120,7 @@
         . "$HOME/.cargo/env"
       fi
     create: true
+    mode: '0644'
   when:
     - ansible_os_family == "Darwin"
     - rustup_configure_shell | default(true)

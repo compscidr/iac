@@ -44,13 +44,17 @@
 # Note: This is intentionally idempotent - the 'creates' argument prevents
 # re-installation on servers where Tailscale is already installed via cloud-init.
 # This allows the same role to handle both server and workstation scenarios.
+# Uses the vendor's official install script rather than get_url/uri, since the
+# script itself handles distro detection and repo setup.
 - name: Install Tailscale
   become: true
   tags: [tailscale]
-  ansible.builtin.shell: |
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
     curl -fsSL https://tailscale.com/install.sh | sh
   args:
     creates: /usr/bin/tailscale
+    executable: /bin/bash
 
 - name: Connect to Tailscale
   become: true
@@ -246,7 +250,8 @@
 - name: Check if NetworkManager is installed and active (Ubuntu/Debian)
   become: true
   tags: network-tools
-  ansible.builtin.command: systemctl is-active NetworkManager
+  # Read-only state check; service_facts refactor out of scope here.
+  ansible.builtin.command: systemctl is-active NetworkManager  # noqa: command-instead-of-module
   register: common_cli_networkmanager_check
   failed_when: false
   changed_when: false
@@ -367,7 +372,8 @@
 - name: Check if systemd is running (Ubuntu/Debian headless)
   become: true
   tags: network-tools
-  ansible.builtin.command: systemctl is-system-running
+  # Read-only state check; service_facts refactor out of scope here.
+  ansible.builtin.command: systemctl is-system-running  # noqa: command-instead-of-module
   register: common_cli_systemd_running
   failed_when: false
   changed_when: false
@@ -492,7 +498,10 @@
   become: true
   tags: network-tools
   ansible.builtin.shell: |
+    set -o pipefail
     wpa_passphrase "{{ common_cli_wifi_ssid }}" "{{ common_cli_wifi_passphrase }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
+  args:
+    executable: /bin/bash
   register: common_cli_wifi_psk_hash
   changed_when: false
   no_log: true
@@ -616,6 +625,7 @@
   ansible.builtin.command: /opt/homebrew/bin/colima start --cpu 2 --memory 4
   environment:
     PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
+  changed_when: true
   when:
     - ansible_os_family == "Darwin"
     - common_cli_colima_status.rc != 0
