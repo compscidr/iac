@@ -22,7 +22,7 @@
   become_user: "{{ username }}"
   ansible.builtin.stat:
     path: "~/.config/1Password/settings/settings.json"
-  register: onepassword_settings
+  register: common_gui_onepassword_settings
   when: ansible_os_family == "Debian"
 
 - name: Enable 1Password CLI integration (Ubuntu/Debian)
@@ -39,9 +39,9 @@
     fi
   when:
     - ansible_os_family == "Debian"
-    - onepassword_settings.stat.exists
-  register: cli_integration_result
-  changed_when: '"1Password CLI integration enabled" in cli_integration_result.stdout'
+    - common_gui_onepassword_settings.stat.exists
+  register: common_gui_cli_integration_result
+  changed_when: '"1Password CLI integration enabled" in common_gui_cli_integration_result.stdout'
 
 - name: Install discord apt repo (Ubuntu/Debian)
   tags: discord
@@ -149,7 +149,7 @@
       become: true
       tags: spotify
   when: ansible_os_family == "Debian"
-  register: spotify_role_result
+  register: common_gui_spotify_role_result
 
 - name: Cleanup spotify duplicate apt (Ubuntu/Debian)
   become: true
@@ -159,7 +159,7 @@
     state: absent
   when:
     - ansible_os_family == "Debian"
-    - spotify_role_result is changed
+    - common_gui_spotify_role_result is changed
 
 - name: Install spotify (macOS)
   tags: spotify
@@ -196,7 +196,7 @@
   become: true
   ansible.builtin.stat:
     path: /usr/bin/keybase
-  register: keybase_installed
+  register: common_gui_keybase_installed
   when: ansible_os_family == "Debian"
 
 - name: Install keybase (Ubuntu/Debian)
@@ -207,7 +207,7 @@
       become: true
   when:
     - ansible_os_family == "Debian"
-    - not keybase_installed.stat.exists
+    - not common_gui_keybase_installed.stat.exists
   tags: keybase
 
 - name: Install keybase (macOS)
@@ -259,7 +259,7 @@
   tags: zoom
   ansible.builtin.stat:
     path: /Applications/zoom.us.app
-  register: zoom_check
+  register: common_gui_zoom_check
   when: ansible_os_family == "Darwin"
 
 - name: Download Zoom installer (macOS)
@@ -270,7 +270,7 @@
     mode: "0644"
   when:
     - ansible_os_family == "Darwin"
-    - not zoom_check.stat.exists
+    - not common_gui_zoom_check.stat.exists
 
 - name: Install Zoom from package (macOS)
   tags: zoom
@@ -278,7 +278,7 @@
   ansible.builtin.command: installer -pkg /tmp/Zoom.pkg -target /
   when:
     - ansible_os_family == "Darwin"
-    - not zoom_check.stat.exists
+    - not common_gui_zoom_check.stat.exists
 
 - name: Clean up Zoom installer (macOS)
   tags: zoom

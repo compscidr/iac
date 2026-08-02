@@ -1,9 +1,12 @@
 ---
-php_memory_limit: "128M"
-php_max_execution_time: "90"
-php_upload_max_filesize: "256M"
-php_default_version_debian: "8.3"
-php_packages:
+# The following php_* vars are the documented interface of the external
+# geerlingguy.php role (imported via import_role below) and configure it
+# directly, so they intentionally do not carry a dev_ prefix.
+php_memory_limit: "128M" # noqa: var-naming[no-role-prefix]
+php_max_execution_time: "90" # noqa: var-naming[no-role-prefix]
+php_upload_max_filesize: "256M" # noqa: var-naming[no-role-prefix]
+php_default_version_debian: "8.3" # noqa: var-naming[no-role-prefix]
+php_packages: # noqa: var-naming[no-role-prefix]
   - "php{{ php_default_version_debian }}"
   - "php{{ php_default_version_debian }}-cli"
   - "php{{ php_default_version_debian }}-common"

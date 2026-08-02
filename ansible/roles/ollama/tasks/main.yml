@@ -4,9 +4,9 @@
 # Ensure Docker is installed (assumes docker role or manual install)
 - name: Check if Docker is available
   ansible.builtin.command: docker --version
-  register: docker_check
+  register: ollama_docker_check
   changed_when: false
-  failed_when: docker_check.rc != 0
+  failed_when: ollama_docker_check.rc != 0
   tags:
     - ollama
     - preflight
@@ -67,7 +67,7 @@
 # Install NVIDIA Container Toolkit for GPU support
 - name: Check if nvidia-smi is available
   ansible.builtin.command: nvidia-smi
-  register: nvidia_check
+  register: ollama_nvidia_check
   changed_when: false
   failed_when: false
   when: ollama_gpu_enabled
@@ -81,7 +81,7 @@
     url: https://nvidia.github.io/libnvidia-container/gpgkey
     dest: /tmp/nvidia-container-toolkit.gpg.key
     mode: "0644"
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   tags:
     - ollama
     - gpu
@@ -92,15 +92,15 @@
     cat /tmp/nvidia-container-toolkit.gpg.key | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
   args:
     creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   tags:
     - ollama
     - gpu
 
 - name: Set NVIDIA repo architecture
   ansible.builtin.set_fact:
-    nvidia_repo_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+    ollama_nvidia_repo_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   tags:
     - ollama
     - gpu
@@ -109,10 +109,10 @@
   become: true
   ansible.builtin.copy:
     content: |
-      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ nvidia_repo_arch }} /
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ ollama_nvidia_repo_arch }} /
     dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
     mode: "0644"
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   tags:
     - ollama
     - gpu
@@ -123,7 +123,7 @@
     name: nvidia-container-toolkit
     state: present
     update_cache: true
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   notify: Restart Docker
   tags:
     - ollama
@@ -132,7 +132,7 @@
 - name: Configure Docker for NVIDIA runtime
   become: true
   ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
-  when: ollama_gpu_enabled and nvidia_check.rc == 0
+  when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0
   changed_when: false
   notify: Restart Docker
   tags:
@@ -203,8 +203,8 @@
   ansible.builtin.command:
     cmd: "docker exec {{ ollama_container_name }} ollama pull {{ item }}"
   loop: "{{ ollama_models }}"
-  register: model_pull
-  changed_when: "'pulling' in model_pull.stdout"
+  register: ollama_model_pull
+  changed_when: "'pulling' in ollama_model_pull.stdout"
   tags:
     - ollama
     - models

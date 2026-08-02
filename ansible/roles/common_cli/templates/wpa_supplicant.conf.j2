@@ -5,7 +5,7 @@ ctrl_interface=/run/wpa_supplicant
 update_config=1
 
 network={
-    ssid="{{ wifi_ssid }}"
+    ssid="{{ common_cli_wifi_ssid }}"
     psk={{ wifi_psk }}
     key_mgmt=WPA-PSK
     priority=1

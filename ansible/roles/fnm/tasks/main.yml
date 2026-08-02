@@ -129,7 +129,7 @@
   ansible.builtin.shell: |
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     fnm list 2>/dev/null | grep -q "{{ fnm_node_version }}" && echo "installed" || echo "not installed"
-  register: node_version_check
+  register: fnm_node_version_check
   changed_when: false
   tags:
     - fnm
@@ -142,7 +142,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     fnm install {{ fnm_node_version }}
-  when: "'not installed' in node_version_check.stdout"
+  when: "'not installed' in fnm_node_version_check.stdout"
   tags:
     - fnm
     - node

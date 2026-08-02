@@ -11,7 +11,7 @@
   tags: homebrew
   ansible.builtin.stat:
     path: /opt/homebrew/bin/brew
-  register: homebrew_check
+  register: common_cli_homebrew_check
   when: ansible_os_family == "Darwin"
 
 - name: Install Homebrew (macOS)
@@ -23,7 +23,7 @@
     executable: /bin/bash
   when:
     - ansible_os_family == "Darwin"
-    - not homebrew_check.stat.exists
+    - not common_cli_homebrew_check.stat.exists
 
 - name: Install prereqs (macOS)
   tags: prereqs
@@ -59,8 +59,8 @@
     cmd: "tailscale up --authkey={{ tailscale_authkey }} --ssh"
   vars:
     tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
-  register: tailscale_up
-  changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
+  register: common_cli_tailscale_up
+  changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
 
 - name: Add the user
@@ -126,7 +126,7 @@
       - "{{ signingkey }}"
   environment:
     GPG_TTY: ""
-  register: gpg_key_check_linux
+  register: common_cli_gpg_key_check_linux
   failed_when: false
   changed_when: false
   when: ansible_os_family != "Darwin"
@@ -137,7 +137,7 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     /opt/homebrew/bin/gpg --batch --list-secret-keys "{{ signingkey }}" 2>&1
-  register: gpg_key_check_macos
+  register: common_cli_gpg_key_check_macos
   failed_when: false
   changed_when: false
   when: ansible_os_family == "Darwin"
@@ -150,11 +150,11 @@
     gpg --batch --yes --import ~/.gpg/{{ username }}.gpg
   environment:
     GPG_TTY: ""
-  register: gpg_import
-  changed_when: "'imported' in (gpg_import.stdout + gpg_import.stderr)"
+  register: common_cli_gpg_import
+  changed_when: "'imported' in (common_cli_gpg_import.stdout + common_cli_gpg_import.stderr)"
   when:
     - ansible_os_family != "Darwin"
-    - gpg_key_check_linux.rc != 0
+    - common_cli_gpg_key_check_linux.rc != 0
 
 - name: Import GPG private key (macOS)
   tags: gpg
@@ -162,11 +162,11 @@
   become_user: "{{ username }}"
   ansible.builtin.shell: |
     /opt/homebrew/bin/gpg --batch --yes --no-tty --import ~/.gpg/{{ username }}.gpg 2>&1
-  register: gpg_import_macos
-  changed_when: "'imported' in (gpg_import_macos.stdout + gpg_import_macos.stderr)"
+  register: common_cli_gpg_import_macos
+  changed_when: "'imported' in (common_cli_gpg_import_macos.stdout + common_cli_gpg_import_macos.stderr)"
   when:
     - ansible_os_family == "Darwin"
-    - gpg_key_check_macos.rc != 0
+    - common_cli_gpg_key_check_macos.rc != 0
 
 - name: Configure git preferences
   become: true
@@ -247,7 +247,7 @@
   become: true
   tags: network-tools
   ansible.builtin.command: systemctl is-active NetworkManager
-  register: networkmanager_check
+  register: common_cli_networkmanager_check
   failed_when: false
   changed_when: false
   when: ansible_os_family == "Debian"
@@ -255,7 +255,7 @@
 - name: Set fact for using systemd-networkd (Ubuntu/Debian)
   tags: network-tools
   ansible.builtin.set_fact:
-    use_systemd_networkd: "{{ networkmanager_check.rc != 0 }}"
+    common_cli_use_systemd_networkd: "{{ common_cli_networkmanager_check.rc != 0 }}"
   when: ansible_os_family == "Debian"
 
 - name: Check if cloud-init is installed (Ubuntu/Debian headless)
@@ -263,10 +263,10 @@
   tags: network-tools
   ansible.builtin.stat:
     path: /etc/cloud/cloud.cfg.d
-  register: cloud_init_dir
+  register: common_cli_cloud_init_dir
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Disable cloud-init network management (Ubuntu/Debian headless)
   become: true
@@ -277,8 +277,8 @@
     mode: "0644"
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - cloud_init_dir.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_cloud_init_dir.stat.exists
 
 - name: Find cloud-init cached network configs (Ubuntu/Debian headless)
   become: true
@@ -288,11 +288,11 @@
     patterns: network-config.json
     file_type: file
     recurse: true
-  register: cloud_init_network_configs
+  register: common_cli_cloud_init_network_configs
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - cloud_init_dir.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_cloud_init_dir.stat.exists
 
 - name: Remove cloud-init cached network config (Ubuntu/Debian headless)
   become: true
@@ -300,12 +300,12 @@
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
-  loop: "{{ cloud_init_network_configs.files | default([]) }}"
+  loop: "{{ common_cli_cloud_init_network_configs.files | default([]) }}"
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - cloud_init_dir.stat.exists
-    - cloud_init_network_configs is defined
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_cloud_init_dir.stat.exists
+    - common_cli_cloud_init_network_configs is defined
 
 - name: Remove old netplan configs to prevent interface name conflicts (Ubuntu/Debian headless)
   become: true
@@ -318,17 +318,17 @@
     - 50-cloud-init.yaml
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Check if netplan generator exists (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.stat:
     path: /usr/lib/systemd/system-generators/netplan
-  register: netplan_generator
+  register: common_cli_netplan_generator
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Disable netplan generator to prevent phantom interface waits (Ubuntu/Debian headless)
   become: true
@@ -340,18 +340,18 @@
     creates: /usr/lib/systemd/system-generators/netplan.disabled
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - netplan_generator.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_netplan_generator.stat.exists
 
 - name: Check if wpa_supplicant is installed (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.stat:
     path: /lib/systemd/system/wpa_supplicant@.service
-  register: wpa_supplicant_service
+  register: common_cli_wpa_supplicant_service
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Mask wpa_supplicant for wlan0 temporary interface name (Ubuntu/Debian headless)
   become: true
@@ -361,19 +361,19 @@
     masked: true
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - wpa_supplicant_service.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_wpa_supplicant_service.stat.exists
 
 - name: Check if systemd is running (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.command: systemctl is-system-running
-  register: systemd_running
+  register: common_cli_systemd_running
   failed_when: false
   changed_when: false
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Ensure systemd-networkd is enabled and started (Ubuntu/Debian headless)
   become: true
@@ -384,8 +384,8 @@
     state: started
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - systemd_running.rc == 0 or systemd_running.stdout in ['running', 'degraded']
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_systemd_running.rc == 0 or common_cli_systemd_running.stdout in ['running', 'degraded']
 
 - name: Disable systemd-networkd-wait-online to avoid boot delays (Ubuntu/Debian headless)
   become: true
@@ -396,7 +396,7 @@
     masked: true
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Deploy systemd-networkd configuration for wired interfaces (Ubuntu/Debian headless)
   become: true
@@ -410,7 +410,7 @@
   notify: Restart systemd-networkd
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Deploy systemd-networkd configuration for wireless interfaces (Ubuntu/Debian headless)
   become: true
@@ -424,7 +424,7 @@
   notify: Restart systemd-networkd
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Find old interface-specific networkd configs (Ubuntu/Debian headless)
   become: true
@@ -433,10 +433,10 @@
     paths: /etc/systemd/network
     patterns: "10-*.network"
     file_type: file
-  register: old_networkd_configs
+  register: common_cli_old_networkd_configs
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Remove old interface-specific networkd configs (Ubuntu/Debian headless)
   become: true
@@ -444,12 +444,12 @@
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
-  loop: "{{ old_networkd_configs.files | default([]) }}"
+  loop: "{{ common_cli_old_networkd_configs.files | default([]) }}"
   notify: Restart systemd-networkd
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - old_networkd_configs is defined
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_old_networkd_configs is defined
 
 - name: Ensure /etc/wpa_supplicant directory exists (Ubuntu/Debian headless)
   become: true
@@ -460,7 +460,7 @@
     mode: "0755"
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Get list of wireless interfaces (Ubuntu/Debian headless)
   become: true
@@ -471,36 +471,36 @@
         basename "$iface"
       fi
     done
-  register: wireless_interfaces
+  register: common_cli_wireless_interfaces
   changed_when: false
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Get WiFi credentials from 1Password (Ubuntu/Debian headless)
   tags: network-tools
   ansible.builtin.set_fact:
-    wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
-    wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    common_cli_wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    common_cli_wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - wireless_interfaces.stdout_lines | default([]) | length > 0
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_wireless_interfaces.stdout_lines | default([]) | length > 0
 
 - name: Generate WPA PSK hash from passphrase (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.shell: |
-    wpa_passphrase "{{ wifi_ssid }}" "{{ wifi_passphrase }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
-  register: wifi_psk_hash
+    wpa_passphrase "{{ common_cli_wifi_ssid }}" "{{ common_cli_wifi_passphrase }}" | grep -E '^\s*psk=' | grep -v '#psk' | cut -d= -f2
+  register: common_cli_wifi_psk_hash
   changed_when: false
   no_log: true
-  failed_when: wifi_psk_hash.stdout is not defined or (wifi_psk_hash.stdout | trim) == ''
+  failed_when: common_cli_wifi_psk_hash.stdout is not defined or (common_cli_wifi_psk_hash.stdout | trim) == ''
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - wireless_interfaces.stdout_lines | default([]) | length > 0
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_wireless_interfaces.stdout_lines | default([]) | length > 0
 
 - name: Deploy wpa_supplicant configuration for each wireless interface (Ubuntu/Debian headless)
   become: true
@@ -515,23 +515,23 @@
     owner: root
     group: root
   vars:
-    wifi_psk: "{{ wifi_psk_hash.stdout }}"
-  loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
+    wifi_psk: "{{ common_cli_wifi_psk_hash.stdout }}"
+  loop: "{{ common_cli_wireless_interfaces.stdout_lines | default([]) }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - wireless_interfaces.stdout_lines | default([]) | length > 0
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_wireless_interfaces.stdout_lines | default([]) | length > 0
 
 - name: Check if udev rules directory exists (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.stat:
     path: /etc/udev/rules.d
-  register: udev_rules_dir
+  register: common_cli_udev_rules_dir
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Deploy udev rule for automatic wpa_supplicant on wireless interfaces (Ubuntu/Debian headless)
   become: true
@@ -546,8 +546,8 @@
     group: root
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - udev_rules_dir.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_udev_rules_dir.stat.exists
 
 - name: Reload udev rules (Ubuntu/Debian headless)
   become: true
@@ -557,8 +557,8 @@
   failed_when: false
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - udev_rules_dir.stat.exists
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_udev_rules_dir.stat.exists
 
 - name: Create wpa_supplicant override directory (Ubuntu/Debian headless)
   become: true
@@ -569,7 +569,7 @@
     mode: "0755"
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Deploy wpa_supplicant service override to not block boot (Ubuntu/Debian headless)
   become: true
@@ -583,7 +583,7 @@
   notify: Reload systemd
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
+    - common_cli_use_systemd_networkd | default(false)
 
 - name: Enable and start wpa_supplicant for each wireless interface (Ubuntu/Debian headless)
   become: true
@@ -592,19 +592,19 @@
     name: "wpa_supplicant@{{ item }}"
     enabled: true
     state: started
-  loop: "{{ wireless_interfaces.stdout_lines | default([]) }}"
+  loop: "{{ common_cli_wireless_interfaces.stdout_lines | default([]) }}"
   when:
     - ansible_os_family == "Debian"
-    - use_systemd_networkd | default(false)
-    - wireless_interfaces.stdout_lines | default([]) | length > 0
-    - systemd_running.rc == 0 or systemd_running.stdout in ['running', 'degraded']
+    - common_cli_use_systemd_networkd | default(false)
+    - common_cli_wireless_interfaces.stdout_lines | default([]) | length > 0
+    - common_cli_systemd_running.rc == 0 or common_cli_systemd_running.stdout in ['running', 'degraded']
 
 - name: Check if colima is running (macOS)
   tags: docker
   become: true
   become_user: "{{ username }}"
   ansible.builtin.command: /opt/homebrew/bin/colima status
-  register: colima_status
+  register: common_cli_colima_status
   failed_when: false
   changed_when: false
   when: ansible_os_family == "Darwin"
@@ -618,7 +618,7 @@
     PATH: "/opt/homebrew/bin:{{ ansible_env.PATH }}"
   when:
     - ansible_os_family == "Darwin"
-    - colima_status.rc != 0
+    - common_cli_colima_status.rc != 0
 
 # GitHub known_hosts is handled by bootstrap role
 
@@ -640,7 +640,7 @@
   become_user: "{{ username }}"
   ansible.builtin.stat:
     path: ~/.bashrc
-  register: bash_test
+  register: common_cli_bash_test
 
 - name: Remove .bashrc file so stow has no conflicts
   tags: dotfiles
@@ -649,7 +649,7 @@
   ansible.builtin.file:
     dest: ~/.bashrc
     state: absent
-  when: bash_test.stat.exists and not bash_test.stat.islnk
+  when: common_cli_bash_test.stat.exists and not common_cli_bash_test.stat.islnk
 
 - name: Deploy dotfiles (Ubuntu/Debian)
   become: true
@@ -657,8 +657,8 @@
   tags: dotfiles
   with_items: "{{ common_cli_dotfile_packages_ubuntu }}"
   ansible.builtin.command: "stow {{ item }}"
-  register: dotfiles_result
-  changed_when: "'changed' in dotfiles_result.stdout"
+  register: common_cli_dotfiles_result
+  changed_when: "'changed' in common_cli_dotfiles_result.stdout"
   args:
     chdir: ~/dotfiles
   when: ansible_os_family == "Debian"
@@ -669,8 +669,8 @@
   tags: dotfiles
   with_items: "{{ common_cli_dotfile_packages_macos }}"
   ansible.builtin.command: "/opt/homebrew/bin/stow {{ item }}"
-  register: dotfiles_result
-  changed_when: "'changed' in dotfiles_result.stdout"
+  register: common_cli_dotfiles_result
+  changed_when: "'changed' in common_cli_dotfiles_result.stdout"
   args:
     chdir: ~/dotfiles
   when: ansible_os_family == "Darwin"
@@ -684,7 +684,7 @@
     fisher list
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  register: fisher_status
+  register: common_cli_fisher_status
   changed_when: false
   ignore_errors: true
 
@@ -696,7 +696,7 @@
     url: https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish
     dest: /tmp/fisher.sh
     mode: "0755"
-  when: fisher_status is failed
+  when: common_cli_fisher_status is failed
 
 - name: Install fisher
   tags: fish
@@ -705,9 +705,9 @@
   ansible.builtin.shell: source /tmp/fisher.sh && fisher install jorgebucaran/fisher
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  register: fisher_installed
-  when: fisher_status is failed
-  changed_when: "'changed ' in fisher_installed.stdout"
+  register: common_cli_fisher_installed
+  when: common_cli_fisher_status is failed
+  changed_when: "'changed ' in common_cli_fisher_installed.stdout"
 
 - name: Check if forgit is installed
   tags: fish
@@ -717,7 +717,7 @@
     fisher list | grep wfxr/forgit
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  register: forgit_status
+  register: common_cli_forgit_status
   changed_when: false
   ignore_errors: true
 
@@ -729,9 +729,9 @@
     fisher install wfxr/forgit
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  when: forgit_status is failed
-  register: forgit_install
-  changed_when: "'changed' in forgit_install.stdout"
+  when: common_cli_forgit_status is failed
+  register: common_cli_forgit_install
+  changed_when: "'changed' in common_cli_forgit_install.stdout"
 
 - name: Check if bobthefish is installed
   tags: fish
@@ -741,7 +741,7 @@
     fisher list | grep bobthefish
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  register: bobthefish_status
+  register: common_cli_bobthefish_status
   changed_when: false
   ignore_errors: true
 
@@ -753,6 +753,6 @@
     fisher install oh-my-fish/theme-bobthefish
   args:
     executable: "{{ '/opt/homebrew/bin/fish' if ansible_os_family == 'Darwin' else '/usr/bin/fish' }}"
-  when: bobthefish_status is failed
-  register: bobthefish_install
-  changed_when: "'changed' in bobthefish_install.stdout"
+  when: common_cli_bobthefish_status is failed
+  register: common_cli_bobthefish_install
+  changed_when: "'changed' in common_cli_bobthefish_install.stdout"

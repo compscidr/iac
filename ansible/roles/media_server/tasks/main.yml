@@ -1,7 +1,12 @@
 ---
 # Ensure variables are set before including roles
 # (Role defaults don't pass through to included collection roles)
-- name: Set media defaults
+# media_user_user/media_user_group/media_storage_base_path/
+# media_storage_network_enabled/media_storage_network_name are the
+# documented interface vars of the external compscidr.media_server
+# collection's media_user/media_storage roles (included below), so they
+# intentionally do not carry a media_server_ prefix.
+- name: Set media defaults # noqa: var-naming[no-role-prefix]
   tags: always
   ansible.builtin.set_fact:
     media_user_user: jason
@@ -9,7 +14,7 @@
     media_storage_base_path: /volume1/storage
     media_storage_network_enabled: true
     media_storage_network_name: "media"
-    media_letsencrypt_email: "ernstjason1@gmail.com"
+    media_server_media_letsencrypt_email: "ernstjason1@gmail.com"
 
 # Initialize media_user facts (UID/GID detection) before other tasks
 # This runs media_storage which depends on media_user
@@ -113,7 +118,7 @@
       VIRTUAL_HOST: "nas.jasonernst.com"
       VIRTUAL_PORT: "80"
       LETSENCRYPT_HOST: "nas.jasonernst.com"
-      LETSENCRYPT_EMAIL: "{{ media_letsencrypt_email | default('ernstjason1@gmail.com') }}"
+      LETSENCRYPT_EMAIL: "{{ media_server_media_letsencrypt_email | default('ernstjason1@gmail.com') }}"
     etc_hosts:
       host.docker.internal: host-gateway
     networks:
@@ -181,7 +186,7 @@
     plex_memory_swap: "24g"
     plex_shm_size: "8g"
     plex_virtual_host: "plex.jasonernst.com"
-    plex_letsencrypt_email: "{{ media_letsencrypt_email }}"
+    plex_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
     plex_network_mode: "bridge"
     plex_dlna_port: 1901
 
@@ -208,7 +213,7 @@
     sonarr_memory: "1g"
     sonarr_memory_swap: "1g"
     sonarr_virtual_host: "sonarr.jasonernst.com"
-    sonarr_letsencrypt_email: "{{ media_letsencrypt_email }}"
+    sonarr_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
 
 - name: Install radarr
   tags: radarr
@@ -221,7 +226,7 @@
     radarr_memory: "1g"
     radarr_memory_swap: "1g"
     radarr_virtual_host: "radarr.jasonernst.com"
-    radarr_letsencrypt_email: "{{ media_letsencrypt_email }}"
+    radarr_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
 
 - name: Install prowlarr
   tags: prowlarr
@@ -253,7 +258,7 @@
       tags: ombi
   vars:
     ombi_virtual_host: "ombi.jasonernst.com"
-    ombi_letsencrypt_email: "{{ media_letsencrypt_email }}"
+    ombi_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
 
 - name: Install slskd
   tags: slskd

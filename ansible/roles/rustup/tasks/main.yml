@@ -128,8 +128,8 @@
     . "$HOME/.cargo/env"
     rustup component add {{ item }}
   loop: "{{ rustup_components }}"
-  register: component_result
-  changed_when: "'is up to date' not in component_result.stderr"
+  register: rustup_component_result
+  changed_when: "'is up to date' not in rustup_component_result.stderr"
   tags:
     - rustup
     - rust

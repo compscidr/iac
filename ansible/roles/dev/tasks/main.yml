@@ -100,7 +100,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which yarn || echo "not found"
-  register: yarn_check
+  register: dev_yarn_check
   changed_when: false
   tags:
     - yarn
@@ -118,7 +118,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g yarn
-  when: "'not found' in yarn_check.stdout"
+  when: "'not found' in dev_yarn_check.stdout"
 
 - name: Check if tldr is installed
   become: true
@@ -127,7 +127,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which tldr || echo "not found"
-  register: tldr_check
+  register: dev_tldr_check
   changed_when: false
   tags:
     - tldr
@@ -145,7 +145,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g tldr
-  when: "'not found' in tldr_check.stdout"
+  when: "'not found' in dev_tldr_check.stdout"
 
 - name: Check if php ppa repository exists
   tags: php
