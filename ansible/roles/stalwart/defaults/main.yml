@@ -19,7 +19,7 @@ stalwart_data_dir: "/opt/stalwart-mail"
 # Admin credentials - MUST be set via 1Password lookup in playbook
 # These are configured in [authentication.fallback-admin] section
 stalwart_admin_user: "admin"
-stalwart_admin_password: ""  # Required - set in mail.yml from 1Password
+stalwart_admin_password: "" # Required - set in mail.yml from 1Password
 
 # DKIM selector - must match DNS record (ed25519._domainkey.domain.com)
 stalwart_dkim_selector: "ed25519"

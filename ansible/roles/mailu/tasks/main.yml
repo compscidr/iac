@@ -6,14 +6,14 @@
   ansible.builtin.file:
     path: "{{ mailu_install_path }}"
     state: directory
-    mode: '755'
+    mode: "755"
 
 - name: Create Mailu data directories
   become: true
   ansible.builtin.file:
     path: "{{ mailu_install_path }}/{{ item }}"
     state: directory
-    mode: '755'
+    mode: "755"
   loop:
     - data
     - dkim
@@ -34,7 +34,7 @@
   ansible.builtin.template:
     src: mailu.env.j2
     dest: "{{ mailu_install_path }}/mailu.env"
-    mode: '600'
+    mode: "600"
   notify: Restart Mailu
 
 - name: Deploy docker-compose.yml
@@ -42,7 +42,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ mailu_install_path }}/docker-compose.yml"
-    mode: '644'
+    mode: "644"
   notify: Restart Mailu
 
 # nginx-proxy stores certs as <domain>.crt/<domain>.key
@@ -73,7 +73,7 @@
 - name: Wait for Mailu to be ready
   become: true
   ansible.builtin.wait_for:
-    port: 443  # nginx-proxy handles HTTPS
+    port: 443 # nginx-proxy handles HTTPS
     delay: 10
     timeout: 120
 
@@ -87,8 +87,8 @@
     chdir: "{{ mailu_install_path }}"
   register: admin_result
   changed_when: "'created' in admin_result.stdout"
-  failed_when: false  # May fail if user exists
-  no_log: true  # Hide admin password
+  failed_when: false # May fail if user exists
+  no_log: true # Hide admin password
 
 - name: Create mail users
   become: true
@@ -100,9 +100,9 @@
     chdir: "{{ mailu_install_path }}"
   loop: "{{ mailu_users }}"
   register: user_result
-  changed_when: false  # Can't reliably detect from looped command
-  failed_when: false  # May fail if user exists
-  no_log: true  # Hide passwords
+  changed_when: false # Can't reliably detect from looped command
+  failed_when: false # May fail if user exists
+  no_log: true # Hide passwords
 
 - name: Check if additional domain DKIM key exists
   become: true
@@ -153,8 +153,8 @@
   loop: "{{ mailu_additional_domains | default([]) | subelements('users') }}"
   register: user_result
   changed_when: false
-  failed_when: false  # May fail if user exists
-  no_log: true  # Hide passwords
+  failed_when: false # May fail if user exists
+  no_log: true # Hide passwords
 
 - name: Get DKIM public key
   become: true

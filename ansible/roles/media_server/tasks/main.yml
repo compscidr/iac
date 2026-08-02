@@ -27,7 +27,7 @@
   ansible.builtin.file:
     path: /etc/nginx-proxy/conf.d
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -37,7 +37,7 @@
   ansible.builtin.copy:
     content: "client_max_body_size 100m;"
     dest: /etc/nginx-proxy/conf.d/client_max_body_size.conf
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 
@@ -85,7 +85,7 @@
   ansible.builtin.file:
     path: /etc/nas-proxy
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -95,7 +95,7 @@
   ansible.builtin.copy:
     src: nas-proxy.conf
     dest: /etc/nas-proxy/default.conf
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
   notify: Restart nas-proxy container
@@ -130,7 +130,7 @@
   ansible.builtin.file:
     path: "/etc/transmission/"
     state: directory
-    mode: '755'
+    mode: "755"
     owner: "{{ media_user_user }}"
     group: "{{ media_user_group }}"
 
@@ -138,7 +138,7 @@
   tags: transmission
   become: true
   ansible.builtin.copy:
-    mode: '755'
+    mode: "755"
     owner: "{{ media_user_user }}"
     group: "{{ media_user_group }}"
     dest: "/etc/transmission/.env"

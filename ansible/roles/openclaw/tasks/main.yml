@@ -422,8 +422,7 @@
   when:
     - openclaw_ollama_base_url | length > 0
     - openclaw_ollama_fallback_model | length > 0
-    - ("ollama/" + openclaw_ollama_fallback_model)
-      not in (openclaw_fallbacks_list.stdout | default(''))
+    - ("ollama/" + openclaw_ollama_fallback_model) not in (openclaw_fallbacks_list.stdout | default(''))
   changed_when: true
   notify: Restart openclaw-gateway
   tags:
@@ -442,8 +441,7 @@
   when:
     - openclaw_exo_base_url | length > 0
     - openclaw_exo_fallback_model | length > 0
-    - ("exo/" + openclaw_exo_fallback_model)
-      not in (openclaw_fallbacks_list.stdout | default(''))
+    - ("exo/" + openclaw_exo_fallback_model) not in (openclaw_fallbacks_list.stdout | default(''))
   changed_when: true
   notify: Restart openclaw-gateway
   tags:

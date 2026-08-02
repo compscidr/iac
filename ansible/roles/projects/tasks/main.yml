@@ -11,7 +11,7 @@
   ansible.builtin.file:
     path: /etc/nginx/conf.d
     state: directory
-    mode: '755'
+    mode: "755"
 
 - name: Create nginx log directory for fail2ban
   tags: nginx
@@ -19,7 +19,7 @@
   ansible.builtin.file:
     path: /var/log/nginx
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -29,7 +29,7 @@
   ansible.builtin.file:
     path: "/var/log/nginx/{{ item }}"
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -46,7 +46,7 @@
     dest: /etc/nginx/conf.d/logging.conf
     owner: root
     group: root
-    mode: '644'
+    mode: "644"
 
 - name: Create nginx-proxy network
   tags: [nginx, network]
@@ -99,7 +99,7 @@
   ansible.builtin.file:
     path: "{{ projects_base_path }}"
     state: directory
-    mode: '755'
+    mode: "755"
     owner: "{{ projects_git_user }}"
     group: "{{ projects_git_user }}"
 
@@ -120,7 +120,7 @@
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/network-tools"
     files:
-      - docker-compose.yml  # Exclude override file (sets external: false for local dev)
+      - docker-compose.yml # Exclude override file (sets external: false for local dev)
     state: present
     pull: always
   environment:
@@ -144,7 +144,7 @@
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/darksearch"
     files:
-      - docker-compose.yml  # Exclude override file (sets external: false for local dev)
+      - docker-compose.yml # Exclude override file (sets external: false for local dev)
     state: present
     pull: always
   environment:
@@ -160,7 +160,7 @@
   ansible.builtin.file:
     path: "/opt/goblog-live/{{ item }}"
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
   loop:
@@ -173,7 +173,7 @@
   ansible.builtin.file:
     path: /opt/goblog-live/database.db
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -189,7 +189,7 @@
       client_id={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
       client_secret={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
     dest: /opt/goblog-live/.env
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 

@@ -68,7 +68,8 @@
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) | password_hash('sha512') }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) | password_hash('sha512')
+      }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -649,7 +650,6 @@
     dest: ~/.bashrc
     state: absent
   when: bash_test.stat.exists and not bash_test.stat.islnk
-
 
 - name: Deploy dotfiles (Ubuntu/Debian)
   become: true

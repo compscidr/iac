@@ -15,7 +15,7 @@
     dest: /etc/fail2ban/jail.local
     owner: root
     group: root
-    mode: '644'
+    mode: "644"
   notify: Restart fail2ban
 
 - name: Create nginx-botscan filter
@@ -25,7 +25,7 @@
     dest: /etc/fail2ban/filter.d/nginx-botscan.conf
     owner: root
     group: root
-    mode: '644'
+    mode: "644"
   when: fail2ban_nginx_botscan_enabled
   notify: Restart fail2ban
 

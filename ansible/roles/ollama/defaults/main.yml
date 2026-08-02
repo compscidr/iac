@@ -8,15 +8,15 @@ ollama_restart_policy: "unless-stopped"
 
 # Port configuration
 ollama_port: 11434
-ollama_bind_address: "0.0.0.0"  # Bind to all interfaces (use firewall/Tailscale for access control)
+ollama_bind_address: "0.0.0.0" # Bind to all interfaces (use firewall/Tailscale for access control)
 
 # GPU support
-ollama_gpu_enabled: true  # Set to false for CPU-only deployment
+ollama_gpu_enabled: true # Set to false for CPU-only deployment
 
 # CPU/RAM offloading for large models
 # Set ollama_num_gpu to control GPU layer count (0 = CPU only, -1 = auto)
 # With 128GB RAM + 16GB VRAM, can run 70B+ models with partial GPU acceleration
-ollama_num_gpu: -1  # -1 = auto (Ollama decides), 0 = CPU only, N = specific layer count
+ollama_num_gpu: -1 # -1 = auto (Ollama decides), 0 = CPU only, N = specific layer count
 
 # Data persistence
 ollama_data_path: "/var/lib/ollama"
@@ -26,11 +26,11 @@ ollama_data_path: "/var/lib/ollama"
 # The MoE variants (*-A3B-*) are the sweet spot: large total params for
 # quality, 3B active params for responsiveness.
 ollama_models:
-  - "qwen2.5:72b"                                                     # large, GPU + RAM offload
-  - "qwen2.5:14b"                                                     # fast fallback, fits in VRAM
-  - "qwen3-coder:30b"                                                 # coding, partial offload
-  - "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M"   # MoE coder, fits in VRAM
-  - "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"               # MoE general, fits in VRAM
+  - "qwen2.5:72b" # large, GPU + RAM offload
+  - "qwen2.5:14b" # fast fallback, fits in VRAM
+  - "qwen3-coder:30b" # coding, partial offload
+  - "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M" # MoE coder, fits in VRAM
+  - "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS" # MoE general, fits in VRAM
 
 # Custom Modelfile variants created locally via `ollama create`.
 # Each entry generates a new tag from `base` with the supplied PARAMETER
@@ -46,7 +46,7 @@ ollama_modelfiles:
       num_ctx: 32768
 
 # Tailscale access control (when behind Tailscale)
-ollama_tailscale_only: true  # If true, only allow Tailscale IPs
+ollama_tailscale_only: true # If true, only allow Tailscale IPs
 
 # OpenClaw integration
 ollama_openclaw_base_url: "http://{{ inventory_hostname }}:{{ ollama_port }}"

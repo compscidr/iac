@@ -71,7 +71,7 @@
   ansible.builtin.copy:
     src: files/postman.desktop
     dest: /usr/share/applications/postman.desktop
-    mode: '0664'
+    mode: "0664"
 
 - name: Dconf-Editor
   tags: dconf
@@ -167,7 +167,8 @@
 - name: Download pinned claude-desktop .deb
   tags: claude-desktop
   ansible.builtin.get_url:
-    url: "https://github.com/aaddrick/claude-desktop-debian/releases/download/{{ claude_desktop_tag }}/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch }}.deb"
+    url: "https://github.com/aaddrick/claude-desktop-debian/releases/download/{{ claude_desktop_tag }}/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch
+      }}.deb"
     dest: "/tmp/claude-desktop_{{ _claude_desktop_filename_version }}_{{ _claude_desktop_deb_arch }}.deb"
     mode: "0644"
   when: claude_desktop_installed.stdout != _claude_desktop_filename_version

@@ -60,7 +60,7 @@
     name:
       - docker.io
       - docker-compose-v2
-      - python3-docker        # Docker SDK for Python, required by community.docker.docker_container
+      - python3-docker # Docker SDK for Python, required by community.docker.docker_container
     state: present
     update_cache: true
   when:
@@ -69,7 +69,7 @@
 
 - name: Ensure Docker service is running
   become: true
-  tags: [bootstrap, docker, molecule-notest]  # Skip in molecule (systemd doesn't work in containers)
+  tags: [bootstrap, docker, molecule-notest] # Skip in molecule (systemd doesn't work in containers)
   ansible.builtin.systemd:
     name: docker
     enabled: true

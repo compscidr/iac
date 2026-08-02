@@ -119,7 +119,7 @@
   ansible.builtin.file:
     path: "~/Templates/Empty Document"
     state: touch
-    mode: '0600'
+    mode: "0600"
     modification_time: preserve
     access_time: preserve
   when: ansible_os_family == "Debian"
@@ -267,7 +267,7 @@
   ansible.builtin.get_url:
     url: https://zoom.us/client/latest/Zoom.pkg
     dest: /tmp/Zoom.pkg
-    mode: '0644'
+    mode: "0644"
   when:
     - ansible_os_family == "Darwin"
     - not zoom_check.stat.exists
@@ -315,8 +315,7 @@
   become_user: "{{ username }}" # really important to have the username here, or it will seem like it isn't taking effect
   community.general.dconf:
     key: "/org/gnome/shell/favorite-apps"
-    value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop',
-      'org.gnome.Nautilus.desktop', 'code.desktop', 'snap-store_snap-store.desktop']"
+    value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop', 'org.gnome.Nautilus.desktop', 'code.desktop', 'snap-store_snap-store.desktop']"
     state: present
   when: ansible_os_family == "Debian"
 
