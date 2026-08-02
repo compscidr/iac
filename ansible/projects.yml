@@ -42,8 +42,8 @@
   roles:
     # www-redirect must run before projects/sair-portal so redirect containers
     # handle apex domains before app containers stop serving them
-    - { role: www-redirect, tags: [www-redirect] }
+    - { role: www_redirect, tags: [www-redirect] }
     - { role: projects, tags: [projects] }
-    - { role: sair-orchestrator, tags: [sair-orchestrator, sair] }
-    - { role: sair-portal, tags: [sair-portal, sair] }
+    - { role: sair_orchestrator, tags: [sair-orchestrator, sair] }
+    - { role: sair_portal, tags: [sair-portal, sair] }
     - { role: fail2ban, tags: [fail2ban] }

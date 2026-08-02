@@ -16,7 +16,7 @@
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it
-    - www-redirect
+    - www_redirect
     - jasonernst_com
     - fail2ban
     - mailu
