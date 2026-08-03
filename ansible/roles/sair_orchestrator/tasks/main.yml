@@ -49,13 +49,13 @@
       - "{{ sair_orchestrator_port }}:{{ sair_orchestrator_port }}"
     networks:
       - name: nginx-proxy
-    user: root  # key.pem is 0600 root-only in nginx-certs volume
+    user: root # key.pem is 0600 root-only in nginx-certs volume
     security_opts:
       - "no-new-privileges:true"
     cap_drop:
       - ALL
     capabilities:
-      - DAC_OVERRIDE  # needed to read/write portal.db owned by portal UID
+      - DAC_OVERRIDE # needed to read/write portal.db owned by portal UID
     read_only: true
     tmpfs:
       - "/tmp:exec"
@@ -63,5 +63,5 @@
       - "nginx-certs:/certs:ro"
       - "{{ sair_orchestrator_portal_db_dir }}:/portal-data"
     dns_servers:
-      - "100.100.100.100"  # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
+      - "100.100.100.100" # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
     env: "{{ _sair_orchestrator_env }}"

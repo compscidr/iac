@@ -3,7 +3,7 @@
   tags: homeassistant
   become: true
   ansible.builtin.file:
-    mode: '755'
+    mode: "755"
     path: "/etc/homeassistant"
     state: directory
 

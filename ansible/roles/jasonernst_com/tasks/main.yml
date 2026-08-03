@@ -5,7 +5,7 @@
   ansible.builtin.file:
     path: /etc/nginx/conf.d
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -15,7 +15,7 @@
   ansible.builtin.copy:
     content: "client_max_body_size 100m;"
     dest: /etc/nginx/conf.d/client_max_body_size.conf
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 
@@ -28,7 +28,7 @@
         "log-driver": "journald"
       }
     dest: /etc/docker/daemon.json
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 
@@ -45,7 +45,7 @@
   ansible.builtin.file:
     path: /var/log/nginx
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -55,7 +55,7 @@
   ansible.builtin.file:
     path: "/var/log/nginx/{{ item }}"
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -72,7 +72,7 @@
     dest: /etc/nginx/conf.d/logging.conf
     owner: root
     group: root
-    mode: '644'
+    mode: "644"
 
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
@@ -116,14 +116,13 @@
     env:
       ENABLE_IPV6: "true"
 
-
 - name: Create production /opt/goblog directory on host
   tags: website
   become: true
   ansible.builtin.file:
     path: /opt/goblog/prod
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -133,7 +132,7 @@
   ansible.builtin.file:
     path: /opt/goblog/staging
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -146,6 +145,7 @@
     remote_src: true
     owner: root
     group: root
+    mode: preserve
 
 - name: Copy .env to prod host
   tags: website
@@ -155,9 +155,10 @@
       database=sqlite
       sqlite_db=../database.db
       client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
+        account_id=onepassword_account_id) }}
     dest: /opt/goblog/prod/.env
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 
@@ -169,9 +170,10 @@
       database=sqlite
       sqlite_db=../database.db
       client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
+        account_id=onepassword_account_id) }}
     dest: /opt/goblog/staging/.env
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
 
@@ -181,7 +183,7 @@
   ansible.builtin.file:
     path: /opt/goblog/prod/database.db
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -193,7 +195,7 @@
   ansible.builtin.file:
     path: /opt/goblog/staging/database.db
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -205,7 +207,7 @@
   ansible.builtin.file:
     path: /opt/goblog/prod/uploads
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -215,7 +217,7 @@
   ansible.builtin.file:
     path: /opt/goblog/staging/uploads
     state: directory
-    mode: '755'
+    mode: "755"
     owner: root
     group: root
 
@@ -225,7 +227,7 @@
   ansible.builtin.file:
     path: "/opt/goblog/prod/{{ item }}"
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve
@@ -240,7 +242,7 @@
   ansible.builtin.file:
     path: "/opt/goblog/staging/{{ item }}"
     state: touch
-    mode: '644'
+    mode: "644"
     owner: root
     group: root
     modification_time: preserve

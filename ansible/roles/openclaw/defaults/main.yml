@@ -48,12 +48,12 @@ openclaw_user: "{{ username }}"
 # IDENTITY/MEMORY/AGENTS from this path at session start — a mismatch
 # between this path and the path in openclaw.json causes the agent to
 # wake up with an empty/template persona.
-openclaw_workspace_repo: ""  # Required: git repo for workspace (e.g., git@github.com:user/kai-workspace.git)
+openclaw_workspace_repo: "" # Required: git repo for workspace (e.g., git@github.com:user/kai-workspace.git)
 openclaw_workspace_path: "/home/{{ openclaw_user }}/.openclaw/workspace"
 
 # Installation
 openclaw_npm_package: "openclaw"
-openclaw_version: ""  # Pin to specific version, e.g., "2026.4.15" (empty = latest)
+openclaw_version: "" # Pin to specific version, e.g., "2026.4.15" (empty = latest)
 
 # Config / state directory
 # Openclaw writes openclaw.json plus all accumulated bot state

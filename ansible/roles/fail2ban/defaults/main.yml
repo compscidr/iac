@@ -15,7 +15,7 @@ fail2ban_maxretry: 5
 fail2ban_ignoreip:
   - 127.0.0.1/8
   - ::1
-  - 100.64.0.0/10  # Tailscale CGNAT range
+  - 100.64.0.0/10 # Tailscale CGNAT range
 
 # Enable SSH jail (disabled by default - Tailscale only, port 22 blocked at firewall)
 fail2ban_ssh_enabled: false
@@ -30,5 +30,5 @@ fail2ban_nginx_enabled: false
 # Requires nginx logs at /var/log/nginx/access.log
 fail2ban_nginx_botscan_enabled: false
 fail2ban_nginx_botscan_maxretry: 3
-fail2ban_nginx_botscan_findtime: 600  # 10 minutes to catch slower scans
-fail2ban_nginx_botscan_bantime: 86400  # 24 hours for scanners
+fail2ban_nginx_botscan_findtime: 600 # 10 minutes to catch slower scans
+fail2ban_nginx_botscan_bantime: 86400 # 24 hours for scanners

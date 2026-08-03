@@ -17,7 +17,7 @@
   become: true
   ansible.builtin.stat:
     path: /etc/systemd/system/clawdbot.service
-  register: legacy_clawdbot_service
+  register: openclaw_legacy_clawdbot_service
   tags:
     - openclaw
     - cleanup
@@ -28,7 +28,7 @@
     name: clawdbot.service
     enabled: false
     state: stopped
-  when: legacy_clawdbot_service.stat.exists
+  when: openclaw_legacy_clawdbot_service.stat.exists
   tags:
     - openclaw
     - cleanup
@@ -38,7 +38,7 @@
   ansible.builtin.file:
     path: /etc/systemd/system/clawdbot.service
     state: absent
-  when: legacy_clawdbot_service.stat.exists
+  when: openclaw_legacy_clawdbot_service.stat.exists
   tags:
     - openclaw
     - cleanup
@@ -47,7 +47,7 @@
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
-  when: legacy_clawdbot_service.stat.exists
+  when: openclaw_legacy_clawdbot_service.stat.exists
   tags:
     - openclaw
     - cleanup
@@ -118,8 +118,8 @@
     eval "$(fnm env)"
     npm install -g {{ openclaw_npm_package }}{% if openclaw_version | length > 0 %}@{{ openclaw_version }}{% endif %}
 
-  register: npm_install
-  changed_when: "'added' in npm_install.stdout or 'up to date' not in npm_install.stdout"
+  register: openclaw_npm_install
+  changed_when: "'added' in openclaw_npm_install.stdout or 'up to date' not in openclaw_npm_install.stdout"
   tags:
     - openclaw
     - install
@@ -422,8 +422,7 @@
   when:
     - openclaw_ollama_base_url | length > 0
     - openclaw_ollama_fallback_model | length > 0
-    - ("ollama/" + openclaw_ollama_fallback_model)
-      not in (openclaw_fallbacks_list.stdout | default(''))
+    - ("ollama/" + openclaw_ollama_fallback_model) not in (openclaw_fallbacks_list.stdout | default(''))
   changed_when: true
   notify: Restart openclaw-gateway
   tags:
@@ -442,8 +441,7 @@
   when:
     - openclaw_exo_base_url | length > 0
     - openclaw_exo_fallback_model | length > 0
-    - ("exo/" + openclaw_exo_fallback_model)
-      not in (openclaw_fallbacks_list.stdout | default(''))
+    - ("exo/" + openclaw_exo_fallback_model) not in (openclaw_fallbacks_list.stdout | default(''))
   changed_when: true
   notify: Restart openclaw-gateway
   tags:

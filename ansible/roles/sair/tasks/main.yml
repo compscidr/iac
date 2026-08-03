@@ -72,7 +72,7 @@
       HEARTBEAT_INTERVAL_SECONDS=60
   notify:
     - Restart proxy
-  no_log: true  # Hide API key
+  no_log: true # Hide API key
   when: not sair_adb_only
 
 # --- Start services ---
@@ -135,4 +135,4 @@
       REPO_URL: "{{ item.repo_url }}"
       DISABLE_AUTO_UPDATE: "true"
   loop: "{{ sair_runners }}"
-  no_log: true  # Hide runner PAT
+  no_log: true # Hide runner PAT

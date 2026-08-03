@@ -30,7 +30,7 @@
   ansible.builtin.file:
     path: "/usr/share/man/man{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   loop:
     - 1
     - 7
@@ -100,7 +100,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which yarn || echo "not found"
-  register: yarn_check
+  register: dev_yarn_check
   changed_when: false
   tags:
     - yarn
@@ -118,7 +118,8 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g yarn
-  when: "'not found' in yarn_check.stdout"
+  changed_when: true
+  when: "'not found' in dev_yarn_check.stdout"
 
 - name: Check if tldr is installed
   become: true
@@ -127,7 +128,7 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)" 2>/dev/null || true
     which tldr || echo "not found"
-  register: tldr_check
+  register: dev_tldr_check
   changed_when: false
   tags:
     - tldr
@@ -145,7 +146,8 @@
     export PATH="$HOME/.local/share/fnm:/opt/homebrew/bin:$PATH"
     eval "$(fnm env)"
     npm install -g tldr
-  when: "'not found' in tldr_check.stdout"
+  changed_when: true
+  when: "'not found' in dev_tldr_check.stdout"
 
 - name: Check if php ppa repository exists
   tags: php
@@ -167,7 +169,7 @@
   ansible.builtin.get_url:
     url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
     dest: /usr/share/keyrings/php-ppa.asc
-    mode: '0644'
+    mode: "0644"
   when: not dev_php_ppa_key_exists.stat.exists
 
 - name: Add php ppa repository
@@ -227,7 +229,7 @@
   ansible.builtin.file:
     path: /opt/zig
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Install zig development tools
   tags: zig
@@ -235,7 +237,7 @@
   ansible.builtin.unarchive:
     src: https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
     dest: /opt/zig
-    extra_opts: ['--strip-components=1', '--show-stored-names']
+    extra_opts: ["--strip-components=1", "--show-stored-names"]
     remote_src: true
 
 - name: Symlink zig program to /usr/local/bin
@@ -250,8 +252,8 @@
   become: true
   tags: doctl
   ansible.builtin.unarchive:
-    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{
-      [ansible_architecture] | map('extract', deb_architecture) | first }}.tar.gz"
+    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) |
+      first }}.tar.gz"
     dest: /usr/local/bin
     remote_src: true
 
@@ -260,7 +262,8 @@
   become: true
   tags: doctl
   ansible.builtin.copy:
-    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
 
@@ -287,8 +290,10 @@
   tags: aws
   ansible.builtin.copy:
     content: |
-      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
-      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
+      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}
+      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}
       AWS_DEFAULT_REGION=us-west-1
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
@@ -353,7 +358,6 @@
       - terraform
       - packer
 
-
 # Remove global OP service account token - use interactive signin instead
 - name: Remove global op service account token file
   tags: 1password
@@ -370,7 +374,8 @@
 #   become: true
 #   ansible.builtin.copy:
 #     content: |
-#       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
+#       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault=onepassword_vault,
+#         account_id=onepassword_account_id) }}
 #     dest: /etc/environment.d/90-op.conf
 #     mode: "644"
 
@@ -399,7 +404,7 @@
   ansible.builtin.copy:
     src: files/99-allow-ping.conf
     dest: /etc/sysctl.d/99-allow-ping.conf
-    mode: '0644'
+    mode: "0644"
     owner: "root"
     group: "root"
 
@@ -423,7 +428,8 @@
       vars:
         github_cli_user: "{{ username }}"
         github_cli_username: "compscidr"
-        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
   tags: gh
 
 # https://github.com/dlvhdr/gh-dash

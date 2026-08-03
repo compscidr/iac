@@ -6,7 +6,8 @@
     - vars/deb_arch.yml
     - vars/user.yml
   pre_tasks:
-    - ansible.builtin.include_tasks: tailscale_check.yml
+    - name: Check Tailscale connectivity
+      ansible.builtin.include_tasks: tailscale_check.yml
       when: inventory_hostname in groups['tailscale'] | default([])
   roles:
     - compscidr.gpg

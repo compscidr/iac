@@ -91,5 +91,5 @@
                 vault='openclaw',
                 account_id=onepassword_account_id) }}
   roles:
-    - fnm       # Install Node.js via fnm
-    - openclaw  # Install and configure Openclaw
+    - fnm # Install Node.js via fnm
+    - openclaw # Install and configure Openclaw

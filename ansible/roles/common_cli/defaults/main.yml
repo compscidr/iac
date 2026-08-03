@@ -1,10 +1,10 @@
 ---
 # Watchtower configuration
-watchtower_enabled: true
-watchtower_schedule: "0 0 4 * * *"  # Daily at 4 AM (cron format: second minute hour day month dayOfWeek)
-watchtower_cleanup: true
-watchtower_include_stopped: false
-watchtower_debug: false
-watchtower_timezone: "America/Los_Angeles"
-watchtower_monitor_only: false
-watchtower_notification_url: ""
+common_cli_watchtower_enabled: true
+common_cli_watchtower_schedule: "0 0 4 * * *" # Daily at 4 AM (cron format: second minute hour day month dayOfWeek)
+common_cli_watchtower_cleanup: true
+common_cli_watchtower_include_stopped: false
+common_cli_watchtower_debug: false
+common_cli_watchtower_timezone: "America/Los_Angeles"
+common_cli_watchtower_monitor_only: false
+common_cli_watchtower_notification_url: ""

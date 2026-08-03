@@ -5,17 +5,18 @@
     - vars/deb_arch.yml
     - vars/user.yml
   pre_tasks:
-    - ansible.builtin.include_tasks: tailscale_check.yml
+    - name: Check Tailscale connectivity
+      ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     # Enable nginx fail2ban jails (logs mounted from Docker)
     fail2ban_nginx_enabled: true
     fail2ban_nginx_botscan_enabled: true
-    www_redirects:
+    www_redirect_domains:
       - { domain: jasonernst.com, letsencrypt_email: "ernstjason1@gmail.com" }
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it
-    - www-redirect
+    - www_redirect
     - jasonernst_com
     - fail2ban
     - mailu

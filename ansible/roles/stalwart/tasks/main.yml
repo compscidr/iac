@@ -25,7 +25,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: stalwart
     group: stalwart
   loop:
@@ -51,14 +51,14 @@
       ansible.builtin.get_url:
         url: "{{ stalwart_server_url }}"
         dest: /tmp/stalwart-server.tar.gz
-        mode: '0644'
+        mode: "0644"
         checksum: "{{ stalwart_server_checksum }}"
 
     - name: Download Stalwart CLI tarball
       ansible.builtin.get_url:
         url: "{{ stalwart_cli_url }}"
         dest: /tmp/stalwart-cli.tar.gz
-        mode: '0644'
+        mode: "0644"
         checksum: "{{ stalwart_cli_checksum }}"
 
     - name: Extract Stalwart server
@@ -76,7 +76,7 @@
     - name: Make binaries executable
       ansible.builtin.file:
         path: "{{ item }}"
-        mode: '0755'
+        mode: "0755"
       loop:
         - "{{ stalwart_data_dir }}/bin/stalwart"
         - "{{ stalwart_data_dir }}/bin/stalwart-cli"
@@ -114,7 +114,7 @@
   become: true
   ansible.builtin.file:
     path: "{{ item }}"
-    mode: '0755'
+    mode: "0755"
   loop:
     - "{{ stalwart_data_dir }}/bin/stalwart"
     - "{{ stalwart_data_dir }}/bin/stalwart-cli"
@@ -132,8 +132,8 @@
     - "{{ stalwart_imap_port }}"
     - "{{ stalwart_imaps_port }}"
     - "{{ stalwart_http_port }}"
-    - "80"   # HTTP for ACME challenges
-    - "22"   # SSH
+    - "80" # HTTP for ACME challenges
+    - "22" # SSH
 
 # Management port (8080) intentionally NOT opened - use SSH tunnel
 
@@ -148,7 +148,7 @@
   ansible.builtin.template:
     src: config.toml.j2
     dest: "{{ stalwart_data_dir }}/etc/config.toml"
-    mode: '0640'
+    mode: "0640"
     owner: stalwart
     group: stalwart
   notify: Restart stalwart
@@ -158,7 +158,7 @@
   ansible.builtin.template:
     src: stalwart-mail.service.j2
     dest: /etc/systemd/system/stalwart-mail.service
-    mode: '0644'
+    mode: "0644"
   notify:
     - Reload systemd
     - Restart stalwart
@@ -180,31 +180,32 @@
   ansible.builtin.debug:
     msg: |
       Stalwart Mail Server v{{ stalwart_version }} installed successfully!
-      
+
       Binaries verified with SHA256 checksum.
       Admin account pre-configured from 1Password (user: {{ stalwart_admin_user }})
-      
+
       Next steps:
       1. Generate DKIM key:
          sudo openssl genpkey -algorithm ed25519 -out {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
          sudo chown stalwart:stalwart {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
          sudo chmod 600 {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
-      
+
       2. Get public key for DNS:
-         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
-      
+         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | \
+           openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
+
       3. Update Terraform with the public key in mail.tf (ed25519._domainkey.{{ stalwart_domain }})
          Then run: terraform apply
-      
+
       4. Restart Stalwart to pick up the key:
          sudo systemctl restart stalwart-mail
-      
+
       5. Access admin UI via SSH tunnel:
          ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
          Then open http://localhost:8080 (login with 1Password credentials)
-      
+
       6. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
-      
+
       Test commands:
       - Check SMTP: telnet {{ stalwart_hostname }} 25
       - Check IMAP: openssl s_client -connect {{ stalwart_hostname }}:993
