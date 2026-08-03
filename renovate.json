@@ -21,15 +21,14 @@
     },
     {
       "customType": "regex",
-      "description": "Track ansible-lint pin in the verify workflow",
+      "description": "Track ansible and ansible-lint pins in the verify workflow",
       "fileMatch": [
         "^\\.github/workflows/verify\\.yml$"
       ],
       "matchStrings": [
-        "ansible-lint==(?<currentValue>[0-9.]+)"
+        "(?<depName>ansible|ansible-lint)==(?<currentValue>[0-9.]+)"
       ],
-      "datasourceTemplate": "pypi",
-      "depNameTemplate": "ansible-lint"
+      "datasourceTemplate": "pypi"
     }
   ]
 }
