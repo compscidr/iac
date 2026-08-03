@@ -1,0 +1,14 @@
+# Config picked up by CI's `cd ansible && ansible-lint .` (and local runs from this dir).
+# Vendored/galaxy-managed content is not ours to lint.
+exclude_paths:
+  - venv/
+  - .galaxy-collections/
+  - .galaxy-roles/
+  - .molecule-collections/
+  # Galaxy roles from requirements.yml, in case they were installed into
+  # roles/ by an older roles_path config:
+  - roles/compscidr.gpg/
+  - roles/compscidr.lapce/
+  - roles/geerlingguy.php/
+  - roles/luizgavalda.gnome_extensions/
+  - roles/webarchitect609.jet_brains_toolbox/

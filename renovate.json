@@ -18,6 +18,18 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "aaddrick/claude-desktop-debian",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Track ansible-lint pin in the verify workflow",
+      "fileMatch": [
+        "^\\.github/workflows/verify\\.yml$"
+      ],
+      "matchStrings": [
+        "ansible-lint==(?<currentValue>[0-9.]+)"
+      ],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "ansible-lint"
     }
   ]
 }
