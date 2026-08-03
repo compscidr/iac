@@ -62,7 +62,8 @@
   ansible.builtin.command:
     cmd: "tailscale up --authkey={{ tailscale_authkey }} --ssh"
   vars:
-    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault, account_id=onepassword_account_id)
+      }}"
   register: common_cli_tailscale_up
   changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
@@ -72,8 +73,8 @@
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) | password_hash('sha512')
-      }}"
+    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) |
+      password_hash('sha512') }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -487,7 +488,8 @@
   tags: network-tools
   ansible.builtin.set_fact:
     common_cli_wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
-    common_cli_wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    common_cli_wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"

@@ -11,7 +11,7 @@
     # Enable nginx fail2ban jails (logs mounted from Docker)
     fail2ban_nginx_enabled: true
     fail2ban_nginx_botscan_enabled: true
-    www_redirects:
+    www_redirect_domains:
       - { domain: jasonernst.com, letsencrypt_email: "ernstjason1@gmail.com" }
   roles:
     # www-redirect must run before jasonernst_com so redirect container

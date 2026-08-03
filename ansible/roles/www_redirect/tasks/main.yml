@@ -14,7 +14,7 @@
     path: "/opt/www-redirect/{{ item.domain }}"
     state: directory
     mode: "0755"
-  loop: "{{ www_redirects }}"
+  loop: "{{ www_redirect_domains }}"
 
 - name: Write redirect configs
   become: true
@@ -27,7 +27,7 @@
       }
     dest: "/opt/www-redirect/{{ item.domain }}/default.conf"
     mode: "0644"
-  loop: "{{ www_redirects }}"
+  loop: "{{ www_redirect_domains }}"
 
 - name: Deploy www redirect containers
   become: true
@@ -44,7 +44,7 @@
       VIRTUAL_PORT: "80"
       LETSENCRYPT_HOST: "{{ item.domain }}"
       LETSENCRYPT_EMAIL: "{{ item.letsencrypt_email }}"
-  loop: "{{ www_redirects }}"
+  loop: "{{ www_redirect_domains }}"
 
 - name: Clean up old vhost.d redirect files
   become: true
@@ -59,4 +59,4 @@
       - "/etc/nginx/vhost.d/{{ item.domain }}_location"
   changed_when: false
   failed_when: false
-  loop: "{{ www_redirects }}"
+  loop: "{{ www_redirect_domains }}"

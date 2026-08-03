@@ -111,7 +111,8 @@
   become: true
   ansible.builtin.copy:
     content: |
-      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{ ollama_nvidia_repo_arch }} /
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/{{
+        ollama_nvidia_repo_arch }} /
     dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
     mode: "0644"
   when: ollama_gpu_enabled and ollama_nvidia_check.rc == 0

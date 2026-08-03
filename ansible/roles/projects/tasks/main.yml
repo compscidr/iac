@@ -186,8 +186,10 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='credential', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
+      client_id={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='username', vault='www.jasonernst.com',
+        account_id=onepassword_account_id) }}
+      client_secret={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='credential', vault='www.jasonernst.com',
+        account_id=onepassword_account_id) }}
     dest: /opt/goblog-live/.env
     mode: "644"
     owner: root

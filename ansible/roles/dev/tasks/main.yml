@@ -252,8 +252,8 @@
   become: true
   tags: doctl
   ansible.builtin.unarchive:
-    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) | first
-      }}.tar.gz"
+    src: "https://github.com/digitalocean/doctl/releases/download/v1.119.1/doctl-1.119.1-linux-{{ [ansible_architecture] | map('extract', deb_architecture) |
+      first }}.tar.gz"
     dest: /usr/local/bin
     remote_src: true
 
@@ -262,8 +262,8 @@
   become: true
   tags: doctl
   ansible.builtin.copy:
-    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault, account_id=onepassword_account_id)
-      }}"
+    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
 
@@ -290,8 +290,10 @@
   tags: aws
   ansible.builtin.copy:
     content: |
-      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
-      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
+      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}
+      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}
       AWS_DEFAULT_REGION=us-west-1
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
@@ -372,7 +374,8 @@
 #   become: true
 #   ansible.builtin.copy:
 #     content: |
-#       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault=onepassword_vault, account_id=onepassword_account_id) }}
+#       OP_SERVICE_ACCOUNT_TOKEN={{ lookup('community.general.onepassword', 'OP_SERVICE_ACCOUNT_TOKEN', field='credential', vault=onepassword_vault,
+#         account_id=onepassword_account_id) }}
 #     dest: /etc/environment.d/90-op.conf
 #     mode: "644"
 
@@ -425,8 +428,8 @@
       vars:
         github_cli_user: "{{ username }}"
         github_cli_username: "compscidr"
-        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault, account_id=onepassword_account_id)
-          }}"
+        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
   tags: gh
 
 # https://github.com/dlvhdr/gh-dash

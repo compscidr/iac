@@ -191,7 +191,8 @@
          sudo chmod 600 {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
 
       2. Get public key for DNS:
-         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
+         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | \
+           openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
 
       3. Update Terraform with the public key in mail.tf (ed25519._domainkey.{{ stalwart_domain }})
          Then run: terraform apply
