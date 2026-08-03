@@ -143,10 +143,14 @@
       Renovate bump and update the regex_replace below if aaddrick's
       release naming has changed.
 
-- name: Derive claude-desktop .deb filename version (upstream-aaddrick)
+# As of Aug 2026 aaddrick's assets are named `claude-desktop_<claude-version>_<arch>.deb`
+# (previously `claude-desktop_<claude-version>-<aaddrick-version>_<arch>.deb`), and the
+# package's internal Version field is the bare claude version — so both the download
+# filename and the dpkg-query comparison use just the upstream part of the tag.
+- name: Derive claude-desktop .deb filename version (upstream claude version)
   tags: claude-desktop
   ansible.builtin.set_fact:
-    dev_gui_claude_desktop_filename_version: "{{ dev_gui_claude_desktop_tag | regex_replace('^v(.+)\\+claude(.+)$', '\\2-\\1') }}"
+    dev_gui_claude_desktop_filename_version: "{{ dev_gui_claude_desktop_tag | regex_replace('^v(.+)\\+claude(.+)$', '\\2') }}"
     dev_gui_claude_desktop_deb_arch: "{{ {'x86_64': 'amd64', 'amd64': 'amd64', 'aarch64': 'arm64', 'arm64': 'arm64'}[ansible_architecture] }}"
 
 - name: Query currently installed claude-desktop version
