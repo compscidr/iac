@@ -1,0 +1,8 @@
+---
+# Default variables for lapce role
+lapce_version: "v0.4.5"
+
+# Checksums for version v0.4.5
+lapce_logo_checksum: "md5:dca7d444edece3006ec30dd96785ad8f"
+lapce_desktop_checksum: "md5:1d2a1aea7a895ab2732586a0994c919f"
+lapce_metainfo_checksum: "md5:5a6b388baff1be6eb1e38d2ba78d26e0"

@@ -1,0 +1,49 @@
+---
+# tasks for installing lapce on Ubuntu 22.04
+- name: Ensure required directories exist
+  become: true
+  tags: lapce
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /usr/share/pixmaps
+    - /usr/share/applications
+    - /usr/share/metainfo
+
+- name: Download and install lapce binary
+  become: true
+  tags: lapce
+  ansible.builtin.unarchive:
+    src: "https://github.com/lapce/lapce/releases/download/{{ lapce_version }}/lapce-linux-amd64.tar.gz"
+    remote_src: true
+    extra_opts: ['--strip-components=1', '--show-stored-names']
+    dest: /usr/bin
+
+- name: Get logo for lapce launcher icon
+  become: true
+  tags: lapce
+  ansible.builtin.get_url:
+    url: "https://github.com/lapce/lapce/blob/{{ lapce_version }}/extra/images/logo.png?raw=true"
+    dest: /usr/share/pixmaps/dev.lapce.lapce.png
+    mode: '644'
+    checksum: "{{ lapce_logo_checksum }}"
+
+- name: Get desktop file for lapce launcher
+  become: true
+  tags: lapce
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/lapce/lapce/refs/tags/{{ lapce_version }}/extra/linux/dev.lapce.lapce.desktop"
+    dest: /usr/share/applications/dev.lapce.lapce.desktop
+    mode: '644'
+    checksum: "{{ lapce_desktop_checksum }}"
+
+- name: Get metainfo file for lapce launcher
+  become: true
+  tags: lapce
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/lapce/lapce/refs/tags/{{ lapce_version }}/extra/linux/dev.lapce.lapce.metainfo.xml"
+    dest: /usr/share/metainfo/dev.lapce.lapce.metainfo.xml
+    mode: '644'
+    checksum: "{{ lapce_metainfo_checksum }}"

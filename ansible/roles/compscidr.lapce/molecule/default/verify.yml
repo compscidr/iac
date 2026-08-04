@@ -1,0 +1,38 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if lapce binary exists
+      ansible.builtin.stat:
+        path: /usr/bin/lapce
+      register: lapce_binary
+      failed_when: not lapce_binary.stat.exists
+
+    - name: Check if lapce logo exists
+      ansible.builtin.stat:
+        path: /usr/share/pixmaps/dev.lapce.lapce.png
+      register: lapce_logo
+      failed_when: not lapce_logo.stat.exists
+
+    - name: Check if lapce desktop file exists
+      ansible.builtin.stat:
+        path: /usr/share/applications/dev.lapce.lapce.desktop
+      register: lapce_desktop
+      failed_when: not lapce_desktop.stat.exists
+
+    - name: Check if lapce metainfo exists
+      ansible.builtin.stat:
+        path: /usr/share/metainfo/dev.lapce.lapce.metainfo.xml
+      register: lapce_metainfo
+      failed_when: not lapce_metainfo.stat.exists
+
+    - name: Verify lapce binary is executable
+      ansible.builtin.stat:
+        path: /usr/bin/lapce
+      register: lapce_exec
+      failed_when: not lapce_exec.stat.executable
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        msg: "All lapce installation files verified successfully!"
