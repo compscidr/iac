@@ -10,7 +10,6 @@
     rust_gameserver_identity: "weekly"
     rust_gameserver_name: "California | Weekly | No BP Wipe"
     rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
-    rust_gameserver_wipe_bp: 0
     rust_gameserver_worldsize: 3000
     rust_gameserver_port: 27015
     rust_gameserver_query_port: 27016
@@ -19,6 +18,8 @@
     rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "weekly"
+    rust_gameserver_manage_wipe_cron: false
+    rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
 
@@ -51,7 +52,6 @@
     rust_gameserver_identity: "monthly"
     rust_gameserver_name: "California | Monthly | No BP Wipe"
     rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Wednesday of the Month at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
-    rust_gameserver_wipe_bp: 0
     rust_gameserver_worldsize: 4500
     rust_gameserver_port: 28015
     rust_gameserver_query_port: 28016
@@ -60,6 +60,8 @@
     rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "monthly"
+    rust_gameserver_manage_wipe_cron: false
+    rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
     rust_gameserver_wipe_day_of_week: 3
