@@ -4,3 +4,8 @@ test_venv/
 .molecule-collections/
 .galaxy-roles/
 .galaxy-collections/
+
+# Galaxy roles are namespaced (namespace.role) and belong in .galaxy-roles/ per
+# ansible.cfg roles_path. Local roles use underscores, so a dotted directory here
+# is always a stray install — never commit it.
+roles/*.*/
