@@ -1,0 +1,21 @@
+---
+# rustd.xyz connects to this host over SSH **as the `jason` account** — that is the
+# principal being granted access here; "rustd.xyz" below means "the panel, acting as
+# that user". Both servers set `rust_gameserver_manage_wipe_cron: false`, handing
+# wipes to the panel, so it needs to write inside each identity directory:
+# snapshots, seed.env rewrites, map/save deletion.
+#
+# Group membership rather than sudo: every host-side thing the panel does is confined
+# to that one directory tree, and it drives the server lifecycle over RCON rather than
+# docker or systemd, so root is never required. A stored sudo credential would turn a
+# compromise of the panel into a compromise of the host.
+#
+# SETGID (the 2 in 2775) is load-bearing, not tidiness: `sed -i` on seed.env replaces
+# the file rather than editing it, and without setgid the replacement lands in the
+# manager's own group, at which point the container can no longer read its own seed.
+#
+# Defined once here and referenced by every server block below, so adding a server
+# cannot silently omit them and changing the principal is a one-line edit.
+rust_game_manager_users:
+  - jason
+rust_game_identity_dir_mode: '2775'
