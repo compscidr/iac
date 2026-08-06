@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+#
+# Bare-metal launcher for the rustd.xyz test server.
+#
+# Deliberately has NO supervision loop. The containerised servers exit and are
+# restarted by docker's policy; this one, run in the foreground, simply exits — which
+# is exactly the case compscidr/rustd.xyz#340 needs to observe. Do not add a
+# `while true` here without reading that issue first: it would silently answer the
+# question this server exists to ask.
+
+set -o allexport
+# Split out so a wipe can rotate the seed without touching this script.
+source {{ rust_test_server_root }}/seed.env
+set +o allexport
+
+exec {{ rust_test_server_root }}/RustDedicated -batchmode -nographics \
+  +server.identity "{{ rust_test_server_identity }}" \
+  +server.hostname "{{ rust_test_server_name }}" \
+  +server.description "{{ rust_test_server_description }}" \
+  +server.port {{ rust_test_server_port }} \
+  +server.queryport {{ rust_test_server_query_port }} \
+  +server.maxplayers {{ rust_test_server_maxplayers }} \
+  +server.worldsize {{ rust_test_server_worldsize }} \
+  +server.seed "${RUST_SERVER_SEED}" \
+  +server.saveinterval 300 \
+  +app.port {{ rust_test_server_app_port }} \
+  +rcon.port {{ rust_test_server_rcon_port }} \
+  +rcon.password "{{ rust_test_server_rcon_password }}" \
+  +rcon.web 1

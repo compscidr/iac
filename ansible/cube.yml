@@ -12,5 +12,9 @@
   vars_files:
     - vars/user.yml
     - vars/secrets.yml
+  vars:
+    rust_test_server_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   roles:
     - rust_game_cube
+    - rust_test_server

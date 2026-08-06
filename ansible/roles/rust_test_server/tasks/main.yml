@@ -1,0 +1,105 @@
+---
+- name: Install steamcmd prerequisites
+  tags: rust-test
+  become: true
+  ansible.builtin.apt:
+    name:
+      - lib32gcc-s1
+      - lib32stdc++6
+      - ca-certificates
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# steamcmd is in multiverse and its installer prompts for a licence agreement, which
+# a non-interactive run cannot answer — preseed the acceptance first.
+- name: Accept the steamcmd licence non-interactively
+  tags: rust-test
+  become: true
+  ansible.builtin.debconf:
+    name: steamcmd
+    question: steam/question
+    value: "I AGREE"
+    vtype: select
+
+- name: Install steamcmd
+  tags: rust-test
+  become: true
+  ansible.builtin.apt:
+    name: steamcmd
+    state: present
+
+# Owned by the panel's SSH user directly, rather than the group-membership dance the
+# containerised servers need (compscidr/iac#486). The panel writes here to snapshot,
+# rewrite the seed and delete map files; owning the tree outright is the simplest way
+# to grant that, and this host runs nothing else that needs the directory.
+- name: Create the server directory
+  tags: rust-test
+  become: true
+  ansible.builtin.file:
+    path: "{{ rust_test_server_root }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
+
+- name: Install or update the Rust dedicated server
+  tags: rust-test
+  become: true
+  become_user: "{{ rust_test_server_user }}"
+  ansible.builtin.command:
+    cmd: >-
+      /usr/games/steamcmd
+      +force_install_dir {{ rust_test_server_root }}
+      +login anonymous
+      +app_update 258550 validate
+      +quit
+    creates: "{{ rust_test_server_root }}/RustDedicated"
+  register: rust_test_server_install
+  changed_when: rust_test_server_install.rc == 0
+
+# The seed lives in its own file so a wipe can rotate it without rewriting the launch
+# script — the same split the containerised servers use, so rustd.xyz's `sed -i` on
+# seed.env works identically against both.
+- name: Create seed.env (never overwritten — wipes rotate it at runtime)
+  tags: rust-test
+  become: true
+  ansible.builtin.copy:
+    content: "RUST_SERVER_SEED={{ rust_test_server_seed }}\n"
+    dest: "{{ rust_test_server_root }}/seed.env"
+    mode: '0644'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
+    force: false
+
+- name: Install the launch script
+  tags: rust-test
+  become: true
+  ansible.builtin.template:
+    src: start.sh.j2
+    dest: "{{ rust_test_server_root }}/start.sh"
+    mode: '0755'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
+
+- name: Install the systemd unit
+  tags: rust-test
+  become: true
+  ansible.builtin.template:
+    src: rust-test.service.j2
+    dest: /etc/systemd/system/rust-test.service
+    mode: '0644'
+    owner: root
+    group: root
+
+# Installed but not enabled or started by default — see the comment on
+# rust_test_server_service_enabled. Supervising this process is the thing #340 is
+# trying to observe the absence of.
+- name: Set the service state
+  tags: rust-test
+  become: true
+  ansible.builtin.systemd_service:
+    name: rust-test
+    enabled: "{{ rust_test_server_service_enabled }}"
+    state: "{{ 'started' if rust_test_server_service_enabled else 'stopped' }}"
+    daemon_reload: true

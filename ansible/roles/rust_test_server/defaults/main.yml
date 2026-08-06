@@ -1,0 +1,30 @@
+---
+# Bare-metal Rust server for exercising rustd.xyz.
+#
+# Deliberately NOT the collection role: compscidr.rust_gameserver deploys a docker
+# container and has no native install path, and the entire point of this server is
+# to be the non-container case — see compscidr/rustd.xyz#340, which needs to observe
+# what the `restart` command does when nothing is supervising the process.
+rust_test_server_user: jason
+rust_test_server_root: /opt/rust-test
+rust_test_server_identity: test
+rust_test_server_name: "rustd.xyz test server"
+rust_test_server_description: "Test server for rustd.xyz. Wipes frequently."
+
+# 1000 is the smallest world Rust accepts. Map generation dominates a wipe, and this
+# server exists to have wipes run against it repeatedly.
+rust_test_server_worldsize: 1000
+rust_test_server_maxplayers: 5
+
+rust_test_server_port: 30015
+rust_test_server_query_port: 30016
+rust_test_server_rcon_port: 30017
+rust_test_server_app_port: 30082
+rust_test_server_seed: 1337
+
+# The systemd unit is installed but left DISABLED and STOPPED on purpose. Enabling it
+# would supervise the process and destroy the property this server exists to test:
+# #340 needs to know what happens to an UNsupervised server when rustd.xyz restarts
+# it. Start it by hand in the foreground for that, or enable the unit once the
+# question is answered and you want it to stay up.
+rust_test_server_service_enabled: false
