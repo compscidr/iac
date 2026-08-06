@@ -41,11 +41,21 @@
     - src: files/oxide.config.json
       dest: /etc/rust/server/weekly/oxide/oxide.config.json
       force: false
-    - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
+    - src: files/RustdMap.cs
+      dest: /etc/rust/server/weekly/oxide/plugins/RustdMap.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+
+# Replacing the file is not enough: RustadminOnline.cs stays on disk and keeps
+# failing to compile, which leaves a permanent error in the plugins listing and on
+# the panel's plugins page. Remove it explicitly.
+- name: Remove the superseded RustadminOnline plugin (weekly)
+  tags: rust-weekly
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
+    state: absent
 
 - name: Install rust monthly server
   tags: rust-monthly
@@ -90,8 +100,18 @@
     - src: files/oxide.config.json
       dest: /etc/rust/server/monthly/oxide/oxide.config.json
       force: false
-    - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
+    - src: files/RustdMap.cs
+      dest: /etc/rust/server/monthly/oxide/plugins/RustdMap.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+
+# Replacing the file is not enough: RustadminOnline.cs stays on disk and keeps
+# failing to compile, which leaves a permanent error in the plugins listing and on
+# the panel's plugins page. Remove it explicitly.
+- name: Remove the superseded RustadminOnline plugin (monthly)
+  tags: rust-monthly
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
+    state: absent
