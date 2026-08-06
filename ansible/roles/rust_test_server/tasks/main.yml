@@ -43,6 +43,11 @@
     owner: "{{ rust_test_server_user }}"
     group: "{{ rust_test_server_user }}"
 
+# Deliberately NOT guarded with `creates:`. Rust ships updates that break servers —
+# on 2026-08-06 one removed BasePlayer.violationLevel and killed a plugin outright —
+# so a task that installs once and never updates again is the wrong shape for the
+# thing it manages. `app_update` is a no-op when already current, so running it every
+# time is cheap; the cost is one steamcmd invocation per play.
 - name: Install or update the Rust dedicated server
   tags: rust-test
   become: true
@@ -54,9 +59,12 @@
       +login anonymous
       +app_update 258550 validate
       +quit
-    creates: "{{ rust_test_server_root }}/RustDedicated"
   register: rust_test_server_install
-  changed_when: rust_test_server_install.rc == 0
+  # steamcmd says "already up to date" when it did nothing and "fully installed" when
+  # it actually wrote something, so report changed only in the latter case rather than
+  # claiming a change on every single run.
+  changed_when: "'already up to date' not in rust_test_server_install.stdout"
+  failed_when: rust_test_server_install.rc != 0
 
 # The seed lives in its own file so a wipe can rotate it without rewriting the launch
 # script — the same split the containerised servers use, so rustd.xyz's `sed -i` on

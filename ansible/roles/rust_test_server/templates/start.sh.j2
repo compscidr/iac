@@ -9,10 +9,29 @@
 # `while true` here without reading that issue first: it would silently answer the
 # question this server exists to ask.
 
+set -euo pipefail
+
+SEED_FILE="{{ rust_test_server_root }}/seed.env"
+
+# Fail loudly rather than booting with an empty seed. Rust picks its own seed when
+# +server.seed is empty, so the running map would silently stop matching what
+# seed.env — and the panel — believe is running. A server that refuses to start is a
+# far cheaper failure than one running a map nobody can identify.
+if [ ! -r "${SEED_FILE}" ]; then
+  echo "FATAL: ${SEED_FILE} is missing or unreadable" >&2
+  exit 1
+fi
+
 set -o allexport
 # Split out so a wipe can rotate the seed without touching this script.
-source {{ rust_test_server_root }}/seed.env
+# shellcheck source=/dev/null
+source "${SEED_FILE}"
 set +o allexport
+
+if [ -z "${RUST_SERVER_SEED:-}" ]; then
+  echo "FATAL: ${SEED_FILE} did not set RUST_SERVER_SEED" >&2
+  exit 1
+fi
 
 exec {{ rust_test_server_root }}/RustDedicated -batchmode -nographics \
   +server.identity "{{ rust_test_server_identity }}" \
