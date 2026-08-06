@@ -19,6 +19,16 @@
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "weekly"
     rust_gameserver_manage_wipe_cron: false
+    # rustd.xyz owns wipes (above), so it needs to write in the identity directory:
+    # snapshots, seed.env rewrites, map/save deletion. Group membership, NOT sudo —
+    # all of its filesystem work is confined to that one tree and it drives the
+    # server lifecycle over RCON, so root is never required. SETGID (the 2 in 2775)
+    # is load-bearing: `sed -i` on seed.env replaces the file rather than editing it,
+    # and without setgid the replacement lands in jason's group and the container can
+    # no longer read its own seed.
+    rust_gameserver_manager_users:
+      - jason
+    rust_gameserver_identity_dir_mode: '2775'
     rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
@@ -67,6 +77,16 @@
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "monthly"
     rust_gameserver_manage_wipe_cron: false
+    # rustd.xyz owns wipes (above), so it needs to write in the identity directory:
+    # snapshots, seed.env rewrites, map/save deletion. Group membership, NOT sudo —
+    # all of its filesystem work is confined to that one tree and it drives the
+    # server lifecycle over RCON, so root is never required. SETGID (the 2 in 2775)
+    # is load-bearing: `sed -i` on seed.env replaces the file rather than editing it,
+    # and without setgid the replacement lands in jason's group and the container can
+    # no longer read its own seed.
+    rust_gameserver_manager_users:
+      - jason
+    rust_gameserver_identity_dir_mode: '2775'
     rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
