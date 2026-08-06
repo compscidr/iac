@@ -34,6 +34,11 @@ mailu_additional_domains:
       - user: jason
         password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault='Infrastructure',
           account_id=onepassword_account_id) }}"
+      # Service account the sair.run app authenticates as to send magic-link
+      # emails. Credentials must stay in sync with the app's SMTP config.
+      - user: noreply
+        password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault='Infrastructure',
+          account_id=onepassword_account_id) }}"
 
 # Features
 mailu_webmail: roundcube # roundcube, snappymail, or none
