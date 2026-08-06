@@ -1,0 +1,37 @@
+---
+# Rust servers on ubuntu-cube.local.
+#
+# Separate from the `rust_game` role (nas.local) because these are not production
+# community servers: the build server exists for base design and the test server
+# exists for exercising rustd.xyz against a real game server without touching the
+# servers people actually play on.
+- name: Install rust build server
+  tags: rust-build
+  ansible.builtin.include_role:
+    name: compscidr.rust_gameserver.rust_gameserver
+    apply:
+      become: true
+      tags: rust-build
+  vars:
+    rust_gameserver_identity: "build"
+    rust_gameserver_name: "California Build Server"
+    rust_gameserver_description: "Build server — no wipes.\\nWorld Size: {{ rust_gameserver_worldsize }}"
+    rust_gameserver_worldsize: 3000
+    rust_gameserver_maxplayers: 50
+    rust_gameserver_port: 29015
+    rust_gameserver_query_port: 29016
+    rust_gameserver_rcon_port: 29017
+    rust_gameserver_app_port: 29082
+    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    # A build server should never wipe on a timer. The cron is removed and rustd.xyz
+    # owns any wipe that does happen, deliberately, from the panel.
+    rust_gameserver_wipe: "monthly"
+    rust_gameserver_manage_wipe_cron: false
+    rust_gameserver_overwrite_env: false
+    # Lets rustd.xyz write in the identity directory without root — see
+    # compscidr/ansible-rust-gameserver#25. Inert until collection 0.2.0 is pinned
+    # (compscidr/iac#486 does that bump).
+    rust_gameserver_manager_users:
+      - jason
+    rust_gameserver_identity_dir_mode: '2775'

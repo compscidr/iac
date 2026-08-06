@@ -1,0 +1,16 @@
+---
+# Rust game servers on ubuntu-cube.local.
+#
+# These are not community servers. The build server is for base design; the test
+# server (see the bare-metal work) is for exercising rustd.xyz against a real game
+# server rather than against the servers people play on.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml cube.yml
+- name: Rust game servers on ubuntu-cube
+  hosts: ubuntu-cube.local
+  vars_files:
+    - vars/user.yml
+    - vars/secrets.yml
+  roles:
+    - rust_game_cube
