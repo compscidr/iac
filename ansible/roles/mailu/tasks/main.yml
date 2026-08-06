@@ -104,11 +104,17 @@
   failed_when: false # May fail if user exists
   no_log: true # Hide passwords
 
+# These DKIM tasks loop over domain NAMES, not the mailu_additional_domains
+# entries themselves. The entries nest user passwords, and Ansible echoes the
+# loop item for every skipped or registered result - which printed live
+# mailbox credentials in plaintext. Looping over names keeps secrets out of
+# the output without needing no_log, which would also hide the DKIM keys these
+# tasks exist to surface.
 - name: Check if additional domain DKIM key exists
   become: true
   ansible.builtin.stat:
-    path: "{{ mailu_install_path }}/dkim/{{ item.domain }}.dkim.key"
-  loop: "{{ mailu_additional_domains | default([]) }}"
+    path: "{{ mailu_install_path }}/dkim/{{ item }}.dkim.key"
+  loop: "{{ mailu_additional_domains | default([]) | map(attribute='domain') | list }}"
   register: mailu_additional_dkim_stat
 
 - name: Import additional domains with DKIM key generation (first time only)
@@ -117,7 +123,7 @@
     cmd: |
       set -o pipefail
       echo 'domain:
-        - name: {{ item.item.domain }}
+        - name: {{ item.item }}
           dkim_key: -generate-
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
@@ -135,7 +141,7 @@
     cmd: |
       set -o pipefail
       echo 'domain:
-        - name: {{ item.item.domain }}
+        - name: {{ item.item }}
       ' | docker compose exec -T admin flask mailu config-import --update
   args:
     chdir: "{{ mailu_install_path }}"
@@ -160,10 +166,19 @@
   failed_when: false # May fail if user exists
   no_log: true # Hide passwords
 
+# `<domain>.dkim.key` is the PRIVATE key. These tasks used to cat it and print
+# the result labelled "add this to DNS", which both leaked the signing key to
+# stdout/CI logs and was useless as a DNS value. Derive the public half
+# instead - that is what belongs in the TXT record.
 - name: Get DKIM public key
   become: true
-  ansible.builtin.command:
-    cmd: cat "{{ mailu_install_path }}/dkim/{{ mailu_domain }}.dkim.key"
+  ansible.builtin.shell:
+    cmd: >
+      set -o pipefail &&
+      openssl rsa -in "{{ mailu_install_path }}/dkim/{{ mailu_domain }}.dkim.key"
+      -pubout -outform DER 2>/dev/null | base64 -w0
+  args:
+    executable: /bin/bash
   register: mailu_dkim_key
   changed_when: false
   failed_when: false
@@ -174,14 +189,19 @@
       Add this DKIM record to DNS:
       Name: dkim._domainkey.{{ mailu_domain }}
       Type: TXT
-      Value: {{ mailu_dkim_key.stdout | default('DKIM key not yet generated - restart admin container') }}
+      Value: v=DKIM1; k=rsa; p={{ mailu_dkim_key.stdout }}
   when: mailu_dkim_key.stdout is defined and mailu_dkim_key.stdout | length > 0
 
 - name: Get DKIM public keys for additional domains
   become: true
-  ansible.builtin.command:
-    cmd: cat "{{ mailu_install_path }}/dkim/{{ item.domain }}.dkim.key"
-  loop: "{{ mailu_additional_domains | default([]) }}"
+  ansible.builtin.shell:
+    cmd: >
+      set -o pipefail &&
+      openssl rsa -in "{{ mailu_install_path }}/dkim/{{ item }}.dkim.key"
+      -pubout -outform DER 2>/dev/null | base64 -w0
+  args:
+    executable: /bin/bash
+  loop: "{{ mailu_additional_domains | default([]) | map(attribute='domain') | list }}"
   register: mailu_additional_dkim_keys
   changed_when: false
   failed_when: false
@@ -190,8 +210,8 @@
   ansible.builtin.debug:
     msg: |
       Add this DKIM record to DNS:
-      Name: dkim._domainkey.{{ item.item.domain }}
+      Name: dkim._domainkey.{{ item.item }}
       Type: TXT
-      Value: {{ item.stdout | default('DKIM key not yet generated - add domain in admin UI and restart') }}
+      Value: v=DKIM1; k=rsa; p={{ item.stdout }}
   loop: "{{ mailu_additional_dkim_keys.results | default([]) }}"
   when: item.stdout is defined and item.stdout | length > 0
