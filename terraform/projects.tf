@@ -280,6 +280,40 @@ resource "digitalocean_record" "goblog-TXT-google" {
 }
 
 # ============================================================================
+# rustd.xyz (https://github.com/compscidr/rustd.xyz)
+#
+# Served at the APEX, not www - unlike the other domains here, this one gets
+# no www_redirect entry. The app's auth base URL is https://rustd.xyz and its
+# login sets a __Host- prefixed cookie, which is bound to an exact host and
+# cannot survive an apex -> www redirect. See
+# docs/superpowers/specs/2026-08-05-rustd-xyz-dns-mail-design.md
+# ============================================================================
+resource "digitalocean_domain" "rustd-xyz" {
+  name = "rustd.xyz"
+}
+
+resource "digitalocean_record" "rustd-A" {
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "rustd-AAAA" {
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+resource "digitalocean_record" "rustd-CNAME-www" {
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "CNAME"
+  name   = "www"
+  value  = "@"
+}
+
+# ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
 resource "digitalocean_firewall" "projects" {
