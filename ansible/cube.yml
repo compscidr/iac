@@ -1,0 +1,20 @@
+---
+# Rust game servers on ubuntu-cube.local.
+#
+# These are not community servers. The build server is for base design; the test
+# server (see the bare-metal work) is for exercising rustd.xyz against a real game
+# server rather than against the servers people play on.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml cube.yml
+- name: Rust game servers on ubuntu-cube
+  hosts: ubuntu-cube.local
+  vars_files:
+    - vars/user.yml
+    - vars/secrets.yml
+  vars:
+    rust_test_server_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  roles:
+    - rust_game_cube
+    - rust_test_server

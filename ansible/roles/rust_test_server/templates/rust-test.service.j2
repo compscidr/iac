@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+#
+# Installed but NOT enabled by default (see rust_test_server_service_enabled).
+#
+# Note `Restart=no`: the whole point of this server is to be the unsupervised case
+# for compscidr/rustd.xyz#340. If you enable this unit AND set Restart=always, you
+# have made it a supervised server and it no longer answers that question — which is
+# fine once the question is answered, but should be a deliberate change rather than a
+# copied default.
+[Unit]
+Description=Rust dedicated server (rustd.xyz test)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ rust_test_server_user }}
+WorkingDirectory={{ rust_test_server_root }}
+ExecStart={{ rust_test_server_root }}/start.sh
+Restart=no
+KillSignal=SIGINT
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
