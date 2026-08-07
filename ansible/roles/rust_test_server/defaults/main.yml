@@ -7,6 +7,7 @@
 # what the `restart` command does when nothing is supervising the process.
 rust_test_server_user: jason
 rust_test_server_root: /opt/rust-test
+rust_test_server_steamcmd_dir: /opt/steamcmd
 rust_test_server_identity: test
 rust_test_server_name: "rustd.xyz test server"
 rust_test_server_description: "Test server for rustd.xyz. Wipes frequently."
