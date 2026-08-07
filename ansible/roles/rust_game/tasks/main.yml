@@ -19,6 +19,10 @@
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "weekly"
     rust_gameserver_manage_wipe_cron: false
+    # Defined once in vars/main.yml — see there for why this is group membership
+    # rather than sudo, and why the setgid bit is load-bearing.
+    rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
+    rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
     rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 14419
     rust_gameserver_rcon_web_port: 8000
@@ -67,6 +71,10 @@
       account_id=onepassword_account_id) }}"
     rust_gameserver_wipe: "monthly"
     rust_gameserver_manage_wipe_cron: false
+    # Defined once in vars/main.yml — see there for why this is group membership
+    # rather than sudo, and why the setgid bit is load-bearing.
+    rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
+    rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
     rust_gameserver_overwrite_env: false
     rust_gameserver_seed: 756632467
     rust_gameserver_rcon_web_port: 8001
