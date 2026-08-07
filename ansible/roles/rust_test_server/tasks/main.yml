@@ -77,6 +77,42 @@
   changed_when: "'already up to date' not in rust_test_server_install.stdout"
   failed_when: rust_test_server_install.rc != 0
 
+# RustDedicated aborts on boot without this. Steamworks resolves steamclient.so from
+# ~/.steam/sdk64 and, when it is missing, InitGameServer returns false and Rust then
+# dereferences the null platform in SteamInventory.LoadItemDefinitions:
+#
+#   Couldn't initialize Steam Server (InitGameServer(0,30015,30016,3,"2632") returned
+#   false - error: Failed to load module '/home/jason/.steam/sdk64/steamclient.so')
+#   NullReferenceException at Steamworks.SteamInventory.GetDefinitions ()
+#
+# The failure is a long way from its cause: map generation runs to completion first, so
+# the server looks like it is booting normally for minutes before dying. The container
+# image provides this path already, which is why only the bare-metal server needs it.
+#
+# sdk64 ONLY: RustDedicated is 64-bit and the loader named sdk64. A 32-bit link is what
+# 32-bit dedicated servers need and would be cargo cult here.
+- name: Create the Steam SDK directory
+  tags: rust-test
+  become: true
+  become_user: "{{ rust_test_server_user }}"
+  ansible.builtin.file:
+    path: "{{ rust_test_server_home }}/.steam/sdk64"
+    state: directory
+    mode: '0755'
+
+- name: Link steamclient.so where the Steamworks loader looks for it
+  tags: rust-test
+  become: true
+  become_user: "{{ rust_test_server_user }}"
+  ansible.builtin.file:
+    src: "{{ rust_test_server_steamcmd_dir }}/linux64/steamclient.so"
+    dest: "{{ rust_test_server_home }}/.steam/sdk64/steamclient.so"
+    state: link
+    # steamcmd unpacks the library on first run, not at unarchive time, so on a first
+    # play this link is created before its target exists.
+    force: true
+    follow: false
+
 # The seed lives in its own file so a wipe can rotate it without rewriting the launch
 # script — the same split the containerised servers use, so rustd.xyz's `sed -i` on
 # seed.env works identically against both.

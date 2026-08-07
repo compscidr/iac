@@ -8,6 +8,11 @@
 rust_test_server_user: jason
 rust_test_server_root: /opt/rust-test
 rust_test_server_steamcmd_dir: /opt/steamcmd
+
+# Where the Steamworks loader looks for steamclient.so — it resolves the path from the
+# SERVER PROCESS's $HOME, not from the install directory, so this has to track the user
+# above rather than rust_test_server_root.
+rust_test_server_home: "/home/{{ rust_test_server_user }}"
 rust_test_server_identity: test
 rust_test_server_name: "rustd.xyz test server"
 rust_test_server_description: "Test server for rustd.xyz. Wipes frequently."
