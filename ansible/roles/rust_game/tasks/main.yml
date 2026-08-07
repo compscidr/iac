@@ -39,17 +39,31 @@
     owner: "1000"
     group: "1000"
     # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
-    # upgrades), so re-copying would revert its own changes. The plugin stays force-copied.
+    # upgrades), so re-copying would revert its own changes.
     force: "{{ item.force | default(true) }}"
   loop:
     - src: files/oxide.config.json
       dest: /etc/rust/server/weekly/oxide/oxide.config.json
       force: false
-    - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+
+# This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
+# installation, so that customers attaching their own servers get the same mechanism
+# we do rather than one that only works if you happen to run our Ansible.
+#
+# But it must still clean up what it previously installed: RustadminOnline.cs is on
+# these servers because this role put it there, and since a Rust update removed
+# BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
+# error in the plugins listing. Deleting the file from the repo does not remove it
+# from a host, so this is explicit.
+- name: Remove the RustadminOnline plugin this role used to install (weekly)
+  tags: rust-weekly
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
+    state: absent
 
 - name: Install rust monthly server
   tags: rust-monthly
@@ -92,14 +106,28 @@
     owner: "1000"
     group: "1000"
     # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
-    # upgrades), so re-copying would revert its own changes. The plugin stays force-copied.
+    # upgrades), so re-copying would revert its own changes.
     force: "{{ item.force | default(true) }}"
   loop:
     - src: files/oxide.config.json
       dest: /etc/rust/server/monthly/oxide/oxide.config.json
       force: false
-    - src: files/RustadminOnline.cs
-      dest: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
 #      dest: /etc/rust/server/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+
+# This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
+# installation, so that customers attaching their own servers get the same mechanism
+# we do rather than one that only works if you happen to run our Ansible.
+#
+# But it must still clean up what it previously installed: RustadminOnline.cs is on
+# these servers because this role put it there, and since a Rust update removed
+# BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
+# error in the plugins listing. Deleting the file from the repo does not remove it
+# from a host, so this is explicit.
+- name: Remove the RustadminOnline plugin this role used to install (monthly)
+  tags: rust-monthly
+  become: true
+  ansible.builtin.file:
+    path: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
+    state: absent
