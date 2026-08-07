@@ -39,6 +39,22 @@ mailu_additional_domains:
       - user: noreply
         password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault='Infrastructure',
           account_id=onepassword_account_id) }}"
+  # Adding a domain here also adds mail.<domain> to the front container's
+  # VIRTUAL_HOST and LETSENCRYPT_HOST, which resolve to a single SAN cert
+  # covering every mail hostname. Do not add a domain until mail.<domain>
+  # resolves to this host: its ACME challenge would fail and take the whole
+  # certificate issuance - including the already-working hostnames - with it.
+  - domain: rustd.xyz
+    users:
+      - user: jason
+        password: "{{ lookup('community.general.onepassword', 'mail.rustd.xyz - jason', field='password', vault='Infrastructure',
+          account_id=onepassword_account_id) }}"
+      # Service account for rustd.xyz passwordless login. The app hardcodes
+      # quarkus.mailer.from=noreply@rustd.xyz and has no password fallback,
+      # so this account is what makes the panel loginable at all.
+      - user: noreply
+        password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault='Infrastructure',
+          account_id=onepassword_account_id) }}"
 
 # Features
 mailu_webmail: roundcube # roundcube, snappymail, or none

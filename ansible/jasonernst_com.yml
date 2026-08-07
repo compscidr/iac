@@ -5,7 +5,10 @@
     - vars/deb_arch.yml
     - vars/user.yml
   pre_tasks:
+    # Tagged 'always' so the connectivity check still runs when the play is
+    # invoked with --tags (untagged tasks are otherwise skipped).
     - name: Check Tailscale connectivity
+      tags: always
       ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     # Enable nginx fail2ban jails (logs mounted from Docker)
@@ -16,7 +19,7 @@
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it
-    - www_redirect
-    - jasonernst_com
-    - fail2ban
-    - mailu
+    - { role: www_redirect, tags: [www-redirect] }
+    - { role: jasonernst_com, tags: [jasonernst-com] }
+    - { role: fail2ban, tags: [fail2ban] }
+    - { role: mailu, tags: [mailu] }
