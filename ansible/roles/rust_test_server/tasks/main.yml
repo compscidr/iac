@@ -4,30 +4,41 @@
   become: true
   ansible.builtin.apt:
     name:
+      # steamcmd is a 32-bit binary; these provide its runtime without needing a full
+      # i386 architecture on the host.
       - lib32gcc-s1
       - lib32stdc++6
       - ca-certificates
+      - tar
     state: present
     update_cache: true
     cache_valid_time: 3600
 
-# steamcmd is in multiverse and its installer prompts for a licence agreement, which
-# a non-interactive run cannot answer — preseed the acceptance first.
-- name: Accept the steamcmd licence non-interactively
+# Deliberately the tarball rather than the `steamcmd` apt package. That package is i386-only,
+# so installing it means `dpkg --add-architecture i386` — a system-wide change that doubles apt
+# metadata and invites i386 library sprawl on a host that otherwise has none, all for one test
+# rig. (Multiverse is already enabled on ubuntu-cube; the package still has no candidate purely
+# because no foreign architecture is registered.) The tarball is self-contained and needs only
+# the 32-bit runtime above.
+- name: Create the steamcmd directory
   tags: rust-test
   become: true
-  ansible.builtin.debconf:
-    name: steamcmd
-    question: steam/question
-    value: "I AGREE"
-    vtype: select
+  ansible.builtin.file:
+    path: "{{ rust_test_server_steamcmd_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
 
-- name: Install steamcmd
+- name: Download and unpack steamcmd
   tags: rust-test
   become: true
-  ansible.builtin.apt:
-    name: steamcmd
-    state: present
+  become_user: "{{ rust_test_server_user }}"
+  ansible.builtin.unarchive:
+    src: https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
+    dest: "{{ rust_test_server_steamcmd_dir }}"
+    remote_src: true
+    creates: "{{ rust_test_server_steamcmd_dir }}/steamcmd.sh"
 
 # Owned by the panel's SSH user directly, rather than the group-membership dance the
 # containerised servers need (compscidr/iac#486). The panel writes here to snapshot,
@@ -54,7 +65,7 @@
   become_user: "{{ rust_test_server_user }}"
   ansible.builtin.command:
     cmd: >-
-      /usr/games/steamcmd
+      {{ rust_test_server_steamcmd_dir }}/steamcmd.sh
       +force_install_dir {{ rust_test_server_root }}
       +login anonymous
       +app_update 258550 validate
