@@ -189,8 +189,21 @@
       Add this DKIM record to DNS:
       Name: dkim._domainkey.{{ mailu_domain }}
       Type: TXT
-      Value: v=DKIM1; k=rsa; p={{ mailu_dkim_key.stdout }}
-  when: mailu_dkim_key.stdout is defined and mailu_dkim_key.stdout | length > 0
+      Value: v=DKIM1; k=rsa; p={{ mailu_dkim_key.stdout | trim }}
+  when: mailu_dkim_key.stdout | default('') | trim | length > 0
+
+# The lookup above sets failed_when: false, so a missing key or an openssl failure is
+# silent. Without this, "no key yet" and "key printed fine" look identical in the run
+# output — on a role whose entire purpose here is surfacing the record an operator has
+# to paste into DNS. Say so explicitly rather than skipping quietly.
+- name: Report that the DKIM key is not available yet
+  ansible.builtin.debug:
+    msg: >-
+      No DKIM public key could be read for {{ mailu_domain }}
+      ({{ mailu_install_path }}/dkim/{{ mailu_domain }}.dkim.key).
+      Mailu generates it on first start of the admin container, so this is expected on a
+      fresh install — re-run this play once it is up to get the DNS record.
+  when: mailu_dkim_key.stdout | default('') | trim | length == 0
 
 - name: Get DKIM public keys for additional domains
   become: true
@@ -212,6 +225,21 @@
       Add this DKIM record to DNS:
       Name: dkim._domainkey.{{ item.item }}
       Type: TXT
-      Value: v=DKIM1; k=rsa; p={{ item.stdout }}
+      Value: v=DKIM1; k=rsa; p={{ item.stdout | trim }}
   loop: "{{ mailu_additional_dkim_keys.results | default([]) }}"
-  when: item.stdout is defined and item.stdout | length > 0
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout | default('') | trim | length > 0
+
+# Same reasoning as the primary domain: silence must not be mistaken for success.
+# loop_control.label keeps the loop output to the domain name — the item here is a
+# command result, and printing it whole is how this role leaked secrets before.
+- name: Report additional domains whose DKIM key is not available yet
+  ansible.builtin.debug:
+    msg: >-
+      No DKIM public key could be read for {{ item.item }}. Mailu generates it on first
+      start of the admin container — re-run this play once it is up.
+  loop: "{{ mailu_additional_dkim_keys.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout | default('') | trim | length == 0
