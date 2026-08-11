@@ -37,7 +37,16 @@ ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_bac
 # this script's *own* rsync step runs (e.g. someone manually re-invoking the
 # script while a prior invocation is still dumping) can never ship a partial
 # file to the nas either.
+#
+# Destination is the bare root (":/"), not {{ rustd_xyz_backup_nas_path }} -
+# this key is always rrsync-restricted on the nas side (rustd_backup_nas
+# role, which fails its own play if rrsync isn't available: see that role's
+# README, "Restricted key"). rrsync re-roots absolute destination paths
+# under its own DIR argument (rustd_xyz_backup_nas_path) rather than
+# treating them as literal filesystem paths, so sending the same path here
+# would double it (DIR + DIR) and every push would fail. ":/" is rrsync's
+# contract for "the restricted directory itself".
 rsync -az --timeout=60 --exclude '*.tmp' \
   -e "ssh -i {{ rustd_xyz_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new" \
   {{ rustd_xyz_backup_local_dir }}/ \
-  {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_path }}/
+  {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:/

@@ -10,15 +10,21 @@
   when: rustd_xyz_ghcr_token | length > 0
   no_log: true
 
-- name: Create rustd base directories
+- name: Create rustd base directory
   become: true
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ rustd_xyz_base_path }}"
     state: directory
     mode: "0755"
-  loop:
-    - "{{ rustd_xyz_base_path }}"
-    - "{{ rustd_xyz_backup_local_dir }}"
+
+# 0700, not 0755: pg_dump dumps hold RCON credentials (and other rustd.xyz
+# secrets), so the directory they land in shouldn't be world-readable.
+- name: Create rustd backup directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ rustd_xyz_backup_local_dir }}"
+    state: directory
+    mode: "0700"
 
 - name: Create rustd-db network
   become: true

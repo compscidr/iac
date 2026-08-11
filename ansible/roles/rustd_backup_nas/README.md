@@ -13,12 +13,15 @@ the other side.
   `nologin` — see "Restricted key" below for why).
 - Creates the backup target directory (`rustd_xyz_backup_nas_path`,
   `/volume1/storage/backups/rustd-db`), owned by `rustd-backup`, mode `0700`.
-- Installs `rrsync` from the rsync package's bundled gzipped script
-  (`/usr/share/doc/rsync/scripts/rrsync.gz` → `/usr/local/bin/rrsync`) if not already
-  present.
+- Locates `rrsync` — packaged directly by rsync ≥ 3.2.5 at `/usr/bin/rrsync` or
+  `/usr/local/bin/rrsync`, or as a last resort extracted from the older gzipped-script
+  packaging (`/usr/share/doc/rsync/scripts/rrsync.gz` → `/usr/local/bin/rrsync`).
+  **rrsync is a required dependency of this role**: if it can't be found anywhere, the
+  play fails with a clear message rather than silently falling back to an unrestricted
+  key — see "Restricted key" below.
 - Slurps the backup public key live off the projects droplet (see "Key flow" below) and
   authorizes it in `rustd-backup`'s `authorized_keys`, restricted to a forced write-only
-  `rrsync` command when available.
+  `rrsync` command.
 - Prunes backups older than `rustd_xyz_backup_nas_keep` (30 days) via a `cron` job — the
   nas is the **sole owner** of nas-side retention. The push script
   (`rustd-db-backup.sh.j2`, in `rustd_xyz`) never deletes anything remote; it only prunes
@@ -69,12 +72,28 @@ the nas).
 
 ## Restricted key
 
-The authorized key is restricted with `command="rrsync -wo <path>",restrict` when
-`rrsync` is available (it is, on Debian/Ubuntu). This confines the key to write-only
-rsync into the one backups directory — no shell, no read-back, no port/agent/X11
-forwarding. If `rrsync` were ever unavailable, the role falls back to a plain
-(unrestricted) key on the same dedicated, single-purpose system user — weaker, but still
-scoped to a user with no other role on the box.
+The authorized key is restricted with `command="<rrsync> -wo <rustd_xyz_backup_nas_path>",restrict`.
+This confines the key to write-only rsync into the one backups directory — no shell, no
+read-back, no port/agent/X11 forwarding.
+
+`rrsync` is **mandatory**, not a best-effort hardening: if it can't be found in any of
+`rustd_backup_nas_rrsync_paths` and the gz fallback doesn't exist either, the role's
+`Fail if rrsync isn't available anywhere` task aborts the play. There is no unrestricted
+fallback key. Two things depend on that fail-closed behaviour:
+
+1. Security — a plain key on `rustd-backup` would grant a full interactive shell to
+   whoever holds the (droplet-generated) private key, not just a write into one
+   directory.
+2. **Path contract with the push side.** rrsync re-roots an absolute destination path
+   under its own `DIR` argument (`rustd_xyz_backup_nas_path`) instead of treating it as
+   a literal filesystem path — so the push script (`rustd-db-backup.sh.j2`, in
+   `rustd_xyz`) can't rsync to `rustd_xyz_backup_nas_path` again on the wire, that would
+   land at `DIR` + `DIR`. Instead it hardcodes its destination as the bare root (`:/`),
+   which rrsync resolves as "the restricted directory itself". That hardcoding is only
+   safe because the key is *always* rrsync-restricted — under a plain, unrestricted key,
+   `:/` would mean the literal filesystem root. Making rrsync mandatory removes that
+   ambiguity instead of making the push script branch on which kind of key it might be
+   talking to.
 
 `rustd-backup` gets a real shell (`/bin/bash`), not `nologin`: `sshd` runs the
 `authorized_keys` forced `command=` regardless of login shell, but some PAM

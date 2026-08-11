@@ -98,7 +98,8 @@ bouncing landing-page mailto from rustd.xyz#375.
 1. Create the `rustd-db` 1Password item (manual).
 2. Terraform resize (tenant downtime window).
 3. Merge the rustd.xyz PR → image appears on GHCR.
-4. Run the mail playbook → `contact@` alias live.
+4. Run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags mailu --ask-become-pass`
+   (the mailu role lives in `jasonernst_com.yml`, hosts `www`) → `contact@` alias live.
 5. Run `projects.yml` (rustd tags) → postgres + app up, TLS issued, Flyway migrates.
 6. Run `nas.yml` (rustd-backup tags) → authorizes the backup key on the nas. **Must run
    after step 5, not before**: the `rustd_backup_nas` role slurps the backup public key

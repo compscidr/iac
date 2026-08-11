@@ -12,7 +12,8 @@ GHCR-login / container-deploy shape.
   and `rustd-db` (to reach postgres). `VIRTUAL_HOST`/`LETSENCRYPT_HOST` are the
   **apex domain only** (`rustd.xyz`) — never add `www`, it breaks the
   `__Host-` prefixed auth cookie.
-- `/opt/rustd` and `/opt/rustd/backups` on the host, plus a
+- `/opt/rustd` (`0755`) and `/opt/rustd/backups` (`0700` — dumps hold RCON
+  credentials, so the directory isn't world-readable) on the host, plus a
   `rustd-db-backup.timer` (04:30 daily, 15m random delay) that runs
   `rustd-db-backup.sh`: `pg_dump`s `rustd-db`, keeps the newest
   `rustd_xyz_backup_local_keep` dumps locally, and `rsync`s the whole
@@ -39,8 +40,13 @@ Given a `pg_dump -Fc` dump (see the backup script), restore into a running
 `rustd-db` container with:
 
 ```bash
-docker exec -i rustd-db pg_restore -U rustd -d rustd --clean < dump.dump
+docker exec -i rustd-db pg_restore -U rustd -d rustd --clean --if-exists < dump.dump
 ```
+
+`--if-exists` (paired with `--clean`) suppresses the "does not exist" errors
+`pg_restore` would otherwise print for every object it tries to drop before
+recreating on a database that doesn't already have them — expected when
+restoring into a fresh/empty `rustd-db`, not a sign the restore failed.
 
 ## Secrets
 
@@ -55,7 +61,8 @@ created manually by the operator before the first deploy.
 `rustd-db-backup.sh` (templated to `/opt/rustd/rustd-db-backup.sh`) pg_dumps
 `rustd-db` in custom (`-Fc`) format, prunes local dumps beyond
 `rustd_xyz_backup_local_keep` (7), then `rsync`s the backups directory to
-`rustd_xyz_backup_nas_user@rustd_xyz_backup_nas_host:rustd_xyz_backup_nas_path`.
+`rustd_xyz_backup_nas_user@rustd_xyz_backup_nas_host:/` — the bare root, not
+`rustd_xyz_backup_nas_path`; see "Push destination is `:/`" below for why.
 The nas keeps `rustd_xyz_backup_nas_keep` (30) and owns pruning its own copy
 (cron, in the `rustd_backup_nas` role run by `nas.yml`) — the push script
 never deletes anything remote, so there is exactly one owner of nas-side
@@ -80,14 +87,21 @@ droplet means the only copy of the private key lives on the one machine
 that uses it, is never transmitted over the control channel at all, and
 needs no 1Password item.
 
-The authorized key is restricted with `command="rrsync -wo <path>",restrict`
-when `rrsync` is available (it is, on Debian/Ubuntu — shipped gzipped at
-`/usr/share/doc/rsync/scripts/rrsync.gz`, installed to `/usr/local/bin/rrsync`
-by the `rustd_backup_nas` role). This confines the key to write-only rsync
-into the one backups directory — no shell, no read-back, no port/agent/X11
-forwarding. If `rrsync` were ever unavailable, the role falls back to a
-plain (unrestricted) key on the same dedicated, single-purpose system user —
-weaker, but still scoped to a user with no other role on the box.
+The authorized key is restricted with `command="<rrsync> -wo <rustd_xyz_backup_nas_path>",restrict`
+(`rustd_backup_nas` role — `rrsync` is a *required* dependency there: the role
+fails its play if it can't find it, rather than falling back to a plain key).
+This confines the key to write-only rsync into the one backups directory —
+no shell, no read-back, no port/agent/X11 forwarding.
+
+**Push destination is `:/`, not the nas-side path.** rrsync re-roots an
+absolute destination path under its own restricted directory instead of
+treating it as a literal filesystem path, so rsyncing to
+`rustd_xyz_backup_nas_path` on the wire would land at `DIR` + `DIR`, not
+`DIR`. `rustd-db-backup.sh.j2` therefore hardcodes its destination as the
+bare root (`:/`), which rrsync resolves as "the restricted directory
+itself". That hardcoding relies on the key always being rrsync-restricted —
+see `rustd_backup_nas`'s README ("Restricted key") for why that's now
+guaranteed rather than best-effort.
 
 ## Mailer TLS
 

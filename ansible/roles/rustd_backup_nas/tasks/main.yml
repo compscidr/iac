@@ -32,19 +32,20 @@
     group: "{{ rustd_xyz_backup_nas_user }}"
     mode: "0700"
 
-- name: Check for the rrsync helper script shipped with rsync
+- name: Check for rrsync in its packaged locations (rsync >= 3.2.5 ships it directly)
+  become: true
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: rustd_backup_nas_rrsync_stat
+  loop: "{{ rustd_backup_nas_rrsync_paths }}"
+
+- name: Check for the rrsync helper script shipped with older rsync packages (last-resort fallback)
   become: true
   ansible.builtin.stat:
     path: "{{ rustd_backup_nas_rrsync_gz }}"
   register: rustd_backup_nas_rrsync_gz_stat
 
-- name: Check whether rrsync is already installed
-  become: true
-  ansible.builtin.stat:
-    path: "{{ rustd_backup_nas_rrsync_bin }}"
-  register: rustd_backup_nas_rrsync_bin_stat
-
-- name: Install rrsync from the rsync package's bundled script
+- name: Install rrsync from the rsync package's bundled script (last-resort fallback)
   become: true
   ansible.builtin.shell: |  # noqa: command-instead-of-module
     set -o pipefail
@@ -53,15 +54,37 @@
   args:
     creates: "{{ rustd_backup_nas_rrsync_bin }}"
     executable: /bin/bash
-  when: rustd_backup_nas_rrsync_gz_stat.stat.exists
+  when:
+    - rustd_backup_nas_rrsync_gz_stat.stat.exists
+    - rustd_backup_nas_rrsync_stat.results | selectattr('stat.exists') | list | length == 0
 
-# rrsync availability is a repo/OS-packaging fact, not a secret, so this is
-# safe to compute unconditionally (used below to pick the authorized_keys
-# restriction).
-- name: Determine rrsync availability
+# rrsync is a REQUIRED dependency of this role, not an optional hardening:
+# the push script on the other end (rustd_xyz role's rustd-db-backup.sh.j2)
+# hardcodes its rsync destination as the bare root (":/") on the assumption
+# that the key it pushes with is always rrsync-restricted to
+# rustd_xyz_backup_nas_path - rrsync re-roots that ":/" under its own DIR
+# argument, landing writes exactly there. A silent fallback to an
+# unrestricted key here would both defeat the restriction (full shell access
+# for whoever holds the private key) and break that path contract (":/"
+# would mean the literal filesystem root over an unrestricted connection),
+# so this role fails closed instead of falling back. See the README's
+# "Restricted key" section.
+- name: Resolve the rrsync binary path
   ansible.builtin.set_fact:
-    rustd_backup_nas_rrsync_available: >-
-      {{ rustd_backup_nas_rrsync_gz_stat.stat.exists or rustd_backup_nas_rrsync_bin_stat.stat.exists }}
+    rustd_backup_nas_rrsync_path: >-
+      {{ (rustd_backup_nas_rrsync_stat.results | selectattr('stat.exists') | map(attribute='item') | list
+          + ([rustd_backup_nas_rrsync_bin] if rustd_backup_nas_rrsync_gz_stat.stat.exists else []))
+         | first | default('', true) }}
+
+- name: Fail if rrsync isn't available anywhere
+  ansible.builtin.fail:
+    msg: >-
+      rrsync not found at {{ rustd_backup_nas_rrsync_paths | join(', ') }}, and the
+      gz fallback ({{ rustd_backup_nas_rrsync_gz }}) doesn't exist either. rrsync is
+      a required dependency of this role (see README.md, "Restricted key") - install
+      a version of rsync that ships it (>= 3.2.5) or make rrsync available some other
+      way, then re-run.
+  when: rustd_backup_nas_rrsync_path == ''
 
 # The droplet generates its own keypair at deploy time (rustd_xyz role) and
 # never gives up the private half - see that role's tasks/main.yml for why.
@@ -84,15 +107,13 @@
     key: "{{ rustd_backup_nas_pubkey_slurp.content | b64decode }}"
     # restrict + a forced write-only rrsync command: the key can only push
     # files into rustd_xyz_backup_nas_path, nothing else (no shell, no
-    # port/agent/X11 forwarding, no read-back). Falls back to a plain key
-    # (still a dedicated, single-purpose system user, but capable of a full
-    # interactive session) if rrsync isn't available on this nas - see the
-    # role README for the tradeoff.
+    # port/agent/X11 forwarding, no read-back). rrsync is now mandatory (see
+    # the fail task above), so there is no unrestricted-key fallback here.
     key_options: >-
-      {{ 'command="' + rustd_backup_nas_rrsync_bin + ' -wo ' + rustd_xyz_backup_nas_path + '",restrict'
-         if rustd_backup_nas_rrsync_available else omit }}
+      command="{{ rustd_backup_nas_rrsync_path }} -wo {{ rustd_xyz_backup_nas_path }}",restrict
 
 - name: Prune rustd.xyz backups older than the retention window
+  become: true
   ansible.builtin.cron:
     name: "prune rustd.xyz db backups"
     user: "{{ rustd_xyz_backup_nas_user }}"
