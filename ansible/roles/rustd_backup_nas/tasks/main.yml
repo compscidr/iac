@@ -37,13 +37,15 @@
 
 # Idempotency guard: unlike common_cli (which re-runs `tailscale up` on
 # every play with failed_when: false), prefer not re-invoking `up` on every
-# run against a vendor appliance - only do it when the nas isn't already
-# logged in.
-- name: Check current Tailscale login state
+# run against a vendor appliance - only do it when the backend isn't
+# Running. BackendState (machine-readable JSON) rather than grepping the
+# human text: it distinguishes NeedsLogin AND the logged-in-but-stopped
+# state, where plain `tailscale status` exits 0 with no "Logged out." line.
+- name: Check current Tailscale backend state
   become: true
   tags: [tailscale]
   ansible.builtin.command:
-    cmd: tailscale status --self
+    cmd: tailscale status --json
   register: rustd_backup_nas_tailscale_status
   changed_when: false
   failed_when: false
@@ -66,11 +68,15 @@
     rustd_backup_nas_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
   register: rustd_backup_nas_tailscale_up
-  changed_when: "'Success' in rustd_backup_nas_tailscale_up.stdout or rustd_backup_nas_tailscale_up.rc == 0"
-  failed_when: false
+  changed_when: true
+  # No failed_when: false here (unlike common_cli): this role's whole design
+  # rides on the join, so an expired/invalid authkey must fail the play, not
+  # be silently skipped. no_log because the command line carries the authkey.
+  no_log: true
   when: >-
     rustd_backup_nas_tailscale_status.rc != 0 or
-    'Logged out.' in rustd_backup_nas_tailscale_status.stdout
+    ((rustd_backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
+    != 'Running'
 
 - name: Ensure rsync is installed (needed for both the transfer and rrsync)
   become: true
