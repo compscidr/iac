@@ -7,6 +7,7 @@ the other side.
 
 ## What it does
 
+- Joins the nas to the tailnet (see "Tailnet membership" below).
 - Installs `rsync` (Debian/Ubuntu, via `apt`) — needed both for the transfer itself and
   because `rrsync` ships bundled inside the rsync package.
 - Creates a dedicated system user, `rustd-backup` (a real `/bin/bash` shell, not
@@ -26,6 +27,38 @@ the other side.
   nas is the **sole owner** of nas-side retention. The push script
   (`rustd-db-backup.sh.j2`, in `rustd_xyz`) never deletes anything remote; it only prunes
   its own local copy. There is exactly one place backups on the nas get deleted from.
+
+## Tailnet membership
+
+The backup pipeline design assumed the nas was already a tailnet member; deploy discovery
+found it wasn't — the `tailscale` package was present but `tailscaled` had never been
+enabled and `tailscale up` had never been run. This role owns the join.
+
+**Why this role, not `common_cli`:** `common_cli` is how every workstation and server in
+this repo joins the tailnet, but it's paired with a general CLI/dotfiles/user-account setup
+that assumes a machine this repo fully owns. The nas is a vendor-managed UGREEN appliance
+(Debian-based, hostname `DXP8800PLUS-3F06`) — package/config changes on it are deliberately
+kept to the minimum this pipeline needs, so it never runs `common_cli`. `rustd_backup_nas`
+adds the smallest tailnet-join footprint instead: install (idempotent no-op here, since the
+package already exists), enable the daemon, and `up`.
+
+**Hostname contract:** `tailscale up` is given `--hostname={{ rustd_backup_nas_tailnet_hostname }}`
+(default `nas`) rather than letting the appliance's own hostname become its tailnet name.
+This value **must match `rustd_xyz_backup_nas_host`** in `group_vars/all.yml` — that's the
+name the droplet-side backup script dials to reach the nas over the tailnet. See the sync
+contract comments on both variables.
+
+**Flag rationale:**
+
+- `--accept-dns=false` — MagicDNS must not rewrite a vendor appliance's `resolv.conf`; DNS
+  resolution on the box stays whatever the vendor OS configures.
+- No `--ssh` — the vendor `sshd` stays authoritative for inbound SSH. The droplet pushes
+  backups over plain `sshd` (the restricted `rustd-backup` key below), not Tailscale SSH.
+
+**Idempotency:** unlike `common_cli`, which re-runs `tailscale up` on every play
+(`failed_when: false` tolerates the no-op), this role checks `tailscale status --self`
+first and only runs `up` when the nas isn't already logged in (`rc != 0` or a `NeedsLogin`
+status) — preferring not to re-invoke `up` on every run against a vendor appliance.
 
 ## Key-flow rationale
 
@@ -121,3 +154,8 @@ window: local pruning is the droplet's job, nas pruning is this role's job.
 `ansible/group_vars/all.yml`, not in either role's `defaults/main.yml` — `projects.yml`
 and `nas.yml` are separate playbook runs with no common `vars_files`, so neither role's
 own defaults are visible to the other. See the comment in `group_vars/all.yml` for why.
+
+`rustd_backup_nas_tailnet_hostname` (this role's own `defaults/main.yml`) is a related but
+separately-enforced sync contract: it must match `rustd_xyz_backup_nas_host` above, but
+lives here rather than in `group_vars/all.yml` since only this role ever sets it — see the
+comment on the variable itself.
