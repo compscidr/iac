@@ -1,0 +1,80 @@
+---
+# Deploy rustd.xyz panel + postgres on the projects droplet
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ rustd_xyz_ghcr_user }}"
+    password: "{{ rustd_xyz_ghcr_token }}"
+  when: rustd_xyz_ghcr_token | length > 0
+  no_log: true
+
+- name: Create rustd base directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ rustd_xyz_base_path }}"
+    - "{{ rustd_xyz_base_path }}/backups"
+
+- name: Create rustd-db network
+  become: true
+  community.docker.docker_network:
+    name: rustd-db
+    state: present
+
+- name: Create rustd-db data volume
+  become: true
+  community.docker.docker_volume:
+    name: rustd-db-data
+
+- name: Deploy rustd postgres
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: rustd-db
+    image: "{{ rustd_xyz_db_image }}"
+    restart_policy: unless-stopped
+    networks:
+      - name: rustd-db
+    volumes:
+      - "rustd-db-data:/var/lib/postgresql/data"
+    env:
+      POSTGRES_DB: "{{ rustd_xyz_db_name }}"
+      POSTGRES_USER: "{{ rustd_xyz_db_user }}"
+      POSTGRES_PASSWORD: "{{ rustd_xyz_db_password }}"
+
+- name: Deploy rustd.xyz panel
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: rustd-xyz
+    image: "{{ rustd_xyz_image }}"
+    pull: true
+    recreate: true
+    restart_policy: unless-stopped
+    networks:
+      - name: nginx-proxy
+      - name: rustd-db
+    env:
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://rustd-db:5432/{{ rustd_xyz_db_name }}"
+      QUARKUS_DATASOURCE_USERNAME: "{{ rustd_xyz_db_user }}"
+      QUARKUS_DATASOURCE_PASSWORD: "{{ rustd_xyz_db_password }}"
+      QUARKUS_MAILER_HOST: "{{ rustd_xyz_smtp_host }}"
+      QUARKUS_MAILER_PORT: "{{ rustd_xyz_smtp_port | string }}"
+      QUARKUS_MAILER_USERNAME: "{{ rustd_xyz_smtp_username }}"
+      QUARKUS_MAILER_PASSWORD: "{{ rustd_xyz_smtp_password }}"
+      # Port 465 is Mailu's implicit-TLS submissions port. In Quarkus 3.38.x
+      # (io.quarkus:quarkus-mailer) quarkus.mailer.tls maps to
+      # Vert.x MailConfig#setSsl(true) - i.e. wrap-in-TLS-from-connect, which
+      # is what implicit TLS needs. quarkus.mailer.ssl is the deprecated
+      # alias for the same thing; quarkus.mailer.start-tls is a *different*
+      # knob (STARTTLS upgrade of a plaintext connection) and is wrong here.
+      QUARKUS_MAILER_TLS: "true"
+      VIRTUAL_HOST: "{{ rustd_xyz_domain }}"
+      VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"
+      LETSENCRYPT_HOST: "{{ rustd_xyz_domain }}"
+      LETSENCRYPT_EMAIL: "{{ rustd_xyz_letsencrypt_email }}"

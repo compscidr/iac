@@ -1,0 +1,26 @@
+---
+# rustd.xyz role defaults
+# Panel + postgres for rustd.xyz on the projects droplet. Mirrors sair_portal:
+# GHCR image, nginx-proxy VIRTUAL_HOST TLS, secrets injected from projects.yml vars.
+
+rustd_xyz_image: "ghcr.io/compscidr/rustd.xyz:latest" # pin :sha-<sha> to roll back
+rustd_xyz_port: 8080
+rustd_xyz_domain: "rustd.xyz" # apex ONLY - the __Host- auth cookie forbids www
+rustd_xyz_letsencrypt_email: "ernstjason1@gmail.com"
+rustd_xyz_ghcr_token: ""
+rustd_xyz_ghcr_user: "compscidr"
+
+# Base directory on the droplet (config/backups live under here)
+rustd_xyz_base_path: "/opt/rustd"
+
+# Postgres
+rustd_xyz_db_image: "postgres:17"
+rustd_xyz_db_name: "rustd"
+rustd_xyz_db_user: "rustd"
+rustd_xyz_db_password: "" # from projects.yml (1Password item rustd-db)
+
+# SMTP for account claim / notification mail
+rustd_xyz_smtp_host: "mail.rustd.xyz"
+rustd_xyz_smtp_port: 465
+rustd_xyz_smtp_username: ""
+rustd_xyz_smtp_password: ""
