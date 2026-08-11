@@ -100,9 +100,16 @@ bouncing landing-page mailto from rustd.xyz#375.
 3. Merge the rustd.xyz PR → image appears on GHCR.
 4. Run the mail playbook → `contact@` alias live.
 5. Run `projects.yml` (rustd tags) → postgres + app up, TLS issued, Flyway migrates.
-6. `docker logs rustd-xyz` → claim URL → claim the panel.
-7. Add servers/credentials in the panel; flip demo/signup switches when ready to go public.
-8. Confirm first nightly backup landed on the nas.
+6. Run `nas.yml` (rustd-backup tags) → authorizes the backup key on the nas. **Must run
+   after step 5, not before**: the `rustd_backup_nas` role slurps the backup public key
+   live off the projects droplet, which doesn't exist until `projects.yml` has generated
+   it there. This is a one-time bootstrap ordering constraint, not enforced by tooling —
+   see `ansible/roles/rustd_backup_nas/README.md` ("First-run ordering"). After both
+   playbooks have run once, re-running either is idempotent and the ordering no longer
+   matters.
+7. `docker logs rustd-xyz` → claim URL → claim the panel.
+8. Add servers/credentials in the panel; flip demo/signup switches when ready to go public.
+9. Confirm first nightly backup landed on the nas.
 
 ## Error handling / operational notes
 
@@ -120,7 +127,7 @@ bouncing landing-page mailto from rustd.xyz#375.
   the workflow (container starts, `/q/health`-less — hit `/login` for 200) before push.
 - iac repo: `ansible-lint`/molecule per repo convention; the role's first real run IS the
   deploy (matches how every other role here is validated).
-- Backup restore drill: after step 8, `pg_restore` the nas dump into a scratch container once,
+- Backup restore drill: after step 9, `pg_restore` the nas dump into a scratch container once,
   documented in the role README.
 
 ## Out of scope
@@ -129,3 +136,63 @@ bouncing landing-page mailto from rustd.xyz#375.
 - Monitoring/alerting beyond fail2ban + docker restart policies (nothing else on the droplet
   has it either).
 - Zero-downtime deploys (recreate = seconds of downtime; acceptable for this panel).
+
+## Implementation notes
+
+Deviations from this design, accumulated across the implementation tasks. Deviations that
+belong to the `rustd.xyz` repo (Part A, e.g. `.dockerignore` adjustments) are recorded in that
+repo's own PR, not here — this section covers only the iac-side implementation (Part B).
+
+- **Backup keypair generated on the droplet, not the ansible controller.** The design's stated
+  default (§B3, implicit) was controller-side `community.crypto.openssh_keypair` generation,
+  templating the private key out to the droplet and the public key out to the nas. Implemented
+  the opposite: the droplet generates its own ed25519 keypair on first run
+  (`ssh-keygen -f ... -N "" `, gated by `creates:`) and the private half never leaves it — not
+  copied to the controller, not put in 1Password, not templated anywhere. A controller-generated
+  private key would have to land in some file on the operator's own machine with no place in this
+  repo's secret model to account for it (not a 1Password item, not otherwise version-controlled),
+  which is exactly the kind of stray artifact this repo's "secrets are 1Password lookups, never
+  files" convention exists to avoid. Only the public key is ever read off the droplet, via a live
+  `slurp` delegated from `nas.yml`. Full rationale in
+  `ansible/roles/rustd_xyz/README.md` ("Key flow") and `ansible/roles/rustd_backup_nas/README.md`
+  ("Key-flow rationale"). This also means **`nas.yml` must run after `projects.yml` has run at
+  least once** — added as runbook step 6 above (was implicit/undocumented before this note).
+- **`community.crypto` is not in `requirements.yml`**, so the design's assumed
+  `openssh_keypair` module wasn't available regardless of the generation-location decision above;
+  used the plan's allowed `ansible.builtin.command: ssh-keygen ... creates:` fallback instead.
+- **Nas storage root is `/volume1/storage/backups/rustd-db`**, not the design/plan's placeholder
+  `/volume/backups/rustd-db` — `/volume1` is the nas' actual (only) data mount, confirmed from
+  `roles/media_server` (`media_storage_base_path: /volume1/storage`) and `roles/cs2_game`
+  (`/volume1/storage/cs2`); there is no `/volume` share on the real box.
+- **`mailu_install_path`, not `mailu_base_path`.** The design/plan's illustrative alias task used
+  `chdir: "{{ mailu_base_path }}"`; the role's real variable (used throughout `tasks/main.yml`) is
+  `mailu_install_path`. Used the real one. Likewise `changed_when` on the alias task follows the
+  existing `Create mail users` task's idiom (`changed_when: false`, with a comment that a looped
+  command's register doesn't give a reliable single-instance `rc` to key off), not the plan's
+  illustrative `changed_when: mailu_alias_result.rc == 0`.
+- **Dropped the droplet's stale `# $12/mo` cost comment** when resizing (Task 1) rather than
+  updating it to a new figure — it described the old `s-1vcpu-2gb` size and would have been
+  actively misleading left in place next to the new `s-2vcpu-4gb` line; the new required comment
+  already explains the resize.
+- **`QUARKUS_MAILER_TLS=true` confirmed by disassembly, not assumption.** The design flagged this
+  as needing verification against the pinned Quarkus version. Extracted
+  `quarkus-mailer-3.38.1.jar` from the local Gradle cache (the exact artifact rustd.xyz's build
+  resolves, per its `libs.versions.toml`) and read the bytecode with `javap`: both
+  `quarkus.mailer.tls` and the deprecated `quarkus.mailer.ssl` feed the same Vert.x
+  `MailConfig#setSsl(true)` (implicit TLS, wrap-from-connect) — the correct mechanism for Mailu's
+  port 465. `quarkus.mailer.start-tls` is a separate, inapplicable STARTTLS-upgrade knob. Evidence
+  recorded in `ansible/roles/rustd_xyz/tasks/main.yml` (inline comment) and the role README
+  ("Mailer TLS").
+- **Atomic backup dumps** (fixed after initial review): the backup script originally wrote
+  `pg_dump` output straight to its final filename
+  (`rustd-<date>.dump`). A `pg_dump` that dies partway (disk full, OOM, host reboot mid-run)
+  would leave a truncated file at that name — which the *next* night's successful run would then
+  rsync to the nas indistinguishably from a good backup, silently corrupting the offsite copy.
+  Fixed by dumping to `<name>.dump.tmp` and `mv`-ing into place only after `pg_dump` exits 0
+  (`set -euo pipefail` means a failed `pg_dump` never reaches the `mv`); added `rm -f` of any
+  leftover `.tmp` at the top of the script and excluded `*.tmp` from the rsync push, in case a
+  dump is still in flight when the script's own rsync step runs.
+
+None of the above required changing this design's Decisions table or Part A; they're
+implementation-detail resolutions of things the design flagged as needing verification, plus one
+bug fix (atomic dumps) found in review.

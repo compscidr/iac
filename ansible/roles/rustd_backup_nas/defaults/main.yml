@@ -14,6 +14,10 @@ rustd_backup_nas_projects_host: projects
 
 # Where the SSH keypair for backups lives on the projects droplet - must
 # match rustd_xyz_backup_ssh_key_path in roles/rustd_xyz/defaults/main.yml.
+#
+# Sync contract: this is that var's path + ".pub". No shared vars_file
+# enforces the two paths agreeing (rustd_xyz runs in projects.yml, this role
+# in nas.yml) - if you change one, change the other.
 rustd_backup_nas_pubkey_path: /root/.ssh/rustd-backup_ed25519.pub
 
 # rrsync (restricted rsync wrapper) - shipped as a gzipped script alongside

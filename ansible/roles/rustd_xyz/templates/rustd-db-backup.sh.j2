@@ -10,13 +10,34 @@ set -euo pipefail
 
 STAMP="$(date +%F)"
 OUT="{{ rustd_xyz_backup_local_dir }}/rustd-${STAMP}.dump"
+TMP="${OUT}.tmp"
 
-docker exec rustd-db pg_dump -Fc -U {{ rustd_xyz_db_user }} {{ rustd_xyz_db_name }} > "${OUT}"
+# Belt-and-braces: a leftover .tmp from a previous killed/failed run must
+# not be mistaken for a valid dump, and must not silently accumulate.
+rm -f "${TMP}"
 
-# Keep the newest {{ rustd_xyz_backup_local_keep }} local dumps.
+# Dump to a temp name and only rename into place once pg_dump has fully
+# succeeded (set -e means a non-zero pg_dump exit aborts before the mv).
+# Without this, a pg_dump that dies partway (disk full, container OOM,
+# host reboot) leaves a truncated file at the FINAL name, which the next
+# night's successful run would then happily rsync to the nas as if it
+# were a good backup.
+docker exec rustd-db pg_dump -Fc -U {{ rustd_xyz_db_user }} {{ rustd_xyz_db_name }} > "${TMP}"
+mv "${TMP}" "${OUT}"
+
+# Keep the newest {{ rustd_xyz_backup_local_keep }} local dumps. Glob is
+# scoped to *.dump (not *.dump.tmp), so an in-progress dump from a
+# concurrent/overlapping run is never counted against the retention window
+# or pruned out from under itself.
 ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_backup_local_keep | int + 1 }} | xargs -r rm --
 
-rsync -az --timeout=60 \
+# --exclude '*.tmp': belt-and-braces again - even though rm -f above and the
+# rename-on-success above mean a .tmp should never coexist with a completed
+# run of this script, excluding it here means a dump that's mid-write when
+# this script's *own* rsync step runs (e.g. someone manually re-invoking the
+# script while a prior invocation is still dumping) can never ship a partial
+# file to the nas either.
+rsync -az --timeout=60 --exclude '*.tmp' \
   -e "ssh -i {{ rustd_xyz_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new" \
   {{ rustd_xyz_backup_local_dir }}/ \
   {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_path }}/

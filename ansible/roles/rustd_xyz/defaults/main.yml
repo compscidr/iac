@@ -36,4 +36,9 @@ rustd_xyz_backup_local_keep: 7
 # (see tasks/main.yml) - private key never leaves this host or touches the
 # ansible controller. Only the public half is ever read off the box, by the
 # nas play delegating a slurp back to this host.
+#
+# Sync contract: rustd_backup_nas_pubkey_path (roles/rustd_backup_nas/defaults/main.yml,
+# consumed by nas.yml) must equal this path + ".pub". The two vars live in
+# separate roles/playbooks with no shared vars_file to enforce it in code -
+# if you change this path, update that one too.
 rustd_xyz_backup_ssh_key_path: /root/.ssh/rustd-backup_ed25519
