@@ -166,6 +166,22 @@
   failed_when: false # May fail if user exists
   no_log: true # Hide passwords
 
+- name: Create mail aliases
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      docker compose exec -T admin flask mailu alias
+      {{ item.local }} {{ item.domain }} {{ item.destination }}
+  args:
+    chdir: "{{ mailu_install_path }}"
+  loop: "{{ mailu_aliases | default([]) }}"
+  register: mailu_alias_result
+  changed_when: false # Can't reliably detect from looped command
+  failed_when: false # May fail if alias exists
+  # No no_log here, unlike the user-creation tasks above: local/domain/destination
+  # are an alias routing rule, not a credential - nothing here is a secret worth
+  # hiding from the run output.
+
 # `<domain>.dkim.key` is the PRIVATE key. These tasks used to cat it and print
 # the result labelled "add this to DNS", which both leaked the signing key to
 # stdout/CI logs and was useless as a DNS value. Derive the public half

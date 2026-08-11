@@ -5,9 +5,21 @@
     - vars/deb_arch.yml
     - vars/user.yml
     - vars/secrets.yml
+  pre_tasks:
+    # rustd_backup_nas delegates a task to the "projects" host (a Tailscale
+    # host, per inventory.yml), unlike nas.local itself which is reached
+    # over LAN mDNS regardless of Tailscale state.
+    #
+    # Tagged 'always' (matches jasonernst_com.yml) so the connectivity check
+    # still runs when the play is invoked with --tags, e.g. the runbook's
+    # `--tags rustd-backup` (untagged tasks are otherwise skipped).
+    - name: Check Tailscale connectivity
+      tags: always
+      ansible.builtin.include_tasks: tailscale_check.yml
   roles:
     - media_server
     - home_assistant
     - rust_game
     # - cs2_game
     - dyndns
+    - { role: rustd_backup_nas, tags: [rustd, rustd-backup] }

@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly rustd.xyz postgres dump, shipped to the nas
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

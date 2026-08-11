@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Managed by ansible (rustd_xyz role) - do not edit by hand.
+#
+# Nightly rustd.xyz postgres dump: pg_dump the rustd-db container, prune
+# local dumps beyond {{ rustd_xyz_backup_local_keep }}, then push everything
+# still on disk to the nas over rsync/ssh. Pruning of the *nas* copy is owned
+# by the nas side (cron in the rustd_backup_nas role) - this script never
+# deletes anything remotely.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+OUT="{{ rustd_xyz_backup_local_dir }}/rustd-${STAMP}.dump"
+TMP="${OUT}.tmp"
+
+# Belt-and-braces: a leftover .tmp from a previous killed/failed run must
+# not be mistaken for a valid dump, and must not silently accumulate.
+rm -f "${TMP}"
+
+# Dump to a temp name and only rename into place once pg_dump has fully
+# succeeded (set -e means a non-zero pg_dump exit aborts before the mv).
+# Without this, a pg_dump that dies partway (disk full, container OOM,
+# host reboot) leaves a truncated file at the FINAL name, which the next
+# night's successful run would then happily rsync to the nas as if it
+# were a good backup.
+docker exec rustd-db pg_dump -Fc -U {{ rustd_xyz_db_user }} {{ rustd_xyz_db_name }} > "${TMP}"
+mv "${TMP}" "${OUT}"
+
+# Keep the newest {{ rustd_xyz_backup_local_keep }} local dumps. Glob is
+# scoped to *.dump (not *.dump.tmp), so an in-progress dump from a
+# concurrent/overlapping run is never counted against the retention window
+# or pruned out from under itself.
+ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_backup_local_keep | int + 1 }} | xargs -r rm --
+
+# --exclude '*.tmp': belt-and-braces again - even though rm -f above and the
+# rename-on-success above mean a .tmp should never coexist with a completed
+# run of this script, excluding it here means a dump that's mid-write when
+# this script's *own* rsync step runs (e.g. someone manually re-invoking the
+# script while a prior invocation is still dumping) can never ship a partial
+# file to the nas either.
+#
+# Destination is the bare root (":/"), not {{ rustd_xyz_backup_nas_path }} -
+# this key is always rrsync-restricted on the nas side (rustd_backup_nas
+# role, which fails its own play if rrsync isn't available: see that role's
+# README, "Restricted key"). rrsync re-roots absolute destination paths
+# under its own DIR argument (rustd_xyz_backup_nas_path) rather than
+# treating them as literal filesystem paths, so sending the same path here
+# would double it (DIR + DIR) and every push would fail. ":/" is rrsync's
+# contract for "the restricted directory itself".
+rsync -az --timeout=60 --exclude '*.tmp' \
+  -e "ssh -i {{ rustd_xyz_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new" \
+  {{ rustd_xyz_backup_local_dir }}/ \
+  {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:/

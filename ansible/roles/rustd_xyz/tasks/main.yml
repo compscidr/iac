@@ -1,0 +1,145 @@
+---
+# Deploy rustd.xyz panel + postgres on the projects droplet
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ rustd_xyz_ghcr_user }}"
+    password: "{{ rustd_xyz_ghcr_token }}"
+  when: rustd_xyz_ghcr_token | length > 0
+  no_log: true
+
+- name: Create rustd base directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ rustd_xyz_base_path }}"
+    state: directory
+    mode: "0755"
+
+# 0700, not 0755: pg_dump dumps hold RCON credentials (and other rustd.xyz
+# secrets), so the directory they land in shouldn't be world-readable.
+- name: Create rustd backup directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ rustd_xyz_backup_local_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Create rustd-db network
+  become: true
+  community.docker.docker_network:
+    name: rustd-db
+    state: present
+
+- name: Create rustd-db data volume
+  become: true
+  community.docker.docker_volume:
+    name: rustd-db-data
+
+- name: Deploy rustd postgres
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: rustd-db
+    image: "{{ rustd_xyz_db_image }}"
+    restart_policy: unless-stopped
+    networks:
+      - name: rustd-db
+    volumes:
+      - "rustd-db-data:/var/lib/postgresql/data"
+    env:
+      POSTGRES_DB: "{{ rustd_xyz_db_name }}"
+      POSTGRES_USER: "{{ rustd_xyz_db_user }}"
+      POSTGRES_PASSWORD: "{{ rustd_xyz_db_password }}"
+
+- name: Deploy rustd.xyz panel
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: rustd-xyz
+    image: "{{ rustd_xyz_image }}"
+    pull: true
+    recreate: true
+    restart_policy: unless-stopped
+    networks:
+      - name: nginx-proxy
+      - name: rustd-db
+    env:
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://rustd-db:5432/{{ rustd_xyz_db_name }}"
+      QUARKUS_DATASOURCE_USERNAME: "{{ rustd_xyz_db_user }}"
+      QUARKUS_DATASOURCE_PASSWORD: "{{ rustd_xyz_db_password }}"
+      QUARKUS_MAILER_HOST: "{{ rustd_xyz_smtp_host }}"
+      QUARKUS_MAILER_PORT: "{{ rustd_xyz_smtp_port | string }}"
+      QUARKUS_MAILER_USERNAME: "{{ rustd_xyz_smtp_username }}"
+      QUARKUS_MAILER_PASSWORD: "{{ rustd_xyz_smtp_password }}"
+      # Port 465 is Mailu's implicit-TLS submissions port. In Quarkus 3.38.x
+      # (io.quarkus:quarkus-mailer) quarkus.mailer.tls maps to
+      # Vert.x MailConfig#setSsl(true) - i.e. wrap-in-TLS-from-connect, which
+      # is what implicit TLS needs. quarkus.mailer.ssl is the deprecated
+      # alias for the same thing; quarkus.mailer.start-tls is a *different*
+      # knob (STARTTLS upgrade of a plaintext connection) and is wrong here.
+      QUARKUS_MAILER_TLS: "true"
+      VIRTUAL_HOST: "{{ rustd_xyz_domain }}"
+      VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"
+      LETSENCRYPT_HOST: "{{ rustd_xyz_domain }}"
+      LETSENCRYPT_EMAIL: "{{ rustd_xyz_letsencrypt_email }}"
+
+# --- Nightly pg_dump -> nas backup ---------------------------------------
+#
+# Key flow: community.crypto isn't in requirements.yml (checked), so this
+# uses the ssh-keygen fallback the plan allows, not openssh_keypair.
+#
+# The keypair is generated HERE, on the droplet, rather than on the ansible
+# controller. The plan's stated lean was controller-side generation
+# (openssh_keypair at a controller path, then template private -> droplet +
+# pubkey -> nas), but that puts private key material on the operator's own
+# machine: it has to land in *some* file on the controller for the
+# subsequent copy/template task to read, and nothing in this repo's secret
+# model accounts for that file (it isn't a 1Password item, and unlike every
+# other secret here it would exist only as a controller-local artifact -
+# exactly the kind of thing that ends up accidentally `git add -A`'d, or
+# just left behind in a homedir with no rotation/audit story). Generating
+# on the droplet means the private half is created and stays on the one
+# machine that actually needs it, is never transmitted anywhere (not even
+# over the ansible control channel), and only the public half - not
+# sensitive - is ever read off the box, by the nas play's delegated slurp
+# (see roles/rustd_backup_nas/tasks/main.yml). No 1Password item is needed
+# for this key at all.
+- name: Generate the rustd.xyz backup SSH keypair (ed25519) on the droplet
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      ssh-keygen -t ed25519 -f {{ rustd_xyz_backup_ssh_key_path }} -N ""
+      -C "rustd-backup@projects"
+  args:
+    creates: "{{ rustd_xyz_backup_ssh_key_path }}"
+
+- name: Deploy the backup script
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.sh.j2
+    dest: "{{ rustd_xyz_base_path }}/rustd-db-backup.sh"
+    mode: "0700"
+
+- name: Deploy the backup systemd service
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.service.j2
+    dest: /etc/systemd/system/rustd-db-backup.service
+    mode: "0644"
+
+- name: Deploy the backup systemd timer
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.timer.j2
+    dest: /etc/systemd/system/rustd-db-backup.timer
+    mode: "0644"
+
+- name: Enable and start the backup timer
+  become: true
+  ansible.builtin.systemd_service:
+    name: rustd-db-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

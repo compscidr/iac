@@ -56,6 +56,13 @@ mailu_additional_domains:
         password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault='Infrastructure',
           account_id=onepassword_account_id) }}"
 
+# Mail aliases (local@domain -> destination). Created idempotently at deploy;
+# Mailu's CLI errors on existing aliases, tolerated the same way user creation is.
+mailu_aliases:
+  - local: contact
+    domain: rustd.xyz
+    destination: jason@rustd.xyz
+
 # Features
 mailu_webmail: roundcube # roundcube, snappymail, or none
 mailu_antivirus: false # ClamAV uses lots of RAM
