@@ -12,8 +12,11 @@ GHCR-login / container-deploy shape.
   and `rustd-db` (to reach postgres). `VIRTUAL_HOST`/`LETSENCRYPT_HOST` are the
   **apex domain only** (`rustd.xyz`) — never add `www`, it breaks the
   `__Host-` prefixed auth cookie.
-- `/opt/rustd` and `/opt/rustd/backups` on the host (the backups directory is
-  populated by the nightly pg_dump timer added in a later change).
+- `/opt/rustd` and `/opt/rustd/backups` on the host, plus a
+  `rustd-db-backup.timer` (04:30 daily, 15m random delay) that runs
+  `rustd-db-backup.sh`: `pg_dump`s `rustd-db`, keeps the newest
+  `rustd_xyz_backup_local_keep` dumps locally, and `rsync`s the whole
+  backups directory to the nas over a dedicated ed25519 key.
 
 ## Rollback
 
@@ -46,6 +49,45 @@ All secrets (`rustd_xyz_ghcr_token`, `rustd_xyz_db_password`,
 set as `vars` in `projects.yml` — never hardcoded in `defaults/main.yml`.
 The postgres password comes from the `rustd-db` item (Infrastructure vault),
 created manually by the operator before the first deploy.
+
+## Nightly backup -> nas
+
+`rustd-db-backup.sh` (templated to `/opt/rustd/rustd-db-backup.sh`) pg_dumps
+`rustd-db` in custom (`-Fc`) format, prunes local dumps beyond
+`rustd_xyz_backup_local_keep` (7), then `rsync`s the backups directory to
+`rustd_xyz_backup_nas_user@rustd_xyz_backup_nas_host:rustd_xyz_backup_nas_path`.
+The nas keeps `rustd_xyz_backup_nas_keep` (30) and owns pruning its own copy
+(cron, in the `rustd_backup_nas` role run by `nas.yml`) — the push script
+never deletes anything remote, so there is exactly one owner of nas-side
+retention.
+
+**Key flow.** The role generates a dedicated ed25519 keypair on this droplet
+the first time it runs (`ssh-keygen ... creates=...` — `community.crypto`
+isn't in `requirements.yml`, so this doesn't use `openssh_keypair`). The
+private key is created here and never leaves this host: not copied to the
+ansible controller, not put in 1Password, not templated anywhere. Only the
+*public* key is ever read off the box — the `rustd_backup_nas` role, running
+`nas.yml` against the nas, delegates a `slurp` task back to this host to
+fetch it live and authorize it in `rustd-backup`'s `authorized_keys`.
+
+This is the opposite of the design doc's stated default (generate the
+keypair on the ansible controller and template private key -> droplet,
+public key -> nas). That version would leave private key material sitting
+in a file on the operator's own machine with no 1Password entry and no
+place in this repo's secret model to account for it — exactly the kind of
+controller-local artifact this repo otherwise avoids. Generating on the
+droplet means the only copy of the private key lives on the one machine
+that uses it, is never transmitted over the control channel at all, and
+needs no 1Password item.
+
+The authorized key is restricted with `command="rrsync -wo <path>",restrict`
+when `rrsync` is available (it is, on Debian/Ubuntu — shipped gzipped at
+`/usr/share/doc/rsync/scripts/rrsync.gz`, installed to `/usr/local/bin/rrsync`
+by the `rustd_backup_nas` role). This confines the key to write-only rsync
+into the one backups directory — no shell, no read-back, no port/agent/X11
+forwarding. If `rrsync` were ever unavailable, the role falls back to a
+plain (unrestricted) key on the same dedicated, single-purpose system user —
+weaker, but still scoped to a user with no other role on the box.
 
 ## Mailer TLS
 

@@ -13,3 +13,18 @@ onepassword_vault: "Infrastructure"
 
 # Note: Use --ask-become-pass when running playbooks to provide sudo password
 # Automatic 1Password lookup causes too many desktop app prompts
+
+# rustd.xyz nightly DB backup -> nas: the coordinates both ends of the pipeline
+# need to agree on. Lives here (not in roles/rustd_xyz/defaults/main.yml)
+# because the two ends run in separate playbooks with no shared vars_file:
+# the rustd_xyz role (projects.yml, pushes) and the rustd_backup_nas role
+# (nas.yml, receives + prunes) both read these. Role-local backup settings
+# (local keep count, local dir, the SSH key path) stay in
+# roles/rustd_xyz/defaults/main.yml since only that role needs them.
+rustd_xyz_backup_nas_host: nas # tailnet short name (nas.local also joins the tailnet - see common.yml)
+rustd_xyz_backup_nas_user: rustd-backup
+# /volume1 is the nas' real (only) data mount - see media_storage_base_path
+# in roles/media_server/tasks/main.yml and roles/cs2_game/tasks/main.yml.
+# The plan's /volume/backups was a placeholder; there is no /volume share.
+rustd_xyz_backup_nas_path: /volume1/storage/backups/rustd-db
+rustd_xyz_backup_nas_keep: 30

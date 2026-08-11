@@ -1,0 +1,103 @@
+---
+# Receiving end of the rustd.xyz nightly pg_dump backup pipeline: user,
+# target directory, restricted key, and prune cron. rustd_xyz (projects.yml)
+# owns the push side; this role owns everything on the nas, including
+# pruning - see rustd_xyz/templates/rustd-db-backup.sh.j2's header comment.
+
+- name: Ensure rsync is installed (needed for both the transfer and rrsync)
+  become: true
+  ansible.builtin.apt:
+    name: rsync
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create the rustd-backup user
+  become: true
+  ansible.builtin.user:
+    name: "{{ rustd_xyz_backup_nas_user }}"
+    system: true
+    # A real shell, not nologin: sshd runs the authorized_keys `command=`
+    # regardless of login shell, but some PAM configs (pam_shells) reject
+    # the session at the account phase before that if the shell isn't
+    # listed in /etc/shells, which would break the restricted key too.
+    shell: /bin/bash
+    create_home: true
+
+- name: Create the rustd.xyz backup target directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ rustd_xyz_backup_nas_path }}"
+    state: directory
+    owner: "{{ rustd_xyz_backup_nas_user }}"
+    group: "{{ rustd_xyz_backup_nas_user }}"
+    mode: "0700"
+
+- name: Check for the rrsync helper script shipped with rsync
+  become: true
+  ansible.builtin.stat:
+    path: "{{ rustd_backup_nas_rrsync_gz }}"
+  register: rustd_backup_nas_rrsync_gz_stat
+
+- name: Check whether rrsync is already installed
+  become: true
+  ansible.builtin.stat:
+    path: "{{ rustd_backup_nas_rrsync_bin }}"
+  register: rustd_backup_nas_rrsync_bin_stat
+
+- name: Install rrsync from the rsync package's bundled script
+  become: true
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
+    gunzip -c {{ rustd_backup_nas_rrsync_gz }} > {{ rustd_backup_nas_rrsync_bin }}
+    chmod 0755 {{ rustd_backup_nas_rrsync_bin }}
+  args:
+    creates: "{{ rustd_backup_nas_rrsync_bin }}"
+    executable: /bin/bash
+  when: rustd_backup_nas_rrsync_gz_stat.stat.exists
+
+# rrsync availability is a repo/OS-packaging fact, not a secret, so this is
+# safe to compute unconditionally (used below to pick the authorized_keys
+# restriction).
+- name: Determine rrsync availability
+  ansible.builtin.set_fact:
+    rustd_backup_nas_rrsync_available: >-
+      {{ rustd_backup_nas_rrsync_gz_stat.stat.exists or rustd_backup_nas_rrsync_bin_stat.stat.exists }}
+
+# The droplet generates its own keypair at deploy time (rustd_xyz role) and
+# never gives up the private half - see that role's tasks/main.yml for why.
+# Only the public key is read back here, live, by delegating to the
+# projects host from within this (nas.yml) play. This keeps the two
+# playbooks independently runnable: nas.yml doesn't need projects.yml to
+# have run in the same ansible-playbook invocation, only that the key
+# already exists on disk over there (true after the first rustd_xyz run).
+- name: Read the rustd.xyz backup public key from the projects droplet
+  become: true
+  delegate_to: "{{ rustd_backup_nas_projects_host }}"
+  ansible.builtin.slurp:
+    src: "{{ rustd_backup_nas_pubkey_path }}"
+  register: rustd_backup_nas_pubkey_slurp
+
+- name: Authorize the rustd.xyz backup key
+  become: true
+  ansible.posix.authorized_key:
+    user: "{{ rustd_xyz_backup_nas_user }}"
+    key: "{{ rustd_backup_nas_pubkey_slurp.content | b64decode }}"
+    # restrict + a forced write-only rrsync command: the key can only push
+    # files into rustd_xyz_backup_nas_path, nothing else (no shell, no
+    # port/agent/X11 forwarding, no read-back). Falls back to a plain key
+    # (still a dedicated, single-purpose system user, but capable of a full
+    # interactive session) if rrsync isn't available on this nas - see the
+    # role README for the tradeoff.
+    key_options: >-
+      {{ 'command="' + rustd_backup_nas_rrsync_bin + ' -wo ' + rustd_xyz_backup_nas_path + '",restrict'
+         if rustd_backup_nas_rrsync_available else omit }}
+
+- name: Prune rustd.xyz backups older than the retention window
+  ansible.builtin.cron:
+    name: "prune rustd.xyz db backups"
+    user: "{{ rustd_xyz_backup_nas_user }}"
+    minute: "30"
+    hour: "5"
+    job: >-
+      find {{ rustd_xyz_backup_nas_path }} -maxdepth 1 -name 'rustd-*.dump'
+      -mtime +{{ rustd_xyz_backup_nas_keep }} -delete

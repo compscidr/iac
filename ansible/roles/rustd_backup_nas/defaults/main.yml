@@ -1,0 +1,22 @@
+---
+# rustd_backup_nas role defaults
+#
+# Receiving end of the rustd.xyz nightly pg_dump pipeline: the user, target
+# directory, and prune cron on the nas. The shared coordinates with the
+# pushing end (rustd_xyz role, projects.yml) - host/user/path/keep-count -
+# live in group_vars/all.yml (rustd_xyz_backup_nas_*), not here, since both
+# roles run in separate playbooks with no common vars_file. See the comment
+# there for why.
+
+# Inventory host (in the "projects" play) the backup key is generated on and
+# read back from. Must match the `projects` entry in ansible/inventory.yml.
+rustd_backup_nas_projects_host: projects
+
+# Where the SSH keypair for backups lives on the projects droplet - must
+# match rustd_xyz_backup_ssh_key_path in roles/rustd_xyz/defaults/main.yml.
+rustd_backup_nas_pubkey_path: /root/.ssh/rustd-backup_ed25519.pub
+
+# rrsync (restricted rsync wrapper) - shipped as a gzipped script alongside
+# the rsync package on Debian/Ubuntu, not installed as a binary by default.
+rustd_backup_nas_rrsync_gz: /usr/share/doc/rsync/scripts/rrsync.gz
+rustd_backup_nas_rrsync_bin: /usr/local/bin/rrsync

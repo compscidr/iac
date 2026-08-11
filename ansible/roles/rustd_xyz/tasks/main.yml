@@ -18,7 +18,7 @@
     mode: "0755"
   loop:
     - "{{ rustd_xyz_base_path }}"
-    - "{{ rustd_xyz_base_path }}/backups"
+    - "{{ rustd_xyz_backup_local_dir }}"
 
 - name: Create rustd-db network
   become: true
@@ -78,3 +78,62 @@
       VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"
       LETSENCRYPT_HOST: "{{ rustd_xyz_domain }}"
       LETSENCRYPT_EMAIL: "{{ rustd_xyz_letsencrypt_email }}"
+
+# --- Nightly pg_dump -> nas backup ---------------------------------------
+#
+# Key flow: community.crypto isn't in requirements.yml (checked), so this
+# uses the ssh-keygen fallback the plan allows, not openssh_keypair.
+#
+# The keypair is generated HERE, on the droplet, rather than on the ansible
+# controller. The plan's stated lean was controller-side generation
+# (openssh_keypair at a controller path, then template private -> droplet +
+# pubkey -> nas), but that puts private key material on the operator's own
+# machine: it has to land in *some* file on the controller for the
+# subsequent copy/template task to read, and nothing in this repo's secret
+# model accounts for that file (it isn't a 1Password item, and unlike every
+# other secret here it would exist only as a controller-local artifact -
+# exactly the kind of thing that ends up accidentally `git add -A`'d, or
+# just left behind in a homedir with no rotation/audit story). Generating
+# on the droplet means the private half is created and stays on the one
+# machine that actually needs it, is never transmitted anywhere (not even
+# over the ansible control channel), and only the public half - not
+# sensitive - is ever read off the box, by the nas play's delegated slurp
+# (see roles/rustd_backup_nas/tasks/main.yml). No 1Password item is needed
+# for this key at all.
+- name: Generate the rustd.xyz backup SSH keypair (ed25519) on the droplet
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      ssh-keygen -t ed25519 -f {{ rustd_xyz_backup_ssh_key_path }} -N ""
+      -C "rustd-backup@projects"
+  args:
+    creates: "{{ rustd_xyz_backup_ssh_key_path }}"
+
+- name: Deploy the backup script
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.sh.j2
+    dest: "{{ rustd_xyz_base_path }}/rustd-db-backup.sh"
+    mode: "0700"
+
+- name: Deploy the backup systemd service
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.service.j2
+    dest: /etc/systemd/system/rustd-db-backup.service
+    mode: "0644"
+
+- name: Deploy the backup systemd timer
+  become: true
+  ansible.builtin.template:
+    src: rustd-db-backup.timer.j2
+    dest: /etc/systemd/system/rustd-db-backup.timer
+    mode: "0644"
+
+- name: Enable and start the backup timer
+  become: true
+  ansible.builtin.systemd_service:
+    name: rustd-db-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

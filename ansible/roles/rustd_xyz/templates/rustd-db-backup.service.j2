@@ -1,0 +1,8 @@
+[Unit]
+Description=rustd.xyz nightly postgres dump, shipped to the nas
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ rustd_xyz_base_path }}/rustd-db-backup.sh

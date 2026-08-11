@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Managed by ansible (rustd_xyz role) - do not edit by hand.
+#
+# Nightly rustd.xyz postgres dump: pg_dump the rustd-db container, prune
+# local dumps beyond {{ rustd_xyz_backup_local_keep }}, then push everything
+# still on disk to the nas over rsync/ssh. Pruning of the *nas* copy is owned
+# by the nas side (cron in the rustd_backup_nas role) - this script never
+# deletes anything remotely.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+OUT="{{ rustd_xyz_backup_local_dir }}/rustd-${STAMP}.dump"
+
+docker exec rustd-db pg_dump -Fc -U {{ rustd_xyz_db_user }} {{ rustd_xyz_db_name }} > "${OUT}"
+
+# Keep the newest {{ rustd_xyz_backup_local_keep }} local dumps.
+ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_backup_local_keep | int + 1 }} | xargs -r rm --
+
+rsync -az --timeout=60 \
+  -e "ssh -i {{ rustd_xyz_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new" \
+  {{ rustd_xyz_backup_local_dir }}/ \
+  {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_path }}/
