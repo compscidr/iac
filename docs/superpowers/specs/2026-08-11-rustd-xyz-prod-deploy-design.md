@@ -197,3 +197,15 @@ repo's own PR, not here — this section covers only the iac-side implementation
 None of the above required changing this design's Decisions table or Part A; they're
 implementation-detail resolutions of things the design flagged as needing verification, plus one
 bug fix (atomic dumps) found in review.
+
+- **The nas was not a tailnet member.** §B3's "Network path needs no ACL change today
+  (droplets are member devices; the member→`*` grant covers it)" implicitly assumed both ends of
+  the backup pipeline were already on the tailnet. Deploy discovery found otherwise: the
+  `tailscale` package was present on the nas but `tailscaled` had never been enabled and
+  `tailscale up` had never been run — it was never actually a member, so the ACL analysis had
+  nothing to grant against on that side. Resolved by having `rustd_backup_nas` own a minimal
+  join (install is an idempotent no-op since the package already exists; enable the daemon;
+  `tailscale up --hostname=nas --accept-dns=false`, no `--ssh`) rather than routing the nas
+  through `common_cli` (the repo's usual tailnet-join path), since the nas is a vendor-managed
+  UGREEN appliance where package/config changes are kept to the minimum this pipeline needs. See
+  `ansible/roles/rustd_backup_nas/README.md` ("Tailnet membership") for the full rationale.

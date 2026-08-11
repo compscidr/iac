@@ -1,8 +1,76 @@
 ---
-# Receiving end of the rustd.xyz nightly pg_dump backup pipeline: user,
-# target directory, restricted key, and prune cron. rustd_xyz (projects.yml)
-# owns the push side; this role owns everything on the nas, including
-# pruning - see rustd_xyz/templates/rustd-db-backup.sh.j2's header comment.
+# Receiving end of the rustd.xyz nightly pg_dump backup pipeline: tailnet
+# membership, user, target directory, restricted key, and prune cron.
+# rustd_xyz (projects.yml) owns the push side; this role owns everything on
+# the nas, including pruning - see rustd_xyz/templates/rustd-db-backup.sh.j2's
+# header comment.
+
+# Tailscale membership: the backup pipeline design assumed the nas was
+# already a tailnet member (see the ACL analysis in
+# docs/superpowers/specs/2026-08-11-rustd-xyz-prod-deploy-design.md), but
+# this appliance never joined - the tailscale package is present (matches
+# the `creates` guard below) but the daemon was never enabled and `up` was
+# never run. This role owns the join because the nas is a vendor-managed
+# UGREEN appliance that never gets common_cli (see README's "Tailnet
+# membership" section) - so it can't rely on that role's tailscale tasks
+# the way workstations and servers do.
+- name: Install Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+    executable: /bin/bash
+
+# common_cli's install.sh normally starts and enables tailscaled itself;
+# this appliance's install.sh run (whenever the package first landed) never
+# went through that, so the daemon has to be brought up explicitly here.
+- name: Enable and start the Tailscale daemon
+  become: true
+  tags: [tailscale]
+  ansible.builtin.systemd_service:
+    name: tailscaled
+    enabled: true
+    state: started
+
+# Idempotency guard: unlike common_cli (which re-runs `tailscale up` on
+# every play with failed_when: false), prefer not re-invoking `up` on every
+# run against a vendor appliance - only do it when the nas isn't already
+# logged in.
+- name: Check current Tailscale login state
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: tailscale status --self
+  register: rustd_backup_nas_tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Connect to Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    # --hostname: the appliance's own hostname (DXP8800PLUS-3F06) must not
+    # become the tailnet name the droplet-side config
+    # (rustd_xyz_backup_nas_host) dials.
+    # --accept-dns=false: MagicDNS must not rewrite a vendor appliance's
+    # resolv.conf.
+    # No --ssh: the vendor sshd stays authoritative - the droplet pushes
+    # backups over plain sshd, not Tailscale SSH.
+    cmd: >-
+      tailscale up --authkey={{ rustd_backup_nas_tailscale_authkey }}
+      --hostname={{ rustd_backup_nas_tailnet_hostname }} --accept-dns=false
+  vars:
+    rustd_backup_nas_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  register: rustd_backup_nas_tailscale_up
+  changed_when: "'Success' in rustd_backup_nas_tailscale_up.stdout or rustd_backup_nas_tailscale_up.rc == 0"
+  failed_when: false
+  when: >-
+    rustd_backup_nas_tailscale_status.rc != 0 or
+    'Logged out.' in rustd_backup_nas_tailscale_status.stdout
 
 - name: Ensure rsync is installed (needed for both the transfer and rrsync)
   become: true

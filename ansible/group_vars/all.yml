@@ -21,7 +21,10 @@ onepassword_vault: "Infrastructure"
 # (nas.yml, receives + prunes) both read these. Role-local backup settings
 # (local keep count, local dir, the SSH key path) stay in
 # roles/rustd_xyz/defaults/main.yml since only that role needs them.
-rustd_xyz_backup_nas_host: nas # tailnet short name (nas.local also joins the tailnet - see common.yml)
+rustd_xyz_backup_nas_host: nas # tailnet short name - set via rustd_backup_nas_tailnet_hostname
+# (roles/rustd_backup_nas/defaults/main.yml). Deploy discovery 2026-08-11: the nas had
+# never joined the tailnet - rustd_backup_nas owns a minimal join (vendor appliance;
+# common_cli's full workstation footprint is off-limits there).
 rustd_xyz_backup_nas_user: rustd-backup
 # /volume1 is the nas' real (only) data mount - see media_storage_base_path
 # in roles/media_server/tasks/main.yml and roles/cs2_game/tasks/main.yml.
