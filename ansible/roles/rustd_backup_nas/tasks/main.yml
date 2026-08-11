@@ -48,9 +48,10 @@
 - name: Install rrsync from the rsync package's bundled script (last-resort fallback)
   become: true
   ansible.builtin.shell: |  # noqa: command-instead-of-module
-    set -o pipefail
-    gunzip -c {{ rustd_backup_nas_rrsync_gz }} > {{ rustd_backup_nas_rrsync_bin }}
-    chmod 0755 {{ rustd_backup_nas_rrsync_bin }}
+    set -euo pipefail
+    gunzip -c {{ rustd_backup_nas_rrsync_gz }} > {{ rustd_backup_nas_rrsync_bin }}.tmp
+    chmod 0755 {{ rustd_backup_nas_rrsync_bin }}.tmp
+    mv {{ rustd_backup_nas_rrsync_bin }}.tmp {{ rustd_backup_nas_rrsync_bin }}
   args:
     creates: "{{ rustd_backup_nas_rrsync_bin }}"
     executable: /bin/bash
