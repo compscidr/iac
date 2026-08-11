@@ -14,10 +14,11 @@ resource "digitalocean_vpc" "sfo3-vpc" {
 }
 
 resource "digitalocean_droplet" "projects" {
-  image    = "ubuntu-24-04-x64"
-  name     = "projects"
-  region   = "sfo3"
-  size     = "s-1vcpu-2gb" # $12/mo - room for multiple containerized services
+  image  = "ubuntu-24-04-x64"
+  name   = "projects"
+  region = "sfo3"
+  # 4GB: rustd.xyz adds a JVM app + postgres to this droplet (see 2026-08-11 spec). Disk resize is one-way.
+  size     = "s-2vcpu-4gb"
   ipv6     = true
   vpc_uuid = digitalocean_vpc.sfo3-vpc.id
   ssh_keys = [digitalocean_ssh_key.github.fingerprint]
