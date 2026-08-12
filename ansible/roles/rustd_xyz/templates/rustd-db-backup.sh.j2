@@ -56,6 +56,11 @@ ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_bac
 # written by this role's "Write the nas rsync-daemon password file" task -
 # see tasks/main.yml), not an ssh key: the daemon has its own auth scheme
 # entirely separate from sshd.
-rsync -a --mkpath --password-file={{ rustd_xyz_backup_rsync_password_file }} \
+# --contimeout: cap the initial connect (dead daemon / blocked port / down
+# tailnet) so a oneshot run can't hang indefinitely and stall the timer.
+# --timeout: abort a stalled mid-transfer I/O the same way. set -e turns
+# either into a clean unit failure rather than a hung service.
+rsync -a --mkpath --contimeout=30 --timeout=300 \
+  --password-file={{ rustd_xyz_backup_rsync_password_file }} \
   {{ rustd_xyz_backup_local_dir }}/ \
   rsync://{{ rustd_xyz_backup_nas_rsync_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_rsync_port }}/{{ rustd_xyz_backup_nas_rsync_module }}/{{ rustd_xyz_backup_nas_rsync_subpath }}/

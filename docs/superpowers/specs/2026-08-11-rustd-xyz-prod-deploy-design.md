@@ -204,7 +204,11 @@ repo's own PR, not here — this section covers only the iac-side implementation
   (`set -euo pipefail` means a failed `pg_dump` never reaches the `mv`); added `rm -f` of any
   leftover `.tmp` at the top of the script and excluded `*.tmp` from the rsync push, in case a
   dump is still in flight when the script's own rsync step runs.
-- **Receiver identity on the nas is the vendor account `jason`, not a dedicated
+- **[SUPERSEDED — the entire ssh/forced-command receive design below was later removed; see
+  "The ssh-based receive design was removed outright and replaced with the nas' built-in rsync
+  daemon" further down. This bullet is retained only as field history: `rustd-receive-dump`,
+  the `command=,restrict` key, and `rustd_xyz_backup_nas_user` no longer exist.]**
+  **Receiver identity on the nas is the vendor account `jason`, not a dedicated
   `rustd-backup` user.** The design's assumed shape (and this role's first implementation)
   was a dedicated locked system user, `rustd-backup`, holding the receive-side end of the
   restricted key. Field deploy discovery found the nas appliance's vendor PAM/login stack
