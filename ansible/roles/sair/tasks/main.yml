@@ -28,6 +28,11 @@
       {{ '--version ' ~ sair_version if sair_version | length > 0 else '' }}
   register: sair_install
   changed_when: sair_install.stdout is search('Installed|Updated')
+  # install.sh only writes binaries and daemon-reloads; running services keep
+  # the old build until restarted, so notify on any install/update
+  notify:
+    - Restart device source
+    - Restart proxy
 
 - name: Clean up install script
   become: true
