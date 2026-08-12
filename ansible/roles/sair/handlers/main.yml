@@ -4,9 +4,11 @@
   ansible.builtin.systemd:
     name: sair-device-source
     state: restarted
+  when: not sair_adb_only
 
 - name: Restart proxy
   become: true
   ansible.builtin.systemd:
     name: sair-proxy
     state: restarted
+  when: not sair_adb_only
