@@ -6,9 +6,11 @@
     - vars/user.yml
     - vars/secrets.yml
   pre_tasks:
-    # rustd_backup_nas delegates a task to the "projects" host (a Tailscale
-    # host, per inventory.yml), unlike nas.local itself which is reached
-    # over LAN mDNS regardless of Tailscale state.
+    # nas.local itself is reached over LAN mDNS regardless of Tailscale
+    # state, but rustd_backup_nas's whole job is putting the nas ON the
+    # tailnet (see that role's tasks/main.yml) for the rustd_xyz droplet to
+    # reach it - so the controller having a working Tailscale CLI is worth
+    # checking up front, same as any other Tailscale-touching play here.
     #
     # Tagged 'always' (matches jasonernst_com.yml) so the connectivity check
     # still runs when the play is invoked with --tags, e.g. the runbook's

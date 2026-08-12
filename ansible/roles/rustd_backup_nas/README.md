@@ -7,32 +7,103 @@ the other side.
 
 ## What it does
 
+This role is deliberately small: **join the nas to the tailnet, and prune old dumps.**
+That's it.
+
 - Joins the nas to the tailnet (see "Tailnet membership" below).
-- Installs `rsync` (Debian/Ubuntu, via `apt`) — needed both for the transfer itself and
-  because `rrsync` ships bundled inside the rsync package.
-- Creates a dedicated system user, `rustd-backup` (a real `/bin/bash` shell, not
-  `nologin` — see "Restricted key" below for why).
-- Creates the backup target directory (`rustd_xyz_backup_nas_path`,
-  `/volume1/storage/backups/rustd-db`), owned by `rustd-backup`, mode `0700`.
-- Locates `rrsync` — packaged directly by rsync ≥ 3.2.5 at `/usr/bin/rrsync` or
-  `/usr/local/bin/rrsync`, or as a last resort extracted from the older gzipped-script
-  packaging (`/usr/share/doc/rsync/scripts/rrsync.gz` → `/usr/local/bin/rrsync`).
-  **rrsync is a required dependency of this role**: if it can't be found anywhere, the
-  play fails with a clear message rather than silently falling back to an unrestricted
-  key — see "Restricted key" below.
-- Slurps the backup public key live off the projects droplet (see "Key flow" below) and
-  authorizes it in `rustd-backup`'s `authorized_keys`, restricted to a forced write-only
-  `rrsync` command.
-- Prunes backups older than `rustd_xyz_backup_nas_keep` (30 days) via a `cron` job — the
-  nas is the **sole owner** of nas-side retention. The push script
+- Prunes backups older than `rustd_xyz_backup_nas_keep` (30 days) via a **root** `cron`
+  job — the nas is the **sole owner** of nas-side retention. The push script
   (`rustd-db-backup.sh.j2`, in `rustd_xyz`) never deletes anything remote; it only prunes
   its own local copy. There is exactly one place backups on the nas get deleted from.
+
+That's the whole role. It does **not** create a receiver user, a target directory, an
+SSH key, or any receive-side script — see "Field reality" below for why: the actual
+receive path is the nas' own rsync daemon, which owns all of that itself.
+
+## Manual prerequisite: enable the nas' rsync daemon (UGOS UI)
+
+**Ansible does not and cannot configure this.** The nas is a closed UGREEN vendor
+appliance (UGOS) — there is no ansible module for its web UI, and there is no config
+file on disk this role is allowed to template its way around. Before the backup
+pipeline can receive anything, an operator has to, once, in the UGOS UI:
+
+1. Enable the **Rsync** service (Control Panel → Services, or equivalent — UGOS's own
+   term for it).
+2. Configure a module named `storage` mapped to `/volume1/storage`.
+3. Add an **auth user**: `jason`, with `rw` access to that module
+   (`auth users = jason:rw`, in rsyncd.conf terms).
+
+Confirmed working config, field-verified: module `storage` → `path = /volume1/storage`,
+`auth users = jason:rw`. The daemon listens on port 873. Auth password is `jason`'s
+actual nas login password — see "Security note" below for why that's a real credential-
+sharing problem, not just a curiosity.
+
+## Field reality: why this role used to be much bigger
+
+This role originally implemented an ssh-forced-command receiver: a dedicated user, a
+target directory, `rrsync`, and later a hand-rolled receive script authorized via a
+restricted SSH key. **All of that is dead.** Deploy testing found three independent,
+compounding reasons the ssh-jail design could never have worked on this hardware:
+
+1. **The nas' vendor-patched `rsync` (UGREEN's own 3.4.1 build) rejects every
+   server-side receive**, with a custom `not support path` error regardless of the
+   destination path given. `rrsync` just shells out to that same broken binary, so no
+   packaging of `rrsync` could have worked around it — and there's no stock rsync to
+   fall back to, since installing packages on this vendor appliance is forbidden.
+2. **sshd on the appliance has a GLOBAL `ForceCommand`** that overrides any per-key
+   `command=` in `authorized_keys`. The entire ssh-jail model — "this key can only run
+   this one forced command" — assumes per-key `command=` wins; on this box it doesn't.
+   There is no way to build an ssh-forced-command jail here at all, for any key.
+3. **Admin users get full passthrough** through that global `ForceCommand` anyway, so
+   even accepting (1) and (2), routing through an admin-adjacent account wouldn't have
+   been meaningfully restricted.
+
+None of this was fixable by trying harder at the ssh layer — every layer of the intended
+jail (rsync protocol, forced command, restricted key) was closed off by the vendor
+firmware independently of the others.
+
+**The working path, proven end-to-end** (a real dump landed on the nas' 91TB bcache
+array, over the tailnet, verified on disk): UGOS's own **rsync daemon**, port 873,
+enabled via the UGOS UI as described above. The daemon sits entirely outside sshd —
+none of the three blockers above apply to it, because it was never going through sshd in
+the first place. The droplet pushes with:
+
+```
+rsync -a --mkpath --password-file=<file> <localdir>/ rsync://jason@nas:873/storage/backups/rustd-db/
+```
+
+See `rustd_xyz`'s `templates/rustd-db-backup.sh.j2` for the real templated command.
+
+## Security note: shared credential (follow-up)
+
+The daemon's "auth users" password for `jason` **is `jason`'s actual nas login
+password**, not a separate, scoped rsync-only secret (UGOS doesn't appear to offer a way
+to set a distinct rsync-daemon password for the same auth-user name). That means the
+`rustd_xyz_backup_nas_rsync_password` value the droplet holds (1Password `ugnas` item,
+looked up in `projects.yml`) **is** jason's full nas login credential.
+
+**Consequence:** a compromise of the rustd.xyz droplet — where that password sits in a
+root-owned, mode-0600 file (`rustd_xyz_backup_rsync_password_file`) — leaks full access
+to `jason`'s nas account, not just write access to one backup directory. This is a real
+blast-radius gap versus the (unimplementable) ssh-jail design's intent, and is flagged
+here as a follow-up rather than fixed now, because fixing it means changing the nas
+side, which is manual UGOS-UI work outside this role's reach:
+
+**Recommended follow-up:** create a dedicated, non-admin UGOS user (its own password,
+*not* `jason`'s login) with rsync access scoped to only the `storage` module (or better,
+a module rooted at `backups/rustd-db` directly, so it can't even see the rest of
+`/volume1/storage`). Point `rustd_xyz_backup_nas_rsync_user` /
+`rustd_xyz_backup_nas_rsync_password` at that account instead of `jason`. Until that's
+done, treat the droplet's rsync password file as equivalent in sensitivity to `jason`'s
+nas login, because it is one.
 
 ## Tailnet membership
 
 The backup pipeline design assumed the nas was already a tailnet member; deploy discovery
 found it wasn't — the `tailscale` package was present but `tailscaled` had never been
-enabled and `tailscale up` had never been run. This role owns the join.
+enabled and `tailscale up` had never been run. This role owns the join, and it stays even
+though the ssh-based receive design that originally motivated it is gone: the rsync
+daemon is still reached over the tailnet, not the public internet.
 
 **Why this role, not `common_cli`:** `common_cli` is how every workstation and server in
 this repo joins the tailnet, but it's paired with a general CLI/dotfiles/user-account setup
@@ -52,96 +123,29 @@ contract comments on both variables.
 
 - `--accept-dns=false` — MagicDNS must not rewrite a vendor appliance's `resolv.conf`; DNS
   resolution on the box stays whatever the vendor OS configures.
-- No `--ssh` — the vendor `sshd` stays authoritative for inbound SSH. The droplet pushes
-  backups over plain `sshd` (the restricted `rustd-backup` key below), not Tailscale SSH.
+- No `--ssh` — the vendor `sshd` stays authoritative for admin login. Backups no longer
+  go over sshd at all (see "Field reality" above); Tailscale SSH was never part of this
+  pipeline either way.
 
 **Idempotency:** unlike `common_cli`, which re-runs `tailscale up` on every play
 (`failed_when: false` tolerates the no-op), this role checks `tailscale status --self`
 first and only runs `up` when the nas isn't already logged in (`rc != 0` or a `NeedsLogin`
 status) — preferring not to re-invoke `up` on every run against a vendor appliance.
 
-## Key-flow rationale
-
-The projects droplet generates its own ed25519 keypair the first time the `rustd_xyz`
-role runs (`ssh-keygen ... creates=...` — `community.crypto` isn't in
-`requirements.yml`, so this doesn't use `openssh_keypair`). **The private key is
-generated on the droplet and never leaves it**: not copied to the ansible controller,
-not put in 1Password, not templated anywhere.
-
-This is the opposite of generating the keypair on the ansible controller and templating
-the private half out to the droplet. Controller-side generation would leave private key
-material sitting in a bare file on the operator's own machine with no place in this
-repo's secret model to account for it — it isn't a 1Password item, and unlike every
-other secret in this repo it would exist only as a controller-local artifact, with no
-rotation story and a real risk of an accidental `git add -A`. Droplet-side generation
-means the only copy of the private key lives on the one machine that actually uses it,
-and is never transmitted anywhere — not even over the ansible control channel.
-
-Only the **public** key is ever read off the droplet, and only by this role: the task
-`Read the rustd.xyz backup public key from the projects droplet`
-(`tasks/main.yml`) delegates a live `ansible.builtin.slurp` back to the projects host
-(`rustd_backup_nas_projects_host`, must match the `projects` inventory host) from within
-this (`nas.yml`) play. No cross-playbook fact sharing or combined-invocation requirement
-— `projects.yml` and `nas.yml` stay independently runnable plays; this one just needs the
-key to already exist on disk over on the projects host.
-
-## First-run ordering
-
-**`nas.yml` (this role) must run *after* `projects.yml` has run at least once on the
-projects host.** The slurp task above reads
-`rustd_backup_nas_pubkey_path` (`/root/.ssh/rustd-backup_ed25519.pub`) off the projects
-droplet; that file doesn't exist until the `rustd_xyz` role's key-generation task has run
-there. If `nas.yml` is run first (or against a projects host that has never run
-`rustd_xyz`), the slurp task fails with a missing-file error.
-
-This is not enforced by any `ansible-playbook` ordering or pre-flight check — it's a
-one-time bootstrap dependency between two otherwise-independent playbooks. See the
-deploy runbook in
-`docs/superpowers/specs/2026-08-11-rustd-xyz-prod-deploy-design.md`, which sequences
-`projects.yml` before the `nas.yml` run that authorizes the backup key. After the first
-successful run on both sides, re-running either playbook is idempotent and the ordering
-no longer matters (the key already exists on the droplet and is already authorized on
-the nas).
-
-## Restricted key
-
-The authorized key is restricted with `command="<rrsync> -wo <rustd_xyz_backup_nas_path>",restrict`.
-This confines the key to write-only rsync into the one backups directory — no shell, no
-read-back, no port/agent/X11 forwarding.
-
-`rrsync` is **mandatory**, not a best-effort hardening: if it can't be found in any of
-`rustd_backup_nas_rrsync_paths` and the gz fallback doesn't exist either, the role's
-`Fail if rrsync isn't available anywhere` task aborts the play. There is no unrestricted
-fallback key. Two things depend on that fail-closed behaviour:
-
-1. Security — a plain key on `rustd-backup` would grant a full interactive shell to
-   whoever holds the (droplet-generated) private key, not just a write into one
-   directory.
-2. **Path contract with the push side.** rrsync re-roots an absolute destination path
-   under its own `DIR` argument (`rustd_xyz_backup_nas_path`) instead of treating it as
-   a literal filesystem path — so the push script (`rustd-db-backup.sh.j2`, in
-   `rustd_xyz`) can't rsync to `rustd_xyz_backup_nas_path` again on the wire, that would
-   land at `DIR` + `DIR`. Instead it hardcodes its destination as the bare root (`:/`),
-   which rrsync resolves as "the restricted directory itself". That hardcoding is only
-   safe because the key is *always* rrsync-restricted — under a plain, unrestricted key,
-   `:/` would mean the literal filesystem root. Making rrsync mandatory removes that
-   ambiguity instead of making the push script branch on which kind of key it might be
-   talking to.
-
-`rustd-backup` gets a real shell (`/bin/bash`), not `nologin`: `sshd` runs the
-`authorized_keys` forced `command=` regardless of login shell, but some PAM
-configurations (`pam_shells`) reject the session at the account phase before that if the
-shell isn't listed in `/etc/shells` — which would break the restricted key too, not just
-interactive login.
-
 ## Prune ownership
 
 Nas-side retention (`rustd_xyz_backup_nas_keep`, 30 days) is owned entirely by this
-role's `cron` job:
+role's root `cron` job:
 
 ```
 find {{ rustd_xyz_backup_nas_path }} -maxdepth 1 -name 'rustd-*.dump' -mtime +{{ rustd_xyz_backup_nas_keep }} -delete
 ```
+
+It's a **root** cron, not a per-user one: the rsync daemon writes as whatever Linux user
+the daemon process itself runs as (vendor-configured, opaque to this role), not
+necessarily as `jason` — there's no single non-root account this role can reliably own a
+crontab for, and root can always read/delete regardless of which user owns the dumped
+files.
 
 The push script never deletes anything on the nas — only its own local copy, kept to
 `rustd_xyz_backup_local_keep` (7 days). This keeps exactly one owner per retention
@@ -149,11 +153,11 @@ window: local pruning is the droplet's job, nas pruning is this role's job.
 
 ## Shared coordinates
 
-`rustd_xyz_backup_nas_host`/`_user`/`_path`/`_keep` are shared between this role and
-`rustd_xyz` (they describe the same pipeline from both ends) and live in
-`ansible/group_vars/all.yml`, not in either role's `defaults/main.yml` — `projects.yml`
-and `nas.yml` are separate playbook runs with no common `vars_files`, so neither role's
-own defaults are visible to the other. See the comment in `group_vars/all.yml` for why.
+`rustd_xyz_backup_nas_host`/`_path`/`_keep` are shared between this role and `rustd_xyz`
+(they describe the same pipeline from both ends) and live in `ansible/group_vars/all.yml`,
+not in either role's `defaults/main.yml` — `projects.yml` and `nas.yml` are separate
+playbook runs with no common `vars_files`, so neither role's own defaults are visible to
+the other. See the comment in `group_vars/all.yml` for why.
 
 `rustd_backup_nas_tailnet_hostname` (this role's own `defaults/main.yml`) is a related but
 separately-enforced sync contract: it must match `rustd_xyz_backup_nas_host` above, but

@@ -41,6 +41,13 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # nas rsync-daemon auth: jason's actual nas login password (the daemon's
+    # "auth users" password on this appliance IS the account password, not
+    # a separate secret) - see the `ugnas` item (Infrastructure vault) and
+    # roles/rustd_xyz/defaults/main.yml for why this isn't a dedicated
+    # rsync-only credential.
+    rustd_xyz_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
     www_redirect_domains:
       - { domain: sair.run, letsencrypt_email: "ernstjason1@gmail.com" }
       - { domain: goblog.live, letsencrypt_email: "ernstjason1@gmail.com" }

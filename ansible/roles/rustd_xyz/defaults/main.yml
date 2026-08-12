@@ -26,19 +26,43 @@ rustd_xyz_smtp_username: ""
 rustd_xyz_smtp_password: ""
 
 # Nightly pg_dump -> nas backup (role-local half; the nas-side coordinates
-# of this same pipeline - rustd_xyz_backup_nas_host/_user/_path/_keep - live
+# of this same pipeline - rustd_xyz_backup_nas_host/_path/_keep - live
 # in group_vars/all.yml, because they're also consumed by the
 # rustd_backup_nas role in the separate nas.yml playbook run, which never
 # loads this role's defaults. See group_vars/all.yml for why.)
 rustd_xyz_backup_local_dir: "{{ rustd_xyz_base_path }}/backups"
 rustd_xyz_backup_local_keep: 7
-# ed25519 keypair generated ON THIS DROPLET the first time the role runs
-# (see tasks/main.yml) - private key never leaves this host or touches the
-# ansible controller. Only the public half is ever read off the box, by the
-# nas play delegating a slurp back to this host.
+
+# --- nas rsync-daemon transport ------------------------------------------
 #
-# Sync contract: rustd_backup_nas_pubkey_path (roles/rustd_backup_nas/defaults/main.yml,
-# consumed by nas.yml) must equal this path + ".pub". The two vars live in
-# separate roles/playbooks with no shared vars_file to enforce it in code -
-# if you change this path, update that one too.
-rustd_xyz_backup_ssh_key_path: /root/.ssh/rustd-backup_ed25519
+# Field deploy discovery 2026-08-11 killed the original ssh-forced-command
+# design entirely (see the ship-side template's header comment for the full
+# story). The nas' *built-in rsync daemon* (UGOS's own service, port 873) is
+# the vendor-supported receiver instead - it isn't gated by sshd at all, so
+# neither the vendor's patched rsync-over-ssh nor its global ForceCommand
+# come into play. Auth is a plain rsync-daemon username/password, not a key.
+#
+# rustd_xyz_backup_nas_rsync_user: the rsync daemon "auth users" entry
+# configured in the UGOS UI (module `storage`, `auth users = jason:rw`) -
+# NOT a Linux account, just a name inside the daemon's own auth file.
+rustd_xyz_backup_nas_rsync_user: jason
+rustd_xyz_backup_nas_rsync_port: 873
+# The daemon module name, configured in the UGOS UI, mapped to
+# /volume1/storage on the nas.
+rustd_xyz_backup_nas_rsync_module: storage
+# Path inside the module the dumps land under - full remote path is
+# <module>/<subpath>, i.e. /volume1/storage/backups/rustd-db (matches
+# rustd_xyz_backup_nas_path in group_vars/all.yml, which the nas-side prune
+# cron reads directly off disk rather than through the daemon).
+rustd_xyz_backup_nas_rsync_subpath: backups/rustd-db
+# rsync --password-file for the daemon auth above. Root-owned, mode 0600,
+# written by this role's "Write the nas rsync password file" task - see
+# tasks/main.yml for why a file instead of an env var (rsync's own
+# requirement for --password-file, and it keeps the secret out of the
+# process list / systemd unit).
+rustd_xyz_backup_rsync_password_file: /opt/rustd/.rsync-nas-pass
+# Filled from projects.yml via a 1Password lookup (the `ugnas` item,
+# Infrastructure vault - jason's actual nas login password, since the rsync
+# daemon's "auth users" password on this appliance IS the account password,
+# not a separate secret). no_log'd wherever it's consumed.
+rustd_xyz_backup_nas_rsync_password: ""

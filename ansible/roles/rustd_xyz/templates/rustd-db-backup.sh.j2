@@ -2,10 +2,28 @@
 # Managed by ansible (rustd_xyz role) - do not edit by hand.
 #
 # Nightly rustd.xyz postgres dump: pg_dump the rustd-db container, prune
-# local dumps beyond {{ rustd_xyz_backup_local_keep }}, then push everything
-# still on disk to the nas over rsync/ssh. Pruning of the *nas* copy is owned
-# by the nas side (cron in the rustd_backup_nas role) - this script never
-# deletes anything remotely.
+# local dumps beyond {{ rustd_xyz_backup_local_keep }}, then push the whole
+# local backup directory to the nas over its built-in rsync daemon (UGOS's
+# vendor-supported service, port 873 - NOT ssh).
+#
+# Field deploy discovery 2026-08-11 killed the original ssh-forced-command
+# design outright: the nas' vendor-patched rsync (UGREEN's own 3.4.1 build)
+# rejects every server-side receive regardless of transport, sshd on the
+# appliance has a GLOBAL ForceCommand that overrides any per-key
+# `command=` (so no ssh-jail is possible at all), and the admin account
+# gets full passthrough anyway. The vendor's own rsync *daemon* (enabled in
+# the UGOS UI, listening on 873, module `storage` -> /volume1/storage,
+# `auth users = jason:rw`) sits entirely outside sshd and turned out to be
+# the actual supported receive path - proven end-to-end, dump landed on the
+# 91TB array over the tailnet. Enabling that daemon is a MANUAL UGOS UI
+# prerequisite; ansible does not and cannot configure it (see
+# rustd_backup_nas's README).
+#
+# The push below is additive (no --delete): the nas keeps a longer
+# retention window ({{ rustd_xyz_backup_nas_keep }} days, pruned by a root
+# cron in the rustd_backup_nas role) than this local directory does, so a
+# sync that mirrors deletions would prune the nas copy down to what's left
+# locally. This script never deletes anything remote.
 set -euo pipefail
 
 STAMP="$(date +%F)"
@@ -20,7 +38,7 @@ rm -f "${TMP}"
 # succeeded (set -e means a non-zero pg_dump exit aborts before the mv).
 # Without this, a pg_dump that dies partway (disk full, container OOM,
 # host reboot) leaves a truncated file at the FINAL name, which the next
-# night's successful run would then happily rsync to the nas as if it
+# night's successful run would then happily ship to the nas as if it
 # were a good backup.
 docker exec rustd-db pg_dump -Fc -U {{ rustd_xyz_db_user }} {{ rustd_xyz_db_name }} > "${TMP}"
 mv "${TMP}" "${OUT}"
@@ -31,22 +49,18 @@ mv "${TMP}" "${OUT}"
 # or pruned out from under itself.
 ls -1t {{ rustd_xyz_backup_local_dir }}/rustd-*.dump | tail -n +{{ rustd_xyz_backup_local_keep | int + 1 }} | xargs -r rm --
 
-# --exclude '*.tmp': belt-and-braces again - even though rm -f above and the
-# rename-on-success above mean a .tmp should never coexist with a completed
-# run of this script, excluding it here means a dump that's mid-write when
-# this script's *own* rsync step runs (e.g. someone manually re-invoking the
-# script while a prior invocation is still dumping) can never ship a partial
-# file to the nas either.
-#
-# Destination is the bare root (":/"), not {{ rustd_xyz_backup_nas_path }} -
-# this key is always rrsync-restricted on the nas side (rustd_backup_nas
-# role, which fails its own play if rrsync isn't available: see that role's
-# README, "Restricted key"). rrsync re-roots absolute destination paths
-# under its own DIR argument (rustd_xyz_backup_nas_path) rather than
-# treating them as literal filesystem paths, so sending the same path here
-# would double it (DIR + DIR) and every push would fail. ":/" is rrsync's
-# contract for "the restricted directory itself".
-rsync -az --timeout=60 --exclude '*.tmp' \
-  -e "ssh -i {{ rustd_xyz_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new" \
+# One rsync-daemon push of the whole local backup directory - additive
+# (no --delete, see the header comment). --mkpath creates
+# backups/rustd-db/ under the module root on first run if it isn't there
+# yet. Auth is a daemon username/password (--password-file, mode 0600,
+# written by this role's "Write the nas rsync-daemon password file" task -
+# see tasks/main.yml), not an ssh key: the daemon has its own auth scheme
+# entirely separate from sshd.
+# --contimeout: cap the initial connect (dead daemon / blocked port / down
+# tailnet) so a oneshot run can't hang indefinitely and stall the timer.
+# --timeout: abort a stalled mid-transfer I/O the same way. set -e turns
+# either into a clean unit failure rather than a hung service.
+rsync -a --mkpath --contimeout=30 --timeout=300 \
+  --password-file={{ rustd_xyz_backup_rsync_password_file }} \
   {{ rustd_xyz_backup_local_dir }}/ \
-  {{ rustd_xyz_backup_nas_user }}@{{ rustd_xyz_backup_nas_host }}:/
+  rsync://{{ rustd_xyz_backup_nas_rsync_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_rsync_port }}/{{ rustd_xyz_backup_nas_rsync_module }}/{{ rustd_xyz_backup_nas_rsync_subpath }}/
