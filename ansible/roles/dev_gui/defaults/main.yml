@@ -10,4 +10,4 @@
 # The tag format aaddrick uses is `v<their-version>+claude<upstream>`, e.g.
 # `v2.0.5+claude1.3883.0`. Renovate tracks this value via a custom manager
 # in `renovate.json`; bumps land as auto-merged PRs.
-dev_gui_claude_desktop_tag: "v3.2.2+claude1.26832.0"
+dev_gui_claude_desktop_tag: "v3.2.2+claude1.28929.0"
