@@ -1,9 +1,17 @@
 ---
 # Receiving end of the rustd.xyz nightly pg_dump backup pipeline: tailnet
-# membership, user, target directory, restricted key, and prune cron.
-# rustd_xyz (projects.yml) owns the push side; this role owns everything on
-# the nas, including pruning - see rustd_xyz/templates/rustd-db-backup.sh.j2's
-# header comment.
+# membership + prune cron. That's the whole role now.
+#
+# The actual receive path is the nas' built-in rsync daemon (UGOS's own
+# service, port 873) - a MANUAL prerequisite enabled once in the UGOS UI
+# (module `storage` -> /volume1/storage, `auth users = jason:rw`). This
+# role does not and cannot configure that daemon; there is no ansible
+# module for UGOS's UI and no config file on disk this role is allowed to
+# template (closed vendor appliance). See README.md for the full field
+# story (the earlier ssh-forced-command design this role used to implement
+# is gone - killed by a vendor-patched rsync, a global sshd ForceCommand,
+# and admin-account passthrough, none of which the daemon path is subject
+# to). rustd_xyz (projects.yml) owns the push side.
 
 # Tailscale membership: the backup pipeline design assumed the nas was
 # already a tailnet member (see the ACL analysis in
@@ -59,8 +67,10 @@
     # (rustd_xyz_backup_nas_host) dials.
     # --accept-dns=false: MagicDNS must not rewrite a vendor appliance's
     # resolv.conf.
-    # No --ssh: the vendor sshd stays authoritative - the droplet pushes
-    # backups over plain sshd, not Tailscale SSH.
+    # No --ssh: the vendor sshd stays authoritative for admin login. Backups
+    # no longer go over sshd at all (see the header comment) - the droplet
+    # dials the nas' rsync daemon (port 873) directly over this tailnet
+    # join, which needs no Tailscale SSH involvement either way.
     cmd: >-
       tailscale up --authkey={{ rustd_backup_nas_tailscale_authkey }}
       --hostname={{ rustd_backup_nas_tailnet_hostname }} --accept-dns=false
@@ -78,122 +88,29 @@
     ((rustd_backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
     != 'Running'
 
-- name: Ensure rsync is installed (needed for both the transfer and rrsync)
-  become: true
-  ansible.builtin.apt:
-    name: rsync
-    state: present
-  when: ansible_os_family == "Debian"
-
-- name: Create the rustd-backup user
-  become: true
-  ansible.builtin.user:
-    name: "{{ rustd_xyz_backup_nas_user }}"
-    system: true
-    # A real shell, not nologin: sshd runs the authorized_keys `command=`
-    # regardless of login shell, but some PAM configs (pam_shells) reject
-    # the session at the account phase before that if the shell isn't
-    # listed in /etc/shells, which would break the restricted key too.
-    shell: /bin/bash
-    create_home: true
-
-- name: Create the rustd.xyz backup target directory
-  become: true
-  ansible.builtin.file:
-    path: "{{ rustd_xyz_backup_nas_path }}"
-    state: directory
-    owner: "{{ rustd_xyz_backup_nas_user }}"
-    group: "{{ rustd_xyz_backup_nas_user }}"
-    mode: "0700"
-
-- name: Check for rrsync in its packaged locations (rsync >= 3.2.5 ships it directly)
-  become: true
-  ansible.builtin.stat:
-    path: "{{ item }}"
-  register: rustd_backup_nas_rrsync_stat
-  loop: "{{ rustd_backup_nas_rrsync_paths }}"
-
-- name: Check for the rrsync helper script shipped with older rsync packages (last-resort fallback)
-  become: true
-  ansible.builtin.stat:
-    path: "{{ rustd_backup_nas_rrsync_gz }}"
-  register: rustd_backup_nas_rrsync_gz_stat
-
-- name: Install rrsync from the rsync package's bundled script (last-resort fallback)
-  become: true
-  ansible.builtin.shell: |  # noqa: command-instead-of-module
-    set -euo pipefail
-    gunzip -c {{ rustd_backup_nas_rrsync_gz }} > {{ rustd_backup_nas_rrsync_bin }}.tmp
-    chmod 0755 {{ rustd_backup_nas_rrsync_bin }}.tmp
-    mv {{ rustd_backup_nas_rrsync_bin }}.tmp {{ rustd_backup_nas_rrsync_bin }}
-  args:
-    creates: "{{ rustd_backup_nas_rrsync_bin }}"
-    executable: /bin/bash
-  when:
-    - rustd_backup_nas_rrsync_gz_stat.stat.exists
-    - rustd_backup_nas_rrsync_stat.results | selectattr('stat.exists') | list | length == 0
-
-# rrsync is a REQUIRED dependency of this role, not an optional hardening:
-# the push script on the other end (rustd_xyz role's rustd-db-backup.sh.j2)
-# hardcodes its rsync destination as the bare root (":/") on the assumption
-# that the key it pushes with is always rrsync-restricted to
-# rustd_xyz_backup_nas_path - rrsync re-roots that ":/" under its own DIR
-# argument, landing writes exactly there. A silent fallback to an
-# unrestricted key here would both defeat the restriction (full shell access
-# for whoever holds the private key) and break that path contract (":/"
-# would mean the literal filesystem root over an unrestricted connection),
-# so this role fails closed instead of falling back. See the README's
-# "Restricted key" section.
-- name: Resolve the rrsync binary path
-  ansible.builtin.set_fact:
-    rustd_backup_nas_rrsync_path: >-
-      {{ (rustd_backup_nas_rrsync_stat.results | selectattr('stat.exists') | map(attribute='item') | list
-          + ([rustd_backup_nas_rrsync_bin] if rustd_backup_nas_rrsync_gz_stat.stat.exists else []))
-         | first | default('', true) }}
-
-- name: Fail if rrsync isn't available anywhere
-  ansible.builtin.fail:
-    msg: >-
-      rrsync not found at {{ rustd_backup_nas_rrsync_paths | join(', ') }}, and the
-      gz fallback ({{ rustd_backup_nas_rrsync_gz }}) doesn't exist either. rrsync is
-      a required dependency of this role (see README.md, "Restricted key") - install
-      a version of rsync that ships it (>= 3.2.5) or make rrsync available some other
-      way, then re-run.
-  when: rustd_backup_nas_rrsync_path == ''
-
-# The droplet generates its own keypair at deploy time (rustd_xyz role) and
-# never gives up the private half - see that role's tasks/main.yml for why.
-# Only the public key is read back here, live, by delegating to the
-# projects host from within this (nas.yml) play. This keeps the two
-# playbooks independently runnable: nas.yml doesn't need projects.yml to
-# have run in the same ansible-playbook invocation, only that the key
-# already exists on disk over there (true after the first rustd_xyz run).
-- name: Read the rustd.xyz backup public key from the projects droplet
-  become: true
-  delegate_to: "{{ rustd_backup_nas_projects_host }}"
-  ansible.builtin.slurp:
-    src: "{{ rustd_backup_nas_pubkey_path }}"
-  register: rustd_backup_nas_pubkey_slurp
-
-- name: Authorize the rustd.xyz backup key
-  become: true
-  ansible.posix.authorized_key:
-    user: "{{ rustd_xyz_backup_nas_user }}"
-    key: "{{ rustd_backup_nas_pubkey_slurp.content | b64decode }}"
-    # restrict + a forced write-only rrsync command: the key can only push
-    # files into rustd_xyz_backup_nas_path, nothing else (no shell, no
-    # port/agent/X11 forwarding, no read-back). rrsync is now mandatory (see
-    # the fail task above), so there is no unrestricted-key fallback here.
-    key_options: >-
-      command="{{ rustd_backup_nas_rrsync_path }} -wo {{ rustd_xyz_backup_nas_path }}",restrict
+# No user, target-directory, or key task here. The nas' built-in rsync
+# daemon (UGOS UI, port 873) is what actually receives the backups - it
+# manages its own module root (/volume1/storage), its own directory
+# creation under it (rsync --mkpath on the push side), and its own
+# username/password auth entirely separate from Linux accounts and sshd.
+# There is nothing left for ansible to create or authorize on the receive
+# side; see README.md for why every earlier attempt at an ssh-based
+# receiver (dedicated user, target-dir ownership, rrsync, then a
+# forced-command receive script) was abandoned.
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true
   ansible.builtin.cron:
     name: "prune rustd.xyz db backups"
-    user: "{{ rustd_xyz_backup_nas_user }}"
     minute: "30"
     hour: "5"
+    # Root cron, not a per-user one: the rsync daemon writes as whatever
+    # Linux user the daemon process itself runs as (vendor-configured,
+    # opaque to this role) - there's no single non-root account this role
+    # can reliably own a crontab for anymore (the old
+    # rustd_xyz_backup_nas_user var this used to key off of is gone along
+    # with the ssh receiver it named), and root can always read/delete
+    # regardless of which user owns the dumped files.
     job: >-
       find {{ rustd_xyz_backup_nas_path }} -maxdepth 1 -name 'rustd-*.dump'
       -mtime +{{ rustd_xyz_backup_nas_keep }} -delete

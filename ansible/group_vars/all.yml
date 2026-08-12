@@ -18,16 +18,36 @@ onepassword_vault: "Infrastructure"
 # need to agree on. Lives here (not in roles/rustd_xyz/defaults/main.yml)
 # because the two ends run in separate playbooks with no shared vars_file:
 # the rustd_xyz role (projects.yml, pushes) and the rustd_backup_nas role
-# (nas.yml, receives + prunes) both read these. Role-local backup settings
-# (local keep count, local dir, the SSH key path) stay in
-# roles/rustd_xyz/defaults/main.yml since only that role needs them.
+# (nas.yml, joins the tailnet + prunes) both read these. Role-local backup
+# settings (local keep count, local dir, the rsync-daemon coordinates and
+# password file) stay in roles/rustd_xyz/defaults/main.yml since only that
+# role needs them.
+#
+# Transport: the droplet pushes each night's backup directory to the nas'
+# BUILT-IN RSYNC DAEMON (UGOS's own service, port 873) - not ssh. Field
+# deploy discovery 2026-08-11 killed the original ssh-forced-command design
+# outright: the nas' vendor-patched rsync rejects every server-side receive
+# regardless of transport, sshd on the appliance has a GLOBAL ForceCommand
+# that overrides any per-key `command=` (no ssh-jail is possible at all),
+# and the admin account gets full passthrough anyway. The vendor rsync
+# daemon sits entirely outside sshd and is the actual supported receive
+# path - proven end-to-end, dump landed on the 91TB array over the
+# tailnet. Enabling it is a MANUAL UGOS UI prerequisite (module `storage`
+# -> /volume1/storage, `auth users = jason:rw`); ansible does not and
+# cannot configure it. See roles/rustd_backup_nas/README.md and
+# roles/rustd_xyz/templates/rustd-db-backup.sh.j2 for the full story.
 rustd_xyz_backup_nas_host: nas # tailnet short name - set via rustd_backup_nas_tailnet_hostname
 # (roles/rustd_backup_nas/defaults/main.yml). Deploy discovery 2026-08-11: the nas had
 # never joined the tailnet - rustd_backup_nas owns a minimal join (vendor appliance;
-# common_cli's full workstation footprint is off-limits there).
-rustd_xyz_backup_nas_user: rustd-backup
+# common_cli's full workstation footprint is off-limits there). The join stays even
+# though the ssh-based receive design that originally motivated the ACL analysis is
+# gone: the rsync daemon is still reached over the tailnet, not the public internet.
 # /volume1 is the nas' real (only) data mount - see media_storage_base_path
 # in roles/media_server/tasks/main.yml and roles/cs2_game/tasks/main.yml.
 # The plan's /volume/backups was a placeholder; there is no /volume share.
+# Read directly off disk by the nas-side prune cron (rustd_backup_nas); the
+# rsync daemon's own module path (module `storage` + subpath
+# `backups/rustd-db`, see roles/rustd_xyz/defaults/main.yml) resolves to
+# this same directory.
 rustd_xyz_backup_nas_path: /volume1/storage/backups/rustd-db
 rustd_xyz_backup_nas_keep: 30

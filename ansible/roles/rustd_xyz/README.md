@@ -16,8 +16,8 @@ GHCR-login / container-deploy shape.
   credentials, so the directory isn't world-readable) on the host, plus a
   `rustd-db-backup.timer` (04:30 daily, 15m random delay) that runs
   `rustd-db-backup.sh`: `pg_dump`s `rustd-db`, keeps the newest
-  `rustd_xyz_backup_local_keep` dumps locally, and `rsync`s the whole
-  backups directory to the nas over a dedicated ed25519 key.
+  `rustd_xyz_backup_local_keep` dumps locally, and pushes the whole local
+  backup directory to the nas' built-in rsync daemon (port 873 — not ssh).
 
 ## Rollback
 
@@ -51,57 +51,56 @@ restoring into a fresh/empty `rustd-db`, not a sign the restore failed.
 ## Secrets
 
 All secrets (`rustd_xyz_ghcr_token`, `rustd_xyz_db_password`,
-`rustd_xyz_smtp_username`, `rustd_xyz_smtp_password`) are 1Password lookups
-set as `vars` in `projects.yml` — never hardcoded in `defaults/main.yml`.
-The postgres password comes from the `rustd-db` item (Infrastructure vault),
-created manually by the operator before the first deploy.
+`rustd_xyz_smtp_username`, `rustd_xyz_smtp_password`,
+`rustd_xyz_backup_nas_rsync_password`) are 1Password lookups set as `vars` in
+`projects.yml` — never hardcoded in `defaults/main.yml`. The postgres password
+comes from the `rustd-db` item (Infrastructure vault), created manually by the
+operator before the first deploy. The rsync-daemon backup password comes from
+the `ugnas` item (Infrastructure vault) — see "Nightly backup -> nas" below for
+why that's jason's actual nas login password, not a dedicated secret.
 
 ## Nightly backup -> nas
 
 `rustd-db-backup.sh` (templated to `/opt/rustd/rustd-db-backup.sh`) pg_dumps
 `rustd-db` in custom (`-Fc`) format, prunes local dumps beyond
-`rustd_xyz_backup_local_keep` (7), then `rsync`s the backups directory to
-`rustd_xyz_backup_nas_user@rustd_xyz_backup_nas_host:/` — the bare root, not
-`rustd_xyz_backup_nas_path`; see "Push destination is `:/`" below for why.
-The nas keeps `rustd_xyz_backup_nas_keep` (30) and owns pruning its own copy
-(cron, in the `rustd_backup_nas` role run by `nas.yml`) — the push script
-never deletes anything remote, so there is exactly one owner of nas-side
-retention.
+`rustd_xyz_backup_local_keep` (7), then pushes the whole local backup
+directory to the nas in **one rsync-daemon transfer**:
 
-**Key flow.** The role generates a dedicated ed25519 keypair on this droplet
-the first time it runs (`ssh-keygen ... creates=...` — `community.crypto`
-isn't in `requirements.yml`, so this doesn't use `openssh_keypair`). The
-private key is created here and never leaves this host: not copied to the
-ansible controller, not put in 1Password, not templated anywhere. Only the
-*public* key is ever read off the box — the `rustd_backup_nas` role, running
-`nas.yml` against the nas, delegates a `slurp` task back to this host to
-fetch it live and authorize it in `rustd-backup`'s `authorized_keys`.
+```
+rsync -a --mkpath --password-file={{ rustd_xyz_backup_rsync_password_file }} \
+  {{ rustd_xyz_backup_local_dir }}/ \
+  rsync://{{ rustd_xyz_backup_nas_rsync_user }}@{{ rustd_xyz_backup_nas_host }}:{{ rustd_xyz_backup_nas_rsync_port }}/{{ rustd_xyz_backup_nas_rsync_module }}/{{ rustd_xyz_backup_nas_rsync_subpath }}/
+```
 
-This is the opposite of the design doc's stated default (generate the
-keypair on the ansible controller and template private key -> droplet,
-public key -> nas). That version would leave private key material sitting
-in a file on the operator's own machine with no 1Password entry and no
-place in this repo's secret model to account for it — exactly the kind of
-controller-local artifact this repo otherwise avoids. Generating on the
-droplet means the only copy of the private key lives on the one machine
-that uses it, is never transmitted over the control channel at all, and
-needs no 1Password item.
+No `--delete`: the nas keeps a longer retention window (`rustd_xyz_backup_nas_keep`,
+30 days) than this local directory does (7), so a mirroring sync would prune the nas
+copy down to whatever's still local. The nas owns pruning its own copy (a root cron in
+the `rustd_backup_nas` role, run by `nas.yml`) — the push script never deletes anything
+remote, so there is exactly one owner of nas-side retention.
 
-The authorized key is restricted with `command="<rrsync> -wo <rustd_xyz_backup_nas_path>",restrict`
-(`rustd_backup_nas` role — `rrsync` is a *required* dependency there: the role
-fails its play if it can't find it, rather than falling back to a plain key).
-This confines the key to write-only rsync into the one backups directory —
-no shell, no read-back, no port/agent/X11 forwarding.
+**Transport is the nas' built-in rsync daemon (port 873), not ssh — see
+`rustd_backup_nas`'s README ("Field reality") for the full field story.** In short: the
+original design was an ssh-forced-command jail (dedicated key, restricted
+`authorized_keys` entry, `rrsync` or a hand-rolled receive script). Deploy testing found
+it was unimplementable on this hardware for three independent reasons — the nas'
+vendor-patched `rsync` rejects every server-side receive, `sshd` on the appliance has a
+**global** `ForceCommand` that overrides any per-key `command=` (no ssh-jail is possible
+at all), and admin accounts get full passthrough through that global command anyway.
+None of that applies to the vendor's own rsync daemon, which sits entirely outside sshd
+and turned out to be the actual supported receive path — proven end-to-end, a real dump
+landed on the nas' 91TB bcache array over the tailnet.
 
-**Push destination is `:/`, not the nas-side path.** rrsync re-roots an
-absolute destination path under its own restricted directory instead of
-treating it as a literal filesystem path, so rsyncing to
-`rustd_xyz_backup_nas_path` on the wire would land at `DIR` + `DIR`, not
-`DIR`. `rustd-db-backup.sh.j2` therefore hardcodes its destination as the
-bare root (`:/`), which rrsync resolves as "the restricted directory
-itself". That hardcoding relies on the key always being rrsync-restricted —
-see `rustd_backup_nas`'s README ("Restricted key") for why that's now
-guaranteed rather than best-effort.
+**Auth is a daemon username/password, not a key**, written to
+`rustd_xyz_backup_rsync_password_file` (root-owned, mode `0600`, `no_log`'d) by this
+role's "Write the nas rsync-daemon password file" task. The password is jason's actual
+nas login password (1Password `ugnas` item) — see `rustd_backup_nas`'s README
+("Security note") for the shared-credential blast-radius this creates and the scoped-
+account follow-up it recommends.
+
+**Manual prerequisite:** the nas' rsync daemon has to be enabled once via the UGOS UI —
+module `storage` -> `/volume1/storage`, `auth users = jason:rw`. Ansible does not and
+cannot configure it (closed vendor appliance, no UGOS-UI ansible module). See
+`rustd_backup_nas`'s README for the exact steps.
 
 ## Mailer TLS
 
