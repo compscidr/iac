@@ -1,0 +1,5 @@
+---
+# The alternate port the REAL sshd listens on, alongside whatever answers :22.
+# 2222 everywhere: one number to remember, and automation credentials (e.g. the
+# rustd.xyz panel's SSH credentials) carry a port field already.
+sshd_alt_port_number: 2222
