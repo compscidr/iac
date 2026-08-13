@@ -22,7 +22,8 @@ The alternatives all give up something (verified live 2026-08-13):
   in accept/check-satisfied mode), but authorizes by node identity alone: one compromised
   tailnet node can then ssh into the rest with **no key**. Rejected for exactly that.
 - **Alternate port (this role)** — keeps both properties: `:22` stays Tailscale SSH with
-  check-mode for humans; `:{{ alt }}` is the real sshd, key-auth only, so a compromised
+  check-mode for humans; `:2222` (configurable via `sshd_alt_port_number`) is the real
+  sshd, key-auth only, so a compromised
   peer without the private key still gets nothing. Interception is port-22-only, so the
   alternate port passes straight through to the host over the tailnet.
 

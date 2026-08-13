@@ -16,7 +16,8 @@
 #
 #   tailnet :22   -> Tailscale SSH (humans; browser check per the tailnet ACL)
 #   tailnet :2222 -> OpenSSH (key auth; a compromised peer node without the key gets nothing)
-#   LAN           -> OpenSSH on both, as before
+#   LAN :22       -> OpenSSH, unchanged; the alternate port is a NEW listener on the LAN
+#                    too (all interfaces) — harmless behind the router, but not "no change"
 #
 # Applied to every Ubuntu host with tailscale installed rather than only those with
 # RunSSH currently on: it is harmless where Tailscale SSH is off, and enabling the badge
