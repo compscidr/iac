@@ -56,13 +56,20 @@
 
         # ListenStream entries are ADDITIVE: the stock unit keeps 22, this adds the
         # alternate. (An empty `ListenStream=` line would reset instead — do not add one.)
+        #
+        # BOTH address families, explicitly, like the stock unit's `0.0.0.0:22` + `[::]:22`
+        # pair: a bare `ListenStream={{ sshd_alt_port_number }}` bound ONLY `[::]` and that
+        # socket turned out v6-only in the field — IPv4 to the port was refused even on
+        # loopback, which is precisely the address family the tailnet fetch uses
+        # (found live on ubuntu-cube, 2026-08-13).
         - name: Add the alternate port to ssh.socket
           ansible.builtin.copy:
             dest: /etc/systemd/system/ssh.socket.d/alt-port.conf
             content: |
               # Managed by ansible (sshd_alt_port). See the role for why this exists.
               [Socket]
-              ListenStream={{ sshd_alt_port_number }}
+              ListenStream=0.0.0.0:{{ sshd_alt_port_number }}
+              ListenStream=[::]:{{ sshd_alt_port_number }}
             owner: root
             group: root
             mode: "0644"
