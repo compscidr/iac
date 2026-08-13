@@ -43,7 +43,7 @@
     force: "{{ item.force | default(true) }}"
   loop:
     - src: files/oxide.config.json
-      dest: /etc/rust/server/weekly/oxide/oxide.config.json
+      dest: /etc/rust/install/weekly/oxide/oxide.config.json
       force: false
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
@@ -62,7 +62,7 @@
   tags: rust-weekly
   become: true
   ansible.builtin.file:
-    path: /etc/rust/server/weekly/oxide/plugins/RustadminOnline.cs
+    path: /etc/rust/install/weekly/oxide/plugins/RustadminOnline.cs
     state: absent
 
 - name: Install rust monthly server
@@ -110,7 +110,7 @@
     force: "{{ item.force | default(true) }}"
   loop:
     - src: files/oxide.config.json
-      dest: /etc/rust/server/monthly/oxide/oxide.config.json
+      dest: /etc/rust/install/monthly/oxide/oxide.config.json
       force: false
 # only if we want a modded server
 #    - src: files/Oxide.Ext.RustIO.dll
@@ -129,5 +129,5 @@
   tags: rust-monthly
   become: true
   ansible.builtin.file:
-    path: /etc/rust/server/monthly/oxide/plugins/RustadminOnline.cs
+    path: /etc/rust/install/monthly/oxide/plugins/RustadminOnline.cs
     state: absent
