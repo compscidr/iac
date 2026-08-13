@@ -1,0 +1,13 @@
+---
+- name: Restart ssh.socket
+  become: true
+  ansible.builtin.systemd_service:
+    name: ssh.socket
+    state: restarted
+    daemon_reload: true
+
+- name: Restart ssh
+  become: true
+  ansible.builtin.systemd_service:
+    name: ssh
+    state: restarted

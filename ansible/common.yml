@@ -13,6 +13,9 @@
     - compscidr.gpg
     - common_cli
     - dyndns
+    # Self-gating (Ubuntu + tailscale present): real sshd on :2222 so key-based
+    # automation works on hosts where Tailscale SSH owns :22. See the role's README.
+    - sshd_alt_port
 
 - name: Common tasks for gui hosts
   hosts: gui

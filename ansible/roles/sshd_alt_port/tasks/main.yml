@@ -1,0 +1,86 @@
+---
+# Real sshd on an alternate port, alongside Tailscale SSH.
+#
+# On a host running Tailscale SSH (the "SSH" badge in the admin console; RunSSH=true),
+# tailscaled intercepts every TAILNET connection to port 22 and answers with Tailscale's
+# own SSH server — `ssh -vv` reports `remote software version Tailscale`. That server
+# authenticates by tailnet identity + ACL (check mode = the browser prompt) and never
+# consults authorized_keys, so key-based automation (the rustd.xyz panel's SFTP map
+# fetch, rustd.xyz#385) cannot reach the real sshd over the tailnet at all. LAN
+# connections are untouched, which is why the problem only shows from cloud hosts.
+#
+# Interception is port-22-only (verified live on ubuntu-cube 2026-08-13: the game port
+# passed through to the host while :22 answered as Tailscale). So the fix that keeps
+# BOTH security properties — check-mode for humans on 22, key-only auth for automation —
+# is the real sshd listening on a second port:
+#
+#   tailnet :22   -> Tailscale SSH (humans; browser check per the tailnet ACL)
+#   tailnet :2222 -> OpenSSH (key auth; a compromised peer node without the key gets nothing)
+#   LAN           -> OpenSSH on both, as before
+#
+# Applied to every Ubuntu host with tailscale installed rather than only those with
+# RunSSH currently on: it is harmless where Tailscale SSH is off, and enabling the badge
+# later must not silently strand automation.
+
+- name: Check whether tailscale is installed
+  ansible.builtin.stat:
+    path: /usr/bin/tailscale
+  register: sshd_alt_port_tailscale
+
+- name: Configure the alternate sshd port
+  when:
+    - ansible_facts['distribution'] == 'Ubuntu'
+    - sshd_alt_port_tailscale.stat.exists
+  become: true
+  block:
+    # Ubuntu 22.10+ runs sshd socket-activated: ssh.socket owns the listen ports and
+    # `Port` lines in sshd_config are silently ignored. Which mechanism is live decides
+    # where the alternate port must be declared. Enablement is the wants-symlink that
+    # `systemctl is-enabled` itself checks — stat'ing it avoids shelling out.
+    - name: Check whether ssh.socket activation is in use
+      ansible.builtin.stat:
+        path: /etc/systemd/system/sockets.target.wants/ssh.socket
+      register: sshd_alt_port_socket_state
+
+    - name: Add the alternate port to ssh.socket (socket-activated hosts)
+      when: sshd_alt_port_socket_state.stat.exists
+      block:
+        - name: Create the ssh.socket override directory
+          ansible.builtin.file:
+            path: /etc/systemd/system/ssh.socket.d
+            state: directory
+            owner: root
+            group: root
+            mode: "0755"
+
+        # ListenStream entries are ADDITIVE: the stock unit keeps 22, this adds the
+        # alternate. (An empty `ListenStream=` line would reset instead — do not add one.)
+        - name: Add the alternate port to ssh.socket
+          ansible.builtin.copy:
+            dest: /etc/systemd/system/ssh.socket.d/alt-port.conf
+            content: |
+              # Managed by ansible (sshd_alt_port). See the role for why this exists.
+              [Socket]
+              ListenStream={{ sshd_alt_port_number }}
+            owner: root
+            group: root
+            mode: "0644"
+          notify: Restart ssh.socket
+
+    - name: Add the alternate port via sshd_config (service-activated hosts)
+      when: not sshd_alt_port_socket_state.stat.exists
+      block:
+        # Both Port lines are needed together: once any Port is specified, sshd stops
+        # defaulting to 22.
+        - name: Add the alternate port to sshd_config.d
+          ansible.builtin.copy:
+            dest: /etc/ssh/sshd_config.d/60-alt-port.conf
+            content: |
+              # Managed by ansible (sshd_alt_port). See the role for why this exists.
+              Port 22
+              Port {{ sshd_alt_port_number }}
+            owner: root
+            group: root
+            mode: "0644"
+            validate: /usr/sbin/sshd -t -f %s
+          notify: Restart ssh
