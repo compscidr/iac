@@ -15,7 +15,12 @@
     - dyndns
     # Self-gating (Ubuntu + tailscale present): real sshd on :2222 so key-based
     # automation works on hosts where Tailscale SSH owns :22. See the role's README.
-    - sshd_alt_port
+    # molecule-notest: common_cli installs the tailscale BINARY in the molecule
+    # container (only the connect step is skipped), so the role's own gate passes
+    # there — and its ssh.socket/systemd handlers cannot run without systemd as
+    # PID 1. Same convention as bootstrap's docker tasks.
+    - role: sshd_alt_port
+      tags: [molecule-notest]
 
 - name: Common tasks for gui hosts
   hosts: gui
