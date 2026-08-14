@@ -35,7 +35,11 @@
     rust_gameserver_manage_wipe_cron: false
     rust_gameserver_overwrite_env: false
     # Lets rustd.xyz write in the identity directory without root — see
-    # compscidr/ansible-rust-gameserver#25. Under collection 0.4.0 the identity dir
+    # compscidr/ansible-rust-gameserver#25. The directory grant is necessary but NOT
+    # sufficient: rust.env and seed.env are bind-mounted into the container as single
+    # files, so rustd.xyz has to rewrite them in place rather than replace them, which
+    # needs group write on the files themselves (collection 0.4.1,
+    # compscidr/ansible-rust-gameserver#28). Under collection 0.4.0+ the identity dir
     # lives inside the per-server tree: /etc/rust/install/build/server/build (the
     # whole tree is /etc/rust/install/build, mounted at the container's
     # /steamcmd/rust — no paths appear here because the collection role owns them
