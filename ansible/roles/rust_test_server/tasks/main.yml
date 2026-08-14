@@ -147,10 +147,10 @@
     owner: root
     group: root
 
-# Enabled and started by default. This was deliberately NOT the case while #340 needed
-# an unsupervised server to observe; that question is answered (the process exits and
-# stays down), so it now runs like a real deployment. `systemctl stop rust-test`
-# reproduces the unsupervised case on demand.
+# Both the boot-time enablement and the current state follow rust_test_server_service_enabled,
+# which now defaults to true -- so by default this starts the server and enables it at boot.
+# Override the variable to false and this stops it and leaves it disabled instead, which is
+# how the unsupervised case (#340) is reproduced across a deploy.
 - name: Set the service state
   tags: rust-test
   become: true

@@ -28,9 +28,15 @@ rust_test_server_rcon_port: 30017
 rust_test_server_app_port: 30082
 rust_test_server_seed: 1337
 
-# The systemd unit is installed but left DISABLED and STOPPED on purpose. Enabling it
-# would supervise the process and destroy the property this server exists to test:
-# #340 needs to know what happens to an UNsupervised server when rustd.xyz restarts
-# it. Start it by hand in the foreground for that, or enable the unit once the
-# question is answered and you want it to stay up.
+# Whether the systemd unit is enabled at boot AND started by this role. True means the
+# server is supervised: it comes back on its own after an RCON `restart`, like a real
+# deployment.
+#
+# This was false on purpose while compscidr/rustd.xyz#340 needed an UNSUPERVISED server
+# to observe -- the question was what happens to one when rustd.xyz restarts it, and the
+# answer is that the process exits and stays down. That is now recorded on the issue, so
+# the server runs supervised.
+#
+# Set this back to false to reproduce the unsupervised case across a deploy. For a
+# one-off, `systemctl stop rust-test` is enough and needs no config change.
 rust_test_server_service_enabled: true

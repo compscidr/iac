@@ -1,6 +1,8 @@
 # {{ ansible_managed }}
 #
-# Enabled and supervised (see rust_test_server_service_enabled).
+# Supervised, and enabled at boot BY DEFAULT -- this template only sets the restart
+# policy; whether the unit is enabled and started is rust_test_server_service_enabled,
+# which the role applies separately and which can be overridden to false.
 #
 # This unit used to run `Restart=no`, deliberately, so it could be the UNSUPERVISED case
 # for compscidr/rustd.xyz#340 — "does a Rust server come back on its own after an RCON
