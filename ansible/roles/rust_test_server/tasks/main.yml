@@ -147,9 +147,10 @@
     owner: root
     group: root
 
-# Installed but not enabled or started by default — see the comment on
-# rust_test_server_service_enabled. Supervising this process is the thing #340 is
-# trying to observe the absence of.
+# Enabled and started by default. This was deliberately NOT the case while #340 needed
+# an unsupervised server to observe; that question is answered (the process exits and
+# stays down), so it now runs like a real deployment. `systemctl stop rust-test`
+# reproduces the unsupervised case on demand.
 - name: Set the service state
   tags: rust-test
   become: true

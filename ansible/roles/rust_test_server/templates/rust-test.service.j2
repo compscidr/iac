@@ -1,12 +1,18 @@
 # {{ ansible_managed }}
 #
-# Installed but NOT enabled by default (see rust_test_server_service_enabled).
+# Enabled and supervised (see rust_test_server_service_enabled).
 #
-# Note `Restart=no`: the whole point of this server is to be the unsupervised case
-# for compscidr/rustd.xyz#340. If you enable this unit AND set Restart=always, you
-# have made it a supervised server and it no longer answers that question — which is
-# fine once the question is answered, but should be a deliberate change rather than a
-# copied default.
+# This unit used to run `Restart=no`, deliberately, so it could be the UNSUPERVISED case
+# for compscidr/rustd.xyz#340 — "does a Rust server come back on its own after an RCON
+# `restart`?". It does not: the process exits and, with nothing supervising it, stays
+# down. That question is now answered, so the server is supervised like a real one.
+#
+# `always` rather than `on-failure` because #340's remaining unknown is the EXIT CODE:
+# on-failure would not recover a clean exit 0. `always` still respects `systemctl stop`,
+# so manual control is unaffected.
+#
+# Reverting to the unsupervised case for a test is `systemctl stop rust-test` — it no
+# longer needs a config change.
 [Unit]
 Description=Rust dedicated server (rustd.xyz test)
 After=network-online.target
@@ -17,7 +23,10 @@ Type=simple
 User={{ rust_test_server_user }}
 WorkingDirectory={{ rust_test_server_root }}
 ExecStart={{ rust_test_server_root }}/start.sh
-Restart=no
+Restart=always
+# systemd's default is 100ms. A server that dies during boot would otherwise burn
+# through the start-limit burst in under a second and be given up on entirely.
+RestartSec=10
 KillSignal=SIGINT
 TimeoutStopSec=120
 

@@ -33,4 +33,4 @@ rust_test_server_seed: 1337
 # #340 needs to know what happens to an UNsupervised server when rustd.xyz restarts
 # it. Start it by hand in the foreground for that, or enable the unit once the
 # question is answered and you want it to stay up.
-rust_test_server_service_enabled: false
+rust_test_server_service_enabled: true
