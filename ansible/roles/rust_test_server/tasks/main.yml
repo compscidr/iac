@@ -147,9 +147,10 @@
     owner: root
     group: root
 
-# Installed but not enabled or started by default — see the comment on
-# rust_test_server_service_enabled. Supervising this process is the thing #340 is
-# trying to observe the absence of.
+# Both the boot-time enablement and the current state follow rust_test_server_service_enabled,
+# which now defaults to true -- so by default this starts the server and enables it at boot.
+# Override the variable to false and this stops it and leaves it disabled instead, which is
+# how the unsupervised case (#340) is reproduced across a deploy.
 - name: Set the service state
   tags: rust-test
   become: true
