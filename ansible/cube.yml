@@ -20,6 +20,10 @@
     # place, and each playbook names the ones it wants. The build server only here: the
     # weekly and monthly servers in that role are the ones people actually play on.
     - role: rust_game
+      # A DEDICATED account. The game used to run as jason -- also the manager -- so every
+      # permission the collection sets was a no-op and the manager could read the RCON
+      # password from the game's /proc entry. See rustd.xyz#419.
+      rust_game_runtime_user: rustsvc
       rust_game_servers:
         - build
     - rust_test_server

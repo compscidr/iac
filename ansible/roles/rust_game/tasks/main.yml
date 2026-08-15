@@ -34,6 +34,7 @@
         rust_gameserver_manage_wipe_cron: false
         # Defined once in vars/main.yml — see there for why this is group membership
         # rather than sudo, and why the setgid bit is load-bearing.
+        rust_gameserver_runtime_user: "{{ rust_game_runtime_user }}"
         rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
         rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
         rust_gameserver_overwrite_env: false
@@ -108,6 +109,7 @@
         rust_gameserver_manage_wipe_cron: false
         # Defined once in vars/main.yml — see there for why this is group membership
         # rather than sudo, and why the setgid bit is load-bearing.
+        rust_gameserver_runtime_user: "{{ rust_game_runtime_user }}"
         rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
         rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
         rust_gameserver_overwrite_env: false
@@ -199,6 +201,7 @@
         # mounted at the container's /steamcmd/rust — no paths appear here because the
         # collection role owns them all; this play picks the layout up purely through the
         # requirements.yml pin).
+        rust_gameserver_runtime_user: "{{ rust_game_runtime_user }}"
         rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
         rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
         rust_gameserver_banner_url: "{{ rust_game_banner_url }}"

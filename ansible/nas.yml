@@ -24,6 +24,9 @@
     # The two production community servers. The build server shares this role but
     # belongs to ubuntu-cube.local — see cube.yml.
     - role: rust_game
+      # The account these servers have always run as. Naming it makes an incidental uid
+      # explicit: without this the collection resolves "whoever is uid 1000 here".
+      rust_game_runtime_user: steam
       rust_game_servers:
         - weekly
         - monthly
