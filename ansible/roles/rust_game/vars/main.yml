@@ -1,8 +1,8 @@
 ---
 # rustd.xyz connects to this host over SSH **as the `jason` account** — that is the
 # principal being granted access here; "rustd.xyz" below means "the panel, acting as
-# that user". Both servers set `rust_gameserver_manage_wipe_cron: false`, handing
-# wipes to the panel, so it needs to write inside each identity directory:
+# that user". Every server in this role sets `rust_gameserver_manage_wipe_cron: false`,
+# handing wipes to the panel, so it needs to write inside each identity directory:
 # snapshots, seed.env rewrites, map/save deletion.
 #
 # Group membership rather than sudo: every host-side thing the panel does is confined

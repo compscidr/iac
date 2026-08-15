@@ -30,7 +30,7 @@
 ### Game Server Roles
 | Role | Purpose | Used By |
 |------|---------|---------|
-| `rust_game` | Rust game server | NAS |
+| `rust_game` | Rust game servers (weekly, monthly, build) | NAS, ubuntu-cube |
 | `cs2_game` | Counter-Strike 2 server | NAS |
 
 ### Server Provisioning Flow
