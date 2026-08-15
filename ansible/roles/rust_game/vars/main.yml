@@ -14,8 +14,22 @@
 # the file rather than editing it, and without setgid the replacement lands in the
 # manager's own group, at which point the container can no longer read its own seed.
 #
-# Defined once here and referenced by every server block below, so adding a server
-# cannot silently omit them and changing the principal is a one-line edit.
+# Defined once here and referenced by every server block in tasks/main.yml, so adding
+# a server cannot silently omit them and changing the principal is a one-line edit.
 rust_game_manager_users:
   - jason
 rust_game_identity_dir_mode: '2775'
+
+# The one banner all three servers advertise, so they read as one estate in the server
+# browser. The collection ships a generic default, which is fine for anyone else using
+# it but is not ours — overriding it is the whole point of this variable.
+#
+# Served from this repo rather than a third-party image host, because the last one went
+# away and took the banner down with it. Pinned to `main` rather than a tag for
+# the same reason the collection pins its own default — the banner is cosmetic, and a
+# URL that has to be bumped in lockstep with a release just ends up stale.
+#
+# Note that rust.env is only written on first install (`rust_gameserver_overwrite_env:
+# false`, so the panel's in-place edits survive), and RUST_SERVER_BANNER_URL lives in
+# it. Changing this does not reach an already-provisioned server from Ansible.
+rust_game_banner_url: https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg

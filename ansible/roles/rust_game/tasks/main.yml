@@ -41,8 +41,7 @@
         # `rust_gameserver_manage_wipe_cron: false` means no cron is installed from here.
         rust_gameserver_wipe_day_of_week: 4
         rust_gameserver_wipe_hour_of_day: 11
-        # Self-hosted banner (collection default points at imgbox, which went down)
-        rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
 
     - name: Copy oxide plugins
       become: true
@@ -113,8 +112,7 @@
         # See the weekly server above for why the hour is set even with the cron disabled.
         rust_gameserver_wipe_day_of_week: 4
         rust_gameserver_wipe_hour_of_day: 11
-        # Self-hosted banner (collection default points at imgbox, which went down)
-        rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
 
     - name: Copy oxide plugins
       become: true
@@ -198,6 +196,4 @@
         # requirements.yml pin).
         rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
         rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
-        # Same banner as the weekly and monthly servers, so all three read as one estate in
-        # the server browser.
-        rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
