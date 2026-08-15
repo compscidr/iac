@@ -1,133 +1,204 @@
 ---
-- name: Install rust weekly server
-  tags: rust-weekly
-  ansible.builtin.include_role:
-    name: compscidr.rust_gameserver.rust_gameserver
-    apply:
-      become: true
-      tags: rust-weekly
-  vars:
-    rust_gameserver_identity: "weekly"
-    rust_gameserver_name: "California | Weekly | No BP Wipe"
-    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
-    rust_gameserver_worldsize: 3000
-    rust_gameserver_port: 27015
-    rust_gameserver_query_port: 27016
-    rust_gameserver_rcon_port: 27017
-    rust_gameserver_app_port: 27082
-    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rust_gameserver_wipe: "weekly"
-    rust_gameserver_manage_wipe_cron: false
-    # Defined once in vars/main.yml — see there for why this is group membership
-    # rather than sudo, and why the setgid bit is load-bearing.
-    rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
-    rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
-    rust_gameserver_overwrite_env: false
-    rust_gameserver_seed: 14419
-    rust_gameserver_rcon_web_port: 8000
-    # Self-hosted banner (collection default points at imgbox, which went down)
-    rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
-
-- name: Copy oxide plugins
-  tags: rust-weekly
-  become: true
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: "644"
-    owner: "1000"
-    group: "1000"
-    # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
-    # upgrades), so re-copying would revert its own changes.
-    force: "{{ item.force | default(true) }}"
-  loop:
-    - src: files/oxide.config.json
-      dest: /etc/rust/install/weekly/oxide/oxide.config.json
-      force: false
-# only if we want a modded server
-#    - src: files/Oxide.Ext.RustIO.dll
-#      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
-
-# This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
-# installation, so that customers attaching their own servers get the same mechanism
-# we do rather than one that only works if you happen to run our Ansible.
+# Every Rust server in the estate is defined here, across both hosts: nas.local runs
+# the two production community servers, ubuntu-cube.local runs the build server. Which
+# of them a given host gets is chosen by `rust_game_servers`, so the definitions can
+# stay side by side — settings the three are meant to share, like the banner and the
+# manager grant, cannot drift apart into separate roles.
 #
-# But it must still clean up what it previously installed: RustadminOnline.cs is on
-# these servers because this role put it there, and since a Rust update removed
-# BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
-# error in the plugins listing. Deleting the file from the repo does not remove it
-# from a host, so this is explicit.
-- name: Remove the RustadminOnline plugin this role used to install (weekly)
+# There is deliberately no default for that variable: every playbook naming this role
+# states which servers it wants (see nas.yml and cube.yml), so a host can never pick up
+# a server nobody asked it to run. Omitting it fails the play on the first `when` with
+# "'rust_game_servers' is undefined", which is the intended outcome.
+- name: Rust weekly server
+  when: "'weekly' in rust_game_servers"
   tags: rust-weekly
-  become: true
-  ansible.builtin.file:
-    path: /etc/rust/install/weekly/oxide/plugins/RustadminOnline.cs
-    state: absent
+  block:
+    - name: Install rust weekly server
+      ansible.builtin.include_role:
+        name: compscidr.rust_gameserver.rust_gameserver
+        apply:
+          become: true
+          tags: rust-weekly
+      vars:
+        rust_gameserver_identity: "weekly"
+        rust_gameserver_name: "California | Weekly | No BP Wipe"
+        rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 11am PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
+        rust_gameserver_worldsize: 3000
+        rust_gameserver_port: 27015
+        rust_gameserver_query_port: 27016
+        rust_gameserver_rcon_port: 27017
+        rust_gameserver_app_port: 27082
+        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        rust_gameserver_wipe: "weekly"
+        rust_gameserver_manage_wipe_cron: false
+        # Defined once in vars/main.yml — see there for why this is group membership
+        # rather than sudo, and why the setgid bit is load-bearing.
+        rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
+        rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
+        rust_gameserver_overwrite_env: false
+        rust_gameserver_seed: 14419
+        rust_gameserver_rcon_web_port: 8000
+        # Thursdays at 11am. Pinned rather than left to the collection default (also 4)
+        # because the description above states the schedule to players — the advertised
+        # day should not be able to drift on a collection bump. These two feed the in-game
+        # wipe timer via `rust_gameserver_startup_args`, so they matter even though
+        # `rust_gameserver_manage_wipe_cron: false` means no cron is installed from here.
+        rust_gameserver_wipe_day_of_week: 4
+        rust_gameserver_wipe_hour_of_day: 11
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
 
-- name: Install rust monthly server
-  tags: rust-monthly
-  ansible.builtin.include_role:
-    name: compscidr.rust_gameserver.rust_gameserver
-    apply:
+    - name: Copy oxide plugins
       become: true
-      tags: rust-monthly
-  vars:
-    rust_gameserver_identity: "monthly"
-    rust_gameserver_name: "California | Monthly | No BP Wipe"
-    rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Wednesday of the Month at 7pm PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
-    rust_gameserver_worldsize: 4500
-    rust_gameserver_port: 28015
-    rust_gameserver_query_port: 28016
-    rust_gameserver_rcon_port: 28017
-    rust_gameserver_app_port: 28082
-    rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rust_gameserver_wipe: "monthly"
-    rust_gameserver_manage_wipe_cron: false
-    # Defined once in vars/main.yml — see there for why this is group membership
-    # rather than sudo, and why the setgid bit is load-bearing.
-    rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
-    rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
-    rust_gameserver_overwrite_env: false
-    rust_gameserver_seed: 756632467
-    rust_gameserver_rcon_web_port: 8001
-    rust_gameserver_wipe_day_of_week: 3
-    # Self-hosted banner (collection default points at imgbox, which went down)
-    rust_gameserver_banner_url: "https://raw.githubusercontent.com/compscidr/iac/main/ansible/roles/rust_game/files/california-rust.jpg"
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "644"
+        owner: "1000"
+        group: "1000"
+        # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
+        # upgrades), so re-copying would revert its own changes.
+        force: "{{ item.force | default(true) }}"
+      loop:
+        - src: files/oxide.config.json
+          dest: /etc/rust/install/weekly/oxide/oxide.config.json
+          force: false
+    # only if we want a modded server
+    #    - src: files/Oxide.Ext.RustIO.dll
+    #      dest: /etc/rust/server/rust-weekly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
 
-- name: Copy oxide plugins
-  tags: rust-monthly
-  become: true
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: "644"
-    owner: "1000"
-    group: "1000"
-    # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
-    # upgrades), so re-copying would revert its own changes.
-    force: "{{ item.force | default(true) }}"
-  loop:
-    - src: files/oxide.config.json
-      dest: /etc/rust/install/monthly/oxide/oxide.config.json
-      force: false
-# only if we want a modded server
-#    - src: files/Oxide.Ext.RustIO.dll
-#      dest: /etc/rust/server/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+    # This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
+    # installation, so that customers attaching their own servers get the same mechanism
+    # we do rather than one that only works if you happen to run our Ansible.
+    #
+    # But it must still clean up what it previously installed: RustadminOnline.cs is on
+    # these servers because this role put it there, and since a Rust update removed
+    # BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
+    # error in the plugins listing. Deleting the file from the repo does not remove it
+    # from a host, so this is explicit.
+    - name: Remove the RustadminOnline plugin this role used to install (weekly)
+      become: true
+      ansible.builtin.file:
+        path: /etc/rust/install/weekly/oxide/plugins/RustadminOnline.cs
+        state: absent
 
-# This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
-# installation, so that customers attaching their own servers get the same mechanism
-# we do rather than one that only works if you happen to run our Ansible.
-#
-# But it must still clean up what it previously installed: RustadminOnline.cs is on
-# these servers because this role put it there, and since a Rust update removed
-# BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
-# error in the plugins listing. Deleting the file from the repo does not remove it
-# from a host, so this is explicit.
-- name: Remove the RustadminOnline plugin this role used to install (monthly)
+- name: Rust monthly server
+  when: "'monthly' in rust_game_servers"
   tags: rust-monthly
-  become: true
-  ansible.builtin.file:
-    path: /etc/rust/install/monthly/oxide/plugins/RustadminOnline.cs
-    state: absent
+  block:
+    - name: Install rust monthly server
+      ansible.builtin.include_role:
+        name: compscidr.rust_gameserver.rust_gameserver
+        apply:
+          become: true
+          tags: rust-monthly
+      vars:
+        rust_gameserver_identity: "monthly"
+        rust_gameserver_name: "California | Monthly | No BP Wipe"
+        rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Thursday of the Month at 11am PST\\nWorld Size:
+          {{ rust_gameserver_worldsize }}"
+        rust_gameserver_worldsize: 4500
+        rust_gameserver_port: 28015
+        rust_gameserver_query_port: 28016
+        rust_gameserver_rcon_port: 28017
+        rust_gameserver_app_port: 28082
+        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        rust_gameserver_wipe: "monthly"
+        rust_gameserver_manage_wipe_cron: false
+        # Defined once in vars/main.yml — see there for why this is group membership
+        # rather than sudo, and why the setgid bit is load-bearing.
+        rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
+        rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
+        rust_gameserver_overwrite_env: false
+        rust_gameserver_seed: 756632467
+        rust_gameserver_rcon_web_port: 8001
+        # 1st Thursday of the month at 11am — cron weekday numbering, so 4 is Thursday.
+        # See the weekly server above for why the hour is set even with the cron disabled.
+        rust_gameserver_wipe_day_of_week: 4
+        rust_gameserver_wipe_hour_of_day: 11
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
+
+    - name: Copy oxide plugins
+      become: true
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "644"
+        owner: "1000"
+        group: "1000"
+        # oxide.config.json is bootstrap-only: Oxide rewrites it at runtime (adds fields on
+        # upgrades), so re-copying would revert its own changes.
+        force: "{{ item.force | default(true) }}"
+      loop:
+        - src: files/oxide.config.json
+          dest: /etc/rust/install/monthly/oxide/oxide.config.json
+          force: false
+    # only if we want a modded server
+    #    - src: files/Oxide.Ext.RustIO.dll
+    #      dest: /etc/rust/server/rust-monthly/RustDedicated_Data/Managed/Oxide.Ext.RustIO.dll
+
+    # This role no longer deploys Oxide plugins at all — rustd.xyz owns plugin
+    # installation, so that customers attaching their own servers get the same mechanism
+    # we do rather than one that only works if you happen to run our Ansible.
+    #
+    # But it must still clean up what it previously installed: RustadminOnline.cs is on
+    # these servers because this role put it there, and since a Rust update removed
+    # BasePlayer.violationLevel it fails to compile on every boot, showing as a permanent
+    # error in the plugins listing. Deleting the file from the repo does not remove it
+    # from a host, so this is explicit.
+    - name: Remove the RustadminOnline plugin this role used to install (monthly)
+      become: true
+      ansible.builtin.file:
+        path: /etc/rust/install/monthly/oxide/plugins/RustadminOnline.cs
+        state: absent
+
+# ubuntu-cube.local. Not a production community server: it exists for base design, so
+# nobody but us plays on it and it never wipes on a timer. Only the host selection
+# differs — the shared settings above are shared with it deliberately.
+- name: Rust build server
+  when: "'build' in rust_game_servers"
+  tags: rust-build
+  block:
+    - name: Install rust build server
+      ansible.builtin.include_role:
+        name: compscidr.rust_gameserver.rust_gameserver
+        apply:
+          become: true
+          tags: rust-build
+      vars:
+        rust_gameserver_identity: "build"
+        rust_gameserver_name: "California Build Server"
+        rust_gameserver_description: "Build server — no wipes.\\nWorld Size: {{ rust_gameserver_worldsize }}"
+        rust_gameserver_worldsize: 3000
+        rust_gameserver_maxplayers: 50
+        rust_gameserver_port: 29015
+        rust_gameserver_query_port: 29016
+        rust_gameserver_rcon_port: 29017
+        rust_gameserver_app_port: 29082
+        # Continues the estate-wide sequence: 8000 weekly, 8001 monthly, 8002 here. This maps a
+        # host port to the image's web UI on container port 8080, so leaving it at the collection
+        # default (8080) collides with anything already on 8080 — which is exactly what failed on
+        # ubuntu-cube, where something else already holds it.
+        rust_gameserver_rcon_web_port: 8002
+        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # A build server should never wipe on a timer. The cron is removed and rustd.xyz
+        # owns any wipe that does happen, deliberately, from the panel.
+        rust_gameserver_wipe: "monthly"
+        rust_gameserver_manage_wipe_cron: false
+        rust_gameserver_overwrite_env: false
+        # Defined once in vars/main.yml, same as the two servers above — see there for why
+        # this is group membership rather than sudo, and why the setgid bit is load-bearing.
+        # The directory grant is necessary but NOT sufficient: rust.env and seed.env are
+        # bind-mounted into the container as single files, so rustd.xyz has to rewrite them
+        # in place rather than replace them, which needs group write on the files themselves
+        # (collection 0.4.1, compscidr/ansible-rust-gameserver#25 and #28). Under collection
+        # 0.4.0+ the identity dir lives inside the per-server tree:
+        # /etc/rust/install/build/server/build (the whole tree is /etc/rust/install/build,
+        # mounted at the container's /steamcmd/rust — no paths appear here because the
+        # collection role owns them all; this play picks the layout up purely through the
+        # requirements.yml pin).
+        rust_gameserver_manager_users: "{{ rust_game_manager_users }}"
+        rust_gameserver_identity_dir_mode: "{{ rust_game_identity_dir_mode }}"
+        rust_gameserver_banner_url: "{{ rust_game_banner_url }}"
