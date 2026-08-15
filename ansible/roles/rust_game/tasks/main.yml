@@ -1,9 +1,14 @@
 ---
 # Every Rust server in the estate is defined here, across both hosts: nas.local runs
 # the two production community servers, ubuntu-cube.local runs the build server. Which
-# of them a given host gets is chosen by `rust_game_servers` (see defaults/main.yml),
-# so the definitions can stay side by side — settings the three are meant to share,
-# like the banner and the manager grant, cannot drift apart into separate roles.
+# of them a given host gets is chosen by `rust_game_servers`, so the definitions can
+# stay side by side — settings the three are meant to share, like the banner and the
+# manager grant, cannot drift apart into separate roles.
+#
+# There is deliberately no default for that variable: every playbook naming this role
+# states which servers it wants (see nas.yml and cube.yml), so a host can never pick up
+# a server nobody asked it to run. Omitting it fails the play on the first `when` with
+# "'rust_game_servers' is undefined", which is the intended outcome.
 - name: Rust weekly server
   when: "'weekly' in rust_game_servers"
   tags: rust-weekly

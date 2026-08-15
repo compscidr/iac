@@ -16,9 +16,9 @@
     rust_test_server_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
   roles:
-    # Same role as nas.local's community servers — every Rust server is defined in
-    # one place. This selects the build server only; without the override the role
-    # would try to stand the weekly and monthly servers up here too.
+    # Same role as nas.local's community servers — every Rust server is defined in one
+    # place, and each playbook names the ones it wants. The build server only here: the
+    # weekly and monthly servers in that role are the ones people actually play on.
     - role: rust_game
       rust_game_servers:
         - build

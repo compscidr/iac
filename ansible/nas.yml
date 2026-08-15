@@ -21,7 +21,12 @@
   roles:
     - media_server
     - home_assistant
-    - rust_game
+    # The two production community servers. The build server shares this role but
+    # belongs to ubuntu-cube.local — see cube.yml.
+    - role: rust_game
+      rust_game_servers:
+        - weekly
+        - monthly
     # - cs2_game
     - dyndns
     - { role: rustd_backup_nas, tags: [rustd, rustd-backup] }
