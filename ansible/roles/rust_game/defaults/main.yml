@@ -1,0 +1,8 @@
+---
+# The account the game runs as, per host. Empty means the collection falls back to its
+# numeric puid/pgid, which resolves to "whoever happens to be uid 1000 here" -- steam on
+# nas, but the MANAGER's own account on ubuntu-cube. Naming it removes that ambiguity.
+#
+# In defaults/ rather than vars/ on purpose: role vars outrank playbook vars, so a value
+# here can be set per playbook while vars/ could not be overridden at all.
+rust_game_runtime_user: ""
