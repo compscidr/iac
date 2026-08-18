@@ -37,6 +37,16 @@
   community.docker.docker_volume:
     name: rustd-db-data
 
+# The panel downloads a ~9MB GeoLite2 country database into /app/data and refreshes
+# it weekly. Without a volume that download is repeated after every restart; with one
+# it survives. A fresh volume inherits /app/data's ownership from the image, which is
+# the runtime user (compscidr/rustd.xyz#455) - do NOT mount it anywhere else, /app
+# itself is root-owned and the container runs unprivileged.
+- name: Create rustd geoip data volume
+  become: true
+  community.docker.docker_volume:
+    name: rustd-geoip-data
+
 - name: Deploy rustd postgres
   become: true
   no_log: true
@@ -65,6 +75,8 @@
     networks:
       - name: nginx-proxy
       - name: rustd-db
+    volumes:
+      - "rustd-geoip-data:/app/data"
     env:
       QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://rustd-db:5432/{{ rustd_xyz_db_name }}"
       QUARKUS_DATASOURCE_USERNAME: "{{ rustd_xyz_db_user }}"
@@ -80,6 +92,9 @@
       # alias for the same thing; quarkus.mailer.start-tls is a *different*
       # knob (STARTTLS upgrade of a plaintext connection) and is wrong here.
       QUARKUS_MAILER_TLS: "true"
+      # Quarkus maps this to rustd.geoip.license-key. Absent, the panel serves no
+      # player countries at all and (before rustd.xyz#455) said nothing about why.
+      RUSTD_GEOIP_LICENSE_KEY: "{{ rustd_xyz_geoip_license_key }}"
       VIRTUAL_HOST: "{{ rustd_xyz_domain }}"
       VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"
       LETSENCRYPT_HOST: "{{ rustd_xyz_domain }}"

@@ -37,6 +37,11 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_db_password: "{{ lookup('community.general.onepassword', 'rustd-db', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # MaxMind GeoLite2 key for country-by-IP on player profiles. The item must exist
+    # before this playbook runs - a onepassword lookup for a missing item is a hard
+    # failure, not an empty string.
+    rustd_xyz_geoip_license_key: "{{ lookup('community.general.onepassword', 'maxmind-geolite2', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
     rustd_xyz_smtp_username: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='username', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     rustd_xyz_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
