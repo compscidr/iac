@@ -1,0 +1,8 @@
+---
+# Same number as sshd_alt_port's, on purpose: 2222 everywhere means one port to
+# remember, and automation credentials (the rustd.xyz panel's SSH credentials)
+# already carry a port field.
+sshd_alt_port_ugos_number: 2222
+# The only account the alternate sshd admits. Key-only, so this is belt and
+# braces, but a NAS holding every backup deserves both.
+sshd_alt_port_ugos_allow_users: jason

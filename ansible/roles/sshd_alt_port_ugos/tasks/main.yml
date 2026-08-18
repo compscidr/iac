@@ -1,0 +1,79 @@
+---
+# Real sshd on an alternate port, UGOS (UGREEN NAS) flavor.
+#
+# The Ubuntu hosts get their alternate port from sshd_alt_port by extending the stock
+# sshd's listen config. That approach is closed on UGOS: the vendor owns sshd_config
+# (global ForceCommand wrapper, admin-account passthrough — see rustd_backup_nas's
+# README for the field story), and its SFTP subsystem serves a chrooted share view
+# (/docker, /home, /storage) instead of the real filesystem. Shell exec passes through
+# the wrapper fine, so the rustd.xyz panel's command features (wipes, snapshots) work —
+# but every SFTP read against a real path fails ("Operation unsupported"), which is what
+# broke the panel's moderator roster, snapshot listing, blueprint scan and map fetch on
+# NAS-hosted servers (rustd.xyz#456).
+#
+# So instead of extending the vendor sshd, this runs a SECOND stock sshd instance with
+# its own clean config on the same port number sshd_alt_port uses everywhere else:
+#
+#   :22   -> vendor sshd, untouched (UGOS UI, wrapper, and whatever the vendor patches)
+#   :2222 -> stock OpenSSH: key-only auth, one allowed user, normal internal-sftp
+#
+# Same account, same groups, same filesystem as the wrapper shell — so pointing the
+# panel's credential at :2222 changes nothing about exec behaviour and simply makes
+# SFTP see the real filesystem. It also future-proofs the NAS against the Tailscale SSH
+# badge ever being enabled here (the exact port-22 interception sshd_alt_port exists for).
+#
+# The vendor config is never read or written; a firmware update that stomps
+# /etc/systemd/system or /etc/ssh/sshd_config_alt is repaired by re-running this role.
+
+- name: Install the alternate sshd config
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config_alt
+    content: |
+      # Managed by ansible (sshd_alt_port_ugos). See the role for why this exists.
+      Port {{ sshd_alt_port_ugos_number }}
+      PidFile /run/sshd-alt.pid
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      UsePAM yes
+      AllowUsers {{ sshd_alt_port_ugos_allow_users }}
+      X11Forwarding no
+      Subsystem sftp internal-sftp
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart ssh-alt
+
+- name: Install the ssh-alt systemd unit
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ssh-alt.service
+    content: |
+      # Managed by ansible (sshd_alt_port_ugos). See the role for why this exists.
+      [Unit]
+      Description=OpenSSH on the alternate port (clean config, no UGOS wrapper)
+      After=network.target
+
+      [Service]
+      ExecStartPre=/usr/sbin/sshd -t -f /etc/ssh/sshd_config_alt
+      ExecStart=/usr/sbin/sshd -D -f /etc/ssh/sshd_config_alt
+      ExecReload=/bin/kill -HUP $MAINPID
+      KillMode=process
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ssh-alt
+
+- name: Enable and start ssh-alt
+  become: true
+  ansible.builtin.systemd_service:
+    name: ssh-alt
+    enabled: true
+    state: started
+    daemon_reload: true
