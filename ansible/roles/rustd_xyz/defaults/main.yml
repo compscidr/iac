@@ -19,6 +19,13 @@ rustd_xyz_db_name: "rustd"
 rustd_xyz_db_user: "rustd"
 rustd_xyz_db_password: "" # from projects.yml (1Password item rustd-db)
 
+# MaxMind GeoLite2 license key - enables country-by-IP on player profiles.
+# The panel keeps a LOCAL copy of the country database and looks IPs up in it;
+# nothing about a player leaves the instance. Blank means the feature runs dark
+# (every lookup returns no country), which is what production did until now -
+# see compscidr/rustd.xyz#455. From projects.yml (1Password item maxmind-geolite2).
+rustd_xyz_geoip_license_key: ""
+
 # SMTP for account claim / notification mail
 rustd_xyz_smtp_host: "mail.rustd.xyz"
 rustd_xyz_smtp_port: 465
