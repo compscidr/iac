@@ -40,7 +40,7 @@
 # The panel downloads a ~9MB GeoLite2 country database into /app/data and refreshes
 # it weekly. Without a volume that download is repeated after every restart; with one
 # it survives. A fresh volume inherits /app/data's ownership from the image, which is
-# the runtime user (compscidr/rustd.xyz#455) - do NOT mount it anywhere else, /app
+# the runtime user (compscidr/rustd.xyz#464) - do NOT mount it anywhere else, /app
 # itself is root-owned and the container runs unprivileged.
 - name: Create rustd geoip data volume
   become: true
@@ -93,7 +93,7 @@
       # knob (STARTTLS upgrade of a plaintext connection) and is wrong here.
       QUARKUS_MAILER_TLS: "true"
       # Quarkus maps this to rustd.geoip.license-key. Absent, the panel serves no
-      # player countries at all and (before rustd.xyz#455) said nothing about why.
+      # player countries at all and (before rustd.xyz#464) said nothing about why.
       RUSTD_GEOIP_LICENSE_KEY: "{{ rustd_xyz_geoip_license_key }}"
       VIRTUAL_HOST: "{{ rustd_xyz_domain }}"
       VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"
