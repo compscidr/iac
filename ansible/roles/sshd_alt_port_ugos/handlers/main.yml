@@ -1,0 +1,9 @@
+---
+# Handler for the alternate-port sshd instance (ssh-alt.service); the vendor's
+# own sshd on :22 is never touched by this role.
+- name: Restart ssh-alt
+  become: true
+  ansible.builtin.systemd_service:
+    name: ssh-alt
+    state: restarted
+    daemon_reload: true
