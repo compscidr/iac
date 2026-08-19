@@ -135,7 +135,13 @@
   tags: rust-test
   become: true
   ansible.builtin.command:
-    cmd: mv {{ rust_test_server_root }}/seed.env {{ rust_test_server_data_dir }}/seed.env
+    # argv, not a cmd string: a path carrying whitespace — from an override, or a
+    # rust_test_server_identity someone gives a space — would otherwise split into extra
+    # arguments and mv would move the wrong thing or fail.
+    argv:
+      - mv
+      - "{{ rust_test_server_root }}/seed.env"
+      - "{{ rust_test_server_data_dir }}/seed.env"
     creates: "{{ rust_test_server_data_dir }}/seed.env"
     removes: "{{ rust_test_server_root }}/seed.env"
 
