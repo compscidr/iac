@@ -83,6 +83,31 @@
         path: /etc/rust/install/weekly/oxide/plugins/RustadminOnline.cs
         state: absent
 
+    # rustd.xyz owns RustdMap now, but the copy on this host was written by an older
+    # revision of this role, so it is owned by the runtime user at 0644 and the panel --
+    # which connects as a manager user, not as the owner -- cannot replace it. Collection
+    # 0.6.1 makes the plugins DIRECTORY writable for manager users, which is enough to
+    # create a plugin but not to overwrite this one: an existing file's own mode governs
+    # that. See compscidr/rustd.xyz#469.
+    #
+    # Group write rather than `state: absent`, which would also unblock the panel: deleting
+    # it drops map rendering until somebody clicks Install, and nothing installs the plugin
+    # automatically. This leaves the server exactly as it is and lets the next panel-driven
+    # update land.
+    - name: Check for the RustdMap plugin an older revision of this role installed (weekly)
+      become: true
+      ansible.builtin.stat:
+        path: /etc/rust/install/weekly/oxide/plugins/RustdMap.cs
+      register: rust_game_weekly_rustdmap
+
+    - name: Let rustd.xyz replace that RustdMap copy (weekly)
+      become: true
+      when: rust_game_weekly_rustdmap.stat.exists
+      ansible.builtin.file:
+        path: /etc/rust/install/weekly/oxide/plugins/RustdMap.cs
+        state: file
+        mode: '0664'
+
 - name: Rust monthly server
   when: "'monthly' in rust_game_servers"
   tags: rust-monthly
@@ -154,6 +179,31 @@
       ansible.builtin.file:
         path: /etc/rust/install/monthly/oxide/plugins/RustadminOnline.cs
         state: absent
+
+    # rustd.xyz owns RustdMap now, but the copy on this host was written by an older
+    # revision of this role, so it is owned by the runtime user at 0644 and the panel --
+    # which connects as a manager user, not as the owner -- cannot replace it. Collection
+    # 0.6.1 makes the plugins DIRECTORY writable for manager users, which is enough to
+    # create a plugin but not to overwrite this one: an existing file's own mode governs
+    # that. See compscidr/rustd.xyz#469.
+    #
+    # Group write rather than `state: absent`, which would also unblock the panel: deleting
+    # it drops map rendering until somebody clicks Install, and nothing installs the plugin
+    # automatically. This leaves the server exactly as it is and lets the next panel-driven
+    # update land.
+    - name: Check for the RustdMap plugin an older revision of this role installed (monthly)
+      become: true
+      ansible.builtin.stat:
+        path: /etc/rust/install/monthly/oxide/plugins/RustdMap.cs
+      register: rust_game_monthly_rustdmap
+
+    - name: Let rustd.xyz replace that RustdMap copy (monthly)
+      become: true
+      when: rust_game_monthly_rustdmap.stat.exists
+      ansible.builtin.file:
+        path: /etc/rust/install/monthly/oxide/plugins/RustdMap.cs
+        state: file
+        mode: '0664'
 
 # ubuntu-cube.local. Not a production community server: it exists for base design, so
 # nobody but us plays on it and it never wipes on a timer. Only the host selection
