@@ -10,3 +10,10 @@ IPv6AcceptRA=yes
 [DHCPv4]
 UseDNS=yes
 UseRoutes=yes
+# systemd-networkd's default, stated explicitly so the wired/wireless ordering is
+# visible in both files rather than only in the one that overrides it. See
+# 25-wireless.network for why the ordering has to be decided at all.
+RouteMetric=1024
+
+[IPv6AcceptRA]
+RouteMetric=1024
