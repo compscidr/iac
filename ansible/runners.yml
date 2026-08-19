@@ -29,11 +29,24 @@
     github_runner_install_docker: false
     github_runner_java: true
     github_runner_java_mount_usb: false
+    github_runner_env_file: true
+    github_runner_env_filename: /etc/github-runner-java.env
     github_runner_personal_access_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
+  pre_tasks:
+    # Non-root runner: rustd.xyz tests assert permission-denied behavior
+    # (unwritable dirs/files), which root bypasses — as root, 12 tests fail.
+    # Hosted runners are non-root too, so this matches upstream CI behavior.
+    - name: Write runner env file
+      become: true
+      ansible.builtin.copy:
+        content: |
+          RUN_AS_ROOT=false
+        dest: /etc/github-runner-java.env
+        mode: "0644"
   roles:
     - role: compscidr.github_runner.github_runner
       vars:
