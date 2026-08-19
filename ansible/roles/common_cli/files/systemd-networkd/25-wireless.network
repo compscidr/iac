@@ -11,9 +11,44 @@ RequiredForOnline=no
 DHCP=yes
 IPv6AcceptRA=yes
 
+# Ignore carrier status - wpa_supplicant will manage the connection.
+#
+# This is a [Network] key. It sat below the [DHCPv4] header until 2026-08-18, where
+# networkd parsed it as a DHCP option and dropped it -- "Unknown key name
+# 'IgnoreCarrierLoss' in section 'DHCPv4', ignoring" on every boot -- so wifi hosts
+# have been running the default (tear down the config on carrier loss) all along.
+# Moving it up here is therefore a real behaviour change, and the intended one: brief
+# wifi flaps no longer drop the addresses and routes for the 3s it takes to come back.
+IgnoreCarrierLoss=3s
+
 [DHCPv4]
 UseDNS=yes
 UseRoutes=yes
+# Wired wins; wifi stays as failover.
+#
+# On a host with BOTH links up on the same LAN, DHCP installs two default routes and
+# they used to land on the same metric (1024, the default here and in 20-wired.network),
+# which leaves the kernel free to pick either -- and the choice is not stable across
+# reboots.
+#
+# That is not cosmetic on a host behind a port forward. An inbound packet arrives on
+# the forwarded interface, but a UDP socket bound to 0.0.0.0 takes its REPLY's source
+# address from a route lookup, so the answer can go out as the other interface's IP.
+# The router has no NAT entry for that address and drops it, and a client with a
+# connected socket would discard it anyway. Found on ubuntu-cube 2026-08-18: the
+# bare-metal Rust test server (roles/rust_test_server) answered nobody outside the
+# LAN -- packets reached :30015 on the wired IP and the replies left from the wifi
+# one. TCP was unaffected and looked healthy throughout, because the kernel answers a
+# SYN using the received packet's destination as the source; only unconnected UDP
+# takes the source from routing. The dockerised servers on the same host were fine
+# too: conntrack reverses their DNAT and restores the right source address on the way
+# out, which is exactly what a bare-metal listener has nothing to do for it.
+#
+# 2048 rather than a wired-side change so wifi-only hosts (the laptops) are untouched:
+# a single default route wins whatever its metric.
+RouteMetric=2048
 
-# Ignore carrier status - wpa_supplicant will manage the connection
-IgnoreCarrierLoss=3s
+# Same ordering for the v6 default route, which RA installs separately and which
+# otherwise keeps the 1024 default the DHCPv4 section above no longer uses.
+[IPv6AcceptRA]
+RouteMetric=2048
