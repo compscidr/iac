@@ -14,6 +14,17 @@ rust_test_server_steamcmd_dir: /opt/steamcmd
 # above rather than rust_test_server_root.
 rust_test_server_home: "/home/{{ rust_test_server_user }}"
 rust_test_server_identity: test
+
+# The identity (save) directory inside the install root, and — matching the collection
+# role's `rust_gameserver_data_dir` — where seed.env belongs.
+#
+# rustd.xyz derives the seed.env it rewrites from the server's DATA path, so a seed.env
+# anywhere else is one the panel cannot write. It kept this file at the install root
+# until 2026-08-19, one level above where the panel looks: every wipe with a chosen seed
+# came back on the old map, because the write correctly refused a path that did not
+# exist (the panel never creates these files — compscidr/rustd.xyz#407) and the wipe had
+# already run its countdown by then.
+rust_test_server_data_dir: "{{ rust_test_server_root }}/server/{{ rust_test_server_identity }}"
 rust_test_server_name: "rustd.xyz test server"
 rust_test_server_description: "Test server for rustd.xyz. Wipes frequently."
 

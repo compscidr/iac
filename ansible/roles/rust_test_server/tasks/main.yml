@@ -113,15 +113,43 @@
     force: true
     follow: false
 
+# Rust creates this itself on first boot, but seed.env has to be in it BEFORE that boot
+# — start.sh refuses to launch without one — so the role cannot wait for the game.
+- name: Create the save directory
+  tags: rust-test
+  become: true
+  ansible.builtin.file:
+    path: "{{ rust_test_server_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
+
+# Moved, not recreated: this file holds the seed of the map the server is CURRENTLY
+# running, and writing a fresh one would silently change the map at the next restart.
+#
+# Ordered before the create below so that create's `force: false` sees the migrated file
+# and leaves it alone. `creates`/`removes` make this a no-op once done, and on a host
+# that never had the old layout.
+- name: Move a seed.env left at the install root by the pre-2026-08-19 layout
+  tags: rust-test
+  become: true
+  ansible.builtin.command:
+    cmd: mv {{ rust_test_server_root }}/seed.env {{ rust_test_server_data_dir }}/seed.env
+    creates: "{{ rust_test_server_data_dir }}/seed.env"
+    removes: "{{ rust_test_server_root }}/seed.env"
+
 # The seed lives in its own file so a wipe can rotate it without rewriting the launch
-# script — the same split the containerised servers use, so rustd.xyz's `sed -i` on
-# seed.env works identically against both.
+# script, and it lives in the SAVE directory because that is the path rustd.xyz derives
+# the file it rewrites from — the same place compscidr.rust_gameserver keeps it
+# (`rust_gameserver_data_dir`). Anywhere else and the panel's wipes cannot change the
+# seed at all; see rust_test_server_data_dir for what that looked like.
 - name: Create seed.env (never overwritten — wipes rotate it at runtime)
   tags: rust-test
   become: true
   ansible.builtin.copy:
     content: "RUST_SERVER_SEED={{ rust_test_server_seed }}\n"
-    dest: "{{ rust_test_server_root }}/seed.env"
+    dest: "{{ rust_test_server_data_dir }}/seed.env"
     mode: '0644'
     owner: "{{ rust_test_server_user }}"
     group: "{{ rust_test_server_user }}"

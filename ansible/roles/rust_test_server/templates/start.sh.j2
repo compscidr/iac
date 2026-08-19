@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-SEED_FILE="{{ rust_test_server_root }}/seed.env"
+SEED_FILE="{{ rust_test_server_data_dir }}/seed.env"
 
 # Fail loudly rather than booting with an empty seed. Rust picks its own seed when
 # +server.seed is empty, so the running map would silently stop matching what
