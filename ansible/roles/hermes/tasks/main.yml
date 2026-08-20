@@ -16,12 +16,23 @@
 
 # Upstream installer: single-user install, idempotent via `creates:`.
 # Upgrades happen on-host via hermes's own updater, not by re-running this.
+#
+# Both flags are required for an unattended run. The installer decides
+# whether to prompt by opening /dev/tty, NOT by checking whether stdin
+# is a terminal — and ansible's ssh connection allocates a tty, so the
+# probe succeeds and the run blocks forever on input nobody will type:
+#   --skip-setup      skips the `hermes setup` wizard, which reads
+#                     directly from /dev/tty (the observed hang).
+#   --non-interactive makes the remaining yes/no prompts (build tools,
+#                     optional system packages) take their defaults.
+# This role configures hermes itself via config.yaml/.env below, so the
+# wizard has nothing to contribute anyway.
 - name: Install hermes via upstream installer
   become: true
   become_user: "{{ hermes_user }}"
   ansible.builtin.shell: |
     set -euo pipefail
-    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive
   args:
     creates: "{{ hermes_bin }}"
     executable: /bin/bash
