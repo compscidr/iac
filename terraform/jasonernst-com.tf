@@ -25,7 +25,7 @@ resource "digitalocean_droplet" "www-jasonernst-com" {
 
   # Deregister from Tailscale before the droplet is destroyed so the
   # replacement node can claim the "www" hostname cleanly. See
-  # openclaw.tf for rationale (tailscale ssh vs. remote-exec).
+  # hermes.tf for rationale (tailscale ssh vs. remote-exec).
   provisioner "local-exec" {
     when       = destroy
     on_failure = continue
