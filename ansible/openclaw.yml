@@ -61,6 +61,21 @@
     # openclaw role vars
     openclaw_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
     openclaw_tailscale_serve: true
+    # Per-channel allowlist for the guild. Keyed by channel *name* (the
+    # resolver matches id -> slug -> name -> parent -> "*"), so no
+    # Discord snowflakes land in this public repo.
+    #
+    # This mirrors the state configured by hand on the host today: the
+    # map is an allowlist, and with no "*" entry every channel except
+    # #openclaw-bot is dropped — including #general. The explicit
+    # dev-alerts entry is redundant under that reading but documents
+    # that it was deliberately muted. If the intent is "everything
+    # except dev-alerts", add `"*": {enabled: true}` here.
+    openclaw_discord_channels:
+      openclaw-bot:
+        enabled: true
+      dev-alerts:
+        enabled: false
     # Claude OAuth blob — Infrastructure vault (default `onepassword_vault`).
     openclaw_claude_credentials: >-
       {{ lookup('community.general.onepassword',

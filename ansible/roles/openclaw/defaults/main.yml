@@ -89,6 +89,52 @@ openclaw_discord_bot_token: ""
 openclaw_discord_guild_id: ""
 openclaw_brave_api_key: ""
 
+# Discord group-message policy for the channel as a whole. `allowlist` is
+# also the runtime fallback when no policy is set, but pinning it here
+# means a fresh provision can't silently drift to `open` if the upstream
+# default ever changes — an open policy would let any member of the
+# guild drive the agent.
+openclaw_discord_group_policy: "allowlist"
+
+# Per-channel enable map, merged into
+# `channels.discord.guilds.<guildId>.channels`.
+#
+# IMPORTANT: this map is an *allowlist*. The moment it holds a single
+# entry, every channel without a matching entry resolves to
+# `allowed: false` and inbound messages are dropped. So a map that only
+# disables one channel silences the entire guild — you need a `"*"`
+# entry alongside it to keep the rest live.
+#
+# Keys are matched in the order: channel ID -> slug -> name -> parent ->
+# `"*"`, so plain channel names work and are preferred here (readable,
+# and no Discord snowflakes committed to a public repo). Name matching
+# is skipped for threads, which fall back to their parent channel's
+# keys.
+#
+# Empty map (the default) leaves the key unset, which means "all
+# channels allowed" — the role only manages this when a host opts in.
+#
+# Example:
+#   openclaw_discord_channels:
+#     "*": {enabled: true}
+#     noisy-channel: {enabled: false}
+openclaw_discord_channels: {}
+
+# Session scoping for DMs. `per-channel-peer` gives each (channel, peer)
+# pair its own session, so a DM on Discord and a DM on another channel
+# from the same person don't share history.
+openclaw_session_dm_scope: "per-channel-peer"
+
+# Tool profile the agent runs with. `coding` enables the file/exec/patch
+# tool set this host is used for; the stock default is narrower.
+openclaw_tools_profile: "coding"
+
+# Web search wiring. The provider must match an installed plugin
+# (`brave` is installed via openclaw_plugins below and needs
+# openclaw_brave_api_key set). Empty provider disables both tasks.
+openclaw_web_search_provider: "brave"
+openclaw_web_search_enabled: true
+
 # Plugins to install via `openclaw plugins install clawhub:<id>`.
 # 2026.5.7+ moved Discord and Brave out of the bundled set; channels
 # and tools won't work without them.
