@@ -158,6 +158,18 @@
 # dead-man's switch beats per-unit OnFailure hooks on the droplets because
 # it also catches the timer/host/tailnet dying - the silent-stop modes that
 # motivated #479 in the first place.
+# Fast-fail guard: the role's default is an empty string (the real value is
+# injected in nas.yml from 1Password), and deploying that would mean a blank
+# webhook file and a cron that errors every morning - the exact silent-ish
+# failure this feature exists to prevent.
+- name: Ensure the discord webhook is configured
+  ansible.builtin.assert:
+    that: rustd_backup_nas_discord_webhook | length > 0
+    fail_msg: >-
+      rustd_backup_nas_discord_webhook is empty - set it from the 1Password
+      `discord-dev-alerts` item (see nas.yml) before deploying the freshness check.
+    quiet: true
+
 - name: Write the discord webhook file
   become: true
   ansible.builtin.copy:

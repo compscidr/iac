@@ -52,4 +52,5 @@ if stale:
         data=json.dumps({"content": content[:2000]}).encode(),
         headers={"Content-Type": "application/json", "User-Agent": "backup-freshness-check"},
     )
-    urllib.request.urlopen(req, timeout=30)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        resp.read()
