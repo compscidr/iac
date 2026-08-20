@@ -1,5 +1,5 @@
 ---
-# Hermes playbook - AI agent deployment (replaces openclaw.yml)
+# Hermes playbook - AI agent deployment
 #
 # Targets the `hermes` host (hermes.tail21090.ts.net via MagicDNS).
 #
@@ -9,8 +9,8 @@
 #      ubuntu-beast per tailscale-acl.hujson):
 #        ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh'
 #   3. Bootstrap run: ansible-playbook bootstrap.yml --limit hermes -u root
-#   4. `hermes` vault (renamed from `openclaw`; kai's scoped service
-#      account token still reads it — grants are by vault UUID):
+#   4. `hermes` vault (kai's scoped service account token reads it —
+#      grants are by vault UUID):
 #        - `discord hermes` item:
 #            credential            = bot token
 #            allowed user ids      = Jason's Discord user ID
@@ -59,8 +59,8 @@
                 field='allowed channel ids',
                 vault='hermes',
                 account_id=onepassword_account_id) }}
-    # No @-mention needed in the allowed channel(s) — parity with
-    # openclaw's requireMention: false.
+    # No @-mention needed in the allowed channel(s) when configured
+    # via DISCORD_FREE_RESPONSE_CHANNELS.
     hermes_discord_free_response_channels: "{{ hermes_discord_allowed_channels }}"
   roles:
     - hermes

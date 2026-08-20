@@ -1,4 +1,4 @@
-# Hermes droplet - AI agent (Hermes Agent, replaces openclaw)
+# Hermes droplet - AI agent (Hermes Agent)
 # Access via Tailscale only (no public inbound ports). The
 # hermes.jasonernst.com A/AAAA records in jasonernst-com.tf are
 # cosmetic until any inbound rules are added here.

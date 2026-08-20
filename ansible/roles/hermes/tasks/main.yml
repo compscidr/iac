@@ -2,9 +2,8 @@
 # Hermes Agent installation and configuration. See defaults/main.yml
 # for the role contract and 1Password notes.
 
-# Upstream installer (same pattern as the claude installer the openclaw
-# role used): single-user install, idempotent via `creates:`. Upgrades
-# happen on-host via hermes's own updater, not by re-running this.
+# Upstream installer: single-user install, idempotent via `creates:`.
+# Upgrades happen on-host via hermes's own updater, not by re-running this.
 - name: Install hermes via upstream installer
   become: true
   become_user: "{{ hermes_user }}"

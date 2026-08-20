@@ -2,15 +2,13 @@
 # Hermes role defaults
 #
 # Hermes Agent (https://hermes-agent.nousresearch.com/, Nous Research,
-# MIT) replaces openclaw. This role: installs hermes via the upstream
-# installer, templates ~/.hermes/.env (secrets) and ~/.hermes/config.yaml
-# (settings), clones the kai-workspace repo (persona/memory source for
-# the one-time SOUL.md seed), and runs `hermes gateway` as a
-# linger-enabled user systemd unit.
+# MIT). This role: installs hermes via the upstream installer, templates
+# ~/.hermes/.env (secrets) and ~/.hermes/config.yaml (settings), clones the
+# kai-workspace repo (persona/memory source for the one-time SOUL.md seed),
+# and runs `hermes gateway` as a linger-enabled user systemd unit.
 #
 # Secrets come from the `hermes` 1Password vault (kai's scoped service
-# account token can read it; the vault was renamed from `openclaw` —
-# grants are by vault UUID so the token survived). See ansible/hermes.yml
+# account token can read it; grants are by vault UUID). See ansible/hermes.yml
 # for the item/field mapping. No Discord snowflakes in this repo: user
 # and channel IDs live in the 1P item.
 #
