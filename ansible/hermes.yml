@@ -7,7 +7,7 @@
 #   1. Droplet created via Terraform (Tailscale joined via cloud-init).
 #   2. Node tagged as agent (one-time, grants ollama/exo access to
 #      ubuntu-beast per tailscale-acl.hujson):
-#        ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh --hostname=hermes'
+#        ssh root@hermes 'tailscale up --advertise-tags=tag:agent --ssh --hostname=hermes'
 #   3. Bootstrap run: ansible-playbook -i inventory.yml bootstrap.yml --limit hermes -u root
 #   4. `hermes` vault (kai's scoped service account token reads it —
 #      grants are by vault UUID):
