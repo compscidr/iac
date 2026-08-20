@@ -1,0 +1,55 @@
+# {{ ansible_managed }}
+# Hermes Agent settings. Ansible-owned: hermes is expected to keep its
+# runtime state in other files under ~/.hermes. If a deployed hermes
+# version is observed rewriting this file, switch the template task to
+# `force: false` and manage settings via `hermes config set` instead.
+
+# Primary model: ollama on ubuntu-beast over Tailscale.
+model:
+  default: "{{ hermes_ollama_model }}"
+  provider: ollama-beast
+
+providers:
+  ollama-beast:
+    api: "{{ hermes_ollama_base_url }}"
+    transport: chat_completions
+    default_model: "{{ hermes_ollama_model }}"
+  exo-beast:
+    api: "{{ hermes_exo_base_url }}"
+    transport: chat_completions
+    default_model: "{{ hermes_exo_model }}"
+
+# Tried in order when the primary fails (beast off / model unloaded /
+# rate-limited). Cloud rungs render only once their key is in .env.
+fallback_providers:
+  - provider: exo-beast
+    model: "{{ hermes_exo_model }}"
+{% if hermes_anthropic_api_key %}
+  - provider: anthropic
+    model: "{{ hermes_anthropic_model }}"
+{% endif %}
+{% if hermes_kimi_api_key %}
+  - provider: kimi
+    model: "{{ hermes_kimi_model }}"
+{% endif %}
+{% if hermes_openai_api_key %}
+  - provider: openai
+    model: "{{ hermes_openai_model }}"
+{% endif %}
+{% if hermes_xai_api_key %}
+  - provider: xai
+    model: "{{ hermes_xai_model }}"
+{% endif %}
+{% if hermes_gemini_api_key %}
+  - provider: gemini
+    model: "{{ hermes_gemini_model }}"
+{% endif %}
+
+discord:
+  # Mention required in general; the #hermes-agent channel is in
+  # DISCORD_FREE_RESPONSE_CHANNELS (.env) so it needs no mention.
+  require_mention: true
+  auto_thread: true
+
+# Per-user session isolation in group channels.
+group_sessions_per_user: true

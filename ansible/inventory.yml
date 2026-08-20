@@ -9,7 +9,7 @@ ungrouped:
     nas.local:
     mail:
     projects:
-    openclaw:
+    hermes:
 academic_gui:
   hosts:
     ubuntu-beast.local:
@@ -51,7 +51,7 @@ tailscale:
     www:
     mail:
     projects:
-    openclaw:
+    hermes:
 linux:
   hosts:
     ubuntu-beast.local:

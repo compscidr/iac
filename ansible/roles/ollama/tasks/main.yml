@@ -282,17 +282,8 @@
 
       Large models (70B+) will use GPU + RAM offloading automatically.
 
-      To add to OpenClaw config:
-        models:
-          providers:
-            ollama:
-              baseUrl: "http://{{ inventory_hostname }}:{{ ollama_port }}/v1"
-              api: openai-completions
-              models:
-                - id: "qwen2.5:72b"
-                  name: "Qwen 2.5 72B (Local)"
-                - id: "qwen2.5:14b"
-                  name: "Qwen 2.5 14B (Local/Fast)"
+      To use from Hermes Agent (see roles/hermes), the OpenAI-compatible
+      endpoint is: http://{{ inventory_hostname }}:{{ ollama_port }}/v1
   tags:
     - ollama
     - info

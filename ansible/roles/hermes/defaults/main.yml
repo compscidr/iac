@@ -1,0 +1,67 @@
+---
+# Hermes role defaults
+#
+# Hermes Agent (https://hermes-agent.nousresearch.com/, Nous Research,
+# MIT). This role: installs hermes via the upstream installer, templates
+# ~/.hermes/.env (secrets) and ~/.hermes/config.yaml (settings), clones the
+# kai-workspace repo (persona/memory source for the one-time SOUL.md seed),
+# and runs `hermes gateway` as a linger-enabled user systemd unit.
+#
+# Secrets come from the `hermes` 1Password vault (kai's scoped service
+# account token can read it; grants are by vault UUID). See ansible/hermes.yml
+# for the item/field mapping. No Discord snowflakes in this repo: user
+# and channel IDs live in the 1P item.
+#
+# Model providers: local-only by design (ollama on ubuntu-beast primary,
+# exo fallback, both over Tailscale — requires the hermes node to carry
+# tag:agent, see terraform/tailscale-acl.hujson). Five dormant cloud
+# rungs (Anthropic, Kimi/Moonshot, OpenAI, xAI, Gemini) activate when
+# their key var is non-empty: drop the key into the 1P item, wire it in
+# hermes.yml, re-run the play. Until then, if beast is off/in Windows
+# and exo is stopped, hermes is up but model-less and turns fail —
+# accepted per the 2026-08-20 design spec.
+
+hermes_user: "{{ username }}"
+
+# Upstream installer drops the binary here (verify on first deploy; if
+# the installer uses a different path, override this var — every task
+# and the systemd unit consume it).
+hermes_bin: "/home/{{ hermes_user }}/.local/bin/hermes"
+
+# Config/state dir. Hermes owns its state subdirs; ansible owns .env,
+# config.yaml, and the workspace clone inside it.
+hermes_config_dir: "/home/{{ hermes_user }}/.hermes"
+
+# Persona/memory source repo (kai's). Initial-clone-only: hermes/kai
+# may write here at runtime; ansible must never clobber it.
+hermes_workspace_repo: ""
+hermes_workspace_path: "{{ hermes_config_dir }}/workspace"
+
+# Discord (all from 1P via the playbook; empty = task lines skipped).
+# ALLOWED_* is hermes's fail-closed access policy: without at least one
+# allowed user hermes ignores everyone.
+hermes_discord_bot_token: ""
+hermes_discord_allowed_users: ""            # comma-separated user IDs
+hermes_discord_allowed_channels: ""         # comma-separated channel IDs
+hermes_discord_free_response_channels: ""   # channels needing no @-mention
+
+# Local model providers (OpenAI-compatible /v1 endpoints over Tailscale)
+hermes_ollama_base_url: "http://ubuntu-beast.tail21090.ts.net:11434/v1"
+hermes_ollama_model: "qwen3.5:35b-a3b-64k"
+hermes_exo_base_url: "http://ubuntu-beast.tail21090.ts.net:52415/v1"
+# exo model id as reported by its /v1/models when exo is running
+hermes_exo_model: "mlx-community/Llama-3.2-3B-Instruct-8bit"
+
+# Dormant cloud provider rungs. Empty key = not rendered into .env or
+# config.yaml. Model tags are best-current-guess defaults; check the
+# provider's model list when activating a rung.
+hermes_anthropic_api_key: ""
+hermes_anthropic_model: "claude-sonnet-5"
+hermes_kimi_api_key: ""
+hermes_kimi_model: "kimi-k3"
+hermes_openai_api_key: ""
+hermes_openai_model: "gpt-5.6"
+hermes_xai_api_key: ""
+hermes_xai_model: "grok-4.6"
+hermes_gemini_api_key: ""
+hermes_gemini_model: "gemini-3.1-pro"
