@@ -15,6 +15,11 @@ That's it.
   job — the nas is the **sole owner** of nas-side retention. The push script
   (`rustd-db-backup.sh.j2`, in `rustd_xyz`) never deletes anything remote; it only prunes
   its own local copy. There is exactly one place backups on the nas get deleted from.
+- Same-shaped prune for the jasonernst.com goblog pipeline (push side: `jasonernst_com`
+  role, `jasonernst_com.yml`): db snapshots older than `jasonernst_com_backup_nas_keep`
+  under `jasonernst_com_backup_nas_path`/db. The sibling `uploads/` mirror is never
+  pruned. This role now serves two pipelines despite its rustd-specific name; rename to
+  `backup_nas` if a third lands.
 
 That's the whole role. It does **not** create a receiver user, a target directory, an
 SSH key, or any receive-side script — see "Field reality" below for why: the actual

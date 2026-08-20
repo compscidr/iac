@@ -51,3 +51,12 @@ rustd_xyz_backup_nas_host: nas # tailnet short name - set via rustd_backup_nas_t
 # this same directory.
 rustd_xyz_backup_nas_path: /volume1/storage/backups/rustd-db
 rustd_xyz_backup_nas_keep: 30
+
+# jasonernst.com nightly goblog backup -> nas: same pipeline shape and same
+# rsync daemon as the rustd.xyz backup above, only the subpath differs. Here
+# for the same reason: the push side (jasonernst_com role, jasonernst_com.yml)
+# and the nas-side prune cron (rustd_backup_nas role, nas.yml) run in
+# separate playbooks with no shared vars_file. Only the db snapshots get
+# pruned - uploads/ is an additive mirror of the live images/files.
+jasonernst_com_backup_nas_path: /volume1/storage/backups/goblog
+jasonernst_com_backup_nas_keep: 30

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Managed by ansible (jasonernst_com role) - do not edit by hand.
+#
+# Nightly jasonernst.com backup: snapshot the prod goblog sqlite db (the
+# posts), prune local snapshots beyond {{ jasonernst_com_backup_local_keep }},
+# then push the snapshots AND the prod uploads directory (images/files) to
+# the nas over its built-in rsync daemon (UGOS's vendor-supported service,
+# port 873 - NOT ssh; see roles/rustd_backup_nas/README.md for why ssh-based
+# receive designs can't work on that appliance).
+#
+# Pushes are additive (no --delete): the nas keeps a longer retention window
+# for db snapshots ({{ jasonernst_com_backup_nas_keep }} days, pruned by a
+# root cron in the rustd_backup_nas role), and deleted uploads should
+# survive on the nas rather than be mirrored away. This script never deletes
+# anything remote.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+OUT="{{ jasonernst_com_backup_local_dir }}/goblog-${STAMP}.db"
+TMP="${OUT}.tmp"
+
+# Belt-and-braces: a leftover .tmp from a previous killed/failed run must
+# not be mistaken for a valid snapshot.
+rm -f "${TMP}"
+
+# sqlite3 .backup takes a consistent snapshot even while the goblog
+# container is writing (a plain cp of a live sqlite file can be corrupt).
+# Snapshot to a temp name and only rename into place on success, so a run
+# that dies partway never leaves a truncated file at the final name for the
+# next night's push to ship as if it were a good backup.
+sqlite3 /opt/goblog/prod/database.db ".backup '${TMP}'"
+mv "${TMP}" "${OUT}"
+
+# Keep the newest {{ jasonernst_com_backup_local_keep }} local snapshots.
+# Glob scoped to *.db (not *.db.tmp) so an in-progress snapshot is never
+# pruned out from under itself.
+ls -1t {{ jasonernst_com_backup_local_dir }}/goblog-*.db | tail -n +{{ jasonernst_com_backup_local_keep | int + 1 }} | xargs -r rm --
+
+# --contimeout caps the initial connect (dead daemon / down tailnet) and
+# --timeout aborts stalled mid-transfer I/O, so a oneshot run can't hang
+# indefinitely; set -e turns either into a clean unit failure.
+RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
+  --password-file={{ jasonernst_com_backup_rsync_password_file }})
+DEST="rsync://{{ jasonernst_com_backup_nas_rsync_user }}@{{ jasonernst_com_backup_nas_host }}:{{ jasonernst_com_backup_nas_rsync_port }}/{{ jasonernst_com_backup_nas_rsync_module }}/{{ jasonernst_com_backup_nas_rsync_subpath }}"
+
+# Posts (db snapshots), then images/files (uploads) - both additive.
+rsync "${RSYNC_OPTS[@]}" {{ jasonernst_com_backup_local_dir }}/ "${DEST}/db/"
+rsync "${RSYNC_OPTS[@]}" /opt/goblog/prod/uploads/ "${DEST}/uploads/"

@@ -114,3 +114,19 @@
     job: >-
       find {{ rustd_xyz_backup_nas_path }} -maxdepth 1 -type f -name 'rustd-*.dump'
       -mtime +{{ rustd_xyz_backup_nas_keep }} -delete
+
+# Same-shaped prune for the jasonernst.com goblog pipeline (push side:
+# jasonernst_com role, jasonernst_com.yml). Only the db/ snapshots are
+# pruned - the sibling uploads/ directory is an additive mirror of the live
+# images/files and must never be aged out.
+# ponytail: this role now serves two pipelines; rename to backup_nas if a
+# third one lands.
+- name: Prune jasonernst.com backups older than the retention window
+  become: true
+  ansible.builtin.cron:
+    name: "prune jasonernst.com goblog db backups"
+    minute: "35"
+    hour: "5"
+    job: >-
+      find {{ jasonernst_com_backup_nas_path }}/db -maxdepth 1 -type f -name 'goblog-*.db'
+      -mtime +{{ jasonernst_com_backup_nas_keep }} -delete
