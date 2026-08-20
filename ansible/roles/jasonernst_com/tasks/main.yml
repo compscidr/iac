@@ -313,11 +313,11 @@
       LETSENCRYPT_HOST: "staging.jasonernst.com"
       LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"
 
-- name: Ensure sqlite3 is installed
-  tags: website
+- name: Ensure sqlite3 and rsync are installed
+  tags: [website, backup]
   become: true
   ansible.builtin.apt:
-    name: sqlite3
+    name: [sqlite3, rsync]
     state: present
 
 - name: Set noindex on staging to prevent search engine indexing
@@ -331,3 +331,63 @@
   changed_when: false
 
 # MySQL moved to media_server role (used by Ombi on NAS)
+
+# --- Nightly goblog db + uploads -> nas backup ----------------------------
+#
+# Same pipeline shape as rustd_xyz's pg_dump backup: sqlite snapshot + rsync
+# push to the nas' built-in rsync daemon (port 873, over the tailnet - not
+# ssh; see roles/rustd_backup_nas/README.md). The nas-side prune cron for
+# these snapshots lives in rustd_backup_nas (nas.yml).
+- name: Create goblog backup directory
+  tags: backup
+  become: true
+  ansible.builtin.file:
+    path: "{{ jasonernst_com_backup_local_dir }}"
+    state: directory
+    mode: "700"
+    owner: root
+    group: root
+
+- name: Write the nas rsync-daemon password file
+  tags: backup
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ jasonernst_com_backup_rsync_password_file }}"
+    content: "{{ jasonernst_com_backup_nas_rsync_password }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup script
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: goblog-backup.sh.j2
+    dest: /opt/goblog/goblog-backup.sh
+    mode: "0700"
+
+- name: Deploy the backup systemd service
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: goblog-backup.service.j2
+    dest: /etc/systemd/system/goblog-backup.service
+    mode: "0644"
+
+- name: Deploy the backup systemd timer
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: goblog-backup.timer.j2
+    dest: /etc/systemd/system/goblog-backup.timer
+    mode: "0644"
+
+- name: Enable and start the backup timer
+  tags: backup
+  become: true
+  ansible.builtin.systemd_service:
+    name: goblog-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

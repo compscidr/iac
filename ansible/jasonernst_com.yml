@@ -16,6 +16,12 @@
     fail2ban_nginx_botscan_enabled: true
     www_redirect_domains:
       - { domain: jasonernst.com, letsencrypt_email: "ernstjason1@gmail.com" }
+    # nas rsync-daemon auth for the nightly goblog backup: jason's actual nas
+    # login password (the daemon's "auth users" password on this appliance IS
+    # the account password) - same `ugnas` item the rustd_xyz pipeline uses;
+    # see roles/rustd_backup_nas/README.md.
+    jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it
