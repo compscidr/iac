@@ -13,16 +13,6 @@
 		"tag:agent": ["ernstjason1@gmail.com"],
 	},
 
-	// Named hosts, so grants below reference a name instead of a bare
-	// tailnet IP. Tailscale grants don't resolve MagicDNS names, so the
-	// address still has to be written out here — but only once, and
-	// with an obvious place to fix it. Verify with `tailscale status`
-	// if a node is ever re-created: a stale address here silently drops
-	// the agent's traffic (exactly what happened during the 2026-08
-	// hermes cutover, when this still pointed at 100.79.121.111).
-	"hosts": {
-		"ubuntu-beast": "100.87.35.11",
-	},
 
 	// Define grants that govern access for users, groups, autogroups, tags,
 	// Tailscale IP addresses, and subnet ranges.
@@ -30,12 +20,23 @@
 		// Your member devices - full access everywhere including tagged machines
 		{"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
 
-		// Agent (hermes) - only Ollama + exo access on ubuntu-beast.
+		// Agent (hermes) - only Ollama + exo, and only on machines
+		// signed in as Jason. Destination is the *user*, not a tailnet
+		// IP: a user selector matches every device currently signed in
+		// as them, so this never goes stale when a node is rebuilt and
+		// gets a new 100.x address (a hardcoded IP here silently dropped
+		// the agent's traffic during the 2026-08 hermes cutover), and
+		// ubuntu-cube is covered automatically if it ever serves models
+		// too. The port list stays the real boundary — hermes reaches
+		// nothing but ollama/exo. Note these can only ever be tailnet
+		// addresses: DNS names (home.jasonernst.com and friends) are
+		// never resolved by the policy file, and a device's public IP
+		// is not what tailnet traffic is addressed to.
 		// Both services are HTTP-over-TCP; explicit `tcp:` prefix
 		// avoids any protocol-default ambiguity in the grants syntax.
 		{
 			"src": ["tag:agent"],
-			"dst": ["ubuntu-beast"],
+			"dst": ["ernstjason1@gmail.com"],
 			"ip":  ["tcp:11434", "tcp:52415"],
 		},
 	],
