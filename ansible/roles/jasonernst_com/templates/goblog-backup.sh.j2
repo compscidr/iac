@@ -45,10 +45,14 @@ RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
   --password-file={{ jasonernst_com_backup_rsync_password_file }})
 DEST="rsync://{{ jasonernst_com_backup_nas_rsync_user }}@{{ jasonernst_com_backup_nas_host }}:{{ jasonernst_com_backup_nas_rsync_port }}/{{ jasonernst_com_backup_nas_rsync_module }}/{{ jasonernst_com_backup_nas_rsync_subpath }}"
 
-# Posts (db snapshots), then images/files (uploads) - both additive.
+# Images/files (uploads) first, posts (db snapshots) LAST - both additive.
+# Order matters: the nas-side freshness check (rustd_backup_nas role) uses
+# the newest db snapshot as the "this run succeeded" marker, so it must be
+# the final transfer - a fresh marker then implies the uploads push
+# succeeded too.
 # --exclude on the db push only: no in-progress .tmp can normally exist by
 # this point (swept above, renamed after snapshot), but the nas prune only
 # ever deletes goblog-*.db, so anything else that slips in would sit there
 # forever. Uploads are pushed as-is - a user file named *.tmp is still data.
-rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ jasonernst_com_backup_local_dir }}/ "${DEST}/db/"
 rsync "${RSYNC_OPTS[@]}" /opt/goblog/prod/uploads/ "${DEST}/uploads/"
+rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ jasonernst_com_backup_local_dir }}/ "${DEST}/db/"

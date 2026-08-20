@@ -151,3 +151,38 @@
       [ -d {{ mailu_backup_nas_path }}/db ] &&
       find {{ mailu_backup_nas_path }}/db -maxdepth 1 -type f -name 'mailu-*.db'
       -mtime +{{ mailu_backup_nas_keep }} -delete
+
+# --- Backup freshness alerting (issue #479) --------------------------------
+#
+# See backup-freshness-check.py.j2's header for the design: a nas-side
+# dead-man's switch beats per-unit OnFailure hooks on the droplets because
+# it also catches the timer/host/tailnet dying - the silent-stop modes that
+# motivated #479 in the first place.
+- name: Write the discord webhook file
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ rustd_backup_nas_webhook_file }}"
+    content: "{{ rustd_backup_nas_discord_webhook }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup freshness check script
+  become: true
+  ansible.builtin.template:
+    src: backup-freshness-check.py.j2
+    dest: /usr/local/bin/backup-freshness-check.py
+    owner: root
+    group: root
+    mode: "0700"
+
+# 08:00, after every pipeline's nightly push window (~04:00-05:00) and this
+# role's own prune crons (05:30-05:40).
+- name: Check backup freshness daily and alert to discord
+  become: true
+  ansible.builtin.cron:
+    name: "backup freshness check -> discord"
+    minute: "0"
+    hour: "8"
+    job: /usr/local/bin/backup-freshness-check.py

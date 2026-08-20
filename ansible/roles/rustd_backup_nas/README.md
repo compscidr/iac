@@ -24,6 +24,16 @@ That's it.
   touches runbook tags (`--tags rustd-backup`) and a dozen prose references for zero
   function.
 
+- Daily backup freshness check (08:00 cron) — a dead-man's switch for **all three**
+  pipelines: if a pipeline's newest db snapshot on the nas is older than
+  `rustd_backup_nas_freshness_max_age_hours` (26h — catches a single missed night on the
+  first morning), it posts to discord #dev-alerts via a channel webhook (1Password item
+  `discord-dev-alerts`, no bot). Checking arrival here rather than hooking run failures
+  on the droplets covers every silent-stop mode with one mechanism — failed run, dead
+  timer, dead droplet, broken tailnet, broken rsync auth. The push scripts send their db
+  snapshot **last**, so a fresh marker means that night's whole run (mirrors included)
+  succeeded. Silent when everything is fresh.
+
 That's the whole role. It does **not** create a receiver user, a target directory, an
 SSH key, or any receive-side script — see "Field reality" below for why: the actual
 receive path is the nas' own rsync daemon, which owns all of that itself.
