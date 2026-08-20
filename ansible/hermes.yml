@@ -9,14 +9,27 @@
 #      ubuntu-beast per tailscale-acl.hujson):
 #        ssh root@hermes 'tailscale up --advertise-tags=tag:agent --ssh --hostname=hermes'
 #   3. Bootstrap run: ansible-playbook -i inventory.yml bootstrap.yml --limit hermes -u root
-#   4. `hermes` vault (kai's scoped service account token reads it —
-#      grants are by vault UUID):
-#        - `discord hermes` item:
+#   4. `hermes` vault holding the `discord hermes` item:
 #            credential            = bot token
-#            allowed user ids      = Jason's Discord user ID
+#            allowed user ids      = Jason's *numeric* Discord user ID
+#                                    (Developer Mode -> right-click ->
+#                                    Copy User ID; hermes matches IDs,
+#                                    not usernames, and silently ignores
+#                                    everyone if this is wrong)
 #            allowed channel ids   = #hermes-agent channel ID
 #      (Snowflake IDs live in 1P on purpose — keep them out of this
 #      public repo.)
+#
+#      NOTE on which 1P identity runs the lookups: if
+#      OP_SERVICE_ACCOUNT_TOKEN is set (e.g. by the `op-personal` shell
+#      function), `op` authenticates as that service account and IGNORES
+#      the --account/account_id argument. The SA must therefore have
+#      read access to the `hermes` vault, or every lookup below fails
+#      with `"hermes" isn't a vault in this account`. Grants are by
+#      vault UUID, so a vault created fresh (rather than renamed) does
+#      not inherit the old vault's grants. Either grant the SA access
+#      in the 1P console, or run this play from a shell with no
+#      OP_SERVICE_ACCOUNT_TOKEN (desktop-app integration).
 #
 # Cloud model rungs (all dormant): to activate Anthropic / Kimi /
 # OpenAI / xAI / Gemini, add the key to the `hermes` vault, wire a
