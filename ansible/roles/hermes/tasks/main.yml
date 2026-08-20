@@ -2,6 +2,18 @@
 # Hermes Agent installation and configuration. See defaults/main.yml
 # for the role contract and 1Password notes.
 
+# The installer bundles Node 26, whose binary needs libatomic — absent
+# from DigitalOcean's minimal ubuntu-24-04 image, which makes the
+# installer die with a bare rc=127 mid-run.
+- name: Install OS dependencies for hermes installer
+  become: true
+  ansible.builtin.apt:
+    name: libatomic1
+    state: present
+  tags:
+    - hermes
+    - install
+
 # Upstream installer: single-user install, idempotent via `creates:`.
 # Upgrades happen on-host via hermes's own updater, not by re-running this.
 - name: Install hermes via upstream installer
