@@ -11,11 +11,8 @@
     - vars/deb_arch.yml
     - vars/user.yml
   roles:
-    - role: compscidr.github_runner.github_runner
-      vars:
-        github_runner_name: "icmp"
-        github_runner_repo: "compscidr/icmp"
-        github_runner_adb_port: "5039"
+    # icmp CI moved to the SAIR runner on ubuntu-cube (sair.yml); a plain
+    # self-hosted runner here matches icmp's runs-on and fails sair-acquire.
     - role: compscidr.github_runner.github_runner
       vars:
         github_runner_name: "grape"
