@@ -76,6 +76,11 @@
         enabled: true
       dev-alerts:
         enabled: false
+    # Web search on this host: pinned explicitly rather than left to the
+    # role defaults, so search stays on even if the defaults are ever
+    # made opt-in. Needs openclaw_brave_api_key (below).
+    openclaw_web_search_provider: brave
+    openclaw_web_search_enabled: true
     # Claude OAuth blob — Infrastructure vault (default `onepassword_vault`).
     openclaw_claude_credentials: >-
       {{ lookup('community.general.onepassword',

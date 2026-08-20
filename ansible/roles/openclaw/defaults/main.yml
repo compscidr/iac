@@ -100,10 +100,10 @@ openclaw_discord_group_policy: "allowlist"
 # `channels.discord.guilds.<guildId>.channels`.
 #
 # IMPORTANT: this map is an *allowlist*. The moment it holds a single
-# entry, every channel without a matching entry resolves to
-# `allowed: false` and inbound messages are dropped. So a map that only
-# disables one channel silences the entire guild — you need a `"*"`
-# entry alongside it to keep the rest live.
+# entry, every channel without a matching entry is blocked (as if it
+# had `enabled: false`) and its inbound messages are dropped. So a map
+# that only disables one channel silences the entire guild — you need a
+# `"*"` entry alongside it to keep the rest live.
 #
 # Keys are matched in the order: channel ID -> slug -> name -> parent ->
 # `"*"`, so plain channel names work and are preferred here (readable,
