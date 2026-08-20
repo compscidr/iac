@@ -20,16 +20,17 @@
 #      (Snowflake IDs live in 1P on purpose — keep them out of this
 #      public repo.)
 #
-#      NOTE on which 1P identity runs the lookups: if
-#      OP_SERVICE_ACCOUNT_TOKEN is set (e.g. by the `op-personal` shell
-#      function), `op` authenticates as that service account and IGNORES
-#      the --account/account_id argument. The SA must therefore have
-#      read access to the `hermes` vault, or every lookup below fails
-#      with `"hermes" isn't a vault in this account`. Grants are by
-#      vault UUID, so a vault created fresh (rather than renamed) does
-#      not inherit the old vault's grants. Either grant the SA access
-#      in the 1P console, or run this play from a shell with no
-#      OP_SERVICE_ACCOUNT_TOKEN (desktop-app integration).
+#   5. `hermes-sa-token` item in the Infrastructure vault, holding the
+#      token for kai's own service account (renamed from
+#      `openclaw-sa-token` / the `openclaw` SA in 2026-08). The play
+#      reads it with whatever ambient credential the operator has and
+#      then uses it for every `hermes` vault lookup — so your own
+#      identity only ever needs Infrastructure access, not agent-vault
+#      access. Without this chain, running from an `op-personal` shell
+#      fails with `"hermes" isn't a vault in this account`: an exported
+#      OP_SERVICE_ACCOUNT_TOKEN makes `op` authenticate as that service
+#      account and ignore --account entirely, and the personal SA has no
+#      grant on the agent vault.
 #
 # Cloud model rungs (all dormant): to activate Anthropic / Kimi /
 # OpenAI / xAI / Gemini, add the key to the `hermes` vault, wire a
@@ -52,26 +53,45 @@
       ansible.builtin.include_tasks: tailscale_check.yml
   vars:
     hermes_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
-    # Runtime secrets — `hermes` vault on the personal account (NOT the
-    # Infrastructure default vault).
+    # Agent vault holding the runtime secrets. Kai's own service account
+    # is the only identity granted to it, so the lookups below can't ride
+    # on whatever ambient credential the operator happens to have.
+    hermes_op_vault: "hermes"
+    # Two-step credential chain (the pattern the openclaw role used
+    # before it deployed op.env to the host):
+    #   1. Ambient credentials — desktop-app integration, or the
+    #      personal service account exported by the `op-personal` shell
+    #      function — read kai's SA token out of Infrastructure.
+    #   2. That token authenticates every `hermes` vault lookup below.
+    # Passing `service_account_token` sets OP_SERVICE_ACCOUNT_TOKEN for
+    # just that `op` invocation, so the operator's own identity never
+    # needs access to the agent vault. `account_id` is deliberately
+    # omitted on those lookups: a service account IS its own account
+    # context and `op` rejects/ignores --account alongside it.
+    hermes_op_service_account_token: >-
+      {{ lookup('community.general.onepassword',
+                'hermes-sa-token',
+                field='credential',
+                vault=onepassword_vault,
+                account_id=onepassword_account_id) }}
     hermes_discord_bot_token: >-
       {{ lookup('community.general.onepassword',
                 'discord hermes',
                 field='credential',
-                vault='hermes',
-                account_id=onepassword_account_id) }}
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     hermes_discord_allowed_users: >-
       {{ lookup('community.general.onepassword',
                 'discord hermes',
                 field='allowed user ids',
-                vault='hermes',
-                account_id=onepassword_account_id) }}
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     hermes_discord_allowed_channels: >-
       {{ lookup('community.general.onepassword',
                 'discord hermes',
                 field='allowed channel ids',
-                vault='hermes',
-                account_id=onepassword_account_id) }}
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     # No @-mention needed in the allowed channel(s) when configured
     # via DISCORD_FREE_RESPONSE_CHANNELS.
     hermes_discord_free_response_channels: "{{ hermes_discord_allowed_channels }}"
