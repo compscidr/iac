@@ -19,7 +19,7 @@
 		// Your member devices - full access everywhere including tagged machines
 		{"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
 
-		// Agent (openclaw) - only Ollama + exo access on ubuntu-beast.
+		// Agent (hermes) - only Ollama + exo access on ubuntu-beast.
 		// Both services are HTTP-over-TCP; explicit `tcp:` prefix
 		// avoids any protocol-default ambiguity in the grants syntax.
 		{

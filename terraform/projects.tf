@@ -32,7 +32,7 @@ resource "digitalocean_droplet" "projects" {
 
   # Deregister from Tailscale before the droplet is destroyed so the
   # replacement node can claim the "projects" hostname cleanly. See
-  # openclaw.tf for rationale (tailscale ssh vs. remote-exec).
+  # hermes.tf for rationale (tailscale ssh vs. remote-exec).
   provisioner "local-exec" {
     when       = destroy
     on_failure = continue
