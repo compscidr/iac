@@ -13,6 +13,17 @@
 		"tag:agent": ["ernstjason1@gmail.com"],
 	},
 
+	// Named hosts, so grants below reference a name instead of a bare
+	// tailnet IP. Tailscale grants don't resolve MagicDNS names, so the
+	// address still has to be written out here — but only once, and
+	// with an obvious place to fix it. Verify with `tailscale status`
+	// if a node is ever re-created: a stale address here silently drops
+	// the agent's traffic (exactly what happened during the 2026-08
+	// hermes cutover, when this still pointed at 100.79.121.111).
+	"hosts": {
+		"ubuntu-beast": "100.87.35.11",
+	},
+
 	// Define grants that govern access for users, groups, autogroups, tags,
 	// Tailscale IP addresses, and subnet ranges.
 	"grants": [
@@ -24,7 +35,7 @@
 		// avoids any protocol-default ambiguity in the grants syntax.
 		{
 			"src": ["tag:agent"],
-			"dst": ["100.79.121.111"],
+			"dst": ["ubuntu-beast"],
 			"ip":  ["tcp:11434", "tcp:52415"],
 		},
 	],
