@@ -78,6 +78,55 @@
     - bootstrap_docker_enabled
     - ansible_os_family == "Debian"
 
+# Every container start/stop creates/destroys a veth pair, and each new veth auto-assigns an
+# fe80:: IPv6 address. Chrome on Linux watches rtnetlink with a hardcoded empty ignore list, so
+# on a host that is also used for browsing (ubuntu-beast), those address events abort in-flight
+# requests with ERR_NETWORK_CHANGED — CI container churn breaks the browser
+# (BumpApp/bump#5355, compscidr/rustd.xyz#533). Disabling IPv6 on veths removes the address
+# events. Applied to every docker host for consistency, deliberately — see the caveat below.
+#
+# What still works: containers keep IPv4; port-mapped services stay reachable over the host's
+# own IPv6 (docker forwards from the physical interface, the veth's stack is not involved);
+# and docker `--ipv6` bridge networks keep working too, because the host-side veth is a bridge
+# PORT — frames cross it at L2, and disable_ipv6 only strips the interface's own L3 stack.
+#
+# CAVEAT — if IPv6/ICMPv6 tests or tools start failing on a docker host, suspect this rule
+# first: anything that creates a veth pair directly and uses an end as an L3 endpoint (routed,
+# not bridged — e.g. icmp's ICMPv6 tests, netns experiments) will find IPv6 dead on any
+# interface named veth*. Revisit by scoping this task per host/group (a bootstrap var) or by
+# naming experiment veths something other than veth*.
+# The directory is created rather than stat-gated (common_cli's shape): in the molecule
+# container it does not exist until a later role's packages pull udev in, so a stat gate
+# skips on converge and then writes on the idempotence pass — flagged as non-idempotent.
+# On a real host this is a no-op.
+- name: Ensure udev rules directory exists
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.file:
+    path: /etc/udev/rules.d
+    state: directory
+    mode: "0755"
+  when: bootstrap_docker_enabled
+
+- name: Disable IPv6 on container veth interfaces
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.copy:
+    content: |
+      # Managed by ansible (bootstrap role). See compscidr/rustd.xyz#533 / BumpApp/bump#5355.
+      ACTION=="add", SUBSYSTEM=="net", KERNEL=="veth*", RUN+="/sbin/sysctl -w net.ipv6.conf.%k.disable_ipv6=1"
+    dest: /etc/udev/rules.d/99-veth-disable-ipv6.rules
+    mode: "0644"
+  when: bootstrap_docker_enabled
+
+- name: Reload udev rules # udevd inotify-reloads on its own; this makes it immediate, not eventual
+  become: true
+  tags: [bootstrap, docker]
+  ansible.builtin.command: udevadm control --reload-rules
+  changed_when: false
+  failed_when: false # no udevd in the molecule container; harmless if udev is absent
+  when: bootstrap_docker_enabled
+
 # SSH key for cloning private repos (e.g., projects role)
 - name: Ensure SSH directory exists
   become: true
