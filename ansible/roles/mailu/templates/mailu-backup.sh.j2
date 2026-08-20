@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Managed by ansible (mailu role) - do not edit by hand.
 #
-# Nightly mailu backup (issue #479): the parts of /opt/mailu that are NOT
+# Nightly mailu backup (issue #479): the parts of {{ mailu_install_path }} that are NOT
 # reproducible from IaC, pushed to the nas over its built-in rsync daemon
 # (port 873, over the tailnet - NOT ssh; see roles/rustd_backup_nas/README.md
 # for why ssh-based receive designs can't work on that appliance):
@@ -37,7 +37,7 @@ rm -f {{ mailu_backup_local_dir }}/mailu-*.db.tmp
 # is writing (a plain cp of a live sqlite file can be corrupt). Temp name +
 # rename so a run that dies partway never leaves a truncated file at the
 # final name for the next night's push to ship as a good backup.
-sqlite3 /opt/mailu/data/main.db ".backup '${TMP}'"
+sqlite3 {{ mailu_install_path }}/data/main.db ".backup '${TMP}'"
 mv "${TMP}" "${OUT}"
 
 # Keep the newest {{ mailu_backup_local_keep }} local snapshots. Glob scoped
@@ -61,8 +61,8 @@ rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ mailu_backup_local_dir }}/ "${DEST
 # a raw copy of it mid-write can be corrupt, and the consistent snapshot
 # above already covers it. The rest (instance keys, fetchmail state, ...)
 # copies fine as plain files.
-rsync "${RSYNC_OPTS[@]}" --exclude='main.db' --exclude='main.db-*' /opt/mailu/data/ "${DEST}/data/"
+rsync "${RSYNC_OPTS[@]}" --exclude='main.db' --exclude='main.db-*' {{ mailu_install_path }}/data/ "${DEST}/data/"
 
-rsync "${RSYNC_OPTS[@]}" /opt/mailu/dkim/ "${DEST}/dkim/"
-rsync "${RSYNC_OPTS[@]}" /opt/mailu/mail/ "${DEST}/mail/"
-rsync "${RSYNC_OPTS[@]}" /opt/mailu/mailu.env "${DEST}/"
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/dkim/ "${DEST}/dkim/"
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mail/ "${DEST}/mail/"
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mailu.env "${DEST}/"
