@@ -259,3 +259,71 @@
   loop_control:
     label: "{{ item.item }}"
   when: item.stdout | default('') | trim | length == 0
+
+# --- Nightly mailu -> nas backup (issue #479) ------------------------------
+#
+# dkim keys, admin sqlite db, mailboxes, and mailu.env - the parts the April
+# server wipe permanently lost. Same pipeline shape as goblog-backup
+# (jasonernst_com role): sqlite snapshot + additive rsync to the nas' rsync
+# daemon over the tailnet. The nas-side prune cron for the db snapshots
+# lives in rustd_backup_nas (nas.yml).
+- name: Ensure sqlite3 and rsync are installed
+  tags: backup
+  become: true
+  ansible.builtin.apt:
+    name: [sqlite3, rsync]
+    state: present
+
+- name: Create mailu backup directory
+  tags: backup
+  become: true
+  ansible.builtin.file:
+    path: "{{ mailu_backup_local_dir }}"
+    state: directory
+    mode: "700"
+    owner: root
+    group: root
+
+- name: Write the nas rsync-daemon password file
+  tags: backup
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ mailu_backup_rsync_password_file }}"
+    content: "{{ mailu_backup_nas_rsync_password }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup script
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: mailu-backup.sh.j2
+    dest: "{{ mailu_install_path }}/mailu-backup.sh"
+    mode: "0700"
+
+- name: Deploy the backup systemd service
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: mailu-backup.service.j2
+    dest: /etc/systemd/system/mailu-backup.service
+    mode: "0644"
+
+- name: Deploy the backup systemd timer
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: mailu-backup.timer.j2
+    dest: /etc/systemd/system/mailu-backup.timer
+    mode: "0644"
+
+- name: Enable and start the backup timer
+  tags: backup
+  become: true
+  ansible.builtin.systemd_service:
+    name: mailu-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

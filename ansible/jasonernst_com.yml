@@ -22,6 +22,9 @@
     # see roles/rustd_backup_nas/README.md.
     jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # Same credential for the mailu backup pipeline (one daemon on the nas).
+    mailu_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it
