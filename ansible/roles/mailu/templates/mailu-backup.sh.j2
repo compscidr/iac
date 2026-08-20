@@ -52,11 +52,11 @@ RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
   --password-file={{ mailu_backup_rsync_password_file }})
 DEST="rsync://{{ mailu_backup_nas_rsync_user }}@{{ mailu_backup_nas_host }}:{{ mailu_backup_nas_rsync_port }}/{{ mailu_backup_nas_rsync_module }}/{{ mailu_backup_nas_rsync_subpath }}"
 
-# db snapshots: --exclude '*.tmp' as belt-and-braces (swept above, but the
-# nas prune only ever deletes mailu-*.db, so anything else would sit there
-# forever).
-rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ mailu_backup_local_dir }}/ "${DEST}/db/"
-
+# Mirrors first, db snapshots LAST. Order matters: the nas-side freshness
+# check (rustd_backup_nas role) uses the newest db snapshot as the "this
+# run succeeded" marker, so it must be the final transfer - a fresh marker
+# then implies every mirror push succeeded too.
+#
 # data/ mirror: the live main.db (and its -wal/-shm journals) is excluded -
 # a raw copy of it mid-write can be corrupt, and the consistent snapshot
 # above already covers it. The rest (instance keys, fetchmail state, ...)
@@ -66,3 +66,8 @@ rsync "${RSYNC_OPTS[@]}" --exclude='main.db' --exclude='main.db-*' {{ mailu_inst
 rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/dkim/ "${DEST}/dkim/"
 rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mail/ "${DEST}/mail/"
 rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mailu.env "${DEST}/"
+
+# db snapshots: --exclude '*.tmp' as belt-and-braces (swept above, but the
+# nas prune only ever deletes mailu-*.db, so anything else would sit there
+# forever).
+rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ mailu_backup_local_dir }}/ "${DEST}/db/"

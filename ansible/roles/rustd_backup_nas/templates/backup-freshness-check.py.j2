@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# Managed by ansible (rustd_backup_nas role) - do not edit by hand.
+#
+# Daily dead-man's switch for every backup pipeline landing on this nas
+# (issue #479): if the newest freshness marker in a pipeline's directory is
+# older than the threshold, post to discord (#dev-alerts, via a channel
+# webhook - no bot involved). Checking arrival on the nas rather than
+# hooking run failures on the droplets covers every silent-stop mode with
+# one mechanism: failed run, dead timer, dead droplet, broken tailnet,
+# broken rsync auth. "A backup that silently stops is how we got here."
+#
+# The markers are the db snapshots, which the push scripts deliberately
+# send LAST - a fresh marker therefore means the whole run (mirrors
+# included) succeeded that night.
+#
+# Silent when everything is fresh. If this script itself dies (webhook
+# revoked, discord down), cron mails/logs the traceback - the watcher
+# failing is at least not silent either.
+import glob
+import json
+import os
+import time
+import urllib.request
+
+CHECKS = [
+{% for c in rustd_backup_nas_freshness_checks %}
+    ("{{ c.name }}", "{{ c.dir }}", "{{ c.glob }}"),
+{% endfor %}
+]
+MAX_AGE_HOURS = {{ rustd_backup_nas_freshness_max_age_hours }}
+
+stale = []
+now = time.time()
+for name, directory, pattern in CHECKS:
+    files = glob.glob(os.path.join(directory, pattern))
+    if not files:
+        stale.append(f"**{name}**: no `{pattern}` files in `{directory}` at all")
+        continue
+    age_h = (now - max(os.path.getmtime(f) for f in files)) / 3600
+    if age_h > MAX_AGE_HOURS:
+        stale.append(f"**{name}**: newest backup is {age_h:.0f}h old (expected < {MAX_AGE_HOURS}h)")
+
+if stale:
+    content = (
+        "\N{WARNING SIGN} **backups have stopped landing on the nas:**\n"
+        + "\n".join(f"- {s}" for s in stale)
+    )
+    with open("{{ rustd_backup_nas_webhook_file }}") as f:
+        webhook = f.read().strip()
+    req = urllib.request.Request(
+        webhook,
+        data=json.dumps({"content": content[:2000]}).encode(),
+        headers={"Content-Type": "application/json", "User-Agent": "backup-freshness-check"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        resp.read()

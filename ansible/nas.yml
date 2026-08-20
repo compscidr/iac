@@ -32,7 +32,13 @@
         - monthly
     # - cs2_game
     - dyndns
-    - { role: rustd_backup_nas, tags: [rustd, rustd-backup] }
+    - role: rustd_backup_nas
+      tags: [rustd, rustd-backup]
+      # Discord #dev-alerts channel webhook for the backup freshness check
+      # (a plain webhook URL - no bot). Item must exist before this play
+      # runs - a onepassword lookup for a missing item is a hard failure.
+      rustd_backup_nas_discord_webhook: "{{ lookup('community.general.onepassword', 'discord-dev-alerts', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}"
     # Real sshd on :2222 (the UGOS counterpart of sshd_alt_port): the vendor sshd's
     # SFTP is chrooted to the share view, which broke the rustd.xyz panel's file
     # reads for the servers above — see the role README and rustd.xyz#456.
