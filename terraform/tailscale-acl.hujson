@@ -10,9 +10,9 @@
 	//      "tag:example": ["autogroup:admin"],
 	// },
 	"tagOwners": {
-		"tag:agent": ["ernstjason1@gmail.com"],
+		"tag:agent":      ["ernstjason1@gmail.com"],
+		"tag:llm-server": ["ernstjason1@gmail.com"],
 	},
-
 
 	// Define grants that govern access for users, groups, autogroups, tags,
 	// Tailscale IP addresses, and subnet ranges.
@@ -21,22 +21,35 @@
 		{"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
 
 		// Agent (hermes) - only Ollama + exo, and only on machines
-		// signed in as Jason. Destination is the *user*, not a tailnet
-		// IP: a user selector matches every device currently signed in
-		// as them, so this never goes stale when a node is rebuilt and
-		// gets a new 100.x address (a hardcoded IP here silently dropped
-		// the agent's traffic during the 2026-08 hermes cutover), and
-		// ubuntu-cube is covered automatically if it ever serves models
-		// too. The port list stays the real boundary — hermes reaches
-		// nothing but ollama/exo. Note these can only ever be tailnet
-		// addresses: DNS names (home.jasonernst.com and friends) are
-		// never resolved by the policy file, and a device's public IP
-		// is not what tailnet traffic is addressed to.
+		// explicitly tagged as model servers.
+		//
+		// Destination is a tag rather than a tailnet IP because IPs go
+		// stale silently: this rule named 100.79.121.111 while
+		// ubuntu-beast had moved to 100.87.35.11, and every one of the
+		// agent's model calls was dropped with no signal anywhere
+		// (found during the 2026-08 hermes cutover). Tags survive a
+		// node rebuild. It is also narrower than targeting the *user*,
+		// which would expose these ports on every machine Jason is
+		// signed into — hermes takes instructions from Discord, and
+		// ollama's API is unauthenticated and can delete or pull
+		// models, so the reachable surface is kept to machines that
+		// deliberately serve models.
+		//
+		// To enroll a model server (ubuntu-cube when it starts serving):
+		//   sudo tailscale up --advertise-tags=tag:llm-server --ssh \
+		//        --hostname=<name>
+		// (`tailscale up` demands every non-default flag be restated.)
+		//
+		// Note these can only ever be tailnet-internal selectors: DNS
+		// names (home.jasonernst.com and friends) are never resolved by
+		// the policy file, and tailnet traffic is not addressed to a
+		// device's public IP.
+		//
 		// Both services are HTTP-over-TCP; explicit `tcp:` prefix
 		// avoids any protocol-default ambiguity in the grants syntax.
 		{
 			"src": ["tag:agent"],
-			"dst": ["ernstjason1@gmail.com"],
+			"dst": ["tag:llm-server"],
 			"ip":  ["tcp:11434", "tcp:52415"],
 		},
 	],
@@ -50,11 +63,15 @@
 			"dst":    ["autogroup:self"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
-		// Allow SSH to tagged machines from members
+		// Allow SSH to tagged machines from members. tag:llm-server is
+		// listed explicitly because a tagged device is owned by the
+		// tailnet, not by Jason — it stops matching `autogroup:self`
+		// above, so without this line tagging ubuntu-beast would cut
+		// off tailscale-ssh to it from the other machines.
 		{
 			"action": "check",
 			"src":    ["autogroup:member"],
-			"dst":    ["tag:agent"],
+			"dst":    ["tag:agent", "tag:llm-server"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
 	],
