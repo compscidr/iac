@@ -95,14 +95,17 @@
 # not bridged — e.g. icmp's ICMPv6 tests, netns experiments) will find IPv6 dead on any
 # interface named veth*. Revisit by scoping this task per host/group (a bootstrap var) or by
 # naming experiment veths something other than veth*.
-# Same stat-gate + reload shape as common_cli's udev tasks: the molecule container has no
-# /etc/udev/rules.d (and no udevd), so both tasks skip there via the stat instead of a tag.
-- name: Check if udev rules directory exists
+# The directory is created rather than stat-gated (common_cli's shape): in the molecule
+# container it does not exist until a later role's packages pull udev in, so a stat gate
+# skips on converge and then writes on the idempotence pass — flagged as non-idempotent.
+# On a real host this is a no-op.
+- name: Ensure udev rules directory exists
   become: true
   tags: [bootstrap, docker]
-  ansible.builtin.stat:
+  ansible.builtin.file:
     path: /etc/udev/rules.d
-  register: bootstrap_udev_rules_dir
+    state: directory
+    mode: "0755"
   when: bootstrap_docker_enabled
 
 - name: Disable IPv6 on container veth interfaces
@@ -114,19 +117,15 @@
       ACTION=="add", SUBSYSTEM=="net", KERNEL=="veth*", RUN+="/sbin/sysctl -w net.ipv6.conf.%k.disable_ipv6=1"
     dest: /etc/udev/rules.d/99-veth-disable-ipv6.rules
     mode: "0644"
-  when:
-    - bootstrap_docker_enabled
-    - bootstrap_udev_rules_dir.stat.exists
+  when: bootstrap_docker_enabled
 
 - name: Reload udev rules # udevd inotify-reloads on its own; this makes it immediate, not eventual
   become: true
   tags: [bootstrap, docker]
   ansible.builtin.command: udevadm control --reload-rules
   changed_when: false
-  failed_when: false
-  when:
-    - bootstrap_docker_enabled
-    - bootstrap_udev_rules_dir.stat.exists
+  failed_when: false # no udevd in the molecule container; harmless if udev is absent
+  when: bootstrap_docker_enabled
 
 # SSH key for cloning private repos (e.g., projects role)
 - name: Ensure SSH directory exists
