@@ -8,7 +8,7 @@
 # is a one-time manual step after first boot (see the cutover runbook
 # in the PR description):
 #
-#   ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh'
+#   ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh --hostname=hermes'
 
 resource "digitalocean_vpc" "hermes-vpc" {
   name     = "hermes-vpc"
