@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Managed by ansible (mailu role) - do not edit by hand.
+#
+# Nightly mailu backup (issue #479): the parts of {{ mailu_install_path }} that are NOT
+# reproducible from IaC, pushed to the nas over its built-in rsync daemon
+# (port 873, over the tailnet - NOT ssh; see roles/rustd_backup_nas/README.md
+# for why ssh-based receive designs can't work on that appliance):
+#
+#   dkim/     - signing keys (tiny, critical: losing these silently breaks
+#               outbound mail - the April wipe proved it)
+#   data/     - admin sqlite db (accounts, domains, aliases) + instance files
+#   mail/     - mailboxes (dovecot maildir - per-file crash-safe, so an
+#               rsync while dovecot runs is a usable backup; indexes rebuild)
+#   mailu.env - config (templated by ansible, but tiny and the issue asks
+#               for it - a restore shouldn't depend on a working controller)
+#
+# NOT backed up: redis/ (transient queue/rate-limit state), mailqueue/,
+# filter/, webmail/, overrides/ (empty/templated - all recreated by the
+# role).
+#
+# Pushes are additive (no --delete): db snapshots keep a longer window on
+# the nas ({{ mailu_backup_nas_keep }} days, pruned by a root cron in the
+# rustd_backup_nas role), and deleted mail should survive on the nas rather
+# than be mirrored away. This script never deletes anything remote.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+OUT="{{ mailu_backup_local_dir }}/mailu-${STAMP}.db"
+TMP="${OUT}.tmp"
+
+# Sweep leftover .tmp files from previous killed/failed runs (any day's) so
+# they can't be mistaken for valid snapshots or accumulate. Safe - runs
+# never overlap (systemd oneshot).
+rm -f {{ mailu_backup_local_dir }}/mailu-*.db.tmp
+
+# sqlite3 .backup takes a consistent snapshot even while the admin container
+# is writing (a plain cp of a live sqlite file can be corrupt). Temp name +
+# rename so a run that dies partway never leaves a truncated file at the
+# final name for the next night's push to ship as a good backup.
+sqlite3 {{ mailu_install_path }}/data/main.db ".backup '${TMP}'"
+mv "${TMP}" "${OUT}"
+
+# Keep the newest {{ mailu_backup_local_keep }} local snapshots. Glob scoped
+# to *.db (not *.db.tmp) so an in-progress snapshot is never pruned out from
+# under itself.
+ls -1t {{ mailu_backup_local_dir }}/mailu-*.db | tail -n +{{ mailu_backup_local_keep | int + 1 }} | xargs -r rm --
+
+# --contimeout caps the initial connect (dead daemon / down tailnet) and
+# --timeout aborts stalled mid-transfer I/O, so a oneshot run can't hang
+# indefinitely; set -e turns either into a clean unit failure.
+RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
+  --password-file={{ mailu_backup_rsync_password_file }})
+DEST="rsync://{{ mailu_backup_nas_rsync_user }}@{{ mailu_backup_nas_host }}:{{ mailu_backup_nas_rsync_port }}/{{ mailu_backup_nas_rsync_module }}/{{ mailu_backup_nas_rsync_subpath }}"
+
+# db snapshots: --exclude '*.tmp' as belt-and-braces (swept above, but the
+# nas prune only ever deletes mailu-*.db, so anything else would sit there
+# forever).
+rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ mailu_backup_local_dir }}/ "${DEST}/db/"
+
+# data/ mirror: the live main.db (and its -wal/-shm journals) is excluded -
+# a raw copy of it mid-write can be corrupt, and the consistent snapshot
+# above already covers it. The rest (instance keys, fetchmail state, ...)
+# copies fine as plain files.
+rsync "${RSYNC_OPTS[@]}" --exclude='main.db' --exclude='main.db-*' {{ mailu_install_path }}/data/ "${DEST}/data/"
+
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/dkim/ "${DEST}/dkim/"
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mail/ "${DEST}/mail/"
+rsync "${RSYNC_OPTS[@]}" {{ mailu_install_path }}/mailu.env "${DEST}/"

@@ -146,3 +146,26 @@ mailu_images:
   fetchmail:
     image: ghcr.io/mailu/fetchmail
     digest: "sha256:f9f1385196f5b5c4bda9fcf21e0d089392cdeec7435c1c664001494900684427"
+
+# --- Nightly mailu -> nas backup (issue #479) ------------------------------
+#
+# Same pipeline shape as the goblog and rustd.xyz backups: push to the nas'
+# BUILT-IN RSYNC DAEMON (port 873) over the tailnet - not ssh. See
+# roles/rustd_backup_nas/README.md. The nas-side coordinates
+# (mailu_backup_nas_path/_keep) live in group_vars/all.yml because the
+# rustd_backup_nas role's prune cron (nas.yml, a separate playbook run) also
+# reads them.
+mailu_backup_local_dir: "{{ mailu_install_path }}/backups"
+mailu_backup_local_keep: 7
+mailu_backup_nas_host: nas # must match rustd_backup_nas_tailnet_hostname
+mailu_backup_nas_rsync_user: jason
+mailu_backup_nas_rsync_port: 873
+mailu_backup_nas_rsync_module: storage
+# Full remote path is <module>/<subpath> = /volume1/storage/backups/mailu
+# (matches mailu_backup_nas_path in group_vars/all.yml).
+mailu_backup_nas_rsync_subpath: backups/mailu
+mailu_backup_rsync_password_file: "{{ mailu_install_path }}/.rsync-nas-pass"
+# Filled from jasonernst_com.yml via a 1Password lookup (`ugnas` item -
+# jason's actual nas login password; the daemon's "auth users" password on
+# this appliance IS the account password). no_log'd wherever consumed.
+mailu_backup_nas_rsync_password: ""

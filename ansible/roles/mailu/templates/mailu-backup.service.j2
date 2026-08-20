@@ -1,0 +1,6 @@
+[Unit]
+Description=mailu nightly dkim/db/mailboxes/config backup, shipped to the nas
+
+[Service]
+Type=oneshot
+ExecStart={{ mailu_install_path }}/mailu-backup.sh

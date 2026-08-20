@@ -119,8 +119,10 @@
 # jasonernst_com role, jasonernst_com.yml). Only the db/ snapshots are
 # pruned - the sibling uploads/ directory is an additive mirror of the live
 # images/files and must never be aged out.
-# ponytail: this role now serves two pipelines; rename to backup_nas if a
-# third one lands.
+# ponytail: the third pipeline (mailu) landed and the role kept its rustd
+# name anyway - the rename touches runbook tags (`--tags rustd-backup`) and
+# a dozen prose references for zero function. Rename only if the tag/docs
+# churn ever becomes worth it.
 - name: Prune jasonernst.com backups older than the retention window
   become: true
   ansible.builtin.cron:
@@ -134,3 +136,18 @@
       [ -d {{ jasonernst_com_backup_nas_path }}/db ] &&
       find {{ jasonernst_com_backup_nas_path }}/db -maxdepth 1 -type f -name 'goblog-*.db'
       -mtime +{{ jasonernst_com_backup_nas_keep }} -delete
+
+# Same-shaped prune for the mailu pipeline (push side: mailu role,
+# jasonernst_com.yml). Only the db/ snapshots are pruned - dkim/, data/,
+# mail/, and mailu.env are additive mirrors that must never be aged out.
+# Directory-exists guard for the same first-push reason as above.
+- name: Prune mailu backups older than the retention window
+  become: true
+  ansible.builtin.cron:
+    name: "prune mailu db backups"
+    minute: "40"
+    hour: "5"
+    job: >-
+      [ -d {{ mailu_backup_nas_path }}/db ] &&
+      find {{ mailu_backup_nas_path }}/db -maxdepth 1 -type f -name 'mailu-*.db'
+      -mtime +{{ mailu_backup_nas_keep }} -delete

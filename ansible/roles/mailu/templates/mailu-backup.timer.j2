@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly mailu dkim/db/mailboxes/config backup, shipped to the nas
+
+[Timer]
+# 04:45 keeps it clear of goblog-backup (04:00 + 15m jitter) on the same
+# host, so the two pushes don't contend for the nas daemon or the uplink.
+OnCalendar=*-*-* 04:45:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

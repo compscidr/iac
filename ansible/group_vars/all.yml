@@ -60,3 +60,11 @@ rustd_xyz_backup_nas_keep: 30
 # pruned - uploads/ is an additive mirror of the live images/files.
 jasonernst_com_backup_nas_path: /volume1/storage/backups/goblog
 jasonernst_com_backup_nas_keep: 30
+
+# mailu nightly backup -> nas (issue #479): dkim keys, admin db snapshots,
+# mailboxes, mailu.env from the www droplet. Same pipeline shape and daemon
+# as the two above; here for the same split-playbook reason. Only the db/
+# snapshots get pruned - dkim/, data/, mail/, and mailu.env are additive
+# mirrors that must never be aged out.
+mailu_backup_nas_path: /volume1/storage/backups/mailu
+mailu_backup_nas_keep: 30
