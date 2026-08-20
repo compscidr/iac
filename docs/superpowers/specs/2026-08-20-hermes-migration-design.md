@@ -24,7 +24,7 @@ Key decisions made during brainstorming:
   no subscription proxy** — Anthropic's Feb/Apr 2026 policy prohibits routing
   third-party tools through subscription credentials, so that path is dropped.
   Empty-default key slots (Anthropic, Moonshot/Kimi K3, OpenAI/GPT-5.6,
-  xAI/Grok) are left for proper API tokens later; until one is filled, when
+  xAI/Grok, Google/Gemini) are left for proper API tokens later; until one is filled, when
   beast is off/in Windows and exo is down, hermes is up but model-less and
   turns fail.
 - **Discord:** new bot application ("hermes"), restricted to the
@@ -93,7 +93,9 @@ tags, handlers, `no_log` on secret-bearing tasks):
      are skipped until a key lands in the vault:
      `ANTHROPIC_API_KEY`, `MOONSHOT_API_KEY` (Kimi K3,
      `https://api.moonshot.ai/v1`), `OPENAI_API_KEY` (GPT-5.6),
-     `XAI_API_KEY` (Grok, `https://api.x.ai/v1`).
+     `XAI_API_KEY` (Grok, `https://api.x.ai/v1`), `GEMINI_API_KEY`
+     (Gemini, OpenAI-compatible endpoint at
+     `https://generativelanguage.googleapis.com/v1beta/openai/`).
    All Discord snowflakes live in the 1P item, not in this public repo.
 4. Manage model settings in `~/.hermes/config.yaml`: primary model = custom
    OpenAI-compatible endpoint at
@@ -101,7 +103,8 @@ tags, handlers, `no_log` on secret-bearing tasks):
    `fallback_providers:` → exo at
    `http://ubuntu-beast.tail21090.ts.net:52415/v1`.
    Behind those, dormant fallback entries for the cloud providers above
-   (Moonshot, Anthropic, OpenAI, xAI — all OpenAI-compatible endpoints),
+   (Moonshot, Anthropic, OpenAI, xAI, Google — all OpenAI-compatible
+   endpoints),
    rendered into the config only when their key var is non-empty, so
    dropping a key into 1P and re-running the play activates that rung
    with no code change.
@@ -160,8 +163,8 @@ fnm/node (nothing in this stack needs node anymore).
   var) before hermes goes live.
 - **Availability:** with no cloud provider configured, hermes is model-less
   whenever beast is off/in Windows and exo is stopped. Accepted; filling any
-  of the cloud key slots (Anthropic, Moonshot, OpenAI, xAI) is the future
-  fix.
+  of the cloud key slots (Anthropic, Moonshot, OpenAI, xAI, Google) is the
+  future fix.
 - **Hermes config surface:** `.env`/`config.yaml` keys above are from current
   upstream docs; exact keys re-verified against the installed version during
   implementation.
