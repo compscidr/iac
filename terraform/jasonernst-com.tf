@@ -122,6 +122,22 @@ resource "digitalocean_record" "AAAA-projects" {
   value  = digitalocean_droplet.projects.ipv6_address
 }
 
+# hermes.jasonernst.com -> hermes droplet (see hermes.tf). Cosmetic
+# for now: the hermes firewall has no public inbound rules.
+resource "digitalocean_record" "A-hermes" {
+  domain = digitalocean_domain.default.name
+  type   = "A"
+  name   = "hermes"
+  value  = digitalocean_droplet.hermes.ipv4_address
+}
+
+resource "digitalocean_record" "AAAA-hermes" {
+  domain = digitalocean_domain.default.name
+  type   = "AAAA"
+  name   = "hermes"
+  value  = digitalocean_droplet.hermes.ipv6_address
+}
+
 resource "digitalocean_record" "TXT-keybase" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
