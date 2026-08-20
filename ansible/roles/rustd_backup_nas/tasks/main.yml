@@ -127,6 +127,10 @@
     name: "prune jasonernst.com goblog db backups"
     minute: "35"
     hour: "5"
+    # Directory-exists guard: the db/ dir only appears once the first push
+    # from the www droplet lands, and find on a missing path errors - which
+    # cron turns into nightly mail/log noise. Silent no-op until then.
     job: >-
+      [ -d {{ jasonernst_com_backup_nas_path }}/db ] &&
       find {{ jasonernst_com_backup_nas_path }}/db -maxdepth 1 -type f -name 'goblog-*.db'
       -mtime +{{ jasonernst_com_backup_nas_keep }} -delete

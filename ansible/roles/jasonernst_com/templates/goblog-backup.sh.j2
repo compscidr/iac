@@ -19,9 +19,11 @@ STAMP="$(date +%F)"
 OUT="{{ jasonernst_com_backup_local_dir }}/goblog-${STAMP}.db"
 TMP="${OUT}.tmp"
 
-# Belt-and-braces: a leftover .tmp from a previous killed/failed run must
-# not be mistaken for a valid snapshot.
-rm -f "${TMP}"
+# Belt-and-braces: leftover .tmp files from previous killed/failed runs
+# (any day's, not just today's) must not be mistaken for valid snapshots,
+# accumulate locally, or get pushed to the nas. Safe to sweep them all -
+# runs never overlap (systemd oneshot).
+rm -f {{ jasonernst_com_backup_local_dir }}/goblog-*.db.tmp
 
 # sqlite3 .backup takes a consistent snapshot even while the goblog
 # container is writing (a plain cp of a live sqlite file can be corrupt).
@@ -44,5 +46,9 @@ RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
 DEST="rsync://{{ jasonernst_com_backup_nas_rsync_user }}@{{ jasonernst_com_backup_nas_host }}:{{ jasonernst_com_backup_nas_rsync_port }}/{{ jasonernst_com_backup_nas_rsync_module }}/{{ jasonernst_com_backup_nas_rsync_subpath }}"
 
 # Posts (db snapshots), then images/files (uploads) - both additive.
-rsync "${RSYNC_OPTS[@]}" {{ jasonernst_com_backup_local_dir }}/ "${DEST}/db/"
+# --exclude on the db push only: no in-progress .tmp can normally exist by
+# this point (swept above, renamed after snapshot), but the nas prune only
+# ever deletes goblog-*.db, so anything else that slips in would sit there
+# forever. Uploads are pushed as-is - a user file named *.tmp is still data.
+rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' {{ jasonernst_com_backup_local_dir }}/ "${DEST}/db/"
 rsync "${RSYNC_OPTS[@]}" /opt/goblog/prod/uploads/ "${DEST}/uploads/"
