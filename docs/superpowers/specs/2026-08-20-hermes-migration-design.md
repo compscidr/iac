@@ -91,11 +91,10 @@ tags, handlers, `no_log` on secret-bearing tasks):
    - `DISCORD_FREE_RESPONSE_CHANNELS` (#hermes-agent channel ID)
    - Future cloud-provider keys, all empty-default vars whose tasks/lines
      are skipped until a key lands in the vault:
-     `ANTHROPIC_API_KEY`, `MOONSHOT_API_KEY` (Kimi K3,
-     `https://api.moonshot.ai/v1`), `OPENAI_API_KEY` (GPT-5.6),
-     `XAI_API_KEY` (Grok, `https://api.x.ai/v1`), `GEMINI_API_KEY`
-     (Gemini, OpenAI-compatible endpoint at
-     `https://generativelanguage.googleapis.com/v1beta/openai/`).
+     `ANTHROPIC_API_KEY`, `KIMI_API_KEY` (Moonshot/Kimi K3 — hermes's
+     native env var name), `OPENAI_API_KEY` (GPT-5.6), `XAI_API_KEY`
+     (Grok), `GEMINI_API_KEY` (Gemini). All five are providers hermes
+     supports natively, so no custom base URLs are needed for them.
    All Discord snowflakes live in the 1P item, not in this public repo.
 4. Manage model settings in `~/.hermes/config.yaml`: primary model = custom
    OpenAI-compatible endpoint at
