@@ -293,15 +293,48 @@
     - config
     - discord
 
+# Discord group policy. `allowlist` is the runtime fallback anyway, but
+# writing it explicitly stops a fresh provision from drifting to `open`
+# (which would let any guild member drive the agent) if the upstream
+# default changes.
+- name: Set Discord group policy
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set channels.discord.groupPolicy
+    {{ openclaw_discord_group_policy | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_discord_group_policy | length > 0
+  register: openclaw_discord_policy_set
+  changed_when: "'Updated' in (openclaw_discord_policy_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+    - discord
+
 # Discord guild config: requireMention=false so the bot replies to plain
 # channel messages (the 2026.5.7 plugin requires an explicit guild ID;
-# `"*"` wildcard keys are accepted by the schema but no-op at runtime).
-- name: Set Discord guild requireMention
+# `"*"` wildcard keys are accepted by the schema but no-op at runtime),
+# plus the optional per-channel enable map.
+#
+# `openclaw config set ... --strict-json` replaces the value at the path
+# wholesale, so this task writes the *complete* guild object. Anything
+# not represented in these vars is dropped on every run — which is why
+# `channels` has to be folded in here rather than set by a second task.
+# See openclaw_discord_channels in defaults/main.yml for the allowlist
+# semantics of that map.
+- name: Set Discord guild config
   become: true
   become_user: "{{ openclaw_user }}"
   ansible.builtin.command: >-
     openclaw config set channels.discord.guilds
-    {{ {openclaw_discord_guild_id: {'requireMention': false}} | to_json | quote }}
+    {{ {openclaw_discord_guild_id: {'requireMention': false}
+        | combine({'channels': openclaw_discord_channels}
+                  if openclaw_discord_channels else {})}
+       | to_json | quote }}
     --strict-json
   environment:
     PATH: "{{ openclaw_path }}"
@@ -448,6 +481,80 @@
     - openclaw
     - config
     - exo
+
+# DM session scoping. Without this, DMs from the same person across
+# different channels collapse into one session and leak context between
+# surfaces.
+- name: Set session dmScope
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set session.dmScope {{ openclaw_session_dm_scope | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_session_dm_scope | length > 0
+  register: openclaw_dm_scope_set
+  changed_when: "'Updated' in (openclaw_dm_scope_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+
+# Tool profile. The stock default is narrower than what this host is
+# used for; `coding` turns on the file/exec/patch tool set.
+- name: Set tools profile
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set tools.profile {{ openclaw_tools_profile | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_tools_profile | length > 0
+  register: openclaw_tools_profile_set
+  changed_when: "'Updated' in (openclaw_tools_profile_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+
+# Web search provider selection. Set as two scalar writes rather than one
+# object write so we don't clobber any other tools.web.search subkeys the
+# runtime adds later. The provider needs its plugin installed and keyed
+# (brave, above) or search calls fail at runtime.
+- name: Set web search provider
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set tools.web.search.provider {{ openclaw_web_search_provider | quote }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_web_search_provider | length > 0
+  register: openclaw_web_search_provider_set
+  changed_when: "'Updated' in (openclaw_web_search_provider_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
+
+- name: Set web search enabled
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ansible.builtin.command: >-
+    openclaw config set tools.web.search.enabled
+    {{ openclaw_web_search_enabled | string | lower }}
+  environment:
+    PATH: "{{ openclaw_path }}"
+    HOME: "/home/{{ openclaw_user }}"
+  when: openclaw_web_search_provider | length > 0
+  register: openclaw_web_search_enabled_set
+  changed_when: "'Updated' in (openclaw_web_search_enabled_set.stdout | default(''))"
+  notify: Restart openclaw-gateway
+  tags:
+    - openclaw
+    - config
 
 # Enable memory-core "dreaming" mode (offline review/consolidation
 # cycle). Bundled plugin, no separate install — just a config flip.
