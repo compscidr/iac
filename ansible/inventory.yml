@@ -40,6 +40,8 @@ android_runner:
 java_runner:
   hosts:
     ubuntu-silverstone.local:
+    ubuntu-cube.local:
+    ubuntu-beast.local:
 sair:
   hosts:
     ubuntu-cube.local:
