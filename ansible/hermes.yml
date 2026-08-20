@@ -1,0 +1,66 @@
+---
+# Hermes playbook - AI agent deployment (replaces openclaw.yml)
+#
+# Targets the `hermes` host (hermes.tail21090.ts.net via MagicDNS).
+#
+# Prerequisites (personal 1P account ernstjason1@gmail.com):
+#   1. Droplet created via Terraform (Tailscale joined via cloud-init).
+#   2. Node tagged as agent (one-time, grants ollama/exo access to
+#      ubuntu-beast per tailscale-acl.hujson):
+#        ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh'
+#   3. Bootstrap run: ansible-playbook bootstrap.yml --limit hermes -u root
+#   4. `hermes` vault (renamed from `openclaw`; kai's scoped service
+#      account token still reads it — grants are by vault UUID):
+#        - `discord hermes` item:
+#            credential            = bot token
+#            allowed user ids      = Jason's Discord user ID
+#            allowed channel ids   = #hermes-agent channel ID
+#      (Snowflake IDs live in 1P on purpose — keep them out of this
+#      public repo.)
+#
+# Cloud model rungs (all dormant): to activate Anthropic / Kimi /
+# OpenAI / xAI / Gemini, add the key to the `hermes` vault, wire a
+# lookup for the matching hermes_*_api_key var below, and re-run.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml hermes.yml
+#
+# Post-run on a fresh install (one-time): seed kai's persona —
+# copy/adapt IDENTITY.md + MEMORY.md from ~/.hermes/workspace into
+# ~/.hermes/SOUL.md on the host, then send a test message in
+# #hermes-agent.
+
+- name: Deploy Hermes Agent
+  hosts: hermes
+  vars_files:
+    - vars/user.yml
+  pre_tasks:
+    - name: Verify Tailscale reachability to hermes host
+      ansible.builtin.include_tasks: tailscale_check.yml
+  vars:
+    hermes_workspace_repo: "git@github.com:compscidr/kai-workspace.git"
+    # Runtime secrets — `hermes` vault on the personal account (NOT the
+    # Infrastructure default vault).
+    hermes_discord_bot_token: >-
+      {{ lookup('community.general.onepassword',
+                'discord hermes',
+                field='credential',
+                vault='hermes',
+                account_id=onepassword_account_id) }}
+    hermes_discord_allowed_users: >-
+      {{ lookup('community.general.onepassword',
+                'discord hermes',
+                field='allowed user ids',
+                vault='hermes',
+                account_id=onepassword_account_id) }}
+    hermes_discord_allowed_channels: >-
+      {{ lookup('community.general.onepassword',
+                'discord hermes',
+                field='allowed channel ids',
+                vault='hermes',
+                account_id=onepassword_account_id) }}
+    # No @-mention needed in the allowed channel(s) — parity with
+    # openclaw's requireMention: false.
+    hermes_discord_free_response_channels: "{{ hermes_discord_allowed_channels }}"
+  roles:
+    - hermes
