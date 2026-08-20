@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Hermes Agent gateway (Discord)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart={{ hermes_bin }} gateway
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

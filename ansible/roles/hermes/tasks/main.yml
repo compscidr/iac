@@ -1,0 +1,124 @@
+---
+# Hermes Agent installation and configuration. See defaults/main.yml
+# for the role contract and 1Password notes.
+
+# Upstream installer (same pattern as the claude installer the openclaw
+# role used): single-user install, idempotent via `creates:`. Upgrades
+# happen on-host via hermes's own updater, not by re-running this.
+- name: Install hermes via upstream installer
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+  args:
+    creates: "{{ hermes_bin }}"
+    executable: /bin/bash
+  tags:
+    - hermes
+    - install
+
+# Pre-create the state dir with tight permissions before dropping
+# config into it, so a fresh host never has a world-readable ~/.hermes.
+- name: Create hermes config directory
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.file:
+    path: "{{ hermes_config_dir }}"
+    state: directory
+    mode: "0700"
+  tags:
+    - hermes
+    - config
+
+- name: Template hermes .env (secrets)
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ hermes_config_dir }}/.env"
+    mode: "0600"
+  no_log: true
+  notify: Restart hermes-gateway
+  tags:
+    - hermes
+    - config
+    - secrets
+
+- name: Template hermes config.yaml (settings)
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ hermes_config_dir }}/config.yaml"
+    mode: "0600"
+    backup: true
+  notify: Restart hermes-gateway
+  tags:
+    - hermes
+    - config
+
+# Kai's persona/memory source. Initial-clone-only (`update: false`):
+# once present it's runtime state and must never be fast-forwarded by
+# ansible. The one-time SOUL.md seed from this content is a manual
+# step (see cutover runbook).
+- name: Clone workspace repository
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.git:
+    repo: "{{ hermes_workspace_repo }}"
+    dest: "{{ hermes_workspace_path }}"
+    version: main
+    accept_hostkey: true
+    update: false
+  when: hermes_workspace_repo | length > 0
+  tags:
+    - hermes
+    - workspace
+
+# Keep the user systemd manager (and the gateway) alive when nobody is
+# logged in.
+- name: Enable systemd linger for hermes user
+  become: true
+  ansible.builtin.command: loginctl enable-linger {{ hermes_user }}
+  args:
+    creates: "/var/lib/systemd/linger/{{ hermes_user }}"
+  tags:
+    - hermes
+    - systemd
+
+- name: Ensure user systemd dir exists
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ hermes_user }}/.config/systemd/user"
+    state: directory
+    mode: "0755"
+  tags:
+    - hermes
+    - systemd
+
+- name: Install hermes-gateway user systemd unit
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.template:
+    src: hermes-gateway.service.j2
+    dest: "/home/{{ hermes_user }}/.config/systemd/user/hermes-gateway.service"
+    mode: "0644"
+  notify: Restart hermes-gateway
+  tags:
+    - hermes
+    - systemd
+
+- name: Enable and start hermes-gateway.service (user)
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.systemd_service:
+    name: hermes-gateway.service
+    scope: user
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags:
+    - hermes
+    - systemd
