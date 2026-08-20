@@ -23,8 +23,10 @@ Key decisions made during brainstorming:
   (both over Tailscale, OpenAI-compatible `/v1` endpoints). **No claude CLI,
   no subscription proxy** — Anthropic's Feb/Apr 2026 policy prohibits routing
   third-party tools through subscription credentials, so that path is dropped.
-  A var slot is left for a proper `ANTHROPIC_API_KEY` later; when beast is
-  off/in Windows and exo is down, hermes is up but model-less and turns fail.
+  Empty-default key slots (Anthropic, Moonshot/Kimi K3, OpenAI/GPT-5.6,
+  xAI/Grok) are left for proper API tokens later; until one is filled, when
+  beast is off/in Windows and exo is down, hermes is up but model-less and
+  turns fail.
 - **Discord:** new bot application ("hermes"), restricted to the
   `#hermes-agent` channel, allow-listed to Jason's user ID (hermes fails
   closed without an access policy). Free-response mode on that channel so no
@@ -87,13 +89,22 @@ tags, handlers, `no_log` on secret-bearing tasks):
    - `DISCORD_ALLOWED_USERS` (Jason's Discord user ID)
    - `DISCORD_ALLOWED_CHANNELS` (#hermes-agent channel ID)
    - `DISCORD_FREE_RESPONSE_CHANNELS` (#hermes-agent channel ID)
-   - (future, empty-default var) `ANTHROPIC_API_KEY`
+   - Future cloud-provider keys, all empty-default vars whose tasks/lines
+     are skipped until a key lands in the vault:
+     `ANTHROPIC_API_KEY`, `MOONSHOT_API_KEY` (Kimi K3,
+     `https://api.moonshot.ai/v1`), `OPENAI_API_KEY` (GPT-5.6),
+     `XAI_API_KEY` (Grok, `https://api.x.ai/v1`).
    All Discord snowflakes live in the 1P item, not in this public repo.
 4. Manage model settings in `~/.hermes/config.yaml`: primary model = custom
    OpenAI-compatible endpoint at
    `http://ubuntu-beast.tail21090.ts.net:11434/v1` (ollama);
    `fallback_providers:` → exo at
    `http://ubuntu-beast.tail21090.ts.net:52415/v1`.
+   Behind those, dormant fallback entries for the cloud providers above
+   (Moonshot, Anthropic, OpenAI, xAI — all OpenAI-compatible endpoints),
+   rendered into the config only when their key var is non-empty, so
+   dropping a key into 1P and re-running the play activates that rung
+   with no code change.
    Exact YAML schema (and whether `hermes config set` is preferable to
    templating) is confirmed at implementation time against the installed
    version. Model tags are role vars with defaults matching what beast
@@ -148,8 +159,9 @@ fnm/node (nothing in this stack needs node anymore).
   verify and, if needed, add a 64K-context model tag on beast (ollama role
   var) before hermes goes live.
 - **Availability:** with no cloud provider configured, hermes is model-less
-  whenever beast is off/in Windows and exo is stopped. Accepted; the
-  `ANTHROPIC_API_KEY` slot is the future fix.
+  whenever beast is off/in Windows and exo is stopped. Accepted; filling any
+  of the cloud key slots (Anthropic, Moonshot, OpenAI, xAI) is the future
+  fix.
 - **Hermes config surface:** `.env`/`config.yaml` keys above are from current
   upstream docs; exact keys re-verified against the installed version during
   implementation.
