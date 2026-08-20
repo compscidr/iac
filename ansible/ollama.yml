@@ -20,16 +20,9 @@
 #   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local \
 #     -e '{"ollama_models": ["qwen2.5:14b", "codestral:latest"]}'
 #
-# Using from clawdbot:
-#   Ollama is reachable at http://ubuntu-beast:11434 over Tailscale.
-#   To wire it into clawdbot, add an ollama provider entry to
-#   ~/.clawdbot/clawdbot.json on the clawdbot host (via the clawdbot
-#   wizard or by editing the file directly). OpenAI-compatible endpoint:
-#   http://ubuntu-beast:11434/v1
-#   The Ansible-managed clawdbot.json template is a placeholder with
-#   force: false, so it will not overwrite the wizard-populated config.
-#   The `openclaw` 1Password vault holds the API keys/tokens clawdbot
-#   reads at runtime — it does not hold provider config.
+#   To wire it into Hermes Agent, see ansible/hermes.yml — the hermes
+#   role points its ollama provider at this server's OpenAI-compatible
+#   endpoint (http://ubuntu-beast:11434/v1) over Tailscale.
 
 - name: Deploy Ollama LLM Server
   hosts: all

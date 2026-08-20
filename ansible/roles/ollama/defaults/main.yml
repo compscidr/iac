@@ -44,9 +44,13 @@ ollama_modelfiles:
     base: "qwen2.5:14b"
     parameters:
       num_ctx: 32768
+  # 64K-context variant for Hermes Agent (hermes requires >=64K ctx
+  # from local models). MoE base: 3B active params keeps it responsive
+  # even with the large KV cache spilling to RAM.
+  - name: "qwen3.5:35b-a3b-64k"
+    base: "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"
+    parameters:
+      num_ctx: 65536
 
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true # If true, only allow Tailscale IPs
-
-# OpenClaw integration
-ollama_openclaw_base_url: "http://{{ inventory_hostname }}:{{ ollama_port }}"
