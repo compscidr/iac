@@ -6,10 +6,12 @@
 Description=Hermes Agent dashboard (web UI)
 
 [Service]
-# Bound to loopback on purpose: hermes refuses to serve a non-loopback
-# bind without its own auth provider, and Tailscale Serve fronts this
-# with tailnet identity instead (see the serve task in tasks/main.yml).
-ExecStart={{ hermes_bin }} dashboard --no-open --host 127.0.0.1 --port {{ hermes_dashboard_port }}
+# Bound to the tailnet hostname, not loopback: the dashboard matches the
+# Host header against whatever it bound to, so a loopback bind behind
+# Tailscale Serve rejects every proxied request. The bind is gated by
+# the basic_auth credentials in ~/.hermes/.env, and Tailscale Serve adds
+# HTTPS on top (see the serve task in tasks/main.yml).
+ExecStart={{ hermes_bin }} dashboard --no-open --host {{ hermes_dashboard_host }} --port {{ hermes_dashboard_port }}
 Environment="HERMES_HOME={{ hermes_config_dir }}"
 Restart=on-failure
 RestartSec=10

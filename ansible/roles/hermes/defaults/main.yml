@@ -79,3 +79,18 @@ hermes_ssh_private_key: ""
 # and from nowhere else. 9119 is hermes's own default.
 hermes_dashboard_enabled: true
 hermes_dashboard_port: 9119
+# Bind to the tailnet name rather than loopback. The dashboard rejects
+# any request whose Host header doesn't match what it bound to (a DNS
+# rebinding guard), so a loopback bind behind Tailscale Serve answers
+# every request with "Invalid Host header" — Serve forwards the real
+# hostname. Binding the real name also makes hermes require an auth
+# provider, which is why the basic_auth credentials below are not
+# optional.
+hermes_dashboard_host: "hermes.tail21090.ts.net"
+# Username/password gate (hermes's bundled dashboard_auth/basic
+# plugin). Empty username = plugin no-op, which a non-loopback bind
+# refuses to start with. Hash and session secret come from 1Password;
+# the plaintext password lives there too, for logging in.
+hermes_dashboard_username: ""
+hermes_dashboard_password_hash: ""
+hermes_dashboard_session_secret: ""

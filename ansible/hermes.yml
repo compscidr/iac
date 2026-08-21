@@ -82,6 +82,26 @@
                 field='private key',
                 vault=hermes_op_vault,
                 service_account_token=hermes_op_service_account_token) }}
+    # Dashboard login — see roles/hermes/defaults/main.yml. The
+    # plaintext password is in the same 1P item, for you to log in with.
+    hermes_dashboard_username: >-
+      {{ lookup('community.general.onepassword',
+                'hermes dashboard',
+                field='username',
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
+    hermes_dashboard_password_hash: >-
+      {{ lookup('community.general.onepassword',
+                'hermes dashboard',
+                field='password hash',
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
+    hermes_dashboard_session_secret: >-
+      {{ lookup('community.general.onepassword',
+                'hermes dashboard',
+                field='session secret',
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     hermes_discord_bot_token: >-
       {{ lookup('community.general.onepassword',
                 'discord hermes',
