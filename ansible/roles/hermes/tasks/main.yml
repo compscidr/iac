@@ -118,6 +118,27 @@
     - config
     - secrets
 
+# The active model must be one the catalog describes. If it is not, it
+# gets no context_window override and hermes falls back to the model's
+# native window -- which is exactly the mismatch that caused the stuck
+# sessions in ae9f514c, and it fails silently. Cheaper to catch here.
+- name: Assert the selected ollama model is in the catalog
+  ansible.builtin.assert:
+    that: hermes_ollama_model in (hermes_ollama_catalog | map(attribute='name') | list)
+    fail_msg: >-
+      hermes_ollama_model is "{{ hermes_ollama_model }}", which is not in
+      hermes_ollama_catalog
+      ({{ hermes_ollama_catalog | map(attribute='name') | join(', ') }}).
+      Add it to the catalog with its context_window and reasoning_effort,
+      or pick one of the listed names.
+    success_msg: >-
+      Active model {{ hermes_ollama_model }} is described by the catalog
+      ({{ hermes_ollama_catalog | length }} model(s) configured)
+  when: hermes_ollama_catalog | length > 0
+  tags:
+    - hermes
+    - config
+
 - name: Template hermes config.yaml (settings)
   become: true
   become_user: "{{ hermes_user }}"
