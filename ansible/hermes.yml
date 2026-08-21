@@ -74,6 +74,14 @@
                 field='credential',
                 vault=onepassword_vault,
                 account_id=onepassword_account_id) }}
+    # Kai's own GitHub identity — deliberately not Jason's fleet-wide
+    # key (see host_vars/hermes.yml).
+    hermes_ssh_private_key: >-
+      {{ lookup('community.general.onepassword',
+                'github key',
+                field='private key',
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     hermes_discord_bot_token: >-
       {{ lookup('community.general.onepassword',
                 'discord hermes',

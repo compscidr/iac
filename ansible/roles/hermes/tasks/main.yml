@@ -40,6 +40,57 @@
     - hermes
     - install
 
+# Kai's own SSH identity, used for the workspace clone and for any git
+# work he does himself. host_vars/hermes.yml disables the bootstrap
+# role's key deployment for this host: that key is Jason's personal one
+# and is authorized across the whole fleet, which is not something an
+# agent taking instructions from Discord should be holding. This key
+# reaches kai's GitHub account and nothing else.
+- name: Ensure ~/.ssh exists
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ hermes_user }}/.ssh"
+    state: directory
+    mode: "0700"
+  tags:
+    - hermes
+    - ssh
+
+- name: Remove Jason's personal SSH key if a previous bootstrap left one
+  become: true
+  ansible.builtin.file:
+    path: "/home/{{ hermes_user }}/.ssh/id_rsa"
+    state: absent
+  tags:
+    - hermes
+    - ssh
+
+- name: Deploy kai's SSH private key
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.copy:
+    content: "{{ hermes_ssh_private_key }}\n"
+    dest: "/home/{{ hermes_user }}/.ssh/id_ed25519"
+    mode: "0600"
+  when: hermes_ssh_private_key | length > 0
+  no_log: true
+  tags:
+    - hermes
+    - ssh
+
+- name: Add github.com to known hosts
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+    path: "/home/{{ hermes_user }}/.ssh/known_hosts"
+    state: present
+  tags:
+    - hermes
+    - ssh
+
 # Pre-create the state dir with tight permissions before dropping
 # config into it, so a fresh host never has a world-readable ~/.hermes.
 - name: Create hermes config directory
@@ -145,3 +196,52 @@
   tags:
     - hermes
     - systemd
+
+# Web dashboard. Ansible owns this unit (hermes has no `dashboard
+# install` subcommand), so unlike the gateway unit it is templated here.
+- name: Install hermes-dashboard user systemd unit
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.template:
+    src: hermes-dashboard.service.j2
+    dest: "/home/{{ hermes_user }}/.config/systemd/user/hermes-dashboard.service"
+    mode: "0644"
+  when: hermes_dashboard_enabled
+  notify: Restart hermes-dashboard
+  tags:
+    - hermes
+    - systemd
+    - dashboard
+
+- name: Enable and start hermes-dashboard.service (user)
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.systemd_service:
+    name: hermes-dashboard.service
+    scope: user
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: hermes_dashboard_enabled
+  tags:
+    - hermes
+    - systemd
+    - dashboard
+
+# Publish the loopback dashboard on the tailnet over HTTPS. Tailscale
+# terminates TLS with the node's own cert and only tailnet peers
+# permitted by the ACL can reach it, which is what stands in for the
+# auth provider hermes would demand on a public bind. `serve` config is
+# persistent, so this is a no-op re-run once set.
+- name: Serve the dashboard on the tailnet
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https=443 http://localhost:{{ hermes_dashboard_port }}
+  register: hermes_tailscale_serve
+  changed_when: "'Available within your tailnet' in (hermes_tailscale_serve.stdout | default(''))"
+  when: hermes_dashboard_enabled
+  tags:
+    - hermes
+    - tailscale
+    - dashboard
+    - molecule-notest

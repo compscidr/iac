@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# Unlike hermes-gateway.service, hermes does not manage this unit itself
+# (`hermes dashboard` has no install subcommand), so this template is
+# the source of truth and won't be overwritten from under Ansible.
+[Unit]
+Description=Hermes Agent dashboard (web UI)
+
+[Service]
+# Bound to loopback on purpose: hermes refuses to serve a non-loopback
+# bind without its own auth provider, and Tailscale Serve fronts this
+# with tailnet identity instead (see the serve task in tasks/main.yml).
+ExecStart={{ hermes_bin }} dashboard --no-open --host 127.0.0.1 --port {{ hermes_dashboard_port }}
+Environment="HERMES_HOME={{ hermes_config_dir }}"
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
