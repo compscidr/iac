@@ -9,9 +9,10 @@
 	// "tagOwners": {
 	//      "tag:example": ["autogroup:admin"],
 	// },
+	// NOTE: this file is a terraform template (see tailscale.tf) —
+	// $${...} is a literal, $${var} interpolations are filled at apply.
 	"tagOwners": {
-		"tag:agent":      ["ernstjason1@gmail.com"],
-		"tag:llm-server": ["ernstjason1@gmail.com"],
+		"tag:agent": ["ernstjason1@gmail.com"],
 	},
 
 	// Define grants that govern access for users, groups, autogroups, tags,
@@ -20,27 +21,30 @@
 		// Your member devices - full access everywhere including tagged machines
 		{"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
 
-		// Agent (hermes) - only Ollama + exo, and only on machines
-		// explicitly tagged as model servers.
+		// Agent (hermes) - only Ollama + exo, and only on ubuntu-beast.
 		//
-		// Destination is a tag rather than a tailnet IP because IPs go
-		// stale silently: this rule named 100.79.121.111 while
-		// ubuntu-beast had moved to 100.87.35.11, and every one of the
-		// agent's model calls was dropped with no signal anywhere
-		// (found during the 2026-08 hermes cutover). Tags survive a
-		// node rebuild. It is also narrower than targeting the *user*,
-		// which would expose these ports on every machine Jason is
-		// signed into — hermes takes instructions from Discord, and
-		// ollama's API is unauthenticated and can delete or pull
-		// models, so the reachable surface is kept to machines that
-		// deliberately serve models.
+		// The address is injected by terraform from the
+		// `tailscale_device` data source (see tailscale.tf), NOT
+		// hardcoded: a literal IP here went stale when beast's node was
+		// rebuilt (the rule still named 100.79.121.111) and every one
+		// of the agent's model calls was dropped with no signal
+		// anywhere — found the hard way during the 2026-08 hermes
+		// cutover. Re-reading it each apply keeps this honest while
+		// staying narrow: targeting the *user* instead would expose
+		// these ports on every machine Jason is signed into, and hermes
+		// takes instructions from Discord while ollama's API is
+		// unauthenticated and can delete or pull models.
 		//
-		// To enroll a model server (ubuntu-cube when it starts serving):
-		//   sudo tailscale up --advertise-tags=tag:llm-server --ssh \
-		//        --hostname=<name>
-		// (`tailscale up` demands every non-default flag be restated.)
+		// A tag would also be stable, but tags are for unattended
+		// servers: tagging beast transfers it from Jason to the tailnet,
+		// which costs it the autogroup:member grant above and its user
+		// identity for Tailscale SSH — i.e. it cuts the workstation off
+		// from the tailnet entirely. Don't.
 		//
-		// Note these can only ever be tailnet-internal selectors: DNS
+		// To add ubuntu-cube when it starts serving models, add a
+		// second data source in tailscale.tf and list it here too.
+		//
+		// Note these can only ever be tailnet-internal addresses: DNS
 		// names (home.jasonernst.com and friends) are never resolved by
 		// the policy file, and tailnet traffic is not addressed to a
 		// device's public IP.
@@ -49,7 +53,7 @@
 		// avoids any protocol-default ambiguity in the grants syntax.
 		{
 			"src": ["tag:agent"],
-			"dst": ["tag:llm-server"],
+			"dst": ["${ubuntu_beast_ip}"],
 			"ip":  ["tcp:11434", "tcp:52415"],
 		},
 	],
@@ -63,15 +67,11 @@
 			"dst":    ["autogroup:self"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
-		// Allow SSH to tagged machines from members. tag:llm-server is
-		// listed explicitly because a tagged device is owned by the
-		// tailnet, not by Jason — it stops matching `autogroup:self`
-		// above, so without this line tagging ubuntu-beast would cut
-		// off tailscale-ssh to it from the other machines.
+		// Allow SSH to tagged machines from members
 		{
 			"action": "check",
 			"src":    ["autogroup:member"],
-			"dst":    ["tag:agent", "tag:llm-server"],
+			"dst":    ["tag:agent"],
 			"users":  ["autogroup:nonroot", "root"],
 		},
 	],

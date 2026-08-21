@@ -16,7 +16,7 @@
 #          - credential: <OAuth client secret>
 #
 #   3. The first `terraform apply` will *write* the checked-in
-#      tailscale-acl.hujson over whatever policy currently lives in
+#      tailscale-acl.hujson.tftpl over whatever policy currently lives in
 #      the admin console (no import — this is a create with
 #      `overwrite_existing_content = true`, which the API requires
 #      when there's already content not written by the same client).
@@ -25,7 +25,7 @@
 #      true import. Any console-side drift after this point will be
 #      reverted on the next apply.
 #
-# Day-to-day: edit tailscale-acl.hujson, then `terraform apply`.
+# Day-to-day: edit tailscale-acl.hujson.tftpl, then `terraform apply`.
 # The provider validates the HuJSON server-side before applying, so a
 # broken policy fails at plan/apply time instead of locking us out.
 
@@ -47,7 +47,24 @@ provider "tailscale" {
   # constrains what's grantable.
 }
 
+# ubuntu-beast serves the models hermes falls back to (ollama :11434,
+# exo :52415). Reading its tailnet address here — instead of writing it
+# into the policy by hand — means a rebuilt node can't silently break
+# the agent's grant: the address is refreshed on every apply. Tailscale
+# policy files never resolve DNS names, so an address is the only way to
+# name a specific untagged device.
+data "tailscale_device" "ubuntu_beast" {
+  hostname = "ubuntu-beast"
+}
+
 resource "tailscale_acl" "policy" {
-  acl                        = file("${path.module}/tailscale-acl.hujson")
+  acl = templatefile("${path.module}/tailscale-acl.hujson.tftpl", {
+    # Devices carry both a v4 and a v6 address; the grant wants the
+    # 100.x CGNAT one.
+    ubuntu_beast_ip = one([
+      for addr in data.tailscale_device.ubuntu_beast.addresses :
+      addr if !strcontains(addr, ":")
+    ])
+  })
   overwrite_existing_content = true
 }
