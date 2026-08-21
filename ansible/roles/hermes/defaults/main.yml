@@ -47,17 +47,26 @@ hermes_discord_free_response_channels: ""   # channels needing no @-mention
 
 # Local model providers (OpenAI-compatible /v1 endpoints over Tailscale)
 # Thinking level for the local model, via hermes's per-model
-# `agent.reasoning_overrides`. qwen3.5-a3b is a hybrid reasoning model
-# that spends roughly ten times more tokens thinking than answering; on
-# agent turns (tool orchestration, skills) the reasoning runs long and
-# the turn ends with thinking and no content, which hermes reports as
-# "Thinking-only response" / "Model returned empty after tool calls"
-# before falling through to the fallback. Chat worked, anything agentic
-# did not. `none` disables thinking for THIS model only — the override
-# is keyed by model name, so a frontier model added later keeps its own
-# default and can still think. Raise to low/medium if a future local
-# model benefits from it.
-hermes_ollama_reasoning_effort: "none"
+# `agent.reasoning_overrides`. qwen3.5-a3b is a hybrid reasoning model,
+# and both extremes fail in their own way:
+#
+#   default (unbounded) — reasoning runs roughly ten times longer than
+#     the answer, and on agent turns it consumes the whole turn: hermes
+#     reports "Thinking-only response" / "Model returned empty after
+#     tool calls" and falls through to the fallback.
+#   none — the model emits a tool call AND narrates it in visible text
+#     ("Let me fetch the item properly now:"). That chatter accumulates
+#     in the transcript and the agent appears to loop, announcing
+#     actions instead of completing them.
+#
+# `low` is the setting that works: measured against the same tool-use
+# prompt, none produced a tool call plus 101 characters of narration,
+# while low and medium produced a clean call with zero narration and
+# only ~290 characters of reasoning — short enough not to run away.
+#
+# Keyed by model name, so this applies to the local model only; a
+# frontier model added later keeps its own default.
+hermes_ollama_reasoning_effort: "low"
 hermes_ollama_base_url: "http://ubuntu-beast.tail21090.ts.net:11434/v1"
 hermes_ollama_model: "qwen3.5:35b-a3b-64k"
 hermes_exo_base_url: "http://ubuntu-beast.tail21090.ts.net:52415/v1"
