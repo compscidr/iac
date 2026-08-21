@@ -65,3 +65,17 @@ hermes_xai_api_key: ""
 hermes_xai_model: "grok-4.6"
 hermes_gemini_api_key: ""
 hermes_gemini_model: "gemini-3.1-pro"
+
+# Kai's own SSH private key (the `github key` item in his vault),
+# deployed to ~/.ssh/id_ed25519. Empty default means the task is a
+# no-op; see host_vars/hermes.yml for why the bootstrap role's
+# fleet-wide key is disabled on this host.
+hermes_ssh_private_key: ""
+
+# Web dashboard (`hermes dashboard`) — the equivalent of openclaw's
+# Control UI: config, API keys, and sessions in a browser. Served on
+# loopback and fronted by Tailscale Serve at
+# https://hermes.<tailnet>.ts.net, so it is reachable from the tailnet
+# and from nowhere else. 9119 is hermes's own default.
+hermes_dashboard_enabled: true
+hermes_dashboard_port: 9119

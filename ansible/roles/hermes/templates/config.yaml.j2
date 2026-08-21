@@ -9,15 +9,21 @@ model:
   default: "{{ hermes_ollama_model }}"
   provider: ollama-beast
 
+# Both are keyless local servers, but hermes warns on every call it
+# routes to a provider whose key it cannot resolve ("will be sent with
+# placeholder no-key-required") — so point them at a placeholder env var
+# instead of leaving the field unset. Neither server checks the value.
 providers:
   ollama-beast:
     api: "{{ hermes_ollama_base_url }}"
     transport: chat_completions
     default_model: "{{ hermes_ollama_model }}"
+    key_env: LOCAL_MODEL_API_KEY
   exo-beast:
     api: "{{ hermes_exo_base_url }}"
     transport: chat_completions
     default_model: "{{ hermes_exo_model }}"
+    key_env: LOCAL_MODEL_API_KEY
 
 # Tried in order when the primary fails (beast off / model unloaded /
 # rate-limited). Cloud rungs render only once their key is in .env.

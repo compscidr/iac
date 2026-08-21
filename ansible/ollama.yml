@@ -10,8 +10,9 @@
 #   3. Tailscale connected (for secure remote access)
 #
 # Usage:
-#   # Deploy to ubuntu-beast:
-#   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local
+#   # Deploy to ubuntu-beast (--ask-become-pass: sudo needs a password
+#   # on the local machines, unlike the droplets):
+#   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local --ask-become-pass
 #
 #   # Deploy without GPU (CPU only):
 #   ansible-playbook -i inventory.yml ollama.yml --limit ubuntu-beast.local -e ollama_gpu_enabled=false

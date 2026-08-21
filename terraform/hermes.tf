@@ -8,7 +8,7 @@
 # is a one-time manual step after first boot (see the cutover runbook
 # in the PR description):
 #
-#   ssh hermes 'sudo tailscale up --advertise-tags=tag:agent --ssh'
+#   ssh root@hermes 'tailscale up --advertise-tags=tag:agent --ssh --hostname=hermes'
 
 resource "digitalocean_vpc" "hermes-vpc" {
   name     = "hermes-vpc"
@@ -38,6 +38,17 @@ resource "digitalocean_droplet" "hermes" {
   # firewall blocks public 22 and the host authenticates SSH via
   # tailnet identity. Requires the operator running `./tf destroy` to
   # be on the tailnet with ACL ssh access to this host as root.
+  #
+  # CAUTION (learned during the 2026-08 cutover): the ACL's ssh rule is
+  # `action: check`, so this can demand an interactive browser re-auth;
+  # with `on_failure = continue` a failed check is SILENT and leaves a
+  # stale logged-in node record, and the replacement registers as
+  # hermes-1. On destroy/replace, verify with `tailscale status | grep
+  # hermes` afterwards — if a stale record remains, delete the machine
+  # in the admin console before (or right after) the new droplet's
+  # first `tailscale up`, then re-run `tailscale up
+  # --advertise-tags=tag:agent --ssh --hostname=hermes` on the host to
+  # reclaim the name.
   provisioner "local-exec" {
     when       = destroy
     on_failure = continue
