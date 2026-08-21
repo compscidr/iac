@@ -11,6 +11,13 @@ Description=Hermes Agent dashboard (web UI)
 # Tailscale Serve rejects every proxied request. The bind is gated by
 # the basic_auth credentials in ~/.hermes/.env, and Tailscale Serve adds
 # HTTPS on top (see the serve task in tasks/main.yml).
+# The dashboard needs the basic_auth credentials in its OWN environment.
+# Unlike the gateway, it does not read ~/.hermes/.env itself, and without
+# those vars it cannot serve a non-loopback bind — so it silently falls
+# back to 127.0.0.1 while Tailscale Serve keeps proxying to the tailnet
+# address, which presents as a 502. The "-" keeps a missing file from
+# failing the unit.
+EnvironmentFile=-{{ hermes_config_dir }}/.env
 ExecStart={{ hermes_bin }} dashboard --no-open --host {{ hermes_dashboard_host }} --port {{ hermes_dashboard_port }}
 Environment="HERMES_HOME={{ hermes_config_dir }}"
 Restart=on-failure
