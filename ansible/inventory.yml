@@ -1,13 +1,18 @@
 ---
 # Local hosts use .local (mDNS) - works on LAN even if Tailscale is down
-# Cloud hosts use Tailscale short names (www, mail, projects)
+# Cloud hosts use Tailscale short names (www, projects, hermes)
+#
+# There is no `mail` host: mail and the website are the same droplet.
+# Terraform names it mail.jasonernst.com (for the PTR record) but joins
+# the tailnet as `www`, and jasonernst_com.yml runs the mailu role
+# there. A `mail` entry used to sit in the groups below and resolved to
+# nothing, so every `hosts: all` play logged an unreachable host.
 # Use --limit 'ubuntu-beast*' to match by prefix
 
 ungrouped:
   hosts:
     www:
     nas.local:
-    mail:
     projects:
     hermes:
 academic_gui:
@@ -49,7 +54,6 @@ sair:
 tailscale:
   hosts:
     www:
-    mail:
     projects:
     hermes:
 linux:
