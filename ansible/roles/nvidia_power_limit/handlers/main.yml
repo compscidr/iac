@@ -1,4 +1,14 @@
 ---
+# Order matters: handlers run in definition order, not notification
+# order. Persistence has to be on before the caps are re-applied, or the
+# caps land on a driver that may still tear its state down.
+- name: Restart nvidia-persistenced
+  become: true
+  ansible.builtin.systemd:
+    name: nvidia-persistenced
+    state: restarted
+    daemon_reload: true
+
 - name: Apply NVIDIA power limits
   become: true
   ansible.builtin.systemd:

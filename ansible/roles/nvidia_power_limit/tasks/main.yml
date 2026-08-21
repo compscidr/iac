@@ -32,6 +32,41 @@
   tags:
     - nvidia_power_limit
 
+# Ubuntu ships nvidia-persistenced with --no-persistence-mode, which
+# leaves persistence mode Disabled. Without it the driver tears down
+# device state once the last client exits, and the power cap reverts to
+# the card default -- silently, with nothing re-applying it until the
+# next boot. A desktop session happens to pin the driver via
+# nvidia_modeset, so the cap survives in practice on a GUI host, but
+# that is the desktop protecting the cap by accident. Drop the flag so
+# the guard holds on its own.
+- name: Create nvidia-persistenced drop-in directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/nvidia-persistenced.service.d
+    state: directory
+    mode: "0755"
+  tags:
+    - nvidia_power_limit
+
+- name: Enable persistence mode on nvidia-persistenced
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nvidia-persistenced.service.d/persistence-mode.conf
+    mode: "0644"
+    content: |
+      # Managed by ansible (roles/nvidia_power_limit) - do not edit.
+      # Clears the distro ExecStart, then repeats it without
+      # --no-persistence-mode so power caps survive a driver unload.
+      [Service]
+      ExecStart=
+      ExecStart=/usr/bin/nvidia-persistenced --user nvidia-persistenced --verbose
+  notify:
+    - Restart nvidia-persistenced
+    - Apply NVIDIA power limits
+  tags:
+    - nvidia_power_limit
+
 - name: Install nvidia-power-limit.service
   become: true
   ansible.builtin.copy:
@@ -79,7 +114,7 @@
 - name: Read back applied power limits
   ansible.builtin.command: >-
     nvidia-smi -i {{ item.bus_id }}
-    --query-gpu=power.limit --format=csv,noheader,nounits
+    --query-gpu=power.limit,persistence_mode --format=csv,noheader,nounits
   register: nvidia_power_limit_applied
   loop: "{{ nvidia_power_limit_gpus }}"
   loop_control:
@@ -90,13 +125,16 @@
 
 - name: Assert each GPU is capped where configured
   ansible.builtin.assert:
-    that: item.stdout | float == item.item.watts | float
+    that:
+      - (item.stdout.split(',')[0] | float) == (item.item.watts | float)
+      # A cap with persistence off reverts the moment the driver unloads.
+      - item.stdout.split(',')[1] | trim == "Enabled"
     fail_msg: >-
-      {{ item.item.name | default(item.item.bus_id) }} is at {{ item.stdout }}W,
-      expected {{ item.item.watts }}W.
+      {{ item.item.name | default(item.item.bus_id) }} reads
+      "{{ item.stdout }}", expected "{{ item.item.watts }}, Enabled".
     success_msg: >-
       {{ item.item.name | default(item.item.bus_id) }} capped at
-      {{ item.item.watts }}W
+      {{ item.item.watts }}W, persistence on
   loop: "{{ nvidia_power_limit_applied.results }}"
   loop_control:
     label: "{{ item.item.bus_id }}"
