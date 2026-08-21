@@ -1,0 +1,23 @@
+---
+# NVIDIA GPU power caps for ubuntu-beast.
+#
+# The box runs a 1000W PSU against ~930W of sustained draw at full tilt
+# (3080 340W + 5080 360W + 5900X 142W + drives/fans/board). That is 93%
+# load with zero headroom for the 3080's Ampere transient spikes, which
+# run ~2x board power for a millisecond and are what actually trips a
+# PSU's over-current protection. Capping both cards brings the system to
+# ~760W sustained for a few percent of performance.
+#
+# GPUs are keyed by PCI bus ID, not index: indices are only stable while
+# no card moves slots, and this machine has a free slot between the two.
+# `nvidia-smi --query-gpu=pci.bus_id,name --format=csv` lists them.
+#
+# Floors are per-card and enforced by the driver (power.min_limit):
+# 100W on the 3080, 250W on the 5080. Setting below the floor fails.
+nvidia_power_limit_gpus:
+  - bus_id: "00000000:05:00.0"
+    name: "RTX 3080 (bottom slot)" # comment only; matching is on bus_id
+    watts: 250 # default 340W, range 100-374
+  - bus_id: "00000000:0A:00.0"
+    name: "RTX 5080 (top slot)"
+    watts: 300 # default 360W, range 250-400

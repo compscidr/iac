@@ -12,13 +12,26 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 {% if ollama_gpu_enabled %}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # CDI device injection, not the legacy nvidia runtime hook.
+    #
+    # The hook configures the device cgroup out of band, so any
+    # `systemctl daemon-reload` on the host makes runc re-sync this
+    # container's device allowlist and silently drop the GPUs. It fails
+    # quietly: ollama's parent process cached its GPU inventory at
+    # startup, so it keeps reporting both cards and planning GPU loads
+    # while every llama-server child gets "no CUDA-capable device is
+    # detected" and falls back to CPU. A 19GB model then runs on the
+    # 5900X and nothing in ollama's own logs says anything is wrong.
+    #
+    # Any daemon-reload triggers it, including apt upgrades that ship a
+    # unit file -- this is not hypothetical maintenance-window damage.
+    # CDI declares the devices in the OCI spec instead, where runc knows
+    # to re-apply them across a reload.
+    #
+    # Requires Docker >= 25 with CDI enabled (29.x defaults to on) and
+    # specs under /var/run/cdi, kept current by nvidia-cdi-refresh.service.
+    devices:
+      - nvidia.com/gpu=all
 {% endif %}
     environment:
       - OLLAMA_HOST=0.0.0.0

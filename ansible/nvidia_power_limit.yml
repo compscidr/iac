@@ -1,0 +1,22 @@
+---
+# NVIDIA GPU power caps
+#
+# Caps each GPU's board power via a systemd oneshot that re-applies at
+# boot. See roles/nvidia_power_limit/defaults/main.yml for the values and
+# why they were picked. Safe to re-run; it verifies against the hardware.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml nvidia_power_limit.yml \
+#     --limit ubuntu-beast.local --ask-become-pass
+#
+#   # Try different caps without editing the role:
+#   ansible-playbook -i inventory.yml nvidia_power_limit.yml \
+#     --limit ubuntu-beast.local --ask-become-pass \
+#     -e '{"nvidia_power_limit_gpus": [{"bus_id": "00000000:05:00.0", "watts": 220}]}'
+#
+# Hosts with no NVIDIA GPU end early and are left untouched.
+
+- name: Cap NVIDIA GPU power limits
+  hosts: all
+  roles:
+    - nvidia_power_limit
