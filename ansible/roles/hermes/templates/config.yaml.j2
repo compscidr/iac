@@ -51,6 +51,16 @@ fallback_providers:
     model: "{{ hermes_gemini_model }}"
 {% endif %}
 
+{% if hermes_ollama_context_window %}
+# Tell hermes the window ollama actually serves. Left to itself it
+# detects the model's native size (262144) and caches it, then sizes
+# ratio-based compaction against a window four times the real one.
+model_overrides:
+  "{{ hermes_ollama_provider_id }}":
+    "{{ hermes_ollama_model }}":
+      context_window: {{ hermes_ollama_context_window }}
+{% endif %}
+
 {% if hermes_tool_output_max_bytes %}
 # Cap a single tool result. The default 50,000 chars is 12-15K tokens —
 # a fifth of a 64K window for one call.
