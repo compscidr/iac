@@ -394,7 +394,7 @@
   become_user: "{{ hermes_user }}"
   ansible.builtin.copy:
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible (roles/hermes) - do not edit
       # A drop-in survives hermes rewriting its own unit file.
       # The leading "-" makes the file optional: these credentials are
       # for kai's tools, and Discord does not depend on them, so a
