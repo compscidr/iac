@@ -1,0 +1,7 @@
+---
+- name: Apply NVIDIA power limits
+  become: true
+  ansible.builtin.systemd:
+    name: nvidia-power-limit
+    state: restarted
+    daemon_reload: true

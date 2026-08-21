@@ -1,0 +1,104 @@
+---
+# Persist GPU power caps across reboots.
+#
+# nvidia-smi -pl only holds while the driver stays loaded (persistence
+# mode keeps it loaded between CUDA clients, but not across a reboot),
+# so the cap has to be re-applied at every boot by a oneshot unit.
+
+- name: Check for nvidia-smi
+  ansible.builtin.command: nvidia-smi --query-gpu=pci.bus_id --format=csv,noheader
+  register: nvidia_power_limit_present
+  changed_when: false
+  failed_when: false
+  tags:
+    - nvidia_power_limit
+
+- name: Skip hosts without an NVIDIA GPU
+  ansible.builtin.meta: end_host
+  when: nvidia_power_limit_present.rc != 0
+  tags:
+    - nvidia_power_limit
+
+- name: Fail on a configured GPU that is not present
+  ansible.builtin.fail:
+    msg: >-
+      {{ item.bus_id }} ({{ item.name | default('unnamed') }}) is not in this
+      host's GPU list ({{ nvidia_power_limit_present.stdout_lines | join(', ') }}).
+      A card moved slots, or the bus ID in nvidia_power_limit_gpus is stale.
+  loop: "{{ nvidia_power_limit_gpus }}"
+  loop_control:
+    label: "{{ item.bus_id }}"
+  when: item.bus_id not in nvidia_power_limit_present.stdout_lines
+  tags:
+    - nvidia_power_limit
+
+- name: Install nvidia-power-limit.service
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nvidia-power-limit.service
+    mode: "0644"
+    content: |
+      # Managed by ansible (roles/nvidia_power_limit) - do not edit.
+      [Unit]
+      Description=Cap NVIDIA GPU power limits
+      Wants=nvidia-persistenced.service
+      After=nvidia-persistenced.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      {% for gpu in nvidia_power_limit_gpus %}
+      # {{ gpu.name | default('gpu') }}
+      ExecStart=/usr/bin/nvidia-smi -i {{ gpu.bus_id }} --power-limit={{ gpu.watts }}
+      {% endfor %}
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Apply NVIDIA power limits
+  tags:
+    - nvidia_power_limit
+
+- name: Enable and start nvidia-power-limit.service
+  become: true
+  ansible.builtin.systemd:
+    name: nvidia-power-limit
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags:
+    - nvidia_power_limit
+
+- name: Apply limits now rather than at the end of the play
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - nvidia_power_limit
+
+# The check: read the caps back off the hardware. Catches a unit that
+# ran but no-op'd (bad bus ID, driver refusing a value under the card's
+# floor) - systemd reporting success is not evidence the cap took.
+- name: Read back applied power limits
+  ansible.builtin.command: >-
+    nvidia-smi -i {{ item.bus_id }}
+    --query-gpu=power.limit --format=csv,noheader,nounits
+  register: nvidia_power_limit_applied
+  loop: "{{ nvidia_power_limit_gpus }}"
+  loop_control:
+    label: "{{ item.bus_id }}"
+  changed_when: false
+  tags:
+    - nvidia_power_limit
+
+- name: Assert each GPU is capped where configured
+  ansible.builtin.assert:
+    that: item.stdout | float == item.item.watts | float
+    fail_msg: >-
+      {{ item.item.name | default(item.item.bus_id) }} is at {{ item.stdout }}W,
+      expected {{ item.item.watts }}W.
+    success_msg: >-
+      {{ item.item.name | default(item.item.bus_id) }} capped at
+      {{ item.item.watts }}W
+  loop: "{{ nvidia_power_limit_applied.results }}"
+  loop_control:
+    label: "{{ item.item.bus_id }}"
+  tags:
+    - nvidia_power_limit
