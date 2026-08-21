@@ -51,8 +51,51 @@ fallback_providers:
     model: "{{ hermes_gemini_model }}"
 {% endif %}
 
-{% if hermes_ollama_reasoning_effort %}
+{% if hermes_ollama_context_window %}
+# Tell hermes the window ollama actually serves. Left to itself it
+# detects the model's native size (262144) and caches it, then sizes
+# ratio-based compaction against a window four times the real one.
+model_overrides:
+  "{{ hermes_ollama_provider_id }}":
+    "{{ hermes_ollama_model }}":
+      context_window: {{ hermes_ollama_context_window }}
+{% endif %}
+
+{% if hermes_tool_output_max_bytes %}
+# Cap a single tool result. The default 50,000 chars is 12-15K tokens —
+# a fifth of a 64K window for one call.
+tool_output:
+  max_bytes: {{ hermes_tool_output_max_bytes }}
+{% endif %}
+{% if hermes_web_extract_char_limit %}
+web:
+  # Full text is still cached on disk; this only caps what enters context.
+  extract_char_limit: {{ hermes_web_extract_char_limit }}
+{% endif %}
+{% if hermes_tool_hard_stop_enabled %}
+tool_loop_guardrails:
+  # Stop repeated non-progressing calls rather than only warning: each
+  # repeat re-pays full tool output into a window that is already tight.
+  hard_stop_enabled: true
+{% endif %}
+
+{% if hermes_compression_threshold_tokens or hermes_compression_tail_mode %}
+compression:
+{% if hermes_compression_threshold_tokens %}
+  # Absolute trigger, not just the ratio — the ratio floors at 0.75 of a
+  # 64K window, which fires too late to leave the summariser room.
+  threshold_tokens: {{ hermes_compression_threshold_tokens }}
+{% endif %}
+{% if hermes_compression_tail_mode %}
+  tail_mode: "{{ hermes_compression_tail_mode }}"
+{% endif %}
+{% endif %}
+
+{% if hermes_ollama_reasoning_effort or hermes_run_budget_seconds %}
 agent:
+{% if hermes_run_budget_seconds %}
+  run_budget_seconds: {{ hermes_run_budget_seconds }}
+{% endif %}
   # Per-model thinking level; keyed by model name, so it applies only to
   # the local model and leaves every other provider on its default.
   reasoning_overrides:

@@ -67,6 +67,74 @@ hermes_discord_free_response_channels: ""   # channels needing no @-mention
 # Keyed by model name, so this applies to the local model only; a
 # frontier model added later keeps its own default.
 hermes_ollama_reasoning_effort: "low"
+# Context management. The local model has a 64K window, and a long
+# agent session fills it: a ~25k base prompt plus accumulated tool
+# output reached n_tokens=65535 (the hard ceiling) after ~56 tool turns.
+# At that point the oldest turns fall out of the window, so the agent
+# forgets what it already tried and re-announces the same step forever,
+# and generation ends without a finish_reason because there is no room
+# left to produce one — which hermes reports as a mid-stream drop.
+#
+# hermes compresses at a ratio of the window but floors that at 0.75 for
+# windows under 512K (~49k here), which leaves little headroom when a
+# single tool result can be thousands of tokens. Two adjustments:
+#
+#   threshold_tokens — absolute trigger, whichever fires first. Set well
+#     below the ceiling so compression has room to run: the summariser is
+#     itself a model call, and attempted with the window nearly full it
+#     can fail, back off for hygiene_failure_cooldown_seconds, and let
+#     the context keep growing.
+#   tail_mode: lean — retains ~3x fewer tokens after compaction than the
+#     legacy verbatim tail, which matters far more on a 64K window.
+# THE root cause of the stuck sessions: hermes and ollama disagreed
+# about how big the context window is. hermes detected the model's
+# NATIVE window and cached it —
+#
+#   ~/.hermes/context_length_cache.yaml
+#   qwen3.5:35b-a3b-64k@http://ubuntu-beast...:11434/v1: 262144
+#
+# — while the modelfile caps ollama at 65536. Hermes was working from a
+# window four times larger than the one it actually had.
+#
+# Everything followed from that. Compaction triggers on a RATIO of the
+# window, so 0.75 of a believed 262144 is ~196K: at 58k of real usage
+# hermes saw ~22% and concluded there was room to spare, and never
+# compacted. Context then grew until it hit ollama's true 65536 ceiling,
+# where generation truncates without a finish_reason — which hermes
+# reports as a mid-stream drop, and which reads in chat as the agent
+# looping and losing track.
+#
+# model_overrides wins over the detected catalog value, so declaring the
+# real window makes every ratio-based calculation correct. Keep this in
+# step with the num_ctx of the ollama modelfile.
+hermes_ollama_provider_id: "ollama-beast"
+hermes_ollama_context_window: 65536
+# Tool output is what actually fills the window. Measured on a stuck
+# session: tool messages were 110 of 286 but ~38,020 of ~46,100
+# conversation tokens — 83%. The upstream defaults are sized for large
+# windows and are far too generous for 64K:
+#
+#   tool_output.max_bytes 50,000 chars is 12-15K tokens for ONE terminal
+#     result — a fifth of the whole window.
+#   web.extract_char_limit 15,000 chars per page, and the session held
+#     two identical 4,311-token web_extract results.
+#
+# The duplicates matter as much as the sizes: kai re-fetched pages he
+# already had, because a full window had evicted the earlier copy. That
+# is why hard stops go on below — repeated non-progressing calls are
+# the mechanism that fills the window, not just a symptom of it.
+hermes_tool_output_max_bytes: 16000
+hermes_web_extract_char_limit: 6000
+# Upstream ships warnings on but hard stops OFF, so a model that keeps
+# re-issuing the same call is nudged and then allowed to continue. On a
+# small window that is expensive: each repeat costs full tool output.
+hermes_tool_hard_stop_enabled: true
+hermes_compression_threshold_tokens: 40000
+hermes_compression_tail_mode: "lean"
+# Wall-clock budget per conversation run: the agent gets a wrap-up notice
+# at 80% elapsed rather than being cut off, so a task going nowhere ends
+# before it can fill the window. Empty disables.
+hermes_run_budget_seconds: 900
 hermes_ollama_base_url: "http://ubuntu-beast.tail21090.ts.net:11434/v1"
 hermes_ollama_model: "qwen3.5:35b-a3b-64k"
 hermes_exo_base_url: "http://ubuntu-beast.tail21090.ts.net:52415/v1"
