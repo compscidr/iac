@@ -67,6 +67,31 @@ hermes_discord_free_response_channels: ""   # channels needing no @-mention
 # Keyed by model name, so this applies to the local model only; a
 # frontier model added later keeps its own default.
 hermes_ollama_reasoning_effort: "low"
+# Context management. The local model has a 64K window, and a long
+# agent session fills it: a ~25k base prompt plus accumulated tool
+# output reached n_tokens=65535 (the hard ceiling) after ~56 tool turns.
+# At that point the oldest turns fall out of the window, so the agent
+# forgets what it already tried and re-announces the same step forever,
+# and generation ends without a finish_reason because there is no room
+# left to produce one — which hermes reports as a mid-stream drop.
+#
+# hermes compresses at a ratio of the window but floors that at 0.75 for
+# windows under 512K (~49k here), which leaves little headroom when a
+# single tool result can be thousands of tokens. Two adjustments:
+#
+#   threshold_tokens — absolute trigger, whichever fires first. Set well
+#     below the ceiling so compression has room to run: the summariser is
+#     itself a model call, and attempted with the window nearly full it
+#     can fail, back off for hygiene_failure_cooldown_seconds, and let
+#     the context keep growing.
+#   tail_mode: lean — retains ~3x fewer tokens after compaction than the
+#     legacy verbatim tail, which matters far more on a 64K window.
+hermes_compression_threshold_tokens: 40000
+hermes_compression_tail_mode: "lean"
+# Wall-clock budget per conversation run: the agent gets a wrap-up notice
+# at 80% elapsed rather than being cut off, so a task going nowhere ends
+# before it can fill the window. Empty disables.
+hermes_run_budget_seconds: 900
 hermes_ollama_base_url: "http://ubuntu-beast.tail21090.ts.net:11434/v1"
 hermes_ollama_model: "qwen3.5:35b-a3b-64k"
 hermes_exo_base_url: "http://ubuntu-beast.tail21090.ts.net:52415/v1"
