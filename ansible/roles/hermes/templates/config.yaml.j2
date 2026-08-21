@@ -51,6 +51,24 @@ fallback_providers:
     model: "{{ hermes_gemini_model }}"
 {% endif %}
 
+{% if hermes_tool_output_max_bytes %}
+# Cap a single tool result. The default 50,000 chars is 12-15K tokens —
+# a fifth of a 64K window for one call.
+tool_output:
+  max_bytes: {{ hermes_tool_output_max_bytes }}
+{% endif %}
+{% if hermes_web_extract_char_limit %}
+web:
+  # Full text is still cached on disk; this only caps what enters context.
+  extract_char_limit: {{ hermes_web_extract_char_limit }}
+{% endif %}
+{% if hermes_tool_hard_stop_enabled %}
+tool_loop_guardrails:
+  # Stop repeated non-progressing calls rather than only warning: each
+  # repeat re-pays full tool output into a window that is already tight.
+  hard_stop_enabled: true
+{% endif %}
+
 {% if hermes_compression_threshold_tokens or hermes_compression_tail_mode %}
 compression:
 {% if hermes_compression_threshold_tokens %}

@@ -86,6 +86,26 @@ hermes_ollama_reasoning_effort: "low"
 #     the context keep growing.
 #   tail_mode: lean — retains ~3x fewer tokens after compaction than the
 #     legacy verbatim tail, which matters far more on a 64K window.
+# Tool output is what actually fills the window. Measured on a stuck
+# session: tool messages were 110 of 286 but ~38,020 of ~46,100
+# conversation tokens — 83%. The upstream defaults are sized for large
+# windows and are far too generous for 64K:
+#
+#   tool_output.max_bytes 50,000 chars is 12-15K tokens for ONE terminal
+#     result — a fifth of the whole window.
+#   web.extract_char_limit 15,000 chars per page, and the session held
+#     two identical 4,311-token web_extract results.
+#
+# The duplicates matter as much as the sizes: kai re-fetched pages he
+# already had, because a full window had evicted the earlier copy. That
+# is why hard stops go on below — repeated non-progressing calls are
+# the mechanism that fills the window, not just a symptom of it.
+hermes_tool_output_max_bytes: 16000
+hermes_web_extract_char_limit: 6000
+# Upstream ships warnings on but hard stops OFF, so a model that keeps
+# re-issuing the same call is nudged and then allowed to continue. On a
+# small window that is expensive: each repeat costs full tool output.
+hermes_tool_hard_stop_enabled: true
 hermes_compression_threshold_tokens: 40000
 hermes_compression_tail_mode: "lean"
 # Wall-clock budget per conversation run: the agent gets a wrap-up notice
