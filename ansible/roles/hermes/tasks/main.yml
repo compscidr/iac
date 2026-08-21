@@ -228,7 +228,10 @@
     - systemd
     - dashboard
 
-# Publish the loopback dashboard on the tailnet over HTTPS. Tailscale
+# Publish the dashboard on the tailnet over HTTPS. The proxy target has
+# to be the same address the dashboard binds to: it no longer listens on
+# loopback (see hermes_dashboard_host), so a localhost target would
+# connect to nothing. Tailscale
 # terminates TLS with the node's own cert and only tailnet peers
 # permitted by the ACL can reach it, which is what stands in for the
 # auth provider hermes would demand on a public bind. `serve` config is
@@ -236,7 +239,7 @@
 - name: Serve the dashboard on the tailnet
   become: true
   ansible.builtin.command:
-    cmd: tailscale serve --bg --https=443 http://localhost:{{ hermes_dashboard_port }}
+    cmd: tailscale serve --bg --https=443 http://{{ hermes_dashboard_host }}:{{ hermes_dashboard_port }}
   register: hermes_tailscale_serve
   changed_when: "'Available within your tailnet' in (hermes_tailscale_serve.stdout | default(''))"
   when: hermes_dashboard_enabled
