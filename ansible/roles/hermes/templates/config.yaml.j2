@@ -51,14 +51,20 @@ fallback_providers:
     model: "{{ hermes_gemini_model }}"
 {% endif %}
 
-{% if hermes_ollama_context_window %}
+{% if hermes_ollama_catalog %}
 # Tell hermes the window ollama actually serves. Left to itself it
-# detects the model's native size (262144) and caches it, then sizes
-# ratio-based compaction against a window four times the real one.
+# detects the model's native size and caches it, then sizes ratio-based
+# compaction against a window larger than the real one.
+#
+# Every catalog entry is declared, not just the active one, so any of
+# them can be selected from the dashboard and still get a correct
+# window. Keyed by model, which is why they can coexist.
 model_overrides:
   "{{ hermes_ollama_provider_id }}":
-    "{{ hermes_ollama_model }}":
-      context_window: {{ hermes_ollama_context_window }}
+{% for m in hermes_ollama_catalog %}
+    "{{ m.name }}":
+      context_window: {{ m.context_window }}
+{% endfor %}
 {% endif %}
 
 {% if hermes_tool_output_max_bytes %}
@@ -91,15 +97,24 @@ compression:
 {% endif %}
 {% endif %}
 
-{% if hermes_ollama_reasoning_effort or hermes_run_budget_seconds %}
+{% if hermes_ollama_catalog or hermes_run_budget_seconds %}
 agent:
 {% if hermes_run_budget_seconds %}
   run_budget_seconds: {{ hermes_run_budget_seconds }}
 {% endif %}
-  # Per-model thinking level; keyed by model name, so it applies only to
-  # the local model and leaves every other provider on its default.
+{% if hermes_ollama_catalog %}
+  # Per-model thinking level, keyed by model name, so it applies only to
+  # the local models and leaves every other provider on its default.
+  #
+  # Declared for every catalog entry rather than only the active one:
+  # gemma4 does not terminate with reasoning enabled, so it must carry
+  # "none" the moment it becomes selectable in the dashboard -- not
+  # only once someone remembers to redeploy after switching to it.
   reasoning_overrides:
-    "{{ hermes_ollama_model }}": "{{ hermes_ollama_reasoning_effort }}"
+{% for m in hermes_ollama_catalog %}
+    "{{ m.name }}": "{{ m.reasoning_effort }}"
+{% endfor %}
+{% endif %}
 {% endif %}
 
 discord:

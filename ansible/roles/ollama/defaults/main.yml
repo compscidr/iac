@@ -32,6 +32,11 @@ ollama_models:
   - "qwen3-coder:30b" # coding, partial offload
   - "hf.co/bartowski/cerebras_Qwen3-Coder-REAP-25B-A3B-GGUF:Q4_K_M" # MoE coder, fits in VRAM
   - "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS" # MoE general, fits in VRAM
+  # Second hermes-capable model, kept alongside the Qwen one so both can
+  # be selected from the hermes dashboard without a redeploy. Dense 12B,
+  # so raw tok/s is lower, but it emits far fewer tokens per agent turn
+  # and measured faster end-to-end (0.3s vs 0.7s median on tool turns).
+  - "gemma4:12b" # 256K-capable, see the -256k variant below
 
 # Custom Modelfile variants created locally via `ollama create`.
 # Each entry generates a new tag from `base` with the supplied PARAMETER
@@ -75,6 +80,21 @@ ollama_modelfiles:
   # hermes_ollama_context_window in roles/hermes MUST match this number.
   # Those two disagreeing is what caused the stuck sessions fixed in
   # ae9f514c -- hermes worked from a window 4x larger than it had.
+  # Gemma 4 at its full native window. Measured at 13.5GB resident and
+  # 100% on GPU -- its 256K footprint is essentially the same as its
+  # 128K one (13.5 vs 13.6GB), because sliding-window attention caps the
+  # KV cache instead of growing it with context. That is what makes a
+  # window the 35B cannot reach affordable here.
+  #
+  # WARNING: this model must be run with reasoning DISABLED. With
+  # reasoning on it does not terminate -- 19,906 characters of thinking
+  # against an 8000-token budget, still finish=length, no answer -- and
+  # "low"/"medium"/"high" are all identical to leaving it unset. Only
+  # an explicit "none" works. See hermes_ollama_catalog in roles/hermes.
+  - name: "gemma4:12b-256k"
+    base: "gemma4:12b"
+    parameters:
+      num_ctx: 262144
   - name: "qwen3.5:35b-a3b-128k"
     base: "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"
     parameters:

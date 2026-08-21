@@ -66,7 +66,17 @@ hermes_discord_free_response_channels: ""   # channels needing no @-mention
 #
 # Keyed by model name, so this applies to the local model only; a
 # frontier model added later keeps its own default.
-hermes_ollama_reasoning_effort: "low"
+#
+# NOTE: measured against ollama directly (both the native API and /v1,
+# which is the interface hermes uses), qwen3.5-a3b returns an IDENTICAL
+# 3771 characters of reasoning at "low", "medium", "high" and unset --
+# the graded levels are not honoured for this model. Only "none"
+# changes anything, which is consistent with the observation above that
+# `none` behaved differently while low and medium looked the same.
+# Keep "low" (it is harmless and correct if a future ollama honours
+# it), but do not expect it to be shortening anything today.
+#
+# Per-model values now live in hermes_ollama_catalog below.
 # Context management. The local model has a 64K window, and a long
 # agent session fills it: a ~25k base prompt plus accumulated tool
 # output reached n_tokens=65535 (the hard ceiling) after ~56 tool turns.
@@ -115,7 +125,44 @@ hermes_ollama_reasoning_effort: "low"
 # The 64K ceiling was a VRAM constraint, not a model limit; the base
 # supports 262144 natively.
 hermes_ollama_provider_id: "ollama-beast"
-hermes_ollama_context_window: 131072
+
+# Local model catalog. EVERY entry is rendered into model_overrides and
+# reasoning_overrides, so all of them are fully configured and ready to
+# use; hermes_ollama_model below picks which one is active. Switch
+# between them from the hermes dashboard without a redeploy, or change
+# hermes_ollama_model and re-run the play to change the default.
+#
+# One entry per model, holding BOTH its window and its reasoning
+# setting, because those two drifting apart is the ae9f514c bug class:
+# a context_window that disagrees with the ollama modelfile's num_ctx
+# makes every ratio-based compaction calculation wrong.
+#
+# context_window MUST match the num_ctx of the matching entry in
+# roles/ollama/defaults/main.yml (ollama_modelfiles).
+hermes_ollama_catalog:
+  # Incumbent. 16.7GB of weights at 3.1 bits/weight, 18.1GB resident at
+  # 128K, 100% on GPU. Clean across every behavioural test: 6/6 tool
+  # use, 0/9 unnecessary tool calls, 0/10 duplicate calls, 8/8 recall.
+  # Median 0.7s per agent turn.
+  - name: "qwen3.5:35b-a3b-128k"
+    context_window: 131072
+    reasoning_effort: "low"
+
+  # Alternative. Dense 12B but only 7.6GB of weights, 13.5GB resident
+  # at 256K, 100% on GPU -- double the window of the incumbent. Equally
+  # clean behaviourally (6/6, 0/9, 0/10, 8/8) and measured FASTER per
+  # agent turn (0.3s vs 0.7s median) despite lower raw tok/s, because
+  # it emits ~21 tokens per turn against the Qwen model's ~100.
+  #
+  # reasoning_effort MUST be "none". This is not a preference: with
+  # reasoning enabled this model never terminates -- 19,906 characters
+  # of thinking against an 8000-token budget, still finish=length, no
+  # answer -- and "low"/"medium"/"high" are all identical to unset.
+  # Verified over /v1 that "none" yields 0 reasoning characters,
+  # finish=stop, and a correct answer.
+  - name: "gemma4:12b-256k"
+    context_window: 262144
+    reasoning_effort: "none"
 # Tool output is what actually fills the window. Measured on a stuck
 # session: tool messages were 110 of 286 but ~38,020 of ~46,100
 # conversation tokens — 83%. The upstream defaults are sized for large
