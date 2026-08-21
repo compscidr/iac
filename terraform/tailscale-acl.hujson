@@ -1,0 +1,95 @@
+// Example/default ACLs for unrestricted connections.
+{
+	// Declare static groups of users. Use autogroups for all users or users with a specific role.
+	// "groups": {
+	//      "group:example": ["alice@example.com", "bob@example.com"],
+	// },
+
+	// Define the tags which can be applied to devices and by which users.
+	// "tagOwners": {
+	//      "tag:example": ["autogroup:admin"],
+	// },
+	"tagOwners": {
+		"tag:agent": ["ernstjason1@gmail.com"],
+	},
+
+	// Define grants that govern access for users, groups, autogroups, tags,
+	// Tailscale IP addresses, and subnet ranges.
+	"grants": [
+		// Your member devices - full access everywhere including tagged machines
+		{"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
+
+		// Agent (hermes) - Ollama + exo only, on Jason's machines.
+		//
+		// The destination is the *user*, which matches whichever devices
+		// are signed in as him right now. That is deliberate, and the
+		// three alternatives were all tried and rejected during the
+		// 2026-08 hermes cutover:
+		//
+		//   - A hardcoded tailnet IP goes stale and fails SILENTLY.
+		//     Tailscale handed ubuntu-beast a new address after a login
+		//     problem forced a re-auth; this rule still named the old
+		//     one, and every model call the agent made was dropped with
+		//     no error surfaced anywhere.
+		//   - Reading the address from the tailscale_device data source
+		//     fixes staleness only if someone runs `terraform apply`
+		//     after each re-auth. Nobody is going to remember that, and
+		//     the failure is invisible until the agent misbehaves.
+		//   - A tag is stable, but tags are for unattended servers: it
+		//     transfers the device from Jason to the tailnet, costing
+		//     ubuntu-beast the autogroup:member grant above and its
+		//     Tailscale SSH identity. Tagging the workstation cut it off
+		//     from the tailnet entirely until the tag was cleared. Do
+		//     not tag a machine you log in to.
+		//
+		// So the ports carry the security, not the host selector. Those
+		// two ports serve ollama and exo and nothing else; on every
+		// other machine they are simply closed, so the practical
+		// surface is "the model servers" either way. The one thing to
+		// keep in mind: stand up ollama somewhere new and hermes can
+		// reach it automatically — which is the intent for ubuntu-cube,
+		// and worth a thought before running ollama anywhere you would
+		// not want a Discord-driven agent talking to it, since ollama's
+		// API is unauthenticated and can pull or delete models.
+		//
+		// Note a destination can only ever be a tailnet-internal
+		// selector: DNS names (home.jasonernst.com and friends) are
+		// never resolved by the policy file, and tailnet traffic is not
+		// addressed to a device's public IP.
+		//
+		// Both services are HTTP-over-TCP; explicit `tcp:` prefix
+		// avoids any protocol-default ambiguity in the grants syntax.
+		{
+			"src": ["tag:agent"],
+			"dst": ["ernstjason1@gmail.com"],
+			"ip":  ["tcp:11434", "tcp:52415"],
+		},
+	],
+
+	// Define users and devices that can use Tailscale SSH.
+	"ssh": [
+		// Allow all users to SSH into their own devices in check mode.
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot", "root"],
+		},
+		// Allow SSH to tagged machines from members
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:agent"],
+			"users":  ["autogroup:nonroot", "root"],
+		},
+	],
+	"nodeAttrs": [
+		{
+			// Funnel policy, which lets tailnet members control Funnel
+			// for their own devices.
+			// Learn more at https://tailscale.com/kb/1223/tailscale-funnel/
+			"target": ["autogroup:member"],
+			"attr":   ["funnel"],
+		},
+	],
+}
