@@ -51,6 +51,14 @@ fallback_providers:
     model: "{{ hermes_gemini_model }}"
 {% endif %}
 
+{% if hermes_ollama_reasoning_effort %}
+agent:
+  # Per-model thinking level; keyed by model name, so it applies only to
+  # the local model and leaves every other provider on its default.
+  reasoning_overrides:
+    "{{ hermes_ollama_model }}": "{{ hermes_ollama_reasoning_effort }}"
+{% endif %}
+
 discord:
   # Mention required in general; the #hermes-agent channel is in
   # DISCORD_FREE_RESPONSE_CHANNELS (.env) so it needs no mention.
