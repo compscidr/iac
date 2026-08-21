@@ -109,25 +109,26 @@
     - hermes
     - systemd
 
-- name: Ensure user systemd dir exists
+# Hermes writes and owns this unit — it rewrites the file whenever it
+# notices the definition drifting from the current install ("Updated
+# gateway user service definition to match the current Hermes install"),
+# so an Ansible-managed template would be reverted on the next gateway
+# start and the two would take turns overwriting each other. Its own
+# unit is also better than a hand-written one: it runs the venv module
+# directly, sets HERMES_HOME/VIRTUAL_ENV/PATH, and uses hermes's exit
+# code protocol (RestartForceExitStatus=75, RestartPreventExitStatus=78)
+# so a deliberate exit isn't restarted in a loop. It needs no
+# EnvironmentFile either — hermes reads ~/.hermes/.env itself.
+#
+# Idempotent: without --force it leaves an installed unit alone.
+- name: Install the hermes-gateway user unit via hermes
   become: true
   become_user: "{{ hermes_user }}"
-  ansible.builtin.file:
-    path: "/home/{{ hermes_user }}/.config/systemd/user"
-    state: directory
-    mode: "0755"
-  tags:
-    - hermes
-    - systemd
-
-- name: Install hermes-gateway user systemd unit
-  become: true
-  become_user: "{{ hermes_user }}"
-  ansible.builtin.template:
-    src: hermes-gateway.service.j2
-    dest: "/home/{{ hermes_user }}/.config/systemd/user/hermes-gateway.service"
-    mode: "0644"
-  notify: Restart hermes-gateway
+  ansible.builtin.command: "{{ hermes_bin }} gateway install --no-start-now"
+  args:
+    creates: "/home/{{ hermes_user }}/.config/systemd/user/hermes-gateway.service"
+  environment:
+    HOME: "/home/{{ hermes_user }}"
   tags:
     - hermes
     - systemd
