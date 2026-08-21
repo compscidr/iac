@@ -2,7 +2,7 @@
 # Host vars for hermes (the AI agent droplet).
 #
 # Do NOT deploy Jason's personal SSH key here. The bootstrap role
-# defaults `bootstrap_ssh_key_enabled: true`, which drops the private
+# defaults `deploy_ssh_key_enabled` (group_vars/all.yml), which drops the private
 # key from 1Password into ~/.ssh/id_rsa so a host can clone private
 # repos — fine for Jason's own machines, wrong for this one. Hermes
 # runs an agent that takes instructions from Discord, and that key is
@@ -13,4 +13,4 @@
 # key` item in the `hermes` vault), which is authorized only against
 # his GitHub account. Same capability for cloning and pushing his
 # workspace, none of the lateral reach.
-bootstrap_ssh_key_enabled: false
+deploy_ssh_key_enabled: false

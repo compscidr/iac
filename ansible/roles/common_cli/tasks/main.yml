@@ -92,14 +92,31 @@
     mode: "0700"
     state: directory
 
+# Gated by the same fleet-wide policy as the bootstrap role: this play
+# runs against `all`, so without the guard every host in the inventory
+# gets a key authorized across every other host.
 - name: Obtain ssh key
   tags: ssh
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault=onepassword_vault, account_id=onepassword_account_id) }}\n"
+    content: "{{ deploy_ssh_private_key }}\n"
     dest: "~/.ssh/id_rsa"
     mode: "0600"
+  when: deploy_ssh_key_enabled
+  no_log: true
+
+# Converge, don't just stop deploying: hosts provisioned before this
+# policy existed still have the fleet-wide key sitting in ~/.ssh, and
+# leaving it there would make the grant above cosmetic.
+- name: Remove SSH key from hosts not granted one
+  tags: ssh
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "~/.ssh/id_rsa"
+    state: absent
+  when: not deploy_ssh_key_enabled
 
 - name: Ensure GPG directory exists
   tags: gpg
@@ -641,7 +658,9 @@
   become_user: "{{ username }}"
   tags: dotfiles
   ansible.builtin.git:
-    repo: git@github.com:compscidr/dotfiles.git
+    # https, not ssh: the repo is public, and cloning it was the only
+    # reason most hosts needed a private key at all.
+    repo: https://github.com/compscidr/dotfiles.git
     dest: ~/dotfiles
     # Pinned commit adds claude stow package, bashrc.local sourcing
     version: 307db45cc5ad7f54d98289df08cec0dbdb4b1961

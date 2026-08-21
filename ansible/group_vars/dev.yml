@@ -11,3 +11,7 @@ fnm_configure_shell: false
 
 # rustup: don't modify shell configs (managed by dotfiles repo)
 rustup_configure_shell: false
+
+# Workstations get Jason's own key — these are his machines, and the
+# fleet-wide authorization is the point here rather than a hazard.
+deploy_ssh_key_enabled: true
