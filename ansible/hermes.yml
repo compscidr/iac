@@ -82,6 +82,16 @@
                 field='private key',
                 vault=hermes_op_vault,
                 service_account_token=hermes_op_service_account_token) }}
+    # Kai's own tooling credentials. The SA token is the same one the
+    # lookups above authenticate with — handing it to kai gives him the
+    # same reach into his own vault that this play has.
+    hermes_op_token_for_agent: "{{ hermes_op_service_account_token }}"
+    hermes_github_token: >-
+      {{ lookup('community.general.onepassword',
+                'GH cli',
+                field='credential',
+                vault=hermes_op_vault,
+                service_account_token=hermes_op_service_account_token) }}
     # Dashboard login — see roles/hermes/defaults/main.yml. The
     # plaintext password is in the same 1P item, for you to log in with.
     hermes_dashboard_username: >-

@@ -245,3 +245,174 @@
     - tailscale
     - dashboard
     - molecule-notest
+
+# --- Kai's own CLI tooling: GitHub and 1Password ---------------------
+
+- name: Install apt repository prereqs
+  become: true
+  ansible.builtin.apt:
+    name:
+      - python3-debian
+      - gnupg
+    state: present
+    update_cache: true
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Fetch GitHub CLI signing key
+  become: true
+  ansible.builtin.get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    mode: "0644"
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Add GitHub CLI repository
+  become: true
+  ansible.builtin.deb822_repository:
+    name: github-cli
+    state: present
+    types: [deb]
+    uris: https://cli.github.com/packages
+    suites: [stable]
+    components: [main]
+    architectures: [amd64]
+    signed_by: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    enabled: true
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Fetch 1Password signing key
+  become: true
+  ansible.builtin.get_url:
+    url: https://downloads.1password.com/linux/keys/1password.asc
+    dest: /usr/share/keyrings/1password.asc
+    mode: "0644"
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Add 1Password CLI repository
+  become: true
+  ansible.builtin.deb822_repository:
+    name: 1password
+    state: present
+    types: [deb]
+    uris: https://downloads.1password.com/linux/debian/amd64
+    suites: [stable]
+    components: [main]
+    architectures: [amd64]
+    signed_by: /usr/share/keyrings/1password.asc
+    enabled: true
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+# 1Password ships its packages with debsig signatures and apt refuses
+# them without a matching policy installed. Their published key id is
+# the directory name; it is not a secret.
+- name: Create 1Password debsig directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /etc/debsig/policies/AC2D62742012EA22
+    - /usr/share/debsig/keyrings/AC2D62742012EA22
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Install 1Password debsig policy
+  become: true
+  ansible.builtin.get_url:
+    url: https://downloads.1password.com/linux/debian/debsig/1password.pol
+    dest: /etc/debsig/policies/AC2D62742012EA22/1password.pol
+    mode: "0644"
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Install 1Password debsig keyring
+  become: true
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sS https://downloads.1password.com/linux/keys/1password.asc |
+      gpg --dearmor --yes --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
+  args:
+    creates: /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
+    executable: /bin/bash
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+- name: Install gh and op
+  become: true
+  ansible.builtin.apt:
+    name:
+      - gh
+      - 1password-cli
+    state: present
+    update_cache: true
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli]
+
+# Kai's credentials reach his tools through the gateway's environment,
+# which every command he runs inherits. Two deliberate choices here:
+#
+#   - A systemd *drop-in*, not the unit file. Hermes rewrites
+#     hermes-gateway.service whenever it thinks the definition drifted,
+#     which would silently drop an EnvironmentFile added there. It does
+#     not touch the .d directory.
+#   - GH_TOKEN rather than `gh auth login`. gh reads the env var
+#     directly, so there is no auth state on disk to go stale and
+#     nothing to make idempotent.
+- name: Deploy kai's credential environment
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.template:
+    src: agent-secrets.env.j2
+    dest: "{{ hermes_config_dir }}/agent-secrets.env"
+    mode: "0600"
+  when: hermes_agent_cli_enabled
+  no_log: true
+  notify: Restart hermes-gateway
+  tags: [hermes, cli, secrets]
+
+- name: Ensure gateway drop-in directory exists
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ hermes_user }}/.config/systemd/user/hermes-gateway.service.d"
+    state: directory
+    mode: "0755"
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli, systemd]
+
+- name: Load kai's credentials into the gateway environment
+  become: true
+  become_user: "{{ hermes_user }}"
+  ansible.builtin.copy:
+    content: |
+      # {{ ansible_managed }}
+      # A drop-in survives hermes rewriting its own unit file.
+      # The leading "-" makes the file optional: these credentials are
+      # for kai's tools, and Discord does not depend on them, so a
+      # missing file should not take him offline.
+      [Service]
+      EnvironmentFile=-{{ hermes_config_dir }}/agent-secrets.env
+    dest: "/home/{{ hermes_user }}/.config/systemd/user/hermes-gateway.service.d/10-agent-secrets.conf"
+    mode: "0644"
+  when: hermes_agent_cli_enabled
+  notify: Restart hermes-gateway
+  tags: [hermes, cli, systemd]
+
+- name: Set kai's git identity
+  become: true
+  become_user: "{{ hermes_user }}"
+  community.general.git_config:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    scope: global
+  loop:
+    - {name: user.name, value: "{{ hermes_git_user_name }}"}
+    - {name: user.email, value: "{{ hermes_git_user_email }}"}
+  when: hermes_agent_cli_enabled
+  tags: [hermes, cli, git]
