@@ -94,3 +94,18 @@ hermes_dashboard_host: "hermes.tail21090.ts.net"
 hermes_dashboard_username: ""
 hermes_dashboard_password_hash: ""
 hermes_dashboard_session_secret: ""
+
+# Kai's own tooling. `gh` and `op` let him work with his GitHub account
+# and read his own credentials out of 1Password, rather than needing a
+# human to paste secrets into a chat window.
+#
+# The service-account token is the sensitive part: it opens the whole
+# `hermes` vault. That vault holds only kai's own credentials (his
+# GitHub, his mail account, moltbook), which is the containment — a
+# prompt-injected agent can reach kai's things and nothing of Jason's.
+# Keep it that way when adding items.
+hermes_agent_cli_enabled: true
+hermes_op_token_for_agent: ""
+hermes_github_token: ""
+hermes_git_user_name: "Kai"
+hermes_git_user_email: "kai@jasonernst.com"
