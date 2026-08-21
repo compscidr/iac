@@ -54,3 +54,12 @@ ollama_modelfiles:
 
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true # If true, only allow Tailscale IPs
+
+# Attention/KV-cache tuning. A 64K-context model spends real VRAM on its
+# KV cache, and ollama silently spills layers to the CPU when the total
+# doesn't fit — hermes's default model landed at 17GB against the 5080's
+# 16GB and ran 22% on CPU. Flash attention plus a q8_0 KV cache roughly
+# halves that cache, which is usually enough to keep the whole model on
+# the GPU. Set ollama_flash_attention to false to go back to f16 KV.
+ollama_flash_attention: true
+ollama_kv_cache_type: "q8_0"

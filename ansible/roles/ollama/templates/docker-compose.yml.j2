@@ -25,6 +25,13 @@ services:
 {% if ollama_num_gpu != -1 %}
       - OLLAMA_NUM_GPU={{ ollama_num_gpu }}
 {% endif %}
+{% if ollama_flash_attention %}
+      # Flash attention + a quantized KV cache shrink the per-token
+      # attention memory, which is what decides whether a long-context
+      # model fits in VRAM or gets partially pushed onto the CPU.
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE={{ ollama_kv_cache_type }}
+{% endif %}
       # Allow large models to use system RAM for layer offloading
       # With 128GB RAM, 70B+ models run well with partial GPU acceleration
 {% if ollama_tailscale_only %}
