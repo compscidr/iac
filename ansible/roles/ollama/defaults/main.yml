@@ -22,7 +22,8 @@ ollama_num_gpu: -1 # -1 = auto (Ollama decides), 0 = CPU only, N = specific laye
 ollama_data_path: "/var/lib/ollama"
 
 # Models to pull on deployment (empty list = none)
-# Current set reflects what runs on ubuntu-beast (RTX 5080, 16GB VRAM).
+# Current set reflects what runs on ubuntu-beast, which is now an
+# RTX 5080 (16.3GB) plus an RTX 3080 (10GB) = 26.5GB of VRAM.
 # The MoE variants (*-A3B-*) are the sweet spot: large total params for
 # quality, 3B active params for responsiveness.
 ollama_models:
@@ -44,22 +45,50 @@ ollama_modelfiles:
     base: "qwen2.5:14b"
     parameters:
       num_ctx: 32768
-  # 64K-context variant for Hermes Agent (hermes requires >=64K ctx
-  # from local models). MoE base: 3B active params keeps it responsive
-  # even with the large KV cache spilling to RAM.
-  - name: "qwen3.5:35b-a3b-64k"
+  # Long-context variant for Hermes Agent (hermes requires >=64K ctx
+  # from local models). MoE base: 3B active params keeps it responsive.
+  #
+  # Was 64K, sized for a single 16.3GB card that the 16.7GB of weights
+  # did not even fit -- ~22% of the model ran on the CPU. With the 3080
+  # added there is room for both the whole model and a much larger
+  # window, so this doubles to 128K.
+  #
+  # Measured on the two-card box (IQ3_XXS weights + q8_0 KV, flash
+  # attention on), loading each variant and reading size_vram back:
+  #
+  #    ctx    KV cache   resident   on GPU
+  #    64K      680 MiB    17.3 GB    100%
+  #   128K     1360 MiB    18.1 GB    100%   <- here
+  #   256K     2720 MiB    20.1 GB     95%   <- spills one layer
+  #
+  # Context is unusually cheap on this model because the MoE carries KV
+  # on only 10 of its 42 layers; weights dominate the footprint.
+  #
+  # 256K is NOT capacity-limited -- llama.cpp's fit heuristic pushed a
+  # single layer to the CPU while the 3080 still had 4.4GB free. If a
+  # larger window is wanted later, try OLLAMA_SCHED_SPREAD=1 before
+  # concluding it does not fit.
+  #
+  # ponytail: 128K chosen because it is the largest window measured at
+  # 100% GPU with no tuning. Revisit with SCHED_SPREAD for 256K.
+  #
+  # hermes_ollama_context_window in roles/hermes MUST match this number.
+  # Those two disagreeing is what caused the stuck sessions fixed in
+  # ae9f514c -- hermes worked from a window 4x larger than it had.
+  - name: "qwen3.5:35b-a3b-128k"
     base: "hf.co/bartowski/Qwen_Qwen3.5-35B-A3B-GGUF:IQ3_XXS"
     parameters:
-      num_ctx: 65536
+      num_ctx: 131072
 
 # Tailscale access control (when behind Tailscale)
 ollama_tailscale_only: true # If true, only allow Tailscale IPs
 
-# Attention/KV-cache tuning. A 64K-context model spends real VRAM on its
-# KV cache, and ollama silently spills layers to the CPU when the total
-# doesn't fit — hermes's default model landed at 17GB against the 5080's
-# 16GB and ran 22% on CPU. Flash attention plus a q8_0 KV cache roughly
-# halves that cache, which is usually enough to keep the whole model on
-# the GPU. Set ollama_flash_attention to false to go back to f16 KV.
+# Attention/KV-cache tuning. A long-context model spends real VRAM on
+# its KV cache, and ollama silently spills layers to the CPU when the
+# total doesn't fit — on the single 5080, hermes's model landed at 17GB
+# against 16GB of card and ran 22% on CPU. Flash attention plus a q8_0
+# KV cache roughly halves that cache. Still worth keeping with two
+# cards: it is what makes the 128K window above cost only 1360 MiB.
+# Set ollama_flash_attention to false to go back to f16 KV.
 ollama_flash_attention: true
 ollama_kv_cache_type: "q8_0"
