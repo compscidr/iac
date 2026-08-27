@@ -5,6 +5,13 @@ on:
     - cron: '0 9 * * 1'  # Weekly on Monday 9am UTC
   workflow_dispatch:
 
+# Minimum the GITHUB_TOKEN fallback needs for create-pull-request
+# (https://github.com/peter-evans/create-pull-request#action-inputs);
+# also scopes the token down when WORKFLOW_PAT is in use.
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   check-telegram:
     runs-on: ubuntu-latest
@@ -21,8 +28,7 @@ jobs:
           # rate limit on Actions runners.
           LATEST=$(curl -sf -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/repos/telegramdesktop/tdesktop/releases/latest" | \
-            grep -oE '"tag_name": *"v[0-9]+\.[0-9]+\.[0-9]+"' | \
-            head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+            jq -r '.tag_name' | grep -oE '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//')
 
           # Current pin from our ansible file
           CURRENT=$(grep -oE 'tsetup\.[0-9]+\.[0-9]+\.[0-9]+\.tar\.xz' \
