@@ -1,0 +1,35 @@
+---
+# rustd.xyz render agents - one container per host in the rustd_render_agents
+# inventory group (compscidr/rustd.xyz#530 spec B; this repo's #535).
+#
+# Each host runs ONE agent under ONE token of its own. The panel names the agent at
+# mint time (cube, beast); the token is looked up per host from a 1Password item
+# named after the inventory host: rustd-render-agent-ubuntu-cube,
+# rustd-render-agent-ubuntu-beast, ... (field: credential). A lookup for a missing
+# item is a hard failure, not an empty string, so mint and store the token before
+# adding a host to the group.
+#
+# Adding beast is an inventory change, not a copy of anything: mint a token for it in
+# the panel, store it under rustd-render-agent-ubuntu-beast, and uncomment the host in
+# inventory.yml's rustd_render_agents group.
+#
+# Order of operations for first light (rustd.xyz spec B §13):
+#   1. this playbook, against a panel whose queue is still off - the agent registers,
+#      heartbeats and shows as online on the panel's settings page;
+#   2. flip rustd_xyz_mapgen_enabled in roles/rustd_xyz and re-run projects.yml
+#      --tags rustd - only after the agent has rendered once for real.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml rustd_render_agents.yml --ask-become-pass
+#   ansible-playbook -i inventory.yml rustd_render_agents.yml --limit ubuntu-cube.local --ask-become-pass
+- name: Deploy rustd.xyz render agents
+  hosts: rustd_render_agents
+  vars_files:
+    - vars/user.yml
+  vars:
+    rustd_render_agent_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_render_agent_token: "{{ lookup('community.general.onepassword', 'rustd-render-agent-' ~ inventory_hostname_short, field='credential',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+  roles:
+    - rustd_render_agent

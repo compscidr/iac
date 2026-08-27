@@ -26,6 +26,13 @@ rustd_xyz_db_password: "" # from projects.yml (1Password item rustd-db)
 # see compscidr/rustd.xyz#455. From projects.yml (1Password item maxmind-geolite2).
 rustd_xyz_geoip_license_key: ""
 
+# Map render queue (compscidr/rustd.xyz#530). The LAST switch in spec B's rollout:
+# flip to true only after a render agent (rustd_render_agents.yml) has rendered a
+# map for real against this panel. Until then the queue stays dormant exactly as
+# it has been since the panel's #529. The droplet never generates either way -
+# see the RUSTD_MAPGEN_* comment in tasks/main.yml.
+rustd_xyz_mapgen_enabled: false
+
 # SMTP for account claim / notification mail
 rustd_xyz_smtp_host: "mail.rustd.xyz"
 rustd_xyz_smtp_port: 465

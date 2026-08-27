@@ -1,0 +1,55 @@
+---
+# Deploy one rustd.xyz render agent container on this host.
+
+- name: Require a registration token
+  ansible.builtin.assert:
+    that:
+      - rustd_render_agent_token | length > 0
+    fail_msg: >-
+      rustd_render_agent_token is empty: mint one in the panel's settings page
+      (Render agents card) and store it in 1Password as
+      rustd-render-agent-{{ inventory_hostname_short }} (field: credential).
+    quiet: true
+
+- name: Log in to GHCR
+  become: true
+  community.docker.docker_login:
+    registry: ghcr.io
+    username: "{{ rustd_render_agent_ghcr_user }}"
+    password: "{{ rustd_render_agent_ghcr_token }}"
+  when: rustd_render_agent_ghcr_token | length > 0
+  no_log: true
+
+- name: Create the render agent data volume
+  become: true
+  community.docker.docker_volume:
+    name: "{{ rustd_render_agent_volume }}"
+
+# No `recreate: true`, unlike the panel: docker_container already recreates the
+# container when the pulled image differs from the running one, and a run that
+# changes nothing must not restart an agent ten minutes into a render. (A restart
+# is still safe when it happens - SIGTERM makes the agent release its job back to
+# the queue with the attempt refunded, well inside docker's 10 s grace - it is
+# just wasted work.) No memory limit on purpose: a generation peaks around 5 GB
+# and the design says nothing below 8 GB. No ports: the agent dials out and the
+# scratch RustDedicated binds localhost inside the container.
+- name: Deploy the render agent
+  become: true
+  no_log: true # the token
+  community.docker.docker_container:
+    name: "{{ rustd_render_agent_container_name }}"
+    image: "{{ rustd_render_agent_image }}"
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "{{ rustd_render_agent_volume }}:/data"
+    # Required keys on the RIGHT of combine, so they win: extra_env adds, it
+    # never overrides the URL or the token (those have their own variables).
+    env: >-
+      {{
+        rustd_render_agent_extra_env | combine({
+          'RUSTD_PANEL_URL': rustd_render_agent_panel_url,
+          'RUSTD_AGENT_TOKEN': rustd_render_agent_token,
+        })
+      }}

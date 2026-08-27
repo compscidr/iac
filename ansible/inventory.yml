@@ -51,6 +51,13 @@ sair:
   hosts:
     ubuntu-cube.local:
     ubuntu-silverstone.local:
+# rustd.xyz map render agents (rustd_render_agents.yml). One token per host - see
+# the playbook header before adding one. beast participates sometimes: opt it in
+# here once its token exists in 1Password as rustd-render-agent-ubuntu-beast.
+rustd_render_agents:
+  hosts:
+    ubuntu-cube.local:
+    # ubuntu-beast.local:
 tailscale:
   hosts:
     www:
