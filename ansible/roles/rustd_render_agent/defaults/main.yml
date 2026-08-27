@@ -1,0 +1,51 @@
+---
+# rustd.xyz render agent (compscidr/rustd.xyz#530 spec B, this repo's #535).
+#
+# The panel's map-render queue lives on the projects droplet, but a generation is
+# ~5 GB RSS and ~10 minutes of RustDedicated on top of a 5.6 GB steamcmd install -
+# it does not fit an s-2vcpu-4gb shared with postgres and nginx-proxy. So renders
+# run here, on hardware we own: one agent container per host that REGISTERS with
+# the panel and DIALS OUT over HTTPS to claim queued renders and post the finished
+# ~1 MB PNG back. Nothing listens, nothing is published, no port-forward, no
+# tailnet dependency, no SSH credential for this host stored in the panel.
+#
+# The image is built from the same commit as the panel by the panel repo's
+# publish workflow, and carries its own steamcmd and its own $HOME under /data.
+# That is deliberate: it must NOT share /opt/steamcmd or ~/Steam with
+# rust-test.service (see #535 - two steamcmd invocations fighting over one
+# appcache is the failure mode).
+
+rustd_render_agent_image: "ghcr.io/compscidr/rustd-render-agent:latest" # pin :sha-<sha> to roll back
+rustd_render_agent_container_name: rustd-render-agent
+# The only mount: the 5.6 GB game install, the .map cache and steamcmd's state.
+# A fresh volume inherits /data's ownership (uid 1001) from the image, so it is
+# writable by the unprivileged runtime user - do not mount it anywhere else.
+rustd_render_agent_volume: rustd-render-agent-data
+
+rustd_render_agent_ghcr_user: "compscidr"
+rustd_render_agent_ghcr_token: "" # gh-actions-runner-pat from the playbook; blank skips the login
+
+# Where the agent dials. The panel it registers with is the one that minted its
+# token, so pointing this at a dev panel with a production token (or vice versa)
+# is a 401, not a cross-wire.
+rustd_render_agent_panel_url: "https://rustd.xyz"
+
+# The bearer token minted in the panel's settings page (super-admin, Render agents
+# card, "add an agent" - shown ONCE). From the playbook via 1Password; the role
+# refuses to run without it.
+#
+# ONE TOKEN PER PROCESS. Two agents sharing a token evict each other on every
+# claim (the panel releases everything the token holds whenever the claiming
+# instance changes), each eviction burns an attempt, and every map they touch
+# ends FAILED without either ever finishing a render. It presents as "all renders
+# fail while both agents look busy". A second host gets a second token.
+rustd_render_agent_token: ""
+
+# Passed through to the container on top of RUSTD_PANEL_URL / RUSTD_AGENT_TOKEN.
+# The image already sets every other RUSTD_AGENT_* variable to a working default;
+# the ones worth overriding are RUSTD_AGENT_POLL_INTERVAL (15s) and
+# RUSTD_AGENT_UPDATE_INTERVAL (6h). RUSTD_AGENT_SERVER_PORT / RUSTD_AGENT_RCON_PORT
+# (28099 / 28100) are the scratch RustDedicated's localhost binds INSIDE the
+# container's own network namespace, so they cannot collide with anything on the
+# host - rust-test.service, the rust-build container, or a second agent.
+rustd_render_agent_extra_env: {}
