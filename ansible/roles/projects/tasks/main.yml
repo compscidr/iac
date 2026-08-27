@@ -47,6 +47,20 @@
     owner: root
     group: root
     mode: "644"
+  notify: Reload nginx-proxy
+
+# nginx only re-reads conf.d on a reload, and nginx-proxy's docker-gen reloads it only when
+# the config it GENERATES changes - a new or edited file here needs the handler.
+- name: Deploy nginx request body limit (render-agent uploads are ~1 MB, nginx's default 1m)
+  tags: nginx
+  become: true
+  ansible.builtin.copy:
+    src: nginx-client-max-body-size.conf
+    dest: /etc/nginx/conf.d/client-max-body-size.conf
+    owner: root
+    group: root
+    mode: "644"
+  notify: Reload nginx-proxy
 
 - name: Create nginx-proxy network
   tags: [nginx, network]
