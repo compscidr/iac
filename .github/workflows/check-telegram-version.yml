@@ -1,0 +1,72 @@
+name: Check Telegram Version
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday 9am UTC
+  workflow_dispatch:
+
+jobs:
+  check-telegram:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Get versions
+        id: versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Latest stable release tag from GitHub (releases/latest excludes
+          # pre-releases). Authenticated to avoid the shared unauthenticated
+          # rate limit on Actions runners.
+          LATEST=$(curl -sf -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/telegramdesktop/tdesktop/releases/latest" | \
+            grep -oE '"tag_name": *"v[0-9]+\.[0-9]+\.[0-9]+"' | \
+            head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+
+          # Current pin from our ansible file
+          CURRENT=$(grep -oE 'tsetup\.[0-9]+\.[0-9]+\.[0-9]+\.tar\.xz' \
+            ansible/roles/common_gui/tasks/main.yml | \
+            head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+
+          # Telegram prunes old tarballs from updates.tdesktop.com without
+          # notice, and the CDN can lag a GitHub release. Only propose a
+          # version whose tarball actually resolves, so the auto-PR can't
+          # itself 404 in Molecule.
+          AVAILABLE=false
+          if [ -n "$LATEST" ]; then
+            URL="https://updates.tdesktop.com/tlinux/tsetup.${LATEST}.tar.xz"
+            STATUS=$(curl -sI -o /dev/null -w '%{http_code}' "$URL")
+            echo "Tarball check: $URL -> HTTP $STATUS"
+            [ "$STATUS" = "200" ] && AVAILABLE=true
+          fi
+
+          echo "latest=$LATEST" >> $GITHUB_OUTPUT
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "available=$AVAILABLE" >> $GITHUB_OUTPUT
+          echo "Latest: $LATEST, Current: $CURRENT, Tarball available: $AVAILABLE"
+
+      - name: Update version
+        if: steps.versions.outputs.latest != steps.versions.outputs.current && steps.versions.outputs.available == 'true'
+        run: |
+          OLD="${{ steps.versions.outputs.current }}"
+          NEW="${{ steps.versions.outputs.latest }}"
+          sed -i "s|tsetup\.${OLD}\.tar\.xz|tsetup.${NEW}.tar.xz|g" ansible/roles/common_gui/tasks/main.yml
+          echo "Updated Telegram from $OLD to $NEW"
+
+      - name: Create Pull Request
+        if: steps.versions.outputs.latest != steps.versions.outputs.current && steps.versions.outputs.available == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          # See check-slack-version.yml: a repo-scoped PAT in WORKFLOW_PAT
+          # lets the auto-PR trigger verify.yml; GITHUB_TOKEN is the fallback.
+          token: ${{ secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
+          title: "chore(deps): update Telegram to ${{ steps.versions.outputs.latest }}"
+          body: |
+            Updates Telegram Desktop from ${{ steps.versions.outputs.current }} to ${{ steps.versions.outputs.latest }}.
+
+            Source: [tdesktop releases](https://github.com/telegramdesktop/tdesktop/releases/latest)
+            Tarball: https://updates.tdesktop.com/tlinux/tsetup.${{ steps.versions.outputs.latest }}.tar.xz
+          branch: auto-update-telegram-${{ steps.versions.outputs.latest }}
+          commit-message: "chore(deps): update Telegram to ${{ steps.versions.outputs.latest }}"
+          labels: dependencies
