@@ -275,11 +275,24 @@
   changed_when: false
   when: ansible_os_family == "Debian"
 
+# "No NetworkManager" is true on every server, cloud droplets included - the
+# opt-out in common_cli_manage_network is what keeps this block off hosts whose
+# addresses are static and cloud-init-managed. See defaults/main.yml.
 - name: Set fact for using systemd-networkd (Ubuntu/Debian)
   tags: network-tools
   ansible.builtin.set_fact:
-    common_cli_use_systemd_networkd: "{{ common_cli_networkmanager_check.rc != 0 }}"
+    common_cli_use_systemd_networkd: "{{ common_cli_manage_network | bool and common_cli_networkmanager_check.rc != 0 }}"
   when: ansible_os_family == "Debian"
+
+- name: Undo the headless network block on hosts that opted out (Ubuntu/Debian)
+  tags: network-tools
+  ansible.builtin.include_tasks:
+    file: cloud_network_restore.yml
+    apply:
+      tags: network-tools
+  when:
+    - ansible_os_family == "Debian"
+    - not (common_cli_manage_network | bool)
 
 - name: Check if cloud-init is installed (Ubuntu/Debian headless)
   become: true

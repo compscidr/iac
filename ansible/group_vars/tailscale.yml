@@ -1,0 +1,10 @@
+---
+# The tailscale group is the cloud droplets (www, projects, hermes).
+#
+# Their addresses are static, written by cloud-init from DigitalOcean's metadata
+# ConfigDrive - there is no DHCP. common_cli's headless-network block (DHCP via
+# systemd-networkd, cloud-init network config disabled, netplan generator
+# disabled) is for the LAN hosts behind the home router; applied here it leaves
+# a droplet with only a link-local address after its next reboot. That is what
+# took projects offline on 2026-08-27. See roles/common_cli/defaults/main.yml.
+common_cli_manage_network: false
