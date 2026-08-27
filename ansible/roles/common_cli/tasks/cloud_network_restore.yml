@@ -1,0 +1,68 @@
+---
+# Reverse what the "Ubuntu/Debian headless" block in main.yml did to a host that
+# has since opted out with common_cli_manage_network: false (the cloud droplets).
+# Runs every time so a host that was armed by an earlier run is disarmed by the
+# next one; every task here is a no-op on a host that was never touched.
+#
+# Why each item matters on a DigitalOcean droplet (see defaults/main.yml):
+#   - 99-disable-network-config.cfg stops cloud-init rendering the static
+#     addresses from the ConfigDrive into /etc/netplan/50-cloud-init.yaml at boot.
+#   - The netplan systemd generator is what turns that yaml into networkd units
+#     at boot; the block renames it out of the way.
+#   - 20-wired.network asks for DHCP on eth*, which DigitalOcean does not offer.
+#
+# Left alone on purpose: the wpa_supplicant masks and the masked
+# systemd-networkd-wait-online - neither touches addressing on a droplet.
+
+- name: Re-enable cloud-init network configuration
+  become: true
+  ansible.builtin.file:
+    path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    state: absent
+
+- name: Restore the netplan systemd generator
+  become: true
+  ansible.builtin.command:
+    cmd: mv /usr/lib/systemd/system-generators/netplan.disabled /usr/lib/systemd/system-generators/netplan
+    removes: /usr/lib/systemd/system-generators/netplan.disabled
+    creates: /usr/lib/systemd/system-generators/netplan
+
+- name: Check for the cloud-init rendered netplan config
+  ansible.builtin.stat:
+    path: /etc/netplan/50-cloud-init.yaml
+  register: common_cli_cloud_netplan
+
+- name: Check whether this host is cloud-init managed
+  ansible.builtin.stat:
+    path: /var/lib/cloud/instance
+  register: common_cli_cloud_instance
+
+# An earlier run deleted the yaml. Now that cloud-init may render again, the next
+# boot regenerates it - but the host is running on kernel state alone until
+# then, and there is nothing for `netplan generate` to work from now. Stop here
+# rather than pull the DHCP config out from under a host with no replacement.
+- name: Refuse to continue on a cloud host whose netplan config is missing
+  ansible.builtin.fail:
+    msg: >-
+      /etc/netplan/50-cloud-init.yaml is missing on a cloud-init managed host.
+      The addresses on eth0 will not survive a reboot. Restore it before
+      re-running: mount the ConfigDrive (mount -o ro /dev/vdb /mnt) and render
+      it with `cloud-init devel net-convert -p /mnt/openstack/latest/network_data.json
+      -k network_data.json -d /tmp/np -D ubuntu -O netplan`, then install
+      /tmp/np/etc/netplan/50-cloud-init.yaml with mode 0600 and run
+      `netplan generate && networkctl reload`.
+  when:
+    - common_cli_cloud_instance.stat.exists
+    - not common_cli_cloud_netplan.stat.exists
+
+- name: Remove the DHCP networkd configs the headless block deployed
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/network/{{ item }}"
+    state: absent
+  loop:
+    - 20-wired.network
+    - 25-wireless.network
+  notify:
+    - Generate netplan
+    - Reload systemd-networkd

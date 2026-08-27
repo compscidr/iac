@@ -17,6 +17,22 @@
     msg: "Warning: Failed to restart systemd-networkd: {{ common_cli_restart_networkd_result.msg | default('Unknown error') }}"
   when: common_cli_restart_networkd_result is failed
 
+# Used by cloud_network_restore.yml. Turn the netplan yaml back into networkd
+# units and hand them to the running daemon without restarting it - a restart
+# on a live droplet is what we are avoiding; reload keeps the identical static
+# addresses in place.
+- name: Generate netplan
+  become: true
+  ansible.builtin.command:
+    cmd: netplan generate
+  changed_when: true
+
+- name: Reload systemd-networkd
+  become: true
+  ansible.builtin.command:
+    cmd: networkctl reload
+  changed_when: true
+
 - name: Reload systemd
   become: true
   ansible.builtin.systemd:
