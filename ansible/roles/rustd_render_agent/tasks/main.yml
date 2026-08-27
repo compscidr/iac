@@ -44,10 +44,12 @@
     restart_policy: unless-stopped
     volumes:
       - "{{ rustd_render_agent_volume }}:/data"
+    # Required keys on the RIGHT of combine, so they win: extra_env adds, it
+    # never overrides the URL or the token (those have their own variables).
     env: >-
       {{
-        {
+        rustd_render_agent_extra_env | combine({
           'RUSTD_PANEL_URL': rustd_render_agent_panel_url,
           'RUSTD_AGENT_TOKEN': rustd_render_agent_token,
-        } | combine(rustd_render_agent_extra_env)
+        })
       }}

@@ -48,4 +48,6 @@ rustd_render_agent_token: ""
 # (28099 / 28100) are the scratch RustDedicated's localhost binds INSIDE the
 # container's own network namespace, so they cannot collide with anything on the
 # host - rust-test.service, the rust-build container, or a second agent.
+# RUSTD_PANEL_URL and RUSTD_AGENT_TOKEN set here are ignored: the two variables
+# above always win.
 rustd_render_agent_extra_env: {}
