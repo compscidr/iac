@@ -22,6 +22,9 @@
 # Usage:
 #   ansible-playbook -i inventory.yml rustd_render_agents.yml --ask-become-pass
 #   ansible-playbook -i inventory.yml rustd_render_agents.yml --limit ubuntu-cube.local --ask-become-pass
+#
+# Works away from home too: when ubuntu-cube.local does not resolve, the play reaches
+# the host as ubuntu-cube over the tailnet (lan_or_tailnet.yml).
 - name: Deploy rustd.xyz render agents
   hosts: rustd_render_agents
   vars_files:

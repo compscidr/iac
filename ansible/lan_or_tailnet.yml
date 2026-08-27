@@ -1,0 +1,42 @@
+---
+# Reach a `.local` host over the tailnet when mDNS cannot resolve it - i.e. when
+# the playbook runs away from home.
+#
+# inventory.yml names LAN hosts by their mDNS name (ubuntu-cube.local) because
+# that works at home even when Tailscale is down. Away from home the opposite is
+# true: mDNS resolves nothing, and the same box is reachable only by its tailnet
+# name (ubuntu-cube, MagicDNS), where Tailscale SSH answers on :22. This probes
+# mDNS ONCE per host from the controller and, on a miss, points ansible_host at
+# the bare name. It costs nothing at home and about 5 s per host away (avahi's
+# resolution timeout) - which is why this is a pre-task and not an ansible_host
+# template in group_vars: a templated connection var is re-evaluated per task,
+# and 5 s x every task is a play that never finishes.
+#
+# Include in pre_tasks of any play targeting `.local` hosts, and set
+# `gather_facts: false` on the play - fact gathering connects BEFORE pre_tasks
+# and would fail on the unresolved name. Gather afterwards if the play needs
+# facts:
+#   - name: ...
+#     hosts: ubuntu-cube.local
+#     gather_facts: false
+#     pre_tasks:
+#       - ansible.builtin.include_tasks: lan_or_tailnet.yml
+#       - ansible.builtin.setup:
+#
+# Hosts not ending in .local are left alone.
+
+- name: Probe mDNS for {{ inventory_hostname }}
+  ansible.builtin.command:
+    cmd: getent ahosts {{ inventory_hostname }}
+  register: lan_or_tailnet_mdns
+  changed_when: false
+  failed_when: false
+  delegate_to: localhost
+  when: inventory_hostname is match('.*\.local$')
+
+- name: Reach {{ inventory_hostname }} over the tailnet instead
+  ansible.builtin.set_fact:
+    ansible_host: "{{ inventory_hostname | regex_replace('\\.local$', '') }}"
+  when:
+    - inventory_hostname is match('.*\.local$')
+    - lan_or_tailnet_mdns.rc != 0
