@@ -75,6 +75,16 @@
     networks:
       - name: nginx-proxy
       - name: rustd-db
+    # The panel reaches game hosts over SSH by their BARE tailnet names (nas, ubuntu-cube),
+    # which only resolve through the tailnet search domain. Docker copies the host's search
+    # list into a container's resolv.conf ONCE, at container start, and never updates it
+    # on a user-defined network - so a container started before tailscaled had configured
+    # DNS (a reboot where tailscaled came up late, 2026-08-27) can never resolve those
+    # names for its whole life, even after tailscaled is fine. Setting the domain here
+    # makes the container's resolver independent of tailscaled's state at start; the
+    # lookup still goes through the host's stub resolver, so it works as soon as tailscaled
+    # is up. That day's weekly wipe aborted at its T-10s seed read for exactly this.
+    dns_search_domains: "{{ rustd_xyz_dns_search_domains }}"
     volumes:
       - "rustd-geoip-data:/app/data"
     env:
