@@ -37,10 +37,12 @@
     path: /var/lib/cloud/instance
   register: common_cli_cloud_instance
 
-# An earlier run deleted the yaml. Now that cloud-init may render again, the next
-# boot regenerates it - but the host is running on kernel state alone until
-# then, and there is nothing for `netplan generate` to work from now. Stop here
-# rather than pull the DHCP config out from under a host with no replacement.
+# An earlier run deleted the yaml, and nothing brings it back on its own: the
+# ConfigDrive datasource only renders network config for a new instance, never
+# on a plain reboot (see defaults/main.yml). The host is running on kernel state
+# alone, there is nothing for `netplan generate` to work from, and the next boot
+# strands it. Stop here rather than pull the DHCP config out from under a host
+# with no replacement; the message carries the recipe.
 - name: Refuse to continue on a cloud host whose netplan config is missing
   ansible.builtin.fail:
     msg: >-

@@ -16,10 +16,14 @@ common_cli_watchtower_notification_url: ""
 #
 # Set to false for cloud instances (group_vars/tailscale.yml). DigitalOcean
 # droplets have NO DHCP: cloud-init writes static addresses from the metadata
-# ConfigDrive into /etc/netplan/50-cloud-init.yaml every boot. With this block
-# applied, that file is deleted and cloud-init told to stop regenerating it, so
-# the host keeps running on its kernel state until the next reboot - then eth0
-# comes up with nothing but a link-local address. That took projects (and
+# ConfigDrive into /etc/netplan/50-cloud-init.yaml - on FIRST boot only. The
+# ConfigDrive datasource re-renders network config on boot-new-instance, not
+# on a plain reboot ("Event Denied: scopes=['network'] EventType=boot" in
+# cloud-init.log), so that file plus the netplan generator are the entire
+# boot-time chain and nothing recreates the file if it goes missing. With this
+# block applied, the file is deleted and the generator disabled, so the host
+# keeps running on its kernel state until the next reboot - then eth0 comes up
+# with nothing but a link-local address. That took projects (and
 # would have taken www and hermes) fully offline on 2026-08-27; recovery was
 # the DigitalOcean recovery console. When false, the role also removes what
 # an earlier run left behind (tasks/cloud_network_restore.yml).
