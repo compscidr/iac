@@ -221,7 +221,7 @@
   tags: telegram
   become: true
   ansible.builtin.unarchive:
-    src: https://updates.tdesktop.com/tlinux/tsetup.6.2.3.tar.xz
+    src: https://updates.tdesktop.com/tlinux/tsetup.7.1.3.tar.xz
     dest: /opt/
     remote_src: true
   when: ansible_os_family == "Debian"
