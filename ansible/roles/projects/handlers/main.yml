@@ -1,10 +1,26 @@
 ---
-# `nginx -s reload` inside the running proxy: picks up conf.d changes without dropping the
-# TLS listeners the way a container restart would. Skipped silently if the proxy is not
-# running yet (first deploy: the container task below the config tasks starts it fresh).
-- name: Reload nginx-proxy
+# Reload the running proxy so it re-reads conf.d, without dropping the TLS listeners the
+# way a container restart would. Two tasks on one `listen`: the reload is skipped only when
+# the proxy is not running (a tag-limited run that never reached the container task), and
+# otherwise a failed reload FAILS the play - `nginx -t` first, so a broken conf.d file is
+# reported here rather than silently left unapplied while the old config keeps serving.
+- name: Look up the nginx-proxy container
+  listen: Reload nginx-proxy
+  become: true
+  community.docker.docker_container_info:
+    name: nginx-proxy
+  register: projects_nginx_proxy
+
+- name: Test and reload nginx-proxy's config
+  listen: Reload nginx-proxy
   become: true
   community.docker.docker_container_exec:
     container: nginx-proxy
-    command: nginx -s reload
-  failed_when: false
+    argv:
+      - sh
+      - -c
+      - nginx -t && nginx -s reload
+  register: projects_nginx_reload
+  failed_when: projects_nginx_reload.rc != 0
+  changed_when: true
+  when: projects_nginx_proxy.exists and projects_nginx_proxy.container.State.Running
