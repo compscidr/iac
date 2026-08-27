@@ -96,12 +96,12 @@
       # player countries at all and (before rustd.xyz#464) said nothing about why.
       RUSTD_GEOIP_LICENSE_KEY: "{{ rustd_xyz_geoip_license_key }}"
       # Map rendering (compscidr/rustd.xyz#530 spec B). ENABLED turns the render
-      # queue on; WORKER_LOOP=false says THIS host never generates - it has no
-      # steamcmd, and a generation is ~5 GB RSS on a 4 GB droplet. Every render is
-      # claimed by an agent on our own hardware instead (rustd_render_agents.yml).
-      # WORKER_LOOP is pinned false regardless of the flag so a future default
-      # change in the panel can never start steamcmd here.
-      RUSTD_MAPGEN_ENABLED: "{{ rustd_xyz_mapgen_enabled | bool | string | lower }}"
+      # queue on - always, not a variable: there is no deployment of this panel
+      # that wants its maps unrendered. WORKER_LOOP=false says THIS host never
+      # generates - it has no steamcmd, and a generation is ~5 GB RSS on a 4 GB
+      # droplet. Every render is claimed by an agent on our own hardware instead
+      # (rustd_render_agents.yml); with no agent online the queue just waits.
+      RUSTD_MAPGEN_ENABLED: "true"
       RUSTD_MAPGEN_WORKER_LOOP: "false"
       VIRTUAL_HOST: "{{ rustd_xyz_domain }}"
       VIRTUAL_PORT: "{{ rustd_xyz_port | string }}"

@@ -13,11 +13,9 @@
 # the panel, store it under rustd-render-agent-ubuntu-beast, and uncomment the host in
 # inventory.yml's rustd_render_agents group.
 #
-# Order of operations for first light (rustd.xyz spec B §13):
-#   1. this playbook, against a panel whose queue is still off - the agent registers,
-#      heartbeats and shows as online on the panel's settings page;
-#   2. flip rustd_xyz_mapgen_enabled in roles/rustd_xyz and re-run projects.yml
-#      --tags rustd - only after the agent has rendered once for real.
+# The panel's queue is always on (roles/rustd_xyz pins RUSTD_MAPGEN_ENABLED=true),
+# so an agent starts claiming as soon as it is online - there is no switch to throw
+# on the panel side. With no agent online the queue simply waits.
 #
 # Usage:
 #   ansible-playbook -i inventory.yml rustd_render_agents.yml --ask-become-pass
