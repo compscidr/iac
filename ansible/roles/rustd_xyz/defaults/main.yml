@@ -10,6 +10,13 @@ rustd_xyz_letsencrypt_email: "ernstjason1@gmail.com"
 rustd_xyz_ghcr_token: ""
 rustd_xyz_ghcr_user: "compscidr"
 
+# Search domains baked into the panel container's resolver - see the comment on the
+# panel task in tasks/main.yml. The tailnet's MagicDNS suffix, so the bare host names
+# the panel's SSH credentials use (nas, ubuntu-cube) resolve regardless of whether
+# tailscaled was up when the container started.
+rustd_xyz_dns_search_domains:
+  - tail21090.ts.net
+
 # Base directory on the droplet (config/backups live under here)
 rustd_xyz_base_path: "/opt/rustd"
 
