@@ -25,12 +25,17 @@
 #
 # Hosts not ending in .local are left alone.
 
+# check_mode: false - the command module is SKIPPED under --check, which would skip the
+# probe, skip the fallback, and make a --check run fail on the unresolved name while the
+# real run works. The probe is a read-only lookup on the controller; running it in check
+# mode changes nothing.
 - name: Probe mDNS for {{ inventory_hostname }}
   ansible.builtin.command:
     cmd: getent ahosts {{ inventory_hostname }}
   register: lan_or_tailnet_mdns
   changed_when: false
   failed_when: false
+  check_mode: false
   delegate_to: localhost
   when: inventory_hostname is match('.*\.local$')
 
