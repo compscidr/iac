@@ -1,0 +1,80 @@
+---
+# Deliberately no `become:` anywhere in this role, unlike cs2_game and rust_game.
+# nas.local has no passwordless sudo, but nothing here needs root: the data directory
+# is owned by `jason` already and that account is in the docker group, so the whole
+# role runs unprivileged. Adding a become here would mean --ask-become-pass for a
+# minecraft-only run that has no use for it.
+# Split into stat-then-create rather than a plain `file: state: directory` so that an
+# EXISTING directory is left completely alone. The one on nas.local is 0777 with UGOS
+# ACLs on top, like everything else under @home, and a declared mode here would reset
+# it on every run — a permission change to the live save nobody asked for. The create
+# branch only ever runs on a host that has no world yet, where 0755 is right and
+# letting Docker create the bind-mount source instead would leave it owned by root,
+# which the server (running as 999:999) could not write to.
+- name: Check whether the minecraft data directory exists
+  tags: minecraft
+  ansible.builtin.stat:
+    path: "{{ minecraft_game_data_dir }}"
+  register: minecraft_game_data_stat
+
+- name: Create the minecraft data directory
+  tags: minecraft
+  when: not minecraft_game_data_stat.stat.exists
+  ansible.builtin.file:
+    path: "{{ minecraft_game_data_dir }}"
+    state: directory
+    mode: "0755"
+
+# The image writes server.properties from the environment on every start (its default
+# OVERRIDE_SERVER_PROPERTIES behaviour), for the properties it is given and only those.
+# So each setting below is one this role owns and will re-assert; anything absent here
+# — the world's seed, view distance, the pre-existing rcon and management secrets —
+# is left as the running server last wrote it.
+- name: Deploy the minecraft java server
+  tags: minecraft
+  community.docker.docker_container:
+    name: minecraft
+    image: itzg/minecraft-server
+    pull: true
+    volumes:
+      - "{{ minecraft_game_data_dir }}:/data"
+    ports:
+      # Java Edition is TCP-only; there is no UDP counterpart to publish. This is the
+      # single port to forward on the router.
+      - "{{ minecraft_game_port }}:25565/tcp"
+      # RCON is bound to loopback ON PURPOSE and must stay that way. It is a remote
+      # console with full server authority behind one password, so publishing it on
+      # 0.0.0.0 like the game port would put an admin shell on the public internet the
+      # moment 25565 is forwarded. Reach it with `docker exec minecraft rcon-cli`.
+      - "127.0.0.1:{{ minecraft_game_rcon_port }}:25575/tcp"
+    env:
+      EULA: "TRUE"
+      TYPE: "VANILLA"
+      VERSION: "{{ minecraft_game_version }}"
+      LEVEL: "{{ minecraft_game_level }}"
+      # Numbers and booleans are quoted because docker_container rejects non-string
+      # environment values outright.
+      UID: "{{ minecraft_game_uid }}"
+      GID: "{{ minecraft_game_gid }}"
+      MEMORY: "{{ minecraft_game_memory }}"
+      GAMEMODE: "survival"
+      DIFFICULTY: "normal"
+      MAX_PLAYERS: "20"
+      MOTD: "California | Java | Survival"
+      # Authenticates players against Mojang. Keep on: with it off, anyone can connect
+      # under any name, including the names in the whitelist below.
+      ONLINE_MODE: "true"
+      WHITELIST: "{{ minecraft_game_whitelist | join(',') }}"
+      ENFORCE_WHITELIST: "true"
+      # Makes this role the source of truth for whitelist.json rather than merging into
+      # whatever is on disk — so removing a name here actually removes their access.
+      OVERRIDE_WHITELIST: "true"
+      OPS: "{{ minecraft_game_ops | join(',') }}"
+      ENABLE_RCON: "true"
+      # The estate's shared game-server rcon secret. Same item cs2_game uses for
+      # CS2_RCONPW: one credential for the game servers on this host, and no new
+      # 1Password item that has to exist before a first run can succeed.
+      RCON_PASSWORD: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}"
+    restart_policy: unless-stopped
+    memory: "{{ minecraft_game_container_memory }}"
