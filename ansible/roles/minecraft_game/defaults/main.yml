@@ -72,6 +72,10 @@ minecraft_game_whitelist:
   - Benjamin_Jones
   - pinkpony1919
   - poopbag1218
+  # Added 2026-08-31, joined from Jason's network. Added here as well as over RCON on
+  # purpose: OVERRIDE_WHITELIST makes this list authoritative, so a live `whitelist add`
+  # that is not mirrored here gets synchronized away on the next deploy.
+  - nbird53
 
 # ops.json is empty on the host, so nobody could run an in-game command — including the
 # whitelist and kick commands that make a public server manageable.
