@@ -13,6 +13,11 @@
 # else. It also keeps the whole role root-free — see the uid/gid note below.
 minecraft_game_data_dir: /volume1/@home/jason/minecraft
 
+# Named once because the nightly backup script drives the server over RCON
+# (`docker exec <name> rcon-cli`), so the container name is no longer only the
+# docker_container task's business.
+minecraft_game_container_name: minecraft
+
 # Pinned, never `latest`. A world is upgraded irreversibly the first time a newer
 # server opens it, so an unattended image update is a one-way door — the pin makes
 # every upgrade a deliberate, reviewable edit to this line.
@@ -81,3 +86,27 @@ minecraft_game_whitelist:
 # whitelist and kick commands that make a public server manageable.
 minecraft_game_ops:
   - compscidr
+
+# --- Nightly world backup (issue #565) -------------------------------------
+#
+# Where the backup script lands. Under jason's home rather than
+# /usr/local/bin (where rustd_backup_nas puts its freshness check) because
+# that one is a root cron and this one deliberately is not - see the script
+# header for why this pipeline needs no sudo.
+#
+# The destination and retention are NOT here: they live in group_vars/all.yml
+# as minecraft_backup_nas_path/_keep, because the freshness check that watches
+# this directory belongs to the rustd_backup_nas role. Same cross-role
+# coordinate problem the other three pipelines have, same answer.
+minecraft_game_backup_script: /volume1/@home/jason/.local/bin/minecraft-backup.sh
+
+# 04:00 local (the nas runs America/Los_Angeles). Ahead of the 05:30 rustd
+# prune and well ahead of the 08:00 freshness check, which is what lets the
+# existing 26h staleness threshold work unchanged for this pipeline too.
+# The account the nightly job runs AS (root only installs the crontab - see
+# tasks/main.yml). Must be an account that owns the data directory and is in
+# the docker group, since the script drives the server over `docker exec`.
+minecraft_game_backup_user: jason
+
+minecraft_game_backup_hour: "4"
+minecraft_game_backup_minute: "0"

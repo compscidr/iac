@@ -33,7 +33,7 @@
 - name: Deploy the minecraft java server
   tags: minecraft
   community.docker.docker_container:
-    name: minecraft
+    name: "{{ minecraft_game_container_name }}"
     image: itzg/minecraft-server
     pull: true
     volumes:
@@ -90,3 +90,49 @@
         account_id=onepassword_account_id) }}"
     restart_policy: unless-stopped
     memory: "{{ minecraft_game_container_memory }}"
+
+# --- Nightly world backup (issue #565) -------------------------------------
+#
+# No `become:` here either, matching the rest of the role: jason owns the data
+# directory, is in the docker group (so `docker exec ... rcon-cli` works) and
+# can write /volume1/storage/backups, which was verified before this was
+# written. That keeps a `--tags minecraft` run sudo-free on an appliance with
+# no passwordless sudo.
+- name: Create the backup script directory
+  tags: [minecraft, minecraft-backup]
+  ansible.builtin.file:
+    path: "{{ minecraft_game_backup_script | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy the world backup script
+  tags: [minecraft, minecraft-backup]
+  ansible.builtin.template:
+    src: minecraft-backup.sh.j2
+    dest: "{{ minecraft_game_backup_script }}"
+    mode: "0755"
+
+# The one task in this role that needs root, and only to WRITE the crontab:
+# /var/spool/cron/crontabs is root-owned on this appliance, so `crontab` cannot
+# mkstemp there as jason (field failure 2026-08-31 - check mode does not catch
+# it, because it never writes). `user:` keeps the JOB unprivileged, which is
+# the property that actually matters: root installs the entry, jason runs the
+# backup, exactly like the jason crontab rustd_backup_nas already put there.
+#
+# Consequence: deploying this task needs --ask-become-pass (there is no
+# passwordless sudo on the nas). The rest of the role stays sudo-free, and
+# --tags minecraft still deploys the server without it.
+#
+# The freshness check that alerts when these stop appearing is NOT here: it
+# belongs to rustd_backup_nas, which already runs one dead-man's switch for
+# every pipeline on this host, and gained a minecraft entry rather than a
+# second mechanism being built here.
+- name: Back up the world nightly
+  become: true
+  tags: [minecraft, minecraft-backup]
+  ansible.builtin.cron:
+    name: "backup minecraft world"
+    user: "{{ minecraft_game_backup_user }}"
+    minute: "{{ minecraft_game_backup_minute }}"
+    hour: "{{ minecraft_game_backup_hour }}"
+    job: "{{ minecraft_game_backup_script }}"
