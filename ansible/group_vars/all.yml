@@ -69,6 +69,19 @@ jasonernst_com_backup_nas_keep: 30
 mailu_backup_nas_path: /volume1/storage/backups/mailu
 mailu_backup_nas_keep: 30
 
+# Minecraft world backup -> /volume1/storage/backups (issue #565). Here rather
+# than in roles/minecraft_game/defaults/main.yml for the same reason as the
+# three pipelines above: two roles have to agree on these. minecraft_game
+# (nas.yml) writes the snapshots; the freshness check that alerts when they
+# stop arriving belongs to rustd_backup_nas, which owns the one dead-man's
+# switch covering every pipeline on this host.
+#
+# Unlike the three above, both ends run on the nas itself - this is a local
+# snapshot, not a push from a droplet. Same caveat as the others applies: a
+# single-array copy survives a bad delete but not a pool loss.
+minecraft_backup_nas_path: /volume1/storage/backups/minecraft
+minecraft_backup_nas_keep: 30
+
 # SSH private key deployment.
 #
 # Off by default: a host only gets a private key if it is explicitly

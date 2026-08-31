@@ -1,0 +1,75 @@
+#!/bin/bash
+# Managed by ansible (minecraft_game role) - do not edit by hand.
+#
+# Nightly snapshot of the Minecraft world (issue #565). Until this existed the
+# only copy of the save was the live directory itself, plus whatever anyone
+# remembered to take by hand - which is how a routine version bump ended up
+# gated on someone thinking to run tar first.
+#
+# Runs as jason, not root: that account owns the data directory, is in the
+# docker group, and can write the backups tree, so the whole pipeline needs no
+# sudo on an appliance that has no passwordless sudo anyway.
+set -euo pipefail
+
+CONTAINER="{{ minecraft_game_container_name }}"
+DATA="{{ minecraft_game_data_dir }}"
+DEST="{{ minecraft_backup_nas_path }}"
+KEEP="{{ minecraft_backup_nas_keep }}"
+
+mkdir -p "$DEST"
+archive="$DEST/minecraft-$(date +%F).tar.gz"
+tmp="$archive.tmp.$$"
+
+# Write to .tmp and rename only after the archive verifies. A half-written file
+# under the real name would look exactly like a good backup to the freshness
+# check - a broken backup that reports healthy is worse than none.
+cleanup() {
+  rm -f "$tmp"
+  # Re-enable saving no matter how we leave: a script that dies between
+  # save-off and save-on leaves the server silently not persisting anything
+  # until someone notices, and the next crash loses everything since.
+  if [ "$quiesced" = true ]; then
+    docker exec "$CONTAINER" rcon-cli save-on >/dev/null 2>&1 || true
+  fi
+}
+quiesced=false
+trap cleanup EXIT
+
+{% raw %}
+running=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)
+{% endraw %}
+
+if [ "$running" = true ]; then
+  # The server holds chunks in memory and writes them out lazily, so copying a
+  # live world can catch a region file mid-write. save-off stops new writes,
+  # save-all flush blocks until everything on disk is consistent.
+  docker exec "$CONTAINER" rcon-cli save-off >/dev/null
+  docker exec "$CONTAINER" rcon-cli save-all flush >/dev/null
+  quiesced=true
+fi
+
+# The world plus the files that decide who may play. Deliberately NOT the jars,
+# libraries/ or versions/ - ~190MB of the data directory that the image simply
+# re-downloads, and restoring a backup onto a different server version is a
+# thing you might actually want to do.
+items=(world)
+for f in server.properties ops.json whitelist.json banned-ips.json banned-players.json usercache.json; do
+  [ -e "$DATA/$f" ] && items+=("$f")
+done
+tar czf "$tmp" -C "$DATA" "${items[@]}"
+
+# Back to normal service before verifying/pruning - no reason to hold saving off
+# for work that does not touch the world.
+if [ "$quiesced" = true ]; then
+  docker exec "$CONTAINER" rcon-cli save-on >/dev/null
+  quiesced=false
+fi
+
+# Fail loudly rather than keep a corrupt archive. Exiting non-zero leaves no
+# file for today, which the freshness check turns into a discord alert.
+gzip -t "$tmp"
+mv "$tmp" "$archive"
+
+find "$DEST" -maxdepth 1 -type f -name 'minecraft-*.tar.gz' -mtime "+$KEEP" -delete
+# Leftovers from a run that died mid-tar; the trap covers the normal case.
+find "$DEST" -maxdepth 1 -type f -name 'minecraft-*.tar.gz.tmp.*' -mtime +1 -delete

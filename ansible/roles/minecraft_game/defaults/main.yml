@@ -1,0 +1,112 @@
+---
+# The Java Edition Minecraft server on nas.local.
+#
+# This world predates the repo: it was set up by hand in December 2025 with a
+# `docker run` one-liner (/volume1/@home/jason/minecraft.sh) and the container was
+# lost, leaving a 270MB save with no way to bring it back. Everything here exists to
+# start that same world again, from Ansible, without moving or rewriting it.
+
+# The existing data directory, kept exactly where the hand-rolled server left it.
+# Not /volume1/storage/minecraft (which is where cs2_game and media_server put their
+# state) on purpose: relocating means copying a live save whose only copy this is, and
+# @home is on the same /volume1 pool anyway, so the move would buy tidiness and nothing
+# else. It also keeps the whole role root-free — see the uid/gid note below.
+minecraft_game_data_dir: /volume1/@home/jason/minecraft
+
+# Named once because the nightly backup script drives the server over RCON
+# (`docker exec <name> rcon-cli`), so the container name is no longer only the
+# docker_container task's business.
+minecraft_game_container_name: minecraft
+
+# Pinned, never `latest`. A world is upgraded irreversibly the first time a newer
+# server opens it, so an unattended image update is a one-way door — the pin makes
+# every upgrade a deliberate, reviewable edit to this line.
+#
+# 26.2 (2026-06-16), the current release. Note the versioning scheme changed after
+# 1.21.11: Mojang went calendar-style (26.1, 26.1.1, 26.1.2, 26.2), so "26.2" being
+# lower than "1.21.10" by string comparison means nothing — it is five releases newer.
+#
+# Raised from 1.21.10 on 2026-08-31 because clients on the current release could not
+# connect at all: the protocol gap was wide enough that the server could not even
+# encode a disconnect packet the client understood. Bumping this migrated the world
+# through five versions of DataFixerUpper in one step, which is exactly the one-way
+# door above — a verified snapshot was taken first, to
+# /volume1/storage/backups/minecraft/minecraft-pre-26.2-2026-08-31.tar.gz. Take one
+# before the next bump too; see compscidr/iac#565 for automating that.
+minecraft_game_version: "26.2"
+
+# The save inside the data directory. `world` is what server.properties has always
+# said; minecraft.sh passed LEVEL_NAME=world-java, which never took effect — there is
+# no world-java directory. Naming the real one here settles that.
+minecraft_game_level: world
+
+# The account the server runs as, as raw numbers because that is what the image takes.
+# 999:999 is not arbitrary and is not `jason`'s login identity: the save files are owned
+# jason:systemd-journal, which is uid 999 / gid 999, while `id jason` reports gid 10
+# (admin). Letting the image derive the group from the user would leave the server
+# unable to write its own chunks.
+minecraft_game_uid: "999"
+minecraft_game_gid: "999"
+
+# Java Edition speaks TCP on 25565 and nothing else — no UDP, no query port (query is
+# off in server.properties). Deliberately far from the Rust servers sharing this host,
+# which hold 27015-27017 and 28015-28017 on both protocols plus 27082/28082 and
+# 8000/8001; 29015-29017 belongs to the build server on ubuntu-cube.
+minecraft_game_port: 25565
+
+# RCON is published to loopback only (see tasks/main.yml). The port number is still a
+# variable so the binding and the number stay in one place if either ever moves.
+minecraft_game_rcon_port: 25575
+
+# Heap for the JVM; the image applies it to both -Xms and -Xmx. The nas has ~66GB
+# available with Rust running, so this is generous rather than tight, and the container
+# memory cap in tasks/main.yml sits above it to leave room for the JVM's non-heap use.
+minecraft_game_memory: 6G
+minecraft_game_container_memory: 8g
+
+# Who may join. The server is reachable from the internet on the default port with
+# online-mode on, which authenticates players but does not filter them — a public
+# vanilla server gets found and griefed. These are the five accounts in the world's own
+# usercache.json, i.e. everyone who has actually played here.
+#
+# The role owns this list (OVERRIDE_WHITELIST below), so adding a player means adding a
+# name here and re-running, not editing whitelist.json on the host.
+minecraft_game_whitelist:
+  - compscidr
+  - KnightKayden
+  - Benjamin_Jones
+  - pinkpony1919
+  - poopbag1218
+  # Added 2026-08-31, joined from Jason's network. Added here as well as over RCON on
+  # purpose: OVERRIDE_WHITELIST makes this list authoritative, so a live `whitelist add`
+  # that is not mirrored here gets synchronized away on the next deploy.
+  - nbird53
+
+# ops.json is empty on the host, so nobody could run an in-game command — including the
+# whitelist and kick commands that make a public server manageable.
+minecraft_game_ops:
+  - compscidr
+
+# --- Nightly world backup (issue #565) -------------------------------------
+#
+# Where the backup script lands. Under jason's home rather than
+# /usr/local/bin (where rustd_backup_nas puts its freshness check) because
+# that one is a root cron and this one deliberately is not - see the script
+# header for why this pipeline needs no sudo.
+#
+# The destination and retention are NOT here: they live in group_vars/all.yml
+# as minecraft_backup_nas_path/_keep, because the freshness check that watches
+# this directory belongs to the rustd_backup_nas role. Same cross-role
+# coordinate problem the other three pipelines have, same answer.
+minecraft_game_backup_script: /volume1/@home/jason/.local/bin/minecraft-backup.sh
+
+# 04:00 local (the nas runs America/Los_Angeles). Ahead of the 05:30 rustd
+# prune and well ahead of the 08:00 freshness check, which is what lets the
+# existing 26h staleness threshold work unchanged for this pipeline too.
+# The account the nightly job runs AS (root only installs the crontab - see
+# tasks/main.yml). Must be an account that owns the data directory and is in
+# the docker group, since the script drives the server over `docker exec`.
+minecraft_game_backup_user: jason
+
+minecraft_game_backup_hour: "4"
+minecraft_game_backup_minute: "0"

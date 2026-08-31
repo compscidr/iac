@@ -31,6 +31,10 @@
         - weekly
         - monthly
     # - cs2_game
+    # The Java Edition world that used to run from a hand-written `docker run` on this
+    # host (/volume1/@home/jason/minecraft.sh) until its container was lost. Tagged so a
+    # minecraft change can be deployed without going near the Rust servers beside it.
+    - { role: minecraft_game, tags: [minecraft] }
     - dyndns
     - role: rustd_backup_nas
       tags: [rustd, rustd-backup]

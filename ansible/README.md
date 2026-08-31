@@ -32,6 +32,7 @@
 |------|---------|---------|
 | `rust_game` | Rust game servers (weekly, monthly, build) | NAS, ubuntu-cube |
 | `cs2_game` | Counter-Strike 2 server | NAS |
+| `minecraft_game` | Minecraft Java Edition server (whitelisted) | NAS |
 
 ### Server Provisioning Flow
 

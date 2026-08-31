@@ -37,6 +37,12 @@ rustd_backup_nas_freshness_checks:
   - { name: rustd-db, dir: "{{ rustd_xyz_backup_nas_path }}", glob: "rustd-*.dump" }
   - { name: goblog, dir: "{{ jasonernst_com_backup_nas_path }}/db", glob: "goblog-*.db" }
   - { name: mailu, dir: "{{ mailu_backup_nas_path }}/db", glob: "mailu-*.db" }
+  # Not a push from a droplet like the three above - a local snapshot taken on
+  # this host by the minecraft_game role (issue #565). It rides this check
+  # anyway: the failure being watched for is "backups stopped appearing", which
+  # is the same question regardless of where they came from, and one
+  # dead-man's switch beats four.
+  - { name: minecraft, dir: "{{ minecraft_backup_nas_path }}", glob: "minecraft-*.tar.gz" }
 # Pushes run nightly ~04:00-05:00, the check at 08:00: a normal night shows
 # ~3-4h, a single missed night ~28h. 26 catches one missed night on the
 # first morning after.
