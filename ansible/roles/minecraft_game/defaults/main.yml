@@ -14,10 +14,21 @@
 minecraft_game_data_dir: /volume1/@home/jason/minecraft
 
 # Pinned, never `latest`. A world is upgraded irreversibly the first time a newer
-# server opens it, so an unattended image update is a one-way door: 1.21.10 is the
-# version that last wrote this save (and the newer of the two jars sitting in the data
-# directory), and it stays there until someone changes this line deliberately.
-minecraft_game_version: "1.21.10"
+# server opens it, so an unattended image update is a one-way door — the pin makes
+# every upgrade a deliberate, reviewable edit to this line.
+#
+# 26.2 (2026-06-16), the current release. Note the versioning scheme changed after
+# 1.21.11: Mojang went calendar-style (26.1, 26.1.1, 26.1.2, 26.2), so "26.2" being
+# lower than "1.21.10" by string comparison means nothing — it is five releases newer.
+#
+# Raised from 1.21.10 on 2026-08-31 because clients on the current release could not
+# connect at all: the protocol gap was wide enough that the server could not even
+# encode a disconnect packet the client understood. Bumping this migrated the world
+# through five versions of DataFixerUpper in one step, which is exactly the one-way
+# door above — a verified snapshot was taken first, to
+# /volume1/storage/backups/minecraft/minecraft-pre-26.2-2026-08-31.tar.gz. Take one
+# before the next bump too; see compscidr/iac#565 for automating that.
+minecraft_game_version: "26.2"
 
 # The save inside the data directory. `world` is what server.properties has always
 # said; minecraft.sh passed LEVEL_NAME=world-java, which never took effect — there is
