@@ -65,11 +65,23 @@
       # under any name, including the names in the whitelist below.
       ONLINE_MODE: "true"
       WHITELIST: "{{ minecraft_game_whitelist | join(',') }}"
+      # Belt and braces, and the braces matter. The image turns the whitelist on if
+      # ANY of WHITELIST / WHITELIST_FILE / ENABLE_WHITELIST is set (start-setupServerProperties
+      # line 14), so a non-empty list above already implies both properties. Setting this
+      # explicitly makes enablement independent of the list's CONTENTS: empty the list in
+      # defaults/main.yml and this server locks everyone out rather than silently opening a
+      # public survival world to the internet. Fail closed, not open.
+      ENABLE_WHITELIST: "true"
       ENFORCE_WHITELIST: "true"
       # Makes this role the source of truth for whitelist.json rather than merging into
       # whatever is on disk — so removing a name here actually removes their access.
       OVERRIDE_WHITELIST: "true"
       OPS: "{{ minecraft_game_ops | join(',') }}"
+      # The ops counterpart of OVERRIDE_WHITELIST, and needed for the same reason: without
+      # it EXISTING_OPS_FILE stays on the image's merging default (start-setupRbac line 5),
+      # so removing a name from minecraft_game_ops would not actually take their operator
+      # rights away on the host. Deopping someone has to work.
+      OVERRIDE_OPS: "true"
       ENABLE_RCON: "true"
       # The estate's shared game-server rcon secret. Same item cs2_game uses for
       # CS2_RCONPW: one credential for the game servers on this host, and no new
