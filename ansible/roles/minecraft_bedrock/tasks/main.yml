@@ -3,8 +3,27 @@
 # directory and is in the docker group, and /var/spool/cron/crontabs is root-owned on
 # this appliance so only the crontab write needs root - see that role for the field
 # note.
+# Stat-then-create rather than a plain `file: state: directory`, matching
+# minecraft_game. That role adopted this because its directory predates it (0777 with
+# UGOS ACLs, which a declared mode would reset on every run). This one creates its own
+# directory, so today the pattern is a no-op here - verified: the directory is plain
+# 0755 with no ACLs and a re-run reports `ok`.
+#
+# It is still the right shape, for a case that has already happened once on this host:
+# the moment a world directory gets shared through the UGOS file manager it acquires
+# 0777 and inherited ACLs, which is exactly how the Java directory ended up that way.
+# A declared mode would then silently revert that on every deploy. Creating with 0755
+# and never touching an existing directory gives the same result on a fresh host
+# without fighting the appliance on an established one.
+- name: Check whether the bedrock data directory exists
+  tags: [minecraft-bedrock]
+  ansible.builtin.stat:
+    path: "{{ minecraft_bedrock_data_dir }}"
+  register: minecraft_bedrock_data_stat
+
 - name: Create the bedrock data directory
   tags: [minecraft-bedrock]
+  when: not minecraft_bedrock_data_stat.stat.exists
   ansible.builtin.file:
     path: "{{ minecraft_bedrock_data_dir }}"
     state: directory
