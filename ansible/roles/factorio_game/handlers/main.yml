@@ -1,0 +1,14 @@
+---
+# server-settings.json is read once at startup, so a settings change that does not
+# restart the container is a change that has not happened yet.
+#
+# Only `name` and `restart` are given: docker_container does not compare options it
+# was not passed, so this restarts the existing container without any risk of
+# recreating it from a partial definition (no ports, no env). No failed_when here on
+# purpose - a restart that fails means the new settings are not live, and a play that
+# reports success in that state is lying.
+- name: Restart factorio
+  community.docker.docker_container:
+    name: "{{ factorio_game_container_name }}"
+    state: started
+    restart: true

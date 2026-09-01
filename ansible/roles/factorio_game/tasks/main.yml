@@ -1,0 +1,117 @@
+---
+# Same shape as minecraft_game and minecraft_bedrock: no become except the crontab
+# write, which needs root only because /var/spool/cron/crontabs is root-owned on this
+# appliance.
+- name: Check whether the factorio data directory exists
+  tags: [factorio]
+  ansible.builtin.stat:
+    path: "{{ factorio_game_data_dir }}"
+  register: factorio_game_data_stat
+
+# Created 0755 only when absent, never re-declared on an existing directory - see the
+# minecraft_bedrock review (#567) for why a declared mode fights UGOS ACLs once a
+# directory is shared through the appliance's file manager.
+- name: Create the factorio data directory
+  tags: [factorio]
+  when: not factorio_game_data_stat.stat.exists
+  ansible.builtin.file:
+    path: "{{ factorio_game_data_dir }}"
+    state: directory
+    mode: "0755"
+
+# The image creates these itself on first run, but server-settings.json has to be in
+# place BEFORE the server starts or it writes its own default and publishes nothing.
+- name: Check whether the factorio config and saves directories exist
+  tags: [factorio]
+  ansible.builtin.stat:
+    path: "{{ factorio_game_data_dir }}/{{ item }}"
+  loop:
+    - config
+    - saves
+  register: factorio_game_subdir_stat
+
+# Same stat-then-create reasoning as the data directory above, and it matters more
+# here than it looks: saves/ is where a world lands, and once a directory under
+# @home is shared through the UGOS file manager it acquires 0777 and inherited ACLs
+# that a declared mode would silently revert on every deploy.
+- name: Create the factorio config and saves directories
+  tags: [factorio]
+  when: not item.stat.exists
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ factorio_game_subdir_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Deploy the server settings
+  tags: [factorio]
+  # Carries the factorio.com token, which is a durable account credential rather than
+  # a per-server secret: 0600, and no_log so it never reaches the play output.
+  no_log: true
+  ansible.builtin.template:
+    src: server-settings.json.j2
+    dest: "{{ factorio_game_data_dir }}/config/server-settings.json"
+    mode: "0600"
+  vars:
+    factorio_game_username: "{{ lookup('community.general.onepassword', 'factorio', field='username', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    factorio_game_token: "{{ lookup('community.general.onepassword', 'factorio', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  notify: Restart factorio
+
+- name: Deploy the factorio server
+  tags: [factorio]
+  community.docker.docker_container:
+    name: "{{ factorio_game_container_name }}"
+    image: "factoriotools/factorio:{{ factorio_game_image_tag }}"
+    pull: true
+    volumes:
+      - "{{ factorio_game_data_dir }}:/factorio"
+    ports:
+      # UDP for the game - a third protocol/port shape in this estate, distinct from
+      # Minecraft Java's TCP 25565 and Bedrock's UDP 19132.
+      - "{{ factorio_game_port }}:{{ factorio_game_port }}/udp"
+      # Loopback only. See the port note in defaults/main.yml for why this is not 27015.
+      - "127.0.0.1:{{ factorio_game_rcon_port }}:{{ factorio_game_rcon_port }}/tcp"
+    env:
+      PUID: "{{ factorio_game_uid }}"
+      PGID: "{{ factorio_game_gid }}"
+      PORT: "{{ factorio_game_port | string }}"
+      RCON_PORT: "{{ factorio_game_rcon_port | string }}"
+      # The estate's shared game-server rcon secret, same item cs2_game and
+      # minecraft_game use - no new 1Password item needed for a first run.
+      RCON_PASSWORD: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}"
+      # Load the newest save in saves/ rather than a fixed name, so re-seeding from a
+      # newer export is a file copy and not a config change.
+      LOAD_LATEST_SAVE: "true"
+    restart_policy: unless-stopped
+    memory: 6g
+
+- name: Create the backup script directory
+  tags: [factorio]
+  ansible.builtin.file:
+    path: "{{ factorio_game_backup_script | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy the factorio save backup script
+  tags: [factorio]
+  ansible.builtin.template:
+    src: factorio-backup.sh.j2
+    dest: "{{ factorio_game_backup_script }}"
+    mode: "0755"
+
+# 05:00, after both Minecraft backups (04:00 and 04:30) so the three do not tar at
+# once, and still well before the 08:00 freshness check.
+- name: Back up the factorio saves nightly
+  become: true
+  tags: [factorio, factorio-cron]
+  ansible.builtin.cron:
+    name: "backup factorio saves"
+    user: "{{ factorio_game_backup_user }}"
+    minute: "{{ factorio_game_backup_minute }}"
+    hour: "{{ factorio_game_backup_hour }}"
+    job: "{{ factorio_game_backup_script }}"

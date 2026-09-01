@@ -1,0 +1,53 @@
+---
+# Factorio headless server on nas.local.
+#
+# Seeded from Jason's existing Space Age multiplayer save rather than generating a new
+# map - the point of moving it here is that the game stops depending on his laptop
+# being awake and on the right continent.
+
+factorio_game_data_dir: /volume1/@home/jason/factorio
+factorio_game_container_name: factorio
+
+# `stable`, not a pinned version, and for the Bedrock reason rather than the Java one:
+# Factorio multiplayer requires the client and server to run exactly the same version,
+# and Steam updates clients on its own schedule with no way to hold a version back.
+# Pinning here guarantees a lockout the week Wube ships a stable release.
+#
+# Checked before choosing: the tag is currently 2.0.77, the same build the client that
+# made the save is running (2.0.77, build 84539, space-age).
+factorio_game_image_tag: stable
+
+# The image ships the Space Age DLC data (base, core, elevated-rails, quality,
+# space-age) - verified in the image before this role was written, which is what made
+# a 2.7GB upload of Jason's own DLC directories unnecessary. The save needs all three
+# expansion mods, and multiplayer compares mod checksums, so a partial or stripped
+# copy would have desynced every client.
+factorio_game_uid: "999"
+factorio_game_gid: "10"
+
+# Factorio's game protocol is UDP. Verified free on this host.
+factorio_game_port: 34197
+
+# NOT 27015, which is Factorio's own default and is already held by the Rust weekly
+# server on this host (TCP and UDP both) - a stock deploy would have collided on day
+# one. Published to loopback regardless, like the Minecraft servers: RCON is a full
+# admin console and must not follow the game port onto the internet.
+factorio_game_rcon_port: 34198
+
+factorio_game_server_name: "California | Space Age"
+factorio_game_description: "Self hosted in Redwood City CA"
+factorio_game_max_players: 0
+
+# Listed in the in-game multiplayer browser, per Jason's choice. This is what makes
+# the factorio.com credential necessary - the server authenticates to Wube's
+# matchmaking service to publish itself.
+factorio_game_public: true
+# Requires players to be authenticated factorio.com accounts. With a public listing
+# this is the difference between "anyone with the address" and "anyone at all".
+factorio_game_require_user_verification: true
+
+# --- Nightly save backup -----------------------------------------------------
+factorio_game_backup_script: /volume1/@home/jason/.local/bin/factorio-backup.sh
+factorio_game_backup_user: jason
+factorio_game_backup_hour: "5"
+factorio_game_backup_minute: "0"

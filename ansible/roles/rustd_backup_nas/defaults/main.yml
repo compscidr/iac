@@ -44,6 +44,7 @@ rustd_backup_nas_freshness_checks:
   # dead-man's switch beats four.
   - { name: minecraft, dir: "{{ minecraft_backup_nas_path }}", glob: "minecraft-*.tar.gz" }
   - { name: minecraft-bedrock, dir: "{{ minecraft_bedrock_backup_nas_path }}", glob: "minecraft-bedrock-*.tar.gz" }
+  - { name: factorio, dir: "{{ factorio_backup_nas_path }}", glob: "factorio-*.tar.gz" }
 # Pushes run nightly ~04:00-05:00, the check at 08:00: a normal night shows
 # ~3-4h, a single missed night ~28h. 26 catches one missed night on the
 # first morning after.

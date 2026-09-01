@@ -88,6 +88,11 @@ minecraft_backup_nas_keep: 30
 # same directory.
 minecraft_bedrock_backup_nas_path: /volume1/storage/backups/minecraft-bedrock
 minecraft_bedrock_backup_nas_keep: 30
+# Factorio save backup -> /volume1/storage/backups (same pattern as the two
+# Minecraft pipelines above; here for the same cross-role reason - factorio_game
+# writes the snapshots, rustd_backup_nas watches that they keep arriving).
+factorio_backup_nas_path: /volume1/storage/backups/factorio
+factorio_backup_nas_keep: 30
 
 # SSH private key deployment.
 #
