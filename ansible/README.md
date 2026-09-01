@@ -34,6 +34,7 @@
 | `cs2_game` | Counter-Strike 2 server | NAS |
 | `minecraft_game` | Minecraft Java Edition server (whitelisted) | NAS |
 | `minecraft_bedrock` | Minecraft Bedrock Edition server | NAS |
+| `factorio_game` | Factorio headless server (Space Age) | NAS |
 
 ### Server Provisioning Flow
 

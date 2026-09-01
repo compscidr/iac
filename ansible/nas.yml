@@ -39,6 +39,9 @@
     # to the Java one. Its own tag so neither Minecraft server can be restarted by a
     # deploy aimed at the other.
     - { role: minecraft_bedrock, tags: [minecraft-bedrock] }
+    # Factorio (Space Age), seeded from Jason's existing multiplayer save. Its own tag
+    # so it can be deployed without restarting the Minecraft or Rust servers beside it.
+    - { role: factorio_game, tags: [factorio] }
     - dyndns
     - role: rustd_backup_nas
       tags: [rustd, rustd-backup]

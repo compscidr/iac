@@ -1,0 +1,53 @@
+#!/bin/bash
+# Managed by ansible (factorio_game role) - do not edit by hand.
+#
+# Nightly snapshot of the Factorio saves. A third mechanism, and simpler than either
+# Minecraft one, because Factorio's storage model is genuinely different:
+#
+#   A Factorio save is a SELF-CONTAINED ZIP, written to a temporary name and renamed
+#   into place. There is no live-mutating on-disk world to catch mid-write - the way
+#   Minecraft Java's region files or Bedrock's LevelDB are - so a copy needs neither
+#   the RCON quiesce dance nor a container stop. Any complete zip in saves/ is a
+#   consistent point in time by construction.
+#
+# The server also autosaves on its own schedule (autosave_interval in
+# server-settings.json), so the newest zip is never more than that far behind.
+set -euo pipefail
+
+CONTAINER="{{ factorio_game_container_name }}"
+DATA="{{ factorio_game_data_dir }}"
+DEST="{{ factorio_backup_nas_path }}"
+KEEP="{{ factorio_backup_nas_keep }}"
+
+mkdir -p "$DEST"
+archive="$DEST/factorio-$(date +%F).tar.gz"
+tmp="$archive.tmp.$$"
+trap 'rm -f "$tmp"' EXIT
+
+# Ask the running server for a fresh save first, so the snapshot is current rather
+# than up to one autosave interval stale. Best effort on purpose: if the server is
+# down or rcon is unreachable, the existing autosaves are still worth backing up, and
+# failing the whole run over it would be trading a good backup for no backup.
+{% raw %}
+if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = true ]; then
+{% endraw %}
+  docker exec "$CONTAINER" rcon -p "$(cat "$DATA/config/rconpw" 2>/dev/null)" \
+    -a "127.0.0.1:{{ factorio_game_rcon_port }}" "/server-save" >/dev/null 2>&1 || true
+  # Give a non-blocking save time to land before the tar reads the directory. The
+  # zip is renamed into place atomically, so a partial one is never visible; this
+  # only decides whether tonight's archive includes it.
+  sleep 10
+fi
+
+# saves/ is the game; config/ holds server-settings.json and the admin list. mods/ is
+# deliberately excluded - this server runs the DLC that ships inside the image, and
+# nothing here is a downloaded mod that could not be fetched again.
+items=(saves)
+[ -d "$DATA/config" ] && items+=(config)
+tar czf "$tmp" -C "$DATA" "${items[@]}"
+
+gzip -t "$tmp"
+mv "$tmp" "$archive"
+
+find "$DEST" -maxdepth 1 -type f -name 'factorio-*.tar.gz' -mtime "+$KEEP" -delete
+find "$DEST" -maxdepth 1 -type f -name 'factorio-*.tar.gz.tmp.*' -mtime +1 -delete

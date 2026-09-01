@@ -1,0 +1,8 @@
+---
+# server-settings.json is read once at startup, so a settings change that does not
+# restart the container is a change that has not happened yet.
+- name: Restart factorio
+  ansible.builtin.command:
+    cmd: "docker restart {{ factorio_game_container_name }}"
+  changed_when: true
+  failed_when: false
