@@ -6,12 +6,29 @@
     dyndns_container_name: "dyndns"
   when: inventory_hostname == 'nas.local'
 
+# beast publishes `beast`, not `home`. `home` used to mean this workstation, which
+# made home.jasonernst.com resolve to beast over IPv6 while its A record was the
+# household's shared public IPv4 - so anything port-forwarded to the nas answered on
+# that name over IPv4 by coincidence and failed over IPv6. home now points at the nas
+# (a CNAME to nas.jasonernst.com, terraform/jasonernst-com.tf, alongside the ombi/
+# plex/radarr/sonarr ones), which is correct on both stacks.
 - name: Set DynDns configuration for ubuntu-beast.local
   tags: dyndns
   ansible.builtin.set_fact:
-    dyndns_name: "home"
-    dyndns_container_name: "dyndns-home"
+    dyndns_name: "beast"
+    dyndns_container_name: "dyndns-beast"
   when: inventory_hostname == 'ubuntu-beast.local'
+
+# Not tidiness - correctness. The old container is still configured for `home` and
+# re-asserts it every 60 seconds, so leaving it running means it fights the new CNAME
+# and home.jasonernst.com flaps between a CNAME and beast's A/AAAA. Renaming the
+# container above does not remove the old one; this does.
+- name: Remove the superseded home dyndns container
+  tags: dyndns
+  when: inventory_hostname == 'ubuntu-beast.local'
+  community.docker.docker_container:
+    name: "dyndns-home"
+    state: absent
 
 # disabled till we figure out how to deal with multiple NICs flip flopping
 # between ipv6 addresses

@@ -107,6 +107,23 @@ resource "digitalocean_record" "CNAME-sonarr" {
   value  = "nas.jasonernst.com."
 }
 
+# home.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
+#
+# A CNAME rather than a second dyndns container publishing `home` directly: the nas
+# already publishes nas.jasonernst.com, that record is load-bearing (media_server's
+# VIRTUAL_HOST/LETSENCRYPT_HOST and the four CNAMEs above), and one source of truth
+# for the nas' address beats two that can disagree.
+#
+# `home` previously carried A/AAAA published by beast's dyndns container. Those had
+# to be deleted by hand before this CNAME could exist - DNS forbids a CNAME beside
+# A/AAAA at the same name - and beast now publishes `beast` instead.
+resource "digitalocean_record" "CNAME-home" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "home"
+  value  = "nas.jasonernst.com."
+}
+
 # projects.jasonernst.com -> projects droplet
 resource "digitalocean_record" "A-projects" {
   domain = digitalocean_domain.default.name
