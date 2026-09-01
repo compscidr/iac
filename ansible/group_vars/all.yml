@@ -82,6 +82,13 @@ mailu_backup_nas_keep: 30
 minecraft_backup_nas_path: /volume1/storage/backups/minecraft
 minecraft_backup_nas_keep: 30
 
+# The Bedrock world's equivalent (issue #566). A separate directory rather than
+# sharing the Java one so the freshness check can tell the two pipelines apart - a
+# stalled Bedrock backup must not be masked by a healthy Java one sitting in the
+# same directory.
+minecraft_bedrock_backup_nas_path: /volume1/storage/backups/minecraft-bedrock
+minecraft_bedrock_backup_nas_keep: 30
+
 # SSH private key deployment.
 #
 # Off by default: a host only gets a private key if it is explicitly

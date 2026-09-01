@@ -35,6 +35,10 @@
     # host (/volume1/@home/jason/minecraft.sh) until its container was lost. Tagged so a
     # minecraft change can be deployed without going near the Rust servers beside it.
     - { role: minecraft_game, tags: [minecraft] }
+    # Bedrock Edition (issue #566): a second, separate server and world, NOT a bridge
+    # to the Java one. Its own tag so neither Minecraft server can be restarted by a
+    # deploy aimed at the other.
+    - { role: minecraft_bedrock, tags: [minecraft-bedrock] }
     - dyndns
     - role: rustd_backup_nas
       tags: [rustd, rustd-backup]

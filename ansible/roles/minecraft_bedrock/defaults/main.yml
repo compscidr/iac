@@ -1,0 +1,73 @@
+---
+# Bedrock Edition server on nas.local (issue #566).
+#
+# A SECOND, SEPARATE server beside the Java one - not a way for Bedrock clients to
+# reach the Java world. That would need GeyserMC + Floodgate, and Floodgate is a
+# server plugin, so it would mean converting the Java server (TYPE=VANILLA) to Paper.
+# Deliberately out of scope here: this role cannot endanger the rescued Java save,
+# and Paper is its own conversation.
+
+# ITS OWN directory. The abandoned bedrock block in the old hand-written
+# minecraft.sh pointed at /home/jason/minecraft - the JAVA server's data directory.
+# The two editions store worlds in incompatible formats (Java is Anvil under world/,
+# Bedrock is LevelDB under worlds/<name>/db/) and the Bedrock image writes its own
+# dialect of server.properties, so sharing a directory risks clobbering the config of
+# the world we spent #564 rescuing.
+minecraft_bedrock_data_dir: /volume1/@home/jason/minecraft-bedrock
+
+# Likewise its own name; `minecraft` is taken by the Java container.
+minecraft_bedrock_container_name: minecraft-bedrock
+
+# jason's real uid:gid. Note this differs from the Java role's 999:999 - that one
+# matches pre-existing files owned by an odd group (systemd-journal, gid 999). This
+# directory is created fresh by this role as jason, whose primary group is admin
+# (gid 10), so these are simply `id jason`.
+minecraft_bedrock_uid: "999"
+minecraft_bedrock_gid: "10"
+
+# UNPINNED, and that is not an oversight - it is the opposite of the Java role's
+# hard pin, for a reason specific to this edition.
+#
+# Bedrock clients are phones, consoles and tablets that auto-update and offer NO way
+# to select an older version. A pinned Bedrock server therefore locks every player out
+# the moment their device updates itself, with no client-side workaround - exactly the
+# lockout the Java server hit on 2026-08-31, except unfixable from the player's end.
+#
+# The trade is real: LATEST means the world can be upgraded unattended. That is
+# survivable here because this world is backed up nightly from day one (below), which
+# the Java world was not.
+minecraft_bedrock_version: LATEST
+
+# Bedrock is UDP - the opposite of Java's TCP 25565. Verified free on this host before
+# writing; still clear of Rust (27015-27017, 28015-28017) and the cube build server
+# (29015-29017).
+minecraft_bedrock_port: 19132
+
+# Access control is OFF by design (issue #566): Bedrock allow-lists key on Xbox
+# gamertags, which are not the Java usernames and were not to hand. Xbox Live still
+# authenticates players; it just does not restrict which of them may join.
+#
+# To lock it down later: set this true and list gamertags in
+# minecraft_bedrock_allow_list_users, then redeploy. One-line change on purpose.
+minecraft_bedrock_allow_list: false
+minecraft_bedrock_allow_list_users: []
+
+minecraft_bedrock_level_name: bedrock-world
+minecraft_bedrock_server_name: "California | Bedrock"
+minecraft_bedrock_gamemode: survival
+minecraft_bedrock_difficulty: normal
+minecraft_bedrock_max_players: "10"
+minecraft_bedrock_container_memory: 4g
+
+# --- Nightly world backup ---------------------------------------------------
+#
+# Same cadence and destination shape as the Java world's (#565); the destination and
+# retention live in group_vars/all.yml for the same cross-role reason (the freshness
+# check that watches them belongs to rustd_backup_nas).
+#
+# 04:30 rather than 04:00 so the two Minecraft backups do not tar ~500MB at once,
+# and both still land well before the 08:00 freshness check.
+minecraft_bedrock_backup_script: /volume1/@home/jason/.local/bin/minecraft-bedrock-backup.sh
+minecraft_bedrock_backup_user: jason
+minecraft_bedrock_backup_hour: "4"
+minecraft_bedrock_backup_minute: "30"
