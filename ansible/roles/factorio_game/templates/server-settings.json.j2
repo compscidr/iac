@@ -1,15 +1,15 @@
 {
   "_comment": "Managed by ansible (factorio_game role) - do not edit by hand.",
-  "name": "{{ factorio_game_server_name }}",
-  "description": "{{ factorio_game_description }}",
+  "name": {{ factorio_game_server_name | to_json }},
+  "description": {{ factorio_game_description | to_json }},
   "tags": [],
   "max_players": {{ factorio_game_max_players }},
   "visibility": {
     "public": {{ factorio_game_public | string | lower }},
     "lan": true
   },
-  "username": "{{ factorio_game_username }}",
-  "token": "{{ factorio_game_token }}",
+  "username": {{ factorio_game_username | to_json }},
+  "token": {{ factorio_game_token | to_json }},
   "game_password": "",
   "require_user_verification": {{ factorio_game_require_user_verification | string | lower }},
   "max_upload_in_kilobytes_per_second": 0,

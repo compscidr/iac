@@ -21,15 +21,29 @@
 
 # The image creates these itself on first run, but server-settings.json has to be in
 # place BEFORE the server starts or it writes its own default and publishes nothing.
-- name: Create the factorio config and saves directories
+- name: Check whether the factorio config and saves directories exist
   tags: [factorio]
-  ansible.builtin.file:
+  ansible.builtin.stat:
     path: "{{ factorio_game_data_dir }}/{{ item }}"
-    state: directory
-    mode: "0755"
   loop:
     - config
     - saves
+  register: factorio_game_subdir_stat
+
+# Same stat-then-create reasoning as the data directory above, and it matters more
+# here than it looks: saves/ is where a world lands, and once a directory under
+# @home is shared through the UGOS file manager it acquires 0777 and inherited ACLs
+# that a declared mode would silently revert on every deploy.
+- name: Create the factorio config and saves directories
+  tags: [factorio]
+  when: not item.stat.exists
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ factorio_game_subdir_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
 
 - name: Deploy the server settings
   tags: [factorio]

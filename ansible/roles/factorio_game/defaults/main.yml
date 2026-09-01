@@ -9,9 +9,9 @@ factorio_game_data_dir: /volume1/@home/jason/factorio
 factorio_game_container_name: factorio
 
 # `stable`, not a pinned version, and for the Bedrock reason rather than the Java one:
-# Factorio multiplayer requires the client and server to be on the EXACTLY matching
-# version, and Steam updates clients on its own schedule with no way to hold a version
-# back. Pinning here guarantees a lockout the week Wube ships a stable release.
+# Factorio multiplayer requires the client and server to run exactly the same version,
+# and Steam updates clients on its own schedule with no way to hold a version back.
+# Pinning here guarantees a lockout the week Wube ships a stable release.
 #
 # Checked before choosing: the tag is currently 2.0.77, the same build the client that
 # made the save is running (2.0.77, build 84539, space-age).
