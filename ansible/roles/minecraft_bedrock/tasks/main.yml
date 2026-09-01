@@ -1,0 +1,91 @@
+---
+# No `become:` anywhere except the cron, matching minecraft_game. jason owns the data
+# directory and is in the docker group, and /var/spool/cron/crontabs is root-owned on
+# this appliance so only the crontab write needs root - see that role for the field
+# note.
+# Stat-then-create rather than a plain `file: state: directory`, matching
+# minecraft_game. That role adopted this because its directory predates it (0777 with
+# UGOS ACLs, which a declared mode would reset on every run). This one creates its own
+# directory, so today the pattern is a no-op here - verified: the directory is plain
+# 0755 with no ACLs and a re-run reports `ok`.
+#
+# It is still the right shape, for a case that has already happened once on this host:
+# the moment a world directory gets shared through the UGOS file manager it acquires
+# 0777 and inherited ACLs, which is exactly how the Java directory ended up that way.
+# A declared mode would then silently revert that on every deploy. Creating with 0755
+# and never touching an existing directory gives the same result on a fresh host
+# without fighting the appliance on an established one.
+- name: Check whether the bedrock data directory exists
+  tags: [minecraft-bedrock]
+  ansible.builtin.stat:
+    path: "{{ minecraft_bedrock_data_dir }}"
+  register: minecraft_bedrock_data_stat
+
+- name: Create the bedrock data directory
+  tags: [minecraft-bedrock]
+  when: not minecraft_bedrock_data_stat.stat.exists
+  ansible.builtin.file:
+    path: "{{ minecraft_bedrock_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy the bedrock server
+  tags: [minecraft-bedrock]
+  community.docker.docker_container:
+    name: "{{ minecraft_bedrock_container_name }}"
+    image: itzg/minecraft-bedrock-server
+    pull: true
+    volumes:
+      - "{{ minecraft_bedrock_data_dir }}:/data"
+    ports:
+      # UDP, not TCP - Bedrock's protocol is RakNet over UDP. The IPv6 companion
+      # (19133) is left unpublished: nothing here needs it, and an unused published
+      # port is one more thing reachable once the router forwards this one.
+      - "{{ minecraft_bedrock_port }}:19132/udp"
+    env:
+      EULA: "TRUE"
+      VERSION: "{{ minecraft_bedrock_version }}"
+      UID: "{{ minecraft_bedrock_uid }}"
+      GID: "{{ minecraft_bedrock_gid }}"
+      SERVER_NAME: "{{ minecraft_bedrock_server_name }}"
+      LEVEL_NAME: "{{ minecraft_bedrock_level_name }}"
+      GAMEMODE: "{{ minecraft_bedrock_gamemode }}"
+      DIFFICULTY: "{{ minecraft_bedrock_difficulty }}"
+      MAX_PLAYERS: "{{ minecraft_bedrock_max_players }}"
+      # Xbox Live authentication. Keep on even with the allow-list off: it is what
+      # stops players connecting under someone else's gamertag.
+      ONLINE_MODE: "true"
+      ALLOW_LIST: "{{ minecraft_bedrock_allow_list | string | lower }}"
+      ALLOW_LIST_USERS: "{{ minecraft_bedrock_allow_list_users | join(',') }}"
+    restart_policy: unless-stopped
+    memory: "{{ minecraft_bedrock_container_memory }}"
+
+- name: Create the backup script directory
+  tags: [minecraft-bedrock]
+  ansible.builtin.file:
+    path: "{{ minecraft_bedrock_backup_script | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy the bedrock world backup script
+  tags: [minecraft-bedrock]
+  ansible.builtin.template:
+    src: minecraft-bedrock-backup.sh.j2
+    dest: "{{ minecraft_bedrock_backup_script }}"
+    mode: "0755"
+
+# become for the crontab write only; `user:` keeps the job itself unprivileged. Same
+# constraint and same shape as minecraft_game - deploying this task needs
+# --ask-become-pass.
+# Its own extra tag so the sudo-free majority of this role stays deployable on its
+# own: `--tags minecraft-bedrock --skip-tags minecraft-bedrock-cron` brings the server
+# up with no become at all, which is how it was verified before the crontab existed.
+- name: Back up the bedrock world nightly
+  become: true
+  tags: [minecraft-bedrock, minecraft-bedrock-cron]
+  ansible.builtin.cron:
+    name: "backup minecraft bedrock world"
+    user: "{{ minecraft_bedrock_backup_user }}"
+    minute: "{{ minecraft_bedrock_backup_minute }}"
+    hour: "{{ minecraft_bedrock_backup_hour }}"
+    job: "{{ minecraft_bedrock_backup_script }}"

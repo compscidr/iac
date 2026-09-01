@@ -1,0 +1,67 @@
+#!/bin/bash
+# Managed by ansible (minecraft_bedrock role) - do not edit by hand.
+#
+# Nightly snapshot of the Bedrock world. Deliberately a DIFFERENT mechanism from the
+# Java server's (#565), which quiesces over RCON and never stops:
+#
+#   Bedrock has no RCON. The console does offer `save hold` / `save query` /
+#   `save resume`, but doing it correctly means copying each file TRUNCATED to the
+#   byte length `save query` reports - LevelDB is mid-compaction otherwise, and a
+#   plain tar taken during `save hold` is only probably consistent. "Probably" is not
+#   what a backup is for.
+#
+# So this stops the container, tars, and starts it again: provably consistent, at the
+# cost of ~30s of downtime at 04:30 on a server that will be idle. If this world ever
+# gets players who mind, the upgrade path is the save-query protocol, not a longer
+# stop.
+set -euo pipefail
+
+CONTAINER="{{ minecraft_bedrock_container_name }}"
+DATA="{{ minecraft_bedrock_data_dir }}"
+DEST="{{ minecraft_bedrock_backup_nas_path }}"
+KEEP="{{ minecraft_bedrock_backup_nas_keep }}"
+
+mkdir -p "$DEST"
+archive="$DEST/minecraft-bedrock-$(date +%F).tar.gz"
+tmp="$archive.tmp.$$"
+
+was_running=false
+cleanup() {
+  rm -f "$tmp"
+  # Always bring the server back, however we leave. A backup script that exits
+  # early must not be the reason the server is down all morning.
+  if [ "$was_running" = true ]; then
+    docker start "$CONTAINER" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+{% raw %}
+if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = true ]; then
+{% endraw %}
+  was_running=true
+  # -t 60: give the server time to flush LevelDB and exit cleanly. A killed Bedrock
+  # server is exactly the corrupt-world case this backup exists to recover from.
+  docker stop -t 60 "$CONTAINER" >/dev/null
+fi
+
+# worlds/ holds the LevelDB saves; the json files decide who may play. Everything
+# else in /data is the server binary the image re-downloads.
+items=(worlds)
+for f in server.properties permissions.json allowlist.json; do
+  [ -e "$DATA/$f" ] && items+=("$f")
+done
+tar czf "$tmp" -C "$DATA" "${items[@]}"
+
+if [ "$was_running" = true ]; then
+  docker start "$CONTAINER" >/dev/null
+  was_running=false
+fi
+
+# Verify before the archive takes its real name: a half-written file under the real
+# name would look healthy to the freshness check, which is worse than no backup.
+gzip -t "$tmp"
+mv "$tmp" "$archive"
+
+find "$DEST" -maxdepth 1 -type f -name 'minecraft-bedrock-*.tar.gz' -mtime "+$KEEP" -delete
+find "$DEST" -maxdepth 1 -type f -name 'minecraft-bedrock-*.tar.gz.tmp.*' -mtime +1 -delete
