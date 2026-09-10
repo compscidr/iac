@@ -1,6 +1,6 @@
 {
   "extends": [
-    "config:base",
+    "config:recommended",
     "github>compscidr/renovate-config:sair"
   ],
   "automerge": true,
@@ -10,8 +10,8 @@
     {
       "customType": "regex",
       "description": "Track aaddrick/claude-desktop-debian releases for the dev_gui_claude_desktop_tag pin in dev_gui role",
-      "fileMatch": [
-        "^ansible/roles/dev_gui/defaults/main\\.yml$"
+      "managerFilePatterns": [
+        "/^ansible/roles/dev_gui/defaults/main\\.yml$/"
       ],
       "matchStrings": [
         "dev_gui_claude_desktop_tag:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
@@ -23,8 +23,8 @@
     {
       "customType": "regex",
       "description": "Track ansible and ansible-lint pins in the verify workflow",
-      "fileMatch": [
-        "^\\.github/workflows/verify\\.yml$"
+      "managerFilePatterns": [
+        "/^\\.github/workflows/verify\\.yml$/"
       ],
       "matchStrings": [
         "(?<depName>ansible|ansible-lint)==(?<currentValue>[0-9.]+)"
