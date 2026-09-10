@@ -105,6 +105,12 @@
       # Quarkus maps this to rustd.geoip.license-key. Absent, the panel serves no
       # player countries at all and (before rustd.xyz#464) said nothing about why.
       RUSTD_GEOIP_LICENSE_KEY: "{{ rustd_xyz_geoip_license_key }}"
+      # Discord /verify (compscidr/rustd.xyz#463 slice 2). Quarkus maps these to
+      # rustd.discord.application-id / public-key / bot-token. The token is a secret:
+      # the panel never logs or renders it. See defaults/main.yml for the portal step.
+      RUSTD_DISCORD_APPLICATION_ID: "{{ rustd_xyz_discord_application_id }}"
+      RUSTD_DISCORD_PUBLIC_KEY: "{{ rustd_xyz_discord_public_key }}"
+      RUSTD_DISCORD_BOT_TOKEN: "{{ rustd_xyz_discord_bot_token }}"
       # Map rendering (compscidr/rustd.xyz#530 spec B). The panel's render queue is
       # always on - there is no RUSTD_MAPGEN_ENABLED any more (rustd.xyz#555): there
       # is no deployment of this panel that wants its maps unrendered. WORKER_LOOP=false

@@ -46,6 +46,20 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # Discord /verify account linking (compscidr/rustd.xyz#463 slice 2, PR #603): the ONE
+    # Discord application the panel owns. Operators never see these; they invite the bot
+    # from the settings card. A secure note with three fields; like maxmind-geolite2
+    # above, a missing item OR field is a hard failure for the whole play, so the item
+    # must exist for THIS playbook to run at all. To deploy with verification switched
+    # off, keep the item and blank its three fields (the panel treats three empty values
+    # as "off") - do not delete or omit the item. The role's blank defaults only cover
+    # playbooks that never set these vars.
+    rustd_xyz_discord_application_id: "{{ lookup('community.general.onepassword', 'rustd-discord', field='application ID', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_xyz_discord_public_key: "{{ lookup('community.general.onepassword', 'rustd-discord', field='public key', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_xyz_discord_bot_token: "{{ lookup('community.general.onepassword', 'rustd-discord', field='bot token', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
     # nas rsync-daemon auth: jason's actual nas login password (the daemon's
     # "auth users" password on this appliance IS the account password, not
     # a separate secret) - see the `ugnas` item (Infrastructure vault) and
