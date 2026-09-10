@@ -33,6 +33,17 @@ rustd_xyz_db_password: "" # from projects.yml (1Password item rustd-db)
 # see compscidr/rustd.xyz#455. From projects.yml (1Password item maxmind-geolite2).
 rustd_xyz_geoip_license_key: ""
 
+# Discord /verify (compscidr/rustd.xyz#463 slice 2): the panel-wide Discord application -
+# its id, the Ed25519 public key Discord signs interactions with, and the bot token.
+# All three blank means verification is off: the settings card says so and
+# /discord/interactions answers 404. The interactions endpoint URL in the Discord
+# developer portal must be set to https://<domain>/discord/interactions AFTER a panel
+# holding these values is up - Discord validates the URL against the live panel.
+# From projects.yml (1Password item rustd-discord).
+rustd_xyz_discord_application_id: ""
+rustd_xyz_discord_public_key: ""
+rustd_xyz_discord_bot_token: ""
+
 # SMTP for account claim / notification mail
 rustd_xyz_smtp_host: "mail.rustd.xyz"
 rustd_xyz_smtp_port: 465
