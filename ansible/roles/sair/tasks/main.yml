@@ -15,7 +15,9 @@
 - name: Download SAIR install script
   become: true
   ansible.builtin.get_url:
-    url: "https://raw.githubusercontent.com/compscidr/sair/main/install.sh"
+    # Same ref as the release being installed, so a later change to the
+    # installer cannot break re-installing an older pin. Empty pin = main.
+    url: "https://raw.githubusercontent.com/compscidr/sair/{{ sair_version | default('main', true) }}/install.sh"
     dest: /tmp/sair-install.sh
     mode: "0755"
 
