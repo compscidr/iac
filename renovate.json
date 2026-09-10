@@ -31,5 +31,14 @@
       ],
       "datasourceTemplate": "pypi"
     }
+  ],
+  "packageRules": [
+    {
+      "description": "A sair bump is the signal that the host proxy/device-source is behind. Keep the PR open until sair.yml has been run against the host, then merge it by hand.",
+      "matchDepNames": [
+        "compscidr/sair"
+      ],
+      "automerge": false
+    }
   ]
 }
