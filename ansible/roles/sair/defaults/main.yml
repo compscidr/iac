@@ -5,7 +5,7 @@
 # a new sair release shows up as a Renovate PR here (preset
 # github>compscidr/renovate-config:sair); merging it does not deploy anything,
 # re-run sair.yml against the host to upgrade. Empty would mean latest.
-sair_version: "v0.0.20"
+sair_version: "v0.0.21"
 
 # When true, only install the ADB server systemd service (not proxy/device-source).
 # Use this on hosts where CI runs its own local sair stack.
