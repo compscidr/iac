@@ -38,10 +38,14 @@
     volumes:
       - "{{ minecraft_bedrock_data_dir }}:/data"
     ports:
-      # UDP, not TCP - Bedrock's protocol is RakNet over UDP. The IPv6 companion
-      # (19133) is left unpublished: nothing here needs it, and an unused published
-      # port is one more thing reachable once the router forwards this one.
-      - "{{ minecraft_bedrock_port }}:19132/udp"
+      # UDP, not TCP - Bedrock's protocol is RakNet over UDP.
+      - "0.0.0.0:{{ minecraft_bedrock_port }}:19132/udp"
+      # Bedrock opens SEPARATE sockets per address family: 19132 on 0.0.0.0 and
+      # 19133 on [::] (server-portv6). A dual-stack publish of 19132 would DNAT v6
+      # clients to container port 19132, where only the v4 socket lives, so v6 is
+      # mapped host:19132 -> container:19133 explicitly (#570). Clients still use
+      # one port number either way; 19133 is not exposed as its own host port.
+      - "[::]:{{ minecraft_bedrock_port }}:19133/udp"
     env:
       EULA: "TRUE"
       VERSION: "{{ minecraft_bedrock_version }}"

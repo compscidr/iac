@@ -38,9 +38,15 @@
     pull: true
     volumes:
       - "{{ minecraft_game_data_dir }}:/data"
+    # "" = publish on [::] as well as 0.0.0.0. The module's default host IP is
+    # 0.0.0.0 only, which left the server unreachable over IPv6 (#570). The RCON
+    # mapping below names 127.0.0.1 explicitly and is unaffected.
+    default_host_ip: ""
     ports:
       # Java Edition is TCP-only; there is no UDP counterpart to publish. This is the
-      # single port to forward on the router.
+      # single port the router has to let in: an IPv4 port forward, plus an IPv6
+      # inbound firewall allow (no NAT on v6). The server binds [::] inside the
+      # container, so the one mapping serves both address families.
       - "{{ minecraft_game_port }}:25565/tcp"
       # RCON is bound to loopback ON PURPOSE and must stay that way. It is a remote
       # console with full server authority behind one password, so publishing it on
