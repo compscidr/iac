@@ -75,6 +75,9 @@
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
+    # "" = bind [::] as well as 0.0.0.0; the module's default host IP is
+    # 0.0.0.0 only, which left every site unreachable over IPv6 (#591)
+    default_host_ip: ""
     published_ports:
       - "80:80"
       - "443:443"
