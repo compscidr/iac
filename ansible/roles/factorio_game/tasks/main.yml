@@ -61,6 +61,31 @@
       account_id=onepassword_account_id) }}"
   notify: Restart factorio
 
+# An empty whitelist is not "nobody can join" - Factorio only enforces a whitelist
+# with at least one entry, so an empty one is the open server this role exists to
+# close. Fail here rather than deploy it.
+- name: Refuse to deploy an empty whitelist
+  tags: [factorio]
+  ansible.builtin.assert:
+    that: factorio_game_whitelist | length > 0
+    fail_msg: "factorio_game_whitelist is empty, which would open the server to anyone with a factorio.com account"
+    quiet: true
+
+# Both lists are plain JSON arrays of factorio.com usernames. The entrypoint passes
+# --server-whitelist/--use-server-whitelist and --server-adminlist unconditionally,
+# so nothing else has to change for these to take effect - but they are read at
+# startup, hence the restart. Not no_log: nothing secret in a list of usernames.
+- name: Deploy the player whitelist and admin list
+  tags: [factorio]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ factorio_game_data_dir }}/config/{{ item }}"
+    mode: "0644"
+  loop:
+    - server-whitelist.json
+    - server-adminlist.json
+  notify: Restart factorio
+
 - name: Deploy the factorio server
   tags: [factorio]
   community.docker.docker_container:
@@ -88,8 +113,10 @@
       # minecraft_game use - no new 1Password item needed for a first run.
       RCON_PASSWORD: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
         account_id=onepassword_account_id) }}"
-      # Load the newest save in saves/ rather than a fixed name, so re-seeding from a
-      # newer export is a file copy and not a config change.
+      # Load the newest save in saves/ rather than a fixed name, so re-seeding from an
+      # export is a file copy and not a config change. The inverse is also true: an
+      # empty saves/ makes the entrypoint generate a fresh map on start, which is how
+      # the world is reset (move the zips out, deploy). See defaults/main.yml.
       LOAD_LATEST_SAVE: "true"
     restart_policy: unless-stopped
     memory: 6g
