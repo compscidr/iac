@@ -6,6 +6,10 @@
   become: true
   community.docker.docker_network:
     name: nginx-proxy
+    # Docker only publishes container ports on [::] when the network is IPv6-enabled;
+    # without this every site behind the proxy is IPv4-only despite its AAAA record (#591).
+    # Docker >= 27 allocates a ULA /64 itself, so no subnet is pinned here.
+    enable_ipv6: true
     state: present
 
 - name: Create redirect config directories
