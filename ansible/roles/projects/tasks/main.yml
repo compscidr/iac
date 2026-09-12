@@ -67,6 +67,10 @@
   become: true
   community.docker.docker_network:
     name: nginx-proxy
+    # Docker only publishes container ports on [::] when the network is IPv6-enabled;
+    # without this every site behind the proxy is IPv4-only despite its AAAA record (#591).
+    # Docker >= 27 allocates a ULA /64 itself, so no subnet is pinned here.
+    enable_ipv6: true
     state: present
 
 - name: Deploy Nginx Reverse Proxy
@@ -75,6 +79,9 @@
   community.docker.docker_container:
     name: nginx-proxy
     image: jwilder/nginx-proxy
+    # "" = bind [::] as well as 0.0.0.0; the module's default host IP is
+    # 0.0.0.0 only, which left every site unreachable over IPv6 (#591)
+    default_host_ip: ""
     published_ports:
       - "80:80"
       - "443:443"
@@ -88,6 +95,8 @@
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped
+    env:
+      ENABLE_IPV6: "true" # nginx must also listen on [::] inside the container
 
 - name: Deploy LetsEncrypt companion
   tags: letsencrypt

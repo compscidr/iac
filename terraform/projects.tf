@@ -344,6 +344,12 @@ resource "digitalocean_firewall" "projects" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
+  # ICMP - the ping4/ping6 sites' own host should answer ping
+  inbound_rule {
+    protocol         = "icmp"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
   # SAIR orchestrator gRPC (public — customers connect from their infra)
   inbound_rule {
     protocol         = "tcp"
