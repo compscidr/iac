@@ -61,6 +61,16 @@
       account_id=onepassword_account_id) }}"
   notify: Restart factorio
 
+# An empty whitelist is not "nobody can join" - Factorio only enforces a whitelist
+# with at least one entry, so an empty one is the open server this role exists to
+# close. Fail here rather than deploy it.
+- name: Refuse to deploy an empty whitelist
+  tags: [factorio]
+  ansible.builtin.assert:
+    that: factorio_game_whitelist | length > 0
+    fail_msg: "factorio_game_whitelist is empty, which would open the server to anyone with a factorio.com account"
+    quiet: true
+
 # Both lists are plain JSON arrays of factorio.com usernames. The entrypoint passes
 # --server-whitelist/--use-server-whitelist and --server-adminlist unconditionally,
 # so nothing else has to change for these to take effect - but they are read at

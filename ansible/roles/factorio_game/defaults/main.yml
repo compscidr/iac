@@ -53,9 +53,11 @@ factorio_game_public: false
 factorio_game_require_user_verification: true
 
 # The only accounts allowed to connect. Factorio's --use-server-whitelist flag is
-# always passed by the image's entrypoint, and it treats a missing or empty list as
-# "no whitelist", so this list existing is the whole lockdown. Names are factorio.com
-# usernames, case-sensitive.
+# always passed by the image's entrypoint, but the game only enforces a whitelist
+# that has at least one name in it - a missing file or an empty list means anyone
+# verified can join (which is how the strangers got in). So this list being NON-EMPTY
+# is the whole lockdown, and the role refuses to deploy an empty one. Names are
+# factorio.com usernames, case-sensitive.
 #
 # An in-game `/whitelist add <name>` edits the same file on the NAS and works
 # immediately, but the next deploy overwrites it - a durable change goes here.
