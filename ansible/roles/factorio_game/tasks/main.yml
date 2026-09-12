@@ -69,9 +69,13 @@
     pull: true
     volumes:
       - "{{ factorio_game_data_dir }}:/factorio"
+    # "" = publish on [::] as well as 0.0.0.0 (#570); RCON below is pinned to
+    # 127.0.0.1 and unaffected.
+    default_host_ip: ""
     ports:
       # UDP for the game - a third protocol/port shape in this estate, distinct from
-      # Minecraft Java's TCP 25565 and Bedrock's UDP 19132.
+      # Minecraft Java's TCP 25565 and Bedrock's UDP 19132. Factorio binds [::] inside
+      # the container, so the one mapping serves both address families.
       - "{{ factorio_game_port }}:{{ factorio_game_port }}/udp"
       # Loopback only. See the port note in defaults/main.yml for why this is not 27015.
       - "127.0.0.1:{{ factorio_game_rcon_port }}:{{ factorio_game_rcon_port }}/tcp"
