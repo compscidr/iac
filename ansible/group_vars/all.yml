@@ -61,6 +61,16 @@ rustd_xyz_backup_nas_keep: 30
 jasonernst_com_backup_nas_path: /volume1/storage/backups/goblog
 jasonernst_com_backup_nas_keep: 30
 
+# goblog admin pin (goblogplatform/goblog#532). On a fresh database, goblog
+# makes whichever GitHub account logs in first the site admin. Pinning that
+# to this identity means a rebuilt droplet can't be claimed by a stranger
+# who reaches /login before we do. Either value matching is enough; both
+# are set so a GitHub username rename can't lock us out. Shared by
+# www.jasonernst.com, staging, and goblog.live (projects role). Has no
+# effect once an admin row exists.
+goblog_admin_login: compscidr
+goblog_admin_github_id: 23049896
+
 # mailu nightly backup -> nas (issue #479): dkim keys, admin db snapshots,
 # mailboxes, mailu.env from the www droplet. Same pipeline shape and daemon
 # as the two above; here for the same split-playbook reason. Only the db/

@@ -164,6 +164,8 @@
       client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
       client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
         account_id=onepassword_account_id) }}
+      admin_login={{ goblog_admin_login }}
+      admin_github_id={{ goblog_admin_github_id }}
     dest: /opt/goblog/prod/.env
     mode: "644"
     owner: root
@@ -179,6 +181,8 @@
       client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
       client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
         account_id=onepassword_account_id) }}
+      admin_login={{ goblog_admin_login }}
+      admin_github_id={{ goblog_admin_github_id }}
     dest: /opt/goblog/staging/.env
     mode: "644"
     owner: root
