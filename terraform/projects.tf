@@ -314,6 +314,13 @@ resource "digitalocean_record" "rustd-CNAME-www" {
   value  = "@"
 }
 
+resource "digitalocean_record" "rustd-TXT-google" {
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "google-site-verification=peYDuNWMZhlBjpK83cfx_HEMVyFl6Vbo9R5Njm-KJ14"
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
