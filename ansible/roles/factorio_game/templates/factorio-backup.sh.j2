@@ -39,9 +39,9 @@ if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo 
   sleep 10
 fi
 
-# saves/ is the game; config/ holds server-settings.json and the admin list. mods/ is
-# deliberately excluded - this server runs the DLC that ships inside the image, and
-# nothing here is a downloaded mod that could not be fetched again.
+# saves/ is the game; config/ holds server-settings.json and the whitelist and admin
+# lists. mods/ is deliberately excluded - this server runs the DLC that ships inside
+# the image, and nothing here is a downloaded mod that could not be fetched again.
 items=(saves)
 [ -d "$DATA/config" ] && items+=(config)
 tar czf "$tmp" -C "$DATA" "${items[@]}"
