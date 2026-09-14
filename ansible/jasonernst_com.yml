@@ -25,6 +25,16 @@
     # Same credential for the mailu backup pipeline (one daemon on the nas).
     mailu_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # goblog email login: the noreply@jasonernst.com mailu account (created by
+    # the mailu role from the same 1Password item). The item must exist before
+    # this playbook runs - a onepassword lookup for a missing item is a hard
+    # failure, not an empty string.
+    jasonernst_com_smtp_username: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='username', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    jasonernst_com_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    jasonernst_com_smtp_from: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='username', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   roles:
     # www-redirect must run before jasonernst_com so redirect container
     # handles apex domain before app container stops serving it

@@ -32,3 +32,15 @@ jasonernst_com_backup_rsync_password_file: /opt/goblog/.rsync-nas-pass
 # jason's actual nas login password; the daemon's "auth users" password on
 # this appliance IS the account password). no_log'd wherever consumed.
 jasonernst_com_backup_nas_rsync_password: ""
+
+# SMTP for goblog's one-time-code email login (goblogplatform/goblog#523).
+# 465 is Mailu's implicit-TLS submissions port, the same one rustd_xyz and
+# sair_portal use; goblog's mail package speaks implicit TLS on 465 and
+# STARTTLS on anything else. Leaving jasonernst_com_smtp_username/_from empty
+# keeps email login switched off (goblog only enables it when smtp_host and
+# smtp_from are both set). Credentials come from jasonernst_com.yml.
+jasonernst_com_smtp_host: mail.jasonernst.com
+jasonernst_com_smtp_port: 465
+jasonernst_com_smtp_username: ""
+jasonernst_com_smtp_password: ""
+jasonernst_com_smtp_from: ""

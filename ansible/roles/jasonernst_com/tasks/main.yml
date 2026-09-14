@@ -166,6 +166,11 @@
         account_id=onepassword_account_id) }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
+      smtp_host={{ jasonernst_com_smtp_host }}
+      smtp_port={{ jasonernst_com_smtp_port }}
+      smtp_user={{ jasonernst_com_smtp_username }}
+      smtp_password={{ jasonernst_com_smtp_password }}
+      smtp_from={{ jasonernst_com_smtp_from }}
     dest: /opt/goblog/prod/.env
     mode: "644"
     owner: root
@@ -183,6 +188,11 @@
         account_id=onepassword_account_id) }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
+      smtp_host={{ jasonernst_com_smtp_host }}
+      smtp_port={{ jasonernst_com_smtp_port }}
+      smtp_user={{ jasonernst_com_smtp_username }}
+      smtp_password={{ jasonernst_com_smtp_password }}
+      smtp_from={{ jasonernst_com_smtp_from }}
     dest: /opt/goblog/staging/.env
     mode: "644"
     owner: root

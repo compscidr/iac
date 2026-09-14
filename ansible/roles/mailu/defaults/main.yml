@@ -26,6 +26,13 @@ mailu_users:
   - user: kai
     password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure',
       account_id=onepassword_account_id) }}"
+  # Service account www/staging.jasonernst.com (goblog) authenticate as to
+  # send one-time login codes (goblogplatform/goblog#523). Same shape as the
+  # sair.run / rustd.xyz noreply accounts below; credentials must stay in
+  # sync with jasonernst_com_smtp_* (jasonernst_com.yml).
+  - user: noreply
+    password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
 
 # Additional domains hosted on this Mailu instance
 mailu_additional_domains:
