@@ -296,6 +296,13 @@
         type: bind
     networks:
       - name: nginx-proxy
+    # This droplet's own hostname is mail.jasonernst.com, so its /etc/hosts
+    # maps the name to 127.0.1.1 and Docker's DNS hands that to containers -
+    # goblog then dials itself and gets "connection refused". Point the name at
+    # the host instead; Mailu's front publishes 465 on every host address and
+    # the certificate is for the hostname, so TLS still verifies.
+    etc_hosts:
+      "{{ jasonernst_com_smtp_host }}": host-gateway
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "www.jasonernst.com"
@@ -327,6 +334,13 @@
         type: bind
     networks:
       - name: nginx-proxy
+    # This droplet's own hostname is mail.jasonernst.com, so its /etc/hosts
+    # maps the name to 127.0.1.1 and Docker's DNS hands that to containers -
+    # goblog then dials itself and gets "connection refused". Point the name at
+    # the host instead; Mailu's front publishes 465 on every host address and
+    # the certificate is for the hostname, so TLS still verifies.
+    etc_hosts:
+      "{{ jasonernst_com_smtp_host }}": host-gateway
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "staging.jasonernst.com"
