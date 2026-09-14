@@ -300,9 +300,9 @@
     # maps the name to 127.0.1.1 and Docker's DNS hands that to containers -
     # goblog then dials itself and gets "connection refused". Point the name at
     # the host instead; Mailu's front publishes 465 on every host address and
-    # the certificate is for the hostname, so TLS still verifies.
-    etc_hosts:
-      "{{ jasonernst_com_smtp_host }}": host-gateway
+    # the certificate is for the hostname, so TLS still verifies. Only when the
+    # SMTP host *is* this machine: an external relay must resolve normally.
+    etc_hosts: "{{ {jasonernst_com_smtp_host: 'host-gateway'} if jasonernst_com_smtp_host in [ansible_fqdn, ansible_hostname] else omit }}"
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "www.jasonernst.com"
@@ -338,9 +338,9 @@
     # maps the name to 127.0.1.1 and Docker's DNS hands that to containers -
     # goblog then dials itself and gets "connection refused". Point the name at
     # the host instead; Mailu's front publishes 465 on every host address and
-    # the certificate is for the hostname, so TLS still verifies.
-    etc_hosts:
-      "{{ jasonernst_com_smtp_host }}": host-gateway
+    # the certificate is for the hostname, so TLS still verifies. Only when the
+    # SMTP host *is* this machine: an external relay must resolve normally.
+    etc_hosts: "{{ {jasonernst_com_smtp_host: 'host-gateway'} if jasonernst_com_smtp_host in [ansible_fqdn, ansible_hostname] else omit }}"
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "staging.jasonernst.com"
