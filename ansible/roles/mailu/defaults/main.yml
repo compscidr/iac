@@ -26,10 +26,11 @@ mailu_users:
   - user: kai
     password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure',
       account_id=onepassword_account_id) }}"
-  # Service account www/staging.jasonernst.com (goblog) authenticate as to
-  # send one-time login codes (goblogplatform/goblog#523). Same shape as the
-  # sair.run / rustd.xyz noreply accounts below; credentials must stay in
-  # sync with jasonernst_com_smtp_* (jasonernst_com.yml).
+  # Service account used by www/staging.jasonernst.com (goblog) to send
+  # one-time login codes (goblogplatform/goblog#523). Same shape as the
+  # sair.run / rustd.xyz noreply accounts below. The password must match
+  # what goblog is given: jasonernst_com_smtp_password in
+  # ansible/jasonernst_com.yml reads the same 1Password item.
   - user: noreply
     password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault='Infrastructure',
       account_id=onepassword_account_id) }}"
