@@ -107,6 +107,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
       - name: Install 1Password CLI
         # we need op to be on the "deploying device, ie, the GH runner"
         uses: 1password/install-cli-action@v4
@@ -120,6 +124,10 @@ jobs:
           cd ansible
           python3 -m venv venv 
           . venv/bin/activate
-          pip3 install 'ansible-core>=2.15,<2.19' molecule molecule-docker==2.1.0 passlib
+          # ansible-core matches what ansible==14.4.0 (the lint job) resolves to, so both
+          # jobs test the same core; the driver is molecule-plugins, not the retired
+          # molecule-docker 2.1.0 that could not run on ansible-core >= 2.19. Exact pins so
+          # Renovate moves them together.
+          pip3 install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4
           export ANSIBLE_CONDITIONALS_ALLOW_BROKEN=1
           molecule test
