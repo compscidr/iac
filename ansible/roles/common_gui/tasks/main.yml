@@ -296,12 +296,25 @@
       - variety
   when: ansible_os_family == "Debian"
 
+# Google only publishes an unpinned "current" .deb, so re-downloading it on
+# every run reports "changed" whenever Chrome has released in between (which
+# also fails Molecule's idempotence pass). Install it once; the .deb registers
+# Google's apt repo, so later updates arrive through normal apt upgrades.
+- name: Check whether chrome is installed (Ubuntu/Debian)
+  tags: chrome
+  ansible.builtin.command: dpkg-query -W google-chrome-stable
+  register: common_gui_chrome_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: ansible_os_family == "Debian"
+
 - name: Install chrome browser (Ubuntu/Debian)
   tags: chrome
   become: true
   ansible.builtin.apt:
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "Debian" and common_gui_chrome_installed.rc != 0
 
 - name: Install chrome browser (macOS)
   tags: chrome
