@@ -27,6 +27,12 @@
     memory: 5g
     devices:
       - "/dev/bus/usb:/dev/bus/usb:rwm"
+      # SONOFF ZBDongle-E (EFR32MG24) Zigbee coordinator for ZHA. Addressed by-id so
+      # the host's ttyUSB numbering can shift without breaking the mapping.
+      - "/dev/serial/by-id/usb-SONOFF_SONOFF_Dongle_Plus_MG24_26ae5d834775f011aef2ad2f1045c30f-if00-port0:/dev/ttyUSB0:rwm"
+    # The tty node is root:dialout on the host; HA runs as PUID 999 and needs the group.
+    groups:
+      - dialout
     capabilities:
       - net_admin
       - net_raw
