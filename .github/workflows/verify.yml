@@ -129,5 +129,5 @@ jobs:
           # molecule-docker 2.1.0 that could not run on ansible-core >= 2.19. Exact pins so
           # Renovate moves them together.
           python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4
-          export ANSIBLE_CONDITIONALS_ALLOW_BROKEN=1
+          export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=1
           molecule test
