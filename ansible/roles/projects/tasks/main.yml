@@ -189,6 +189,7 @@
   loop:
     - ""
     - uploads
+    - plugins-dynamic
 
 - name: Create goblog.live database file if not exists
   tags: [projects, goblog-live]
@@ -215,6 +216,7 @@
         account_id=onepassword_account_id) }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
+      ENABLE_DYNAMIC_PLUGINS=true
     dest: /opt/goblog-live/.env
     mode: "644"
     owner: root
@@ -238,6 +240,7 @@
     volumes:
       - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog-live/site-theme:/go/src/github.com/compscidr/goblog/themes/site
+      - /opt/goblog-live/plugins-dynamic:/go/src/github.com/compscidr/goblog/plugins/dynamic
     mounts:
       - source: /opt/goblog-live/database.db
         target: /go/src/github.com/compscidr/database.db
