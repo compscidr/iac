@@ -190,6 +190,7 @@
     - ""
     - uploads
     - plugins-dynamic
+    - plugins-wasm
 
 - name: Create goblog.live database file if not exists
   tags: [projects, goblog-live]
@@ -241,6 +242,7 @@
       - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog-live/site-theme:/go/src/github.com/compscidr/goblog/themes/site
       - /opt/goblog-live/plugins-dynamic:/go/src/github.com/compscidr/goblog/plugins/dynamic
+      - /opt/goblog-live/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
     mounts:
       - source: /opt/goblog-live/database.db
         target: /go/src/github.com/compscidr/database.db

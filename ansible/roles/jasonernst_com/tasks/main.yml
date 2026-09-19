@@ -242,6 +242,26 @@
     owner: root
     group: root
 
+- name: Create production plugins-wasm directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/prod/plugins-wasm
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
+- name: Create staging plugins-wasm directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/staging/plugins-wasm
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
 - name: Create production scholar cache files if not exists
   tags: website
   become: true
@@ -281,6 +301,7 @@
     image: compscidr/goblog:v0.2.9
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+      - /opt/goblog/prod/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
     mounts:
       - source: /opt/goblog/prod/database.db
         target: /go/src/github.com/compscidr/database.db
@@ -319,6 +340,7 @@
     image: compscidr/goblog:v0.2.9
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
+      - /opt/goblog/staging/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
     mounts:
       - source: /opt/goblog/staging/database.db
         target: /go/src/github.com/compscidr/database.db
