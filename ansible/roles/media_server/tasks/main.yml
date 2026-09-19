@@ -298,3 +298,38 @@
     lidarr_plugins: true
     lidarr_memory: "1g"
     lidarr_memory_swap: "1g"
+
+# Threadfin (xTeVe fork): M3U/XMLTV IPTV -> HDHomeRun emulation for Plex Live TV (#561)
+# Plex is bridge-mode on the media network, so add it in Plex as tuner
+# address "threadfin:34400". IPTV playlist/EPG URLs are entered in the
+# Threadfin UI on http://nas.local:34400 (LAN only, no auth).
+- name: Create Threadfin Directories
+  tags: threadfin
+  become: true
+  ansible.builtin.file:
+    path: /etc/threadfin
+    state: directory
+    mode: "755"
+    owner: "{{ media_user_uid }}"
+    group: "{{ media_user_gid }}"
+
+- name: Deploy threadfin
+  tags: threadfin
+  become: true
+  community.docker.docker_container:
+    name: threadfin
+    image: fyb3roptik/threadfin:latest
+    pull: true
+    published_ports:
+      - "34400:34400"
+    volumes:
+      - /etc/threadfin:/home/threadfin/conf:rw
+    env:
+      TZ: "America/Los_Angeles"
+      PUID: "{{ media_user_uid }}"
+      PGID: "{{ media_user_gid }}"
+    networks:
+      - name: media
+    restart_policy: unless-stopped
+    memory: "1g"
+    memory_swap: "1g"
