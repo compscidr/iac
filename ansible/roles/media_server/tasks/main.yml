@@ -302,7 +302,9 @@
 # Threadfin (xTeVe fork): M3U/XMLTV IPTV -> HDHomeRun emulation for Plex Live TV (#561)
 # Plex is bridge-mode on the media network, so add it in Plex as tuner
 # address "threadfin:34400". IPTV playlist/EPG URLs are entered in the
-# Threadfin UI on http://nas.local:34400 (LAN only, no auth).
+# Threadfin UI on http://nas.local:34400. The UI has no auth by default and
+# port 34400 is published on every host interface; it is only unreachable
+# from the internet because the router does not forward it.
 - name: Create Threadfin Directories
   tags: threadfin
   become: true
@@ -318,7 +320,7 @@
   become: true
   community.docker.docker_container:
     name: threadfin
-    image: fyb3roptik/threadfin:latest
+    image: fyb3roptik/threadfin:1.2.37
     pull: true
     published_ports:
       - "34400:34400"
