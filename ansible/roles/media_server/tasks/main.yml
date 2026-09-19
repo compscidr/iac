@@ -20,8 +20,8 @@
 # This runs media_storage which depends on media_user
 # apply.tags is needed: tags on include_role don't propagate into the
 # included tasks, and the collection tags them with a fixed service list
-# that omits threadfin/slskd/soularr, so --tags <those> left media_user_uid
-# undefined.
+# that omits threadfin/slskd/soularr, so --tags <those> left
+# media_user_uid/media_user_gid undefined.
 - name: Initialize media storage and user facts
   tags: always
   ansible.builtin.include_role:
