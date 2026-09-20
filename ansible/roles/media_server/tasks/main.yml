@@ -368,7 +368,6 @@
     env:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bitmagnet
-      PGUSER: postgres
     shm_size: "1g"
     networks:
       - name: media
