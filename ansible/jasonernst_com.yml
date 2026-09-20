@@ -42,3 +42,4 @@
     - { role: jasonernst_com, tags: [jasonernst-com] }
     - { role: fail2ban, tags: [fail2ban] }
     - { role: mailu, tags: [mailu] }
+    - { role: uptime_kuma, tags: [uptime-kuma] }

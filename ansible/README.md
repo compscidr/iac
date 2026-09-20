@@ -23,6 +23,7 @@
 |------|---------|---------|
 | `jasonernst_com` | Personal website (goblog) | www.jasonernst.com |
 | `stalwart` | Stalwart mail server | mail.jasonernst.com |
+| `uptime_kuma` | Uptime monitoring (uptime.jasonernst.com) | www.jasonernst.com |
 | `media_server` | Plex, Sonarr, Radarr, etc. | NAS |
 | `home_assistant` | Home automation | NAS |
 | `dyndns` | Dynamic DNS updater | NAS, workstations |

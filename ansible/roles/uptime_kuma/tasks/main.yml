@@ -1,0 +1,31 @@
+---
+# uptime-kuma behind the www droplet's nginx-proxy (#163). Same shape as the
+# goblog containers in jasonernst_com: join the nginx-proxy network and let
+# VIRTUAL_HOST/LETSENCRYPT_HOST do the routing and certs. All state (sqlite
+# db, uploads) lives under /app/data.
+
+- name: Create uptime-kuma data directory
+  become: true
+  ansible.builtin.file:
+    path: /opt/uptime-kuma
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
+- name: Deploy uptime-kuma
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  community.docker.docker_container:
+    name: uptime-kuma
+    image: louislam/uptime-kuma:2.5.5
+    volumes:
+      - /opt/uptime-kuma:/app/data
+    networks:
+      - name: nginx-proxy
+    restart_policy: unless-stopped
+    env:
+      VIRTUAL_HOST: "uptime.jasonernst.com"
+      VIRTUAL_PORT: "3001"
+      LETSENCRYPT_HOST: "uptime.jasonernst.com"
+      LETSENCRYPT_EMAIL: "ernstjason1@gmail.com"

@@ -75,6 +75,14 @@ resource "digitalocean_record" "CNAME-staging" {
   value  = "@"
 }
 
+# uptime.jasonernst.com -> uptime-kuma on the www droplet (uptime_kuma role)
+resource "digitalocean_record" "CNAME-uptime" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "uptime"
+  value  = "@"
+}
+
 # ombi.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
 resource "digitalocean_record" "CNAME-ombi" {
   domain = digitalocean_domain.default.name
