@@ -96,6 +96,13 @@
   # https://github.com/ansible/ansible/issues/52063#issuecomment-509142583
   tags: lapce
 
+- name: Zed
+  ansible.builtin.include_role:
+    name: zed
+    apply:
+      tags: zed
+  tags: zed
+
 - name: Spotify
   ansible.builtin.include_role:
     name: compscidr.spotify.spotify

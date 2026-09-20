@@ -17,6 +17,7 @@
 | `dev` | Dev tools: SDKs, IDEs, languages | `dev` group |
 | `dev_gui` | GUI dev tools: VS Code, Android Studio | `dev_gui` group |
 | `academic_gui` | Academic tools: LaTeX, Zotero | `academic_gui` group |
+| `zed` | Zed editor from the pinned GitHub release tarball | `dev_gui` (via `dev_gui`) |
 
 ### Service Roles
 | Role | Purpose | Used By |

@@ -1,0 +1,55 @@
+---
+# Mirrors zed.dev/install.sh, but into /opt/zed-<version> instead of
+# ~/.local: unpack the tarball, symlink the cli, install the .desktop file
+# with absolute Exec/Icon paths. Versioned dir + `creates` keeps re-runs
+# from re-downloading a ~200MB tarball; bumping zed_version installs the
+# new build next to the old one and repoints the symlink.
+
+- name: Create zed install directory
+  tags: zed
+  become: true
+  ansible.builtin.file:
+    path: "/opt/zed-{{ zed_version }}"
+    state: directory
+    mode: "0755"
+
+- name: Download and unpack zed
+  tags: zed
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://github.com/zed-industries/zed/releases/download/v{{ zed_version }}/zed-linux-{{ ansible_architecture }}.tar.gz"
+    dest: "/opt/zed-{{ zed_version }}"
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
+    creates: "/opt/zed-{{ zed_version }}/bin/zed"
+
+- name: Link zed cli
+  tags: zed
+  become: true
+  ansible.builtin.file:
+    src: "/opt/zed-{{ zed_version }}/bin/zed"
+    dest: /usr/local/bin/zed
+    state: link
+    force: true
+
+# Rewrite the bundled .desktop file in place (unarchive's `creates` keeps it
+# from being re-extracted, so this stays idempotent) and link it in.
+- name: Point zed launcher at the install directory
+  tags: zed
+  become: true
+  ansible.builtin.replace:
+    path: "/opt/zed-{{ zed_version }}/share/applications/dev.zed.Zed.desktop"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: "^Exec=zed", replace: "Exec=/opt/zed-{{ zed_version }}/bin/zed" }
+    - { regexp: "^Icon=zed$", replace: "Icon=/opt/zed-{{ zed_version }}/share/icons/hicolor/512x512/apps/zed.png" }
+
+- name: Install zed launcher
+  tags: zed
+  become: true
+  ansible.builtin.file:
+    src: "/opt/zed-{{ zed_version }}/share/applications/dev.zed.Zed.desktop"
+    dest: /usr/share/applications/dev.zed.Zed.desktop
+    state: link
+    force: true
