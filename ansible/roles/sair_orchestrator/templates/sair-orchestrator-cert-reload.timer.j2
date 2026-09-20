@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily check that sair-orchestrator serves the current Let's Encrypt cert
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Restart sair-orchestrator if its gRPC TLS cert is stale after a Let's Encrypt renewal
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/sair-orchestrator/cert-reload.sh

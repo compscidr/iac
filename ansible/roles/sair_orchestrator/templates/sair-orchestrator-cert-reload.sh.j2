@@ -1,0 +1,19 @@
+#!/bin/sh
+# Restart sair-orchestrator when the cert it serves on :{{ sair_orchestrator_port }}
+# no longer matches the one acme-companion has on disk (#484). The orchestrator
+# builds its Netty SslContext once at JVM startup and never reloads it, so after
+# each Let's Encrypt renewal the gRPC listener keeps presenting the old cert
+# until it expires ~30 days later and every sair-proxy loses the orchestrator.
+# nginx-proxy on :443 is unaffected because acme-companion signals it to reload.
+set -eu
+
+cert=/var/lib/docker/volumes/nginx-certs/_data/{{ sair_orchestrator_domain }}/fullchain.pem
+on_disk=$(openssl x509 -noout -fingerprint -sha256 -in "$cert")
+served=$(openssl s_client -connect 127.0.0.1:{{ sair_orchestrator_port }} \
+  -servername {{ sair_orchestrator_domain }} </dev/null 2>/dev/null \
+  | openssl x509 -noout -fingerprint -sha256)
+
+if [ "$on_disk" != "$served" ]; then
+  echo "cert served on :{{ sair_orchestrator_port }} differs from $cert, restarting sair-orchestrator"
+  docker restart sair-orchestrator
+fi
