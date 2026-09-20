@@ -280,7 +280,7 @@
 # server wipe permanently lost. Same pipeline shape as goblog-backup
 # (jasonernst_com role): sqlite snapshot + additive rsync to the nas' rsync
 # daemon over the tailnet. The nas-side prune cron for the db snapshots
-# lives in rustd_backup_nas (nas.yml).
+# lives in backup_nas (nas.yml).
 - name: Ensure sqlite3 and rsync are installed
   tags: backup
   become: true

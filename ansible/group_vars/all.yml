@@ -17,7 +17,7 @@ onepassword_vault: "Infrastructure"
 # rustd.xyz nightly DB backup -> nas: the coordinates both ends of the pipeline
 # need to agree on. Lives here (not in roles/rustd_xyz/defaults/main.yml)
 # because the two ends run in separate playbooks with no shared vars_file:
-# the rustd_xyz role (projects.yml, pushes) and the rustd_backup_nas role
+# the rustd_xyz role (projects.yml, pushes) and the backup_nas role
 # (nas.yml, joins the tailnet + prunes) both read these. Role-local backup
 # settings (local keep count, local dir, the rsync-daemon coordinates and
 # password file) stay in roles/rustd_xyz/defaults/main.yml since only that
@@ -34,18 +34,18 @@ onepassword_vault: "Infrastructure"
 # path - proven end-to-end, dump landed on the 91TB array over the
 # tailnet. Enabling it is a MANUAL UGOS UI prerequisite (module `storage`
 # -> /volume1/storage, `auth users = jason:rw`); ansible does not and
-# cannot configure it. See roles/rustd_backup_nas/README.md and
+# cannot configure it. See roles/backup_nas/README.md and
 # roles/rustd_xyz/templates/rustd-db-backup.sh.j2 for the full story.
-rustd_xyz_backup_nas_host: nas # tailnet short name - set via rustd_backup_nas_tailnet_hostname
-# (roles/rustd_backup_nas/defaults/main.yml). Deploy discovery 2026-08-11: the nas had
-# never joined the tailnet - rustd_backup_nas owns a minimal join (vendor appliance;
+rustd_xyz_backup_nas_host: nas # tailnet short name - set via backup_nas_tailnet_hostname
+# (roles/backup_nas/defaults/main.yml). Deploy discovery 2026-08-11: the nas had
+# never joined the tailnet - backup_nas owns a minimal join (vendor appliance;
 # common_cli's full workstation footprint is off-limits there). The join stays even
 # though the ssh-based receive design that originally motivated the ACL analysis is
 # gone: the rsync daemon is still reached over the tailnet, not the public internet.
 # /volume1 is the nas' real (only) data mount - see media_storage_base_path
 # in roles/media_server/tasks/main.yml and roles/cs2_game/tasks/main.yml.
 # The plan's /volume/backups was a placeholder; there is no /volume share.
-# Read directly off disk by the nas-side prune cron (rustd_backup_nas); the
+# Read directly off disk by the nas-side prune cron (backup_nas); the
 # rsync daemon's own module path (module `storage` + subpath
 # `backups/rustd-db`, see roles/rustd_xyz/defaults/main.yml) resolves to
 # this same directory.
@@ -55,7 +55,7 @@ rustd_xyz_backup_nas_keep: 30
 # jasonernst.com nightly goblog backup -> nas: same pipeline shape and same
 # rsync daemon as the rustd.xyz backup above, only the subpath differs. Here
 # for the same reason: the push side (jasonernst_com role, jasonernst_com.yml)
-# and the nas-side prune cron (rustd_backup_nas role, nas.yml) run in
+# and the nas-side prune cron (backup_nas role, nas.yml) run in
 # separate playbooks with no shared vars_file. Only the db snapshots get
 # pruned - uploads/ is an additive mirror of the live images/files.
 jasonernst_com_backup_nas_path: /volume1/storage/backups/goblog
@@ -83,7 +83,7 @@ mailu_backup_nas_keep: 30
 # than in roles/minecraft_game/defaults/main.yml for the same reason as the
 # three pipelines above: two roles have to agree on these. minecraft_game
 # (nas.yml) writes the snapshots; the freshness check that alerts when they
-# stop arriving belongs to rustd_backup_nas, which owns the one dead-man's
+# stop arriving belongs to backup_nas, which owns the one dead-man's
 # switch covering every pipeline on this host.
 #
 # Unlike the three above, both ends run on the nas itself - this is a local
@@ -100,7 +100,7 @@ minecraft_bedrock_backup_nas_path: /volume1/storage/backups/minecraft-bedrock
 minecraft_bedrock_backup_nas_keep: 30
 # Factorio save backup -> /volume1/storage/backups (same pattern as the two
 # Minecraft pipelines above; here for the same cross-role reason - factorio_game
-# writes the snapshots, rustd_backup_nas watches that they keep arriving).
+# writes the snapshots, backup_nas watches that they keep arriving).
 factorio_backup_nas_path: /volume1/storage/backups/factorio
 factorio_backup_nas_keep: 30
 

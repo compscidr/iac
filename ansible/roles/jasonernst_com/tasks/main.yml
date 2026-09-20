@@ -415,8 +415,8 @@
 #
 # Same pipeline shape as rustd_xyz's pg_dump backup: sqlite snapshot + rsync
 # push to the nas' built-in rsync daemon (port 873, over the tailnet - not
-# ssh; see roles/rustd_backup_nas/README.md). The nas-side prune cron for
-# these snapshots lives in rustd_backup_nas (nas.yml).
+# ssh; see roles/backup_nas/README.md). The nas-side prune cron for
+# these snapshots lives in backup_nas (nas.yml).
 - name: Create goblog backup directory
   tags: backup
   become: true

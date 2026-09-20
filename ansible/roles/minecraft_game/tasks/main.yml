@@ -123,14 +123,14 @@
 # mkstemp there as jason (field failure 2026-08-31 - check mode does not catch
 # it, because it never writes). `user:` keeps the JOB unprivileged, which is
 # the property that actually matters: root installs the entry, jason runs the
-# backup, exactly like the jason crontab rustd_backup_nas already put there.
+# backup, exactly like the jason crontab backup_nas already put there.
 #
 # Consequence: deploying this task needs --ask-become-pass (there is no
 # passwordless sudo on the nas). The rest of the role stays sudo-free, and
 # --tags minecraft still deploys the server without it.
 #
 # The freshness check that alerts when these stop appearing is NOT here: it
-# belongs to rustd_backup_nas, which already runs one dead-man's switch for
+# belongs to backup_nas, which already runs one dead-man's switch for
 # every pipeline on this host, and gained a minecraft entry rather than a
 # second mechanism being built here.
 - name: Back up the world nightly

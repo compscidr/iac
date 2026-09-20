@@ -75,11 +75,11 @@ rsync -a --mkpath --password-file={{ rustd_xyz_backup_rsync_password_file }} \
 No `--delete`: the nas keeps a longer retention window (`rustd_xyz_backup_nas_keep`,
 30 days) than this local directory does (7), so a mirroring sync would prune the nas
 copy down to whatever's still local. The nas owns pruning its own copy (a root cron in
-the `rustd_backup_nas` role, run by `nas.yml`) — the push script never deletes anything
+the `backup_nas` role, run by `nas.yml`) — the push script never deletes anything
 remote, so there is exactly one owner of nas-side retention.
 
 **Transport is the nas' built-in rsync daemon (port 873), not ssh — see
-`rustd_backup_nas`'s README ("Field reality") for the full field story.** In short: the
+`backup_nas`'s README ("Field reality") for the full field story.** In short: the
 original design was an ssh-forced-command jail (dedicated key, restricted
 `authorized_keys` entry, `rrsync` or a hand-rolled receive script). Deploy testing found
 it was unimplementable on this hardware for three independent reasons — the nas'
@@ -93,14 +93,14 @@ landed on the nas' 91TB bcache array over the tailnet.
 **Auth is a daemon username/password, not a key**, written to
 `rustd_xyz_backup_rsync_password_file` (root-owned, mode `0600`, `no_log`'d) by this
 role's "Write the nas rsync-daemon password file" task. The password is jason's actual
-nas login password (1Password `ugnas` item) — see `rustd_backup_nas`'s README
+nas login password (1Password `ugnas` item) — see `backup_nas`'s README
 ("Security note") for the shared-credential blast-radius this creates and the scoped-
 account follow-up it recommends.
 
 **Manual prerequisite:** the nas' rsync daemon has to be enabled once via the UGOS UI —
 module `storage` -> `/volume1/storage`, `auth users = jason:rw`. Ansible does not and
 cannot configure it (closed vendor appliance, no UGOS-UI ansible module). See
-`rustd_backup_nas`'s README for the exact steps.
+`backup_nas`'s README for the exact steps.
 
 ## Mailer TLS
 

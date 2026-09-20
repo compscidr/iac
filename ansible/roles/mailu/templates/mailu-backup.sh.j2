@@ -3,7 +3,7 @@
 #
 # Nightly mailu backup (issue #479): the parts of {{ mailu_install_path }} that are NOT
 # reproducible from IaC, pushed to the nas over its built-in rsync daemon
-# (port 873, over the tailnet - NOT ssh; see roles/rustd_backup_nas/README.md
+# (port 873, over the tailnet - NOT ssh; see roles/backup_nas/README.md
 # for why ssh-based receive designs can't work on that appliance):
 #
 #   dkim/     - signing keys (tiny, critical: losing these silently breaks
@@ -20,7 +20,7 @@
 #
 # Pushes are additive (no --delete): db snapshots keep a longer window on
 # the nas ({{ mailu_backup_nas_keep }} days, pruned by a root cron in the
-# rustd_backup_nas role), and deleted mail should survive on the nas rather
+# backup_nas role), and deleted mail should survive on the nas rather
 # than be mirrored away. This script never deletes anything remote.
 set -euo pipefail
 
@@ -53,7 +53,7 @@ RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
 DEST="rsync://{{ mailu_backup_nas_rsync_user }}@{{ mailu_backup_nas_host }}:{{ mailu_backup_nas_rsync_port }}/{{ mailu_backup_nas_rsync_module }}/{{ mailu_backup_nas_rsync_subpath }}"
 
 # Mirrors first, db snapshots LAST. Order matters: the nas-side freshness
-# check (rustd_backup_nas role) uses the newest db snapshot as the "this
+# check (backup_nas role) uses the newest db snapshot as the "this
 # run succeeded" marker, so it must be the final transfer - a fresh marker
 # then implies every mirror push succeeded too.
 #

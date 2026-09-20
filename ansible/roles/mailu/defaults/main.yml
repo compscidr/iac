@@ -161,13 +161,13 @@ mailu_images:
 #
 # Same pipeline shape as the goblog and rustd.xyz backups: push to the nas'
 # BUILT-IN RSYNC DAEMON (port 873) over the tailnet - not ssh. See
-# roles/rustd_backup_nas/README.md. The nas-side coordinates
+# roles/backup_nas/README.md. The nas-side coordinates
 # (mailu_backup_nas_path/_keep) live in group_vars/all.yml because the
-# rustd_backup_nas role's prune cron (nas.yml, a separate playbook run) also
+# backup_nas role's prune cron (nas.yml, a separate playbook run) also
 # reads them.
 mailu_backup_local_dir: "{{ mailu_install_path }}/backups"
 mailu_backup_local_keep: 7
-mailu_backup_nas_host: nas # must match rustd_backup_nas_tailnet_hostname
+mailu_backup_nas_host: nas # must match backup_nas_tailnet_hostname
 mailu_backup_nas_rsync_user: jason
 mailu_backup_nas_rsync_port: 873
 mailu_backup_nas_rsync_module: storage

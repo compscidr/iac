@@ -90,13 +90,13 @@ minecraft_game_ops:
 # --- Nightly world backup (issue #565) -------------------------------------
 #
 # Where the backup script lands. Under jason's home rather than
-# /usr/local/bin (where rustd_backup_nas puts its freshness check) because
+# /usr/local/bin (where backup_nas puts its freshness check) because
 # that one is a root cron and this one deliberately is not - see the script
 # header for why this pipeline needs no sudo.
 #
 # The destination and retention are NOT here: they live in group_vars/all.yml
 # as minecraft_backup_nas_path/_keep, because the freshness check that watches
-# this directory belongs to the rustd_backup_nas role. Same cross-role
+# this directory belongs to the backup_nas role. Same cross-role
 # coordinate problem the other three pipelines have, same answer.
 minecraft_game_backup_script: /volume1/@home/jason/.local/bin/minecraft-backup.sh
 
