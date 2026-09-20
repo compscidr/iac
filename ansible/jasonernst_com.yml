@@ -16,14 +16,14 @@
     fail2ban_nginx_botscan_enabled: true
     www_redirect_domains:
       - { domain: jasonernst.com, letsencrypt_email: "ernstjason1@gmail.com" }
-    # nas rsync-daemon auth for the nightly goblog backup: jason's actual nas
-    # login password (the daemon's "auth users" password on this appliance IS
-    # the account password) - same `ugnas` item the rustd_xyz pipeline uses;
-    # see roles/backup_nas/README.md.
-    jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
+    # nas rsync-daemon auth for the nightly goblog backup: the dedicated
+    # non-admin `backup` UGOS account (`nas-rsync` item, Infrastructure vault),
+    # rw on the `storage` share only - same account the rustd_xyz pipeline
+    # uses; see roles/backup_nas/README.md.
+    jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     # Same credential for the mailu backup pipeline (one daemon on the nas).
-    mailu_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'ugnas', field='password', vault=onepassword_vault,
+    mailu_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     # goblog email login: the noreply@jasonernst.com mailu account (created by
     # the mailu role from the same 1Password item). The item must exist before

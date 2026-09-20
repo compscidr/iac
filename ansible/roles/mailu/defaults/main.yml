@@ -168,14 +168,14 @@ mailu_images:
 mailu_backup_local_dir: "{{ mailu_install_path }}/backups"
 mailu_backup_local_keep: 7
 mailu_backup_nas_host: nas # must match backup_nas_tailnet_hostname
-mailu_backup_nas_rsync_user: jason
+mailu_backup_nas_rsync_user: backup
 mailu_backup_nas_rsync_port: 873
 mailu_backup_nas_rsync_module: storage
 # Full remote path is <module>/<subpath> = /volume1/storage/backups/mailu
 # (matches mailu_backup_nas_path in group_vars/all.yml).
 mailu_backup_nas_rsync_subpath: backups/mailu
 mailu_backup_rsync_password_file: "{{ mailu_install_path }}/.rsync-nas-pass"
-# Filled from jasonernst_com.yml via a 1Password lookup (`ugnas` item -
-# jason's actual nas login password; the daemon's "auth users" password on
-# this appliance IS the account password). no_log'd wherever consumed.
+# Filled from jasonernst_com.yml via a 1Password lookup (`nas-rsync` item -
+# the dedicated `backup` UGOS account's password, rw on `storage` only; see
+# roles/backup_nas/README.md). no_log'd wherever consumed.
 mailu_backup_nas_rsync_password: ""
