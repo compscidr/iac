@@ -252,11 +252,31 @@
     owner: root
     group: root
 
+- name: Create production themes-installed directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/prod/themes-installed
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
 - name: Create staging plugins-wasm directory
   tags: website
   become: true
   ansible.builtin.file:
     path: /opt/goblog/staging/plugins-wasm
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
+- name: Create staging themes-installed directory
+  tags: website
+  become: true
+  ansible.builtin.file:
+    path: /opt/goblog/staging/themes-installed
     state: directory
     mode: "755"
     owner: root
@@ -302,6 +322,7 @@
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/prod/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
+      - /opt/goblog/prod/themes-installed:/go/src/github.com/compscidr/goblog/themes/installed
     mounts:
       - source: /opt/goblog/prod/database.db
         target: /go/src/github.com/compscidr/database.db
@@ -341,6 +362,7 @@
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/staging/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
+      - /opt/goblog/staging/themes-installed:/go/src/github.com/compscidr/goblog/themes/installed
     mounts:
       - source: /opt/goblog/staging/database.db
         target: /go/src/github.com/compscidr/database.db
