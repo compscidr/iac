@@ -340,3 +340,60 @@
     restart_policy: unless-stopped
     memory: "1g"
     memory_swap: "1g"
+
+# Bitmagnet: self-hosted DHT crawler + torrent indexer (#160). Add it to
+# Prowlarr as a Generic Torznab indexer at http://bitmagnet:3333/torznab
+# (no API key). UI on http://nas.local:3333, no auth, same exposure story
+# as threadfin above. Forward 3334 tcp+udp on the router or the crawler
+# gets no inbound peers and runs slow. Postgres is not published and is
+# reachable only on the media network, so its password is upstream's
+# default. The DB grows to tens of GB, hence the storage pool.
+- name: Create bitmagnet postgres directory
+  tags: bitmagnet
+  become: true
+  ansible.builtin.file:
+    path: "{{ media_storage_base_path }}/bitmagnet/postgres"
+    state: directory
+    mode: "700"
+
+- name: Deploy bitmagnet postgres
+  tags: bitmagnet
+  become: true
+  community.docker.docker_container:
+    name: bitmagnet-postgres
+    image: postgres:16-alpine
+    pull: true
+    volumes:
+      - "{{ media_storage_base_path }}/bitmagnet/postgres:/var/lib/postgresql/data"
+    env:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bitmagnet
+      PGUSER: postgres
+    shm_size: "1g"
+    networks:
+      - name: media
+    restart_policy: unless-stopped
+    memory: "2g"
+    memory_swap: "2g"
+
+- name: Deploy bitmagnet
+  tags: bitmagnet
+  become: true
+  community.docker.docker_container:
+    name: bitmagnet
+    image: ghcr.io/bitmagnet-io/bitmagnet:v0.10.0
+    pull: true
+    command: worker run --keys=http_server --keys=queue_server --keys=dht_crawler
+    published_ports:
+      - "3333:3333"
+      - "3334:3334"
+      - "3334:3334/udp"
+    env:
+      POSTGRES_HOST: bitmagnet-postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: "America/Los_Angeles"
+    networks:
+      - name: media
+    restart_policy: unless-stopped
+    memory: "2g"
+    memory_swap: "2g"
