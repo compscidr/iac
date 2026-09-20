@@ -17,11 +17,11 @@
 # the actual supported receive path - proven end-to-end, dump landed on the
 # 91TB array over the tailnet. Enabling that daemon is a MANUAL UGOS UI
 # prerequisite; ansible does not and cannot configure it (see
-# rustd_backup_nas's README).
+# backup_nas's README).
 #
 # The push below is additive (no --delete): the nas keeps a longer
 # retention window ({{ rustd_xyz_backup_nas_keep }} days, pruned by a root
-# cron in the rustd_backup_nas role) than this local directory does, so a
+# cron in the backup_nas role) than this local directory does, so a
 # sync that mirrors deletions would prune the nas copy down to what's left
 # locally. This script never deletes anything remote.
 set -euo pipefail

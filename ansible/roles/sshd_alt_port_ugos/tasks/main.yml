@@ -3,7 +3,7 @@
 #
 # The Ubuntu hosts get their alternate port from sshd_alt_port by extending the stock
 # sshd's listen config. That approach is closed on UGOS: the vendor owns sshd_config
-# (global ForceCommand wrapper, admin-account passthrough — see rustd_backup_nas's
+# (global ForceCommand wrapper, admin-account passthrough — see backup_nas's
 # README for the field story), and its SFTP subsystem serves a chrooted share view
 # (/docker, /home, /storage) instead of the real filesystem. Shell exec passes through
 # the wrapper fine, so the rustd.xyz panel's command features (wipes, snapshots) work —

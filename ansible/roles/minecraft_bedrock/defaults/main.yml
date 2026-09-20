@@ -63,7 +63,7 @@ minecraft_bedrock_container_memory: 4g
 #
 # Same cadence and destination shape as the Java world's (#565); the destination and
 # retention live in group_vars/all.yml for the same cross-role reason (the freshness
-# check that watches them belongs to rustd_backup_nas).
+# check that watches them belongs to backup_nas).
 #
 # 04:30 rather than 04:00 so the two Minecraft backups do not tar ~500MB at once,
 # and both still land well before the 08:00 freshness check.

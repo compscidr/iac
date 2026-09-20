@@ -1,9 +1,10 @@
-# rustd_backup_nas Role
+# backup_nas Role
 
-Receiving end of the rustd.xyz nightly `pg_dump` pipeline. Runs in `nas.yml`, against
-`nas.local`. The pushing end is the `rustd_xyz` role (`projects.yml`) — see that role's
-README for the "Nightly backup -> nas" section, which documents the same pipeline from
-the other side.
+Receiving end of the nightly backup pipelines (rustd.xyz `pg_dump`, jasonernst.com
+goblog, mailu). Runs in `nas.yml`, against `nas.local`. The pushing ends are the
+`rustd_xyz` (`projects.yml`), `jasonernst_com` and `mailu` (`jasonernst_com.yml`) roles —
+see each role's README / task comments for the same pipeline from the other side, and
+"Restoring" below for how to put any of it back.
 
 ## What it does
 
@@ -19,14 +20,11 @@ That's it.
   `jasonernst_com` and `mailu` roles, both in `jasonernst_com.yml`): db snapshots older
   than `jasonernst_com_backup_nas_keep` / `mailu_backup_nas_keep` under each pipeline's
   `db/` directory. The sibling mirrors (goblog `uploads/`; mailu `dkim/`, `data/`,
-  `mail/`, `mailu.env`) are never pruned. This role now serves three pipelines despite
-  its rustd-specific name — the rename to `backup_nas` was considered and deferred: it
-  touches runbook tags (`--tags rustd-backup`) and a dozen prose references for zero
-  function.
+  `mail/`, `mailu.env`) are never pruned.
 
 - Daily backup freshness check (08:00 cron) — a dead-man's switch for **all three**
   pipelines: if a pipeline's newest db snapshot on the nas is older than
-  `rustd_backup_nas_freshness_max_age_hours` (26h — catches a single missed night on the
+  `backup_nas_freshness_max_age_hours` (26h — catches a single missed night on the
   first morning), it posts to discord #dev-alerts via a channel webhook (1Password item
   `discord-dev-alerts`, no bot). Checking arrival here rather than hooking run failures
   on the droplets covers every silent-stop mode with one mechanism — failed run, dead
@@ -115,6 +113,74 @@ a module rooted at `backups/rustd-db` directly, so it can't even see the rest of
 done, treat the droplet's rsync password file as equivalent in sensitivity to `jason`'s
 nas login, because it is one.
 
+## Restoring
+
+Everything lands under `/volume1/storage/backups/<pipeline>/` on the nas. The droplet
+side pulls it back through the same rsync daemon it pushes to — reverse the source and
+destination of the push script's command, using the password file the role already
+wrote (`/opt/goblog/.rsync-nas-pass`, `/opt/mailu/.rsync-nas-pass`). On a fresh droplet,
+run the normal play first so the directories, containers and password files exist, then
+restore over the top, then run the play once more.
+
+Dry-run any pull with `-n` first: `--delete` is never used here, so a pull only ever
+adds or overwrites — but it is still root writing into a live service's directory.
+
+### rustd.xyz
+
+See `roles/rustd_xyz/README.md` "Restore drill" (`pg_restore --clean --if-exists` into
+`rustd-db` from a `rustd-*.dump`).
+
+### jasonernst.com (goblog)
+
+`backups/goblog/db/goblog-<date>.db` (sqlite snapshots, 30 days) and
+`backups/goblog/uploads/` (additive mirror of `/opt/goblog/prod/uploads`).
+
+```bash
+cd /opt/goblog
+R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://jason@nas:873/storage/backups/goblog"
+$R/db/goblog-YYYY-MM-DD.db prod/restore.db
+docker stop www.jasonernst.com
+cp prod/restore.db prod/database.db          # bind-mounted into the container as-is
+$R/uploads/ prod/uploads/
+docker start www.jasonernst.com
+```
+
+The db is a plain bind mount, so a file swap while the container is stopped is the
+whole restore. Verify: the site renders the posts, and an image from `uploads/` loads.
+
+### mailu
+
+`backups/mailu/db/mailu-<date>.db` (admin sqlite snapshots, 30 days) plus additive
+mirrors of `dkim/`, `data/` (minus the live db), `mail/` and `mailu.env`.
+
+**`dkim/` first, before the admin container has ever started on the new host.** Mailu
+generates fresh signing keys on first start if none exist; the April wipe restored
+everything except these, DNS kept the old public keys, and outbound mail failed
+DKIM/DMARC for three months (#478). If the play has already been run and keys were
+regenerated, the pull below overwrites them — just make sure to restart the stack
+afterwards so rspamd picks the restored keys up.
+
+```bash
+cd /opt/mailu
+R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://jason@nas:873/storage/backups/mailu"
+docker compose down
+$R/dkim/ dkim/
+$R/data/ data/                                # instance keys etc; live db excluded on push
+$R/db/mailu-YYYY-MM-DD.db data/main.db        # accounts, domains, aliases
+rm -f data/main.db-wal data/main.db-shm       # journals belong to the old db, not this one
+$R/mail/ mail/                                # maildirs; dovecot rebuilds its indexes
+docker compose up -d
+```
+
+`mailu.env` is on the nas too but is templated by the role, so only pull it if the
+controller is what you lost. Then re-run `jasonernst_com.yml`: the role's "Display DKIM
+key for DNS" task prints the public key derived from the restored `dkim/` — it must
+match the `dkim._domainkey` TXT records in `terraform/mail*.tf`. If it doesn't, the
+restore didn't take and outbound mail is about to fail signature checks again.
+
+Verify: log into webmail as an existing user, and send one outbound message to a Gmail
+address and check "show original" reports `dkim=pass`.
+
 ## Tailnet membership
 
 The backup pipeline design assumed the nas was already a tailnet member; deploy discovery
@@ -127,11 +193,11 @@ daemon is still reached over the tailnet, not the public internet.
 this repo joins the tailnet, but it's paired with a general CLI/dotfiles/user-account setup
 that assumes a machine this repo fully owns. The nas is a vendor-managed UGREEN appliance
 (Debian-based, hostname `DXP8800PLUS-3F06`) — package/config changes on it are deliberately
-kept to the minimum this pipeline needs, so it never runs `common_cli`. `rustd_backup_nas`
+kept to the minimum this pipeline needs, so it never runs `common_cli`. `backup_nas`
 adds the smallest tailnet-join footprint instead: install (idempotent no-op here, since the
 package already exists), enable the daemon, and `up`.
 
-**Hostname contract:** `tailscale up` is given `--hostname={{ rustd_backup_nas_tailnet_hostname }}`
+**Hostname contract:** `tailscale up` is given `--hostname={{ backup_nas_tailnet_hostname }}`
 (default `nas`) rather than letting the appliance's own hostname become its tailnet name.
 This value **must match `rustd_xyz_backup_nas_host`** in `group_vars/all.yml` — that's the
 name the droplet-side backup script dials to reach the nas over the tailnet. See the sync
@@ -177,7 +243,7 @@ not in either role's `defaults/main.yml` — `projects.yml` and `nas.yml` are se
 playbook runs with no common `vars_files`, so neither role's own defaults are visible to
 the other. See the comment in `group_vars/all.yml` for why.
 
-`rustd_backup_nas_tailnet_hostname` (this role's own `defaults/main.yml`) is a related but
+`backup_nas_tailnet_hostname` (this role's own `defaults/main.yml`) is a related but
 separately-enforced sync contract: it must match `rustd_xyz_backup_nas_host` above, but
 lives here rather than in `group_vars/all.yml` since only this role ever sets it — see the
 comment on the variable itself.

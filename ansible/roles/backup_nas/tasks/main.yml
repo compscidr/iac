@@ -54,7 +54,7 @@
   tags: [tailscale]
   ansible.builtin.command:
     cmd: tailscale status --json
-  register: rustd_backup_nas_tailscale_status
+  register: backup_nas_tailscale_status
   changed_when: false
   failed_when: false
 
@@ -72,20 +72,20 @@
     # dials the nas' rsync daemon (port 873) directly over this tailnet
     # join, which needs no Tailscale SSH involvement either way.
     cmd: >-
-      tailscale up --authkey={{ rustd_backup_nas_tailscale_authkey }}
-      --hostname={{ rustd_backup_nas_tailnet_hostname }} --accept-dns=false
+      tailscale up --authkey={{ backup_nas_tailscale_authkey }}
+      --hostname={{ backup_nas_tailnet_hostname }} --accept-dns=false
   vars:
-    rustd_backup_nas_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault,
+    backup_nas_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-  register: rustd_backup_nas_tailscale_up
+  register: backup_nas_tailscale_up
   changed_when: true
   # No failed_when: false here (unlike common_cli): this role's whole design
   # rides on the join, so an expired/invalid authkey must fail the play, not
   # be silently skipped. no_log because the command line carries the authkey.
   no_log: true
   when: >-
-    rustd_backup_nas_tailscale_status.rc != 0 or
-    ((rustd_backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
+    backup_nas_tailscale_status.rc != 0 or
+    ((backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
     != 'Running'
 
 # No user, target-directory, or key task here. The nas' built-in rsync
@@ -119,10 +119,6 @@
 # jasonernst_com role, jasonernst_com.yml). Only the db/ snapshots are
 # pruned - the sibling uploads/ directory is an additive mirror of the live
 # images/files and must never be aged out.
-# ponytail: the third pipeline (mailu) landed and the role kept its rustd
-# name anyway - the rename touches runbook tags (`--tags rustd-backup`) and
-# a dozen prose references for zero function. Rename only if the tag/docs
-# churn ever becomes worth it.
 - name: Prune jasonernst.com backups older than the retention window
   become: true
   ansible.builtin.cron:
@@ -164,17 +160,17 @@
 # failure this feature exists to prevent.
 - name: Ensure the discord webhook is configured
   ansible.builtin.assert:
-    that: rustd_backup_nas_discord_webhook | length > 0
+    that: backup_nas_discord_webhook | length > 0
     fail_msg: >-
-      rustd_backup_nas_discord_webhook is empty - set it from the 1Password
+      backup_nas_discord_webhook is empty - set it from the 1Password
       `discord-dev-alerts` item (see nas.yml) before deploying the freshness check.
     quiet: true
 
 - name: Write the discord webhook file
   become: true
   ansible.builtin.copy:
-    dest: "{{ rustd_backup_nas_webhook_file }}"
-    content: "{{ rustd_backup_nas_discord_webhook }}\n"
+    dest: "{{ backup_nas_webhook_file }}"
+    content: "{{ backup_nas_discord_webhook }}\n"
     owner: root
     group: root
     mode: "0600"

@@ -5,11 +5,11 @@
 # rustd_xyz's pg_dump backup: push to the nas' BUILT-IN RSYNC DAEMON (UGOS's
 # own service, port 873) over the tailnet - not ssh. See
 # roles/rustd_xyz/templates/rustd-db-backup.sh.j2 and
-# roles/rustd_backup_nas/README.md for why ssh-based receive designs are
+# roles/backup_nas/README.md for why ssh-based receive designs are
 # impossible on this appliance.
 #
 # The nas-side coordinates (jasonernst_com_backup_nas_path/_keep) live in
-# group_vars/all.yml because the rustd_backup_nas role's prune cron
+# group_vars/all.yml because the backup_nas role's prune cron
 # (nas.yml, a separate playbook run) also reads them.
 
 jasonernst_com_backup_local_dir: /opt/goblog/backups
@@ -17,8 +17,8 @@ jasonernst_com_backup_local_keep: 7
 
 # rsync-daemon coordinates: identical daemon/module/auth-user as the rustd
 # pipeline (there is one daemon on the nas), only the subpath differs.
-# Tailnet short name - must match rustd_backup_nas_tailnet_hostname
-# (roles/rustd_backup_nas/defaults/main.yml), the name the nas joins under.
+# Tailnet short name - must match backup_nas_tailnet_hostname
+# (roles/backup_nas/defaults/main.yml), the name the nas joins under.
 jasonernst_com_backup_nas_host: nas
 jasonernst_com_backup_nas_rsync_user: jason
 jasonernst_com_backup_nas_rsync_port: 873

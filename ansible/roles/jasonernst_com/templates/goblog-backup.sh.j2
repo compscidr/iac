@@ -5,12 +5,12 @@
 # posts), prune local snapshots beyond {{ jasonernst_com_backup_local_keep }},
 # then push the snapshots AND the prod uploads directory (images/files) to
 # the nas over its built-in rsync daemon (UGOS's vendor-supported service,
-# port 873 - NOT ssh; see roles/rustd_backup_nas/README.md for why ssh-based
+# port 873 - NOT ssh; see roles/backup_nas/README.md for why ssh-based
 # receive designs can't work on that appliance).
 #
 # Pushes are additive (no --delete): the nas keeps a longer retention window
 # for db snapshots ({{ jasonernst_com_backup_nas_keep }} days, pruned by a
-# root cron in the rustd_backup_nas role), and deleted uploads should
+# root cron in the backup_nas role), and deleted uploads should
 # survive on the nas rather than be mirrored away. This script never deletes
 # anything remote.
 set -euo pipefail
@@ -46,7 +46,7 @@ RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
 DEST="rsync://{{ jasonernst_com_backup_nas_rsync_user }}@{{ jasonernst_com_backup_nas_host }}:{{ jasonernst_com_backup_nas_rsync_port }}/{{ jasonernst_com_backup_nas_rsync_module }}/{{ jasonernst_com_backup_nas_rsync_subpath }}"
 
 # Images/files (uploads) first, posts (db snapshots) LAST - both additive.
-# Order matters: the nas-side freshness check (rustd_backup_nas role) uses
+# Order matters: the nas-side freshness check (backup_nas role) uses
 # the newest db snapshot as the "this run succeeded" marker, so it must be
 # the final transfer - a fresh marker then implies the uploads push
 # succeeded too.
