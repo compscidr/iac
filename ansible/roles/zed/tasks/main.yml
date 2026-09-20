@@ -30,6 +30,7 @@
     src: "/opt/zed-{{ zed_version }}/bin/zed"
     dest: /usr/local/bin/zed
     state: link
+    force: true
 
 - name: Install zed launcher
   tags: zed
