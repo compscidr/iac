@@ -237,7 +237,7 @@
   become: true
   community.docker.docker_container:
     name: goblog.live
-    image: compscidr/goblog:v0.3.0
+    image: compscidr/goblog:v0.4.0
     volumes:
       - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog-live/site-theme:/go/src/github.com/compscidr/goblog/themes/site
