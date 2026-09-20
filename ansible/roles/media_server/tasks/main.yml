@@ -18,12 +18,17 @@
 
 # Initialize media_user facts (UID/GID detection) before other tasks
 # This runs media_storage which depends on media_user
+# apply.tags is needed: tags on include_role don't propagate into the
+# included tasks, and the collection tags them with a fixed service list
+# that omits threadfin/slskd/soularr, so --tags <those> left
+# media_user_uid/media_user_gid undefined.
 - name: Initialize media storage and user facts
   tags: always
   ansible.builtin.include_role:
     name: compscidr.media_server.media_storage
     apply:
       become: true
+      tags: always
 
 # Nginx reverse proxy + LetsEncrypt for SSL certs
 - name: Create nginx config directory
