@@ -4,6 +4,15 @@
 # VIRTUAL_HOST/LETSENCRYPT_HOST do the routing and certs. All state (sqlite
 # db, uploads) lives under /app/data.
 
+- name: Ensure nginx-proxy network exists
+  become: true
+  community.docker.docker_network:
+    name: nginx-proxy
+    # Same settings as jasonernst_com / www_redirect (IPv6 so the AAAA record
+    # actually works, #591) so a --tags uptime-kuma run on a fresh host works.
+    enable_ipv6: true
+    state: present
+
 - name: Create uptime-kuma data directory
   become: true
   ansible.builtin.file:
