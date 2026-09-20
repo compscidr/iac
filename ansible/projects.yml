@@ -60,7 +60,7 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_discord_bot_token: "{{ lookup('community.general.onepassword', 'rustd-discord', field='bot token', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    # nas rsync-daemon auth: the dedicated non-admin `backup` UGOS account
+    # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
     # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
     # so a compromised droplet can't reach the rest of the nas (#502).
     rustd_xyz_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,

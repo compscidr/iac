@@ -46,10 +46,10 @@ pipeline can receive anything, an operator has to, once, in the UGOS UI:
 1. Enable the **Rsync** service (Control Panel → Services, or equivalent — UGOS's own
    term for it).
 2. Configure a module named `storage` mapped to `/volume1/storage`.
-3. Create a dedicated **non-admin** user `backup` (Control Panel → Users; its own
+3. Create a dedicated **non-admin** user `svcbackup` (Control Panel → Users; its own
    generated password, **not** in the admin group), give it **read/write** on the
    `storage` share only, and allow it to use rsync. In rsyncd.conf terms that yields
-   `auth users = backup:rw` on the `storage` module and nothing on `docker`/`home`/
+   `auth users = svcbackup:rw` on the `storage` module and nothing on `docker`/`home`/
    `homes`. Save the password as the 1Password item `nas-rsync` (Infrastructure vault,
    `password` field) — every push side looks it up from there.
 
@@ -89,7 +89,7 @@ none of the three blockers above apply to it, because it was never going through
 the first place. The droplet pushes with:
 
 ```
-rsync -a --mkpath --password-file=<file> <localdir>/ rsync://backup@nas:873/storage/backups/rustd-db/
+rsync -a --mkpath --password-file=<file> <localdir>/ rsync://svcbackup@nas:873/storage/backups/rustd-db/
 ```
 
 See `rustd_xyz`'s `templates/rustd-db-backup.sh.j2` for the real templated command.
@@ -103,7 +103,7 @@ authenticating as `jason` (the first thing that worked, see above), which meant 
 module the daemon exports (`docker`, `home`, `homes`, `storage`). A compromised droplet
 leaked the whole nas, not one backup directory.
 
-Fixed in #502: all three push sides authenticate as `backup`, a dedicated non-admin UGOS
+Fixed in #502: all three push sides authenticate as `svcbackup`, a dedicated non-admin UGOS
 user whose only share is `storage` (1Password `nas-rsync` item). A compromised droplet now
 gets write into `/volume1/storage` and nothing else. The `*_backup_nas_rsync_user`
 defaults in `rustd_xyz`, `jasonernst_com` and `mailu` name that account; if it's ever
@@ -138,7 +138,7 @@ See `roles/rustd_xyz/README.md` "Restore drill" (`pg_restore --clean --if-exists
 
 ```bash
 cd /opt/goblog
-R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://backup@nas:873/storage/backups/goblog"
+R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/goblog"
 $R/db/goblog-YYYY-MM-DD.db prod/restore.db
 docker stop www.jasonernst.com
 cp prod/restore.db prod/database.db          # bind-mounted into the container as-is
@@ -163,7 +163,7 @@ afterwards so rspamd picks the restored keys up.
 
 ```bash
 cd /opt/mailu
-R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://backup@nas:873/storage/backups/mailu"
+R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/mailu"
 docker compose down
 $R/dkim/ dkim/
 $R/data/ data/                                # instance keys etc; live db excluded on push

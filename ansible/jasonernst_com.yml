@@ -17,7 +17,7 @@
     www_redirect_domains:
       - { domain: jasonernst.com, letsencrypt_email: "ernstjason1@gmail.com" }
     # nas rsync-daemon auth for the nightly goblog backup: the dedicated
-    # non-admin `backup` UGOS account (`nas-rsync` item, Infrastructure vault),
+    # non-admin `svcbackup` UGOS account (`nas-rsync` item, Infrastructure vault),
     # rw on the `storage` share only - same account the rustd_xyz pipeline
     # uses; see roles/backup_nas/README.md.
     jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,

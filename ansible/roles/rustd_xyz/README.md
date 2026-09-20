@@ -56,7 +56,7 @@ All secrets (`rustd_xyz_ghcr_token`, `rustd_xyz_db_password`,
 `projects.yml` — never hardcoded in `defaults/main.yml`. The postgres password
 comes from the `rustd-db` item (Infrastructure vault), created manually by the
 operator before the first deploy. The rsync-daemon backup password comes from
-the `nas-rsync` item (Infrastructure vault) — the dedicated non-admin `backup` UGOS
+the `nas-rsync` item (Infrastructure vault) — the dedicated non-admin `svcbackup` UGOS
 account's password, see "Nightly backup -> nas" below.
 
 ## Nightly backup -> nas
@@ -92,12 +92,12 @@ landed on the nas' 91TB bcache array over the tailnet.
 
 **Auth is a daemon username/password, not a key**, written to
 `rustd_xyz_backup_rsync_password_file` (root-owned, mode `0600`, `no_log`'d) by this
-role's "Write the nas rsync-daemon password file" task. The account is `backup`, a
+role's "Write the nas rsync-daemon password file" task. The account is `svcbackup`, a
 dedicated non-admin UGOS user with rw on the `storage` share only (1Password `nas-rsync`
 item) — see `backup_nas`'s README ("Security note") for why it isn't jason's login.
 
 **Manual prerequisite:** the nas' rsync daemon has to be enabled once via the UGOS UI —
-module `storage` -> `/volume1/storage`, `auth users = backup:rw`. Ansible does not and
+module `storage` -> `/volume1/storage`, `auth users = svcbackup:rw`. Ansible does not and
 cannot configure it (closed vendor appliance, no UGOS-UI ansible module). See
 `backup_nas`'s README for the exact steps.
 

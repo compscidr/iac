@@ -20,7 +20,7 @@ jasonernst_com_backup_local_keep: 7
 # Tailnet short name - must match backup_nas_tailnet_hostname
 # (roles/backup_nas/defaults/main.yml), the name the nas joins under.
 jasonernst_com_backup_nas_host: nas
-jasonernst_com_backup_nas_rsync_user: backup
+jasonernst_com_backup_nas_rsync_user: svcbackup
 jasonernst_com_backup_nas_rsync_port: 873
 jasonernst_com_backup_nas_rsync_module: storage
 # Full remote path is <module>/<subpath> = /volume1/storage/backups/goblog
@@ -29,7 +29,7 @@ jasonernst_com_backup_nas_rsync_module: storage
 jasonernst_com_backup_nas_rsync_subpath: backups/goblog
 jasonernst_com_backup_rsync_password_file: /opt/goblog/.rsync-nas-pass
 # Filled from jasonernst_com.yml via a 1Password lookup (`nas-rsync` item -
-# the dedicated `backup` UGOS account's password, rw on `storage` only; see
+# the dedicated `svcbackup` UGOS account's password, rw on `storage` only; see
 # roles/backup_nas/README.md). no_log'd wherever consumed.
 jasonernst_com_backup_nas_rsync_password: ""
 
