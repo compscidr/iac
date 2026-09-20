@@ -27,10 +27,11 @@ jobs:
         id: tag
         run: |
           tag="${{ github.event.client_payload.tag || github.event.inputs.tag }}"
-          case "$tag" in
-            v[0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "::error::not a release tag: $tag"; exit 1 ;;
-          esac
+          # Strict vX.Y.Z: the tag goes into a URL, a branch name and a sed
+          # replacement below, so nothing but digits and dots may follow the v.
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::not a release tag: $tag"; exit 1
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       # The dispatch fires right after the push; give Docker Hub's API a
@@ -38,7 +39,7 @@ jobs:
       - name: Wait for the image on Docker Hub
         run: |
           for i in $(seq 1 30); do
-            if curl -sf "https://hub.docker.com/v2/repositories/compscidr/goblog/tags/${{ steps.tag.outputs.tag }}" >/dev/null; then
+            if curl -sf --connect-timeout 5 --max-time 15 "https://hub.docker.com/v2/repositories/compscidr/goblog/tags/${{ steps.tag.outputs.tag }}" >/dev/null; then
               exit 0
             fi
             sleep 20
