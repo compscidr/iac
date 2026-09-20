@@ -77,9 +77,10 @@
     delay: 10
     timeout: 120
 
-# Connect via the host's routable IP, not localhost: localhost hits docker-proxy
-# (which accepts even when the container has nothing bound), the routable IP is
-# DNAT'd straight into the container like real traffic - see #557.
+# Connect via the host's routable IP, not localhost: localhost hits docker-proxy,
+# which accepts even when the container has nothing bound. The routable IP goes
+# through docker's nat OUTPUT DNAT into the container, so an unbound port is
+# refused. Still host-origin - it does not exercise the DO firewall. See #557.
 - name: Check mail ports are listening
   ansible.builtin.wait_for:
     host: "{{ ansible_default_ipv4.address }}"
