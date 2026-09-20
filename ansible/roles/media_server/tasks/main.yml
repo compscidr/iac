@@ -380,7 +380,7 @@
   become: true
   community.docker.docker_container:
     name: bitmagnet
-    image: ghcr.io/bitmagnet-io/bitmagnet:v0.10.0
+    image: ghcr.io/bitmagnet-io/bitmagnet:v0.10.1
     pull: true
     command: worker run --keys=http_server --keys=queue_server --keys=dht_crawler
     published_ports:
