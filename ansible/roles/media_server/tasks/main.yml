@@ -361,7 +361,7 @@
   become: true
   community.docker.docker_container:
     name: bitmagnet-postgres
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     pull: true
     volumes:
       - "{{ media_storage_base_path }}/bitmagnet/postgres:/var/lib/postgresql/data"
