@@ -323,6 +323,37 @@
     state: present
   when: ansible_os_family == "Darwin"
 
+- name: Install vivaldi apt repo (Ubuntu/Debian)
+  tags: vivaldi
+  become: true
+  ansible.builtin.deb822_repository:
+    name: vivaldi
+    types: [deb]
+    uris: https://repo.vivaldi.com/stable/deb/
+    signed_by: https://repo.vivaldi.com/archive/linux_signing_key.pub
+    suites: [stable]
+    components: [main]
+    architectures: [amd64]
+    state: present
+    enabled: true
+  when: ansible_os_family == "Debian"
+
+- name: Install vivaldi browser (Ubuntu/Debian)
+  tags: vivaldi
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - vivaldi-stable
+  when: ansible_os_family == "Debian"
+
+- name: Install vivaldi browser (macOS)
+  tags: vivaldi
+  community.general.homebrew_cask:
+    name: vivaldi
+    state: present
+  when: ansible_os_family == "Darwin"
+
 - name: Set dock icons
   tags: dock
   become: true
