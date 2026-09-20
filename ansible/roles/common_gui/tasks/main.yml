@@ -336,7 +336,7 @@
     architectures: [amd64]
     state: present
     enabled: true
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "Debian" and ansible_architecture == "x86_64"
 
 - name: Install vivaldi browser (Ubuntu/Debian)
   tags: vivaldi
@@ -345,7 +345,7 @@
     update_cache: true
     pkg:
       - vivaldi-stable
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "Debian" and ansible_architecture == "x86_64"
 
 - name: Install vivaldi browser (macOS)
   tags: vivaldi
