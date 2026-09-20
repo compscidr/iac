@@ -6,3 +6,14 @@
 # In defaults/ rather than vars/ on purpose: role vars outrank playbook vars, so a value
 # here can be set per playbook while vars/ could not be overridden at all.
 rust_game_runtime_user: ""
+
+# Parent of every server's install tree (<root>/<identity>, mounted at the container's
+# /steamcmd/rust). The collection default is /etc/rust/install, which on ubuntu-cube is
+# a roomy root filesystem. On nas it is UGOS's 107G overlay upper layer, and two 8.5G
+# game installs are not configuration -- nas.yml points this at the array (#544).
+#
+# rustd.xyz stores each server's install/data path in its own DB (server settings
+# page), so a change here has to be mirrored there by hand or the panel loses the
+# server. NOT under /volume1/storage: the UGOS rsync daemon hands that whole module to
+# the backup credential read-write, and this tree holds the RustDedicated binary.
+rust_game_install_root: /etc/rust/install

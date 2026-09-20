@@ -27,6 +27,10 @@
       # The account these servers have always run as. Naming it makes an incidental uid
       # explicit: without this the collection resolves "whoever is uid 1000 here".
       rust_game_runtime_user: steam
+      # Two 8.5G game installs do not belong on the 107G overlay upper layer that
+      # /etc is here (#544). See the role's defaults for why this is not under
+      # /volume1/storage, and for the rustd.xyz settings that must match it.
+      rust_game_install_root: /volume1/@appdata/rust
       rust_game_servers:
         - weekly
         - monthly
