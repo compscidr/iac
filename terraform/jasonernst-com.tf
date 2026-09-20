@@ -213,20 +213,6 @@ resource "digitalocean_firewall" "www" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # Submission (client mail submission with STARTTLS)
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "587"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
-
-  # IMAP (with STARTTLS)
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "143"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
-
   # IMAPS (implicit TLS)
   inbound_rule {
     protocol         = "tcp"

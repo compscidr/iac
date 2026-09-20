@@ -20,8 +20,6 @@ services:
       # Mail ports only - HTTP/HTTPS handled by nginx-proxy
       - "{{ mailu_smtp_port }}:25"
       - "{{ mailu_smtps_port }}:465"
-      - "{{ mailu_submission_port }}:587"
-      - "{{ mailu_imap_port }}:143"
       - "{{ mailu_imaps_port }}:993"
     volumes:
       # Use certs from nginx-proxy's letsencrypt companion

@@ -105,10 +105,12 @@ mailu_nginx_proxy_subnet: "172.18.0.0/16"
 
 # Mail ports (bound to host - no conflict with nginx-proxy)
 # HTTP/HTTPS are NOT bound - nginx-proxy handles those
+# 587/143 (STARTTLS) are deliberately absent: Mailu 2024.06 leaves them out of
+# its default PORTS list, so the front container never listens on them. Every
+# client uses 465/993 (implicit TLS). To re-enable, add PORTS=...,587,143 to
+# mailu.env.j2 and restore the port maps + DO firewall rules (see #557).
 mailu_smtp_port: 25
 mailu_smtps_port: 465
-mailu_submission_port: 587
-mailu_imap_port: 143
 mailu_imaps_port: 993
 
 # =============================================================================
