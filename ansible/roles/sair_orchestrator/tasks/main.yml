@@ -65,3 +65,43 @@
     dns_servers:
       - "100.100.100.100" # Tailscale MagicDNS (resolve ubuntu-cube for DeviceSource)
     env: "{{ _sair_orchestrator_env }}"
+
+# The orchestrator reads its TLS cert once at startup and never reloads it, so
+# a renewed cert on disk isn't served on :9090 until the container restarts
+# (#484). acme-companion has no post-renewal hook, so a daily timer compares the
+# served cert against the one on disk and restarts the container on mismatch.
+- name: Create sair-orchestrator directory
+  become: true
+  ansible.builtin.file:
+    path: /opt/sair-orchestrator
+    state: directory
+    mode: "755"
+
+- name: Deploy the cert reload script
+  become: true
+  ansible.builtin.template:
+    src: sair-orchestrator-cert-reload.sh.j2
+    dest: /opt/sair-orchestrator/cert-reload.sh
+    mode: "0700"
+
+- name: Deploy the cert reload systemd service
+  become: true
+  ansible.builtin.template:
+    src: sair-orchestrator-cert-reload.service.j2
+    dest: /etc/systemd/system/sair-orchestrator-cert-reload.service
+    mode: "0644"
+
+- name: Deploy the cert reload systemd timer
+  become: true
+  ansible.builtin.template:
+    src: sair-orchestrator-cert-reload.timer.j2
+    dest: /etc/systemd/system/sair-orchestrator-cert-reload.timer
+    mode: "0644"
+
+- name: Enable and start the cert reload timer
+  become: true
+  ansible.builtin.systemd_service:
+    name: sair-orchestrator-cert-reload.timer
+    enabled: true
+    state: started
+    daemon_reload: true
