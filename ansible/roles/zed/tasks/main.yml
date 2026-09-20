@@ -32,22 +32,24 @@
     state: link
     force: true
 
-- name: Install zed launcher
-  tags: zed
-  become: true
-  ansible.builtin.copy:
-    src: "/opt/zed-{{ zed_version }}/share/applications/dev.zed.Zed.desktop"
-    dest: /usr/share/applications/dev.zed.Zed.desktop
-    remote_src: true
-    mode: "0644"
-
+# Rewrite the bundled .desktop file in place (unarchive's `creates` keeps it
+# from being re-extracted, so this stays idempotent) and link it in.
 - name: Point zed launcher at the install directory
   tags: zed
   become: true
   ansible.builtin.replace:
-    path: /usr/share/applications/dev.zed.Zed.desktop
+    path: "/opt/zed-{{ zed_version }}/share/applications/dev.zed.Zed.desktop"
     regexp: "{{ item.regexp }}"
     replace: "{{ item.replace }}"
   loop:
     - { regexp: "^Exec=zed", replace: "Exec=/opt/zed-{{ zed_version }}/bin/zed" }
     - { regexp: "^Icon=zed$", replace: "Icon=/opt/zed-{{ zed_version }}/share/icons/hicolor/512x512/apps/zed.png" }
+
+- name: Install zed launcher
+  tags: zed
+  become: true
+  ansible.builtin.file:
+    src: "/opt/zed-{{ zed_version }}/share/applications/dev.zed.Zed.desktop"
+    dest: /usr/share/applications/dev.zed.Zed.desktop
+    state: link
+    force: true
