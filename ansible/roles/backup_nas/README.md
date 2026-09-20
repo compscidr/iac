@@ -109,10 +109,17 @@ gets write into `/volume1/storage` and nothing else. The `*_backup_nas_rsync_use
 defaults in `rustd_xyz`, `jasonernst_com` and `mailu` name that account; if it's ever
 renamed in the UGOS UI, change all three.
 
-Ceiling, deliberately not chased: the daemon runs as `uid = jason` (UGOS's own
-`rsyncd.conf`), so files still land owned by jason, and `storage` is wider than the
-`backups/` subtree — a module rooted at `/volume1/storage/backups` would be tighter still
-if UGOS ever lets a share be created there.
+Field notes from the cutover (2026-09-20): UGOS regenerated `rsyncd.conf` with
+`storage` as the *only* module and `svcbackup` as its only auth user, so `jason` was
+dropped from the daemon entirely (no separate "remove jason" step). The daemon now runs
+as `uid = svcbackup`, so new files land `svcbackup:users`; the pre-cutover ones stay
+`jason:admin` — harmless, the push never rewrites an unchanged dump and the prune runs as
+root. Editing the share also left `/volume1/storage` mode `000` for plain ssh/`jason`;
+read it with `sudo` on the nas.
+
+Ceiling, deliberately not chased: `storage` is wider than the `backups/` subtree — a
+module rooted at `/volume1/storage/backups` would be tighter still if UGOS ever lets a
+share be created there.
 
 ## Restoring
 
