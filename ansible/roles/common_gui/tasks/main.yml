@@ -323,6 +323,47 @@
     state: present
   when: ansible_os_family == "Darwin"
 
+# deb822_repository re-fetches a URL signed_by every run and reports changed,
+# so guard on the .sources file like the vscode repo task in dev_gui.
+- name: Check if vivaldi apt repo exists
+  tags: vivaldi
+  become: true
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/vivaldi.sources
+  register: common_gui_vivaldi_repo_exists
+  when: ansible_os_family == "Debian" and ansible_architecture == "x86_64"
+
+- name: Install vivaldi apt repo (Ubuntu/Debian)
+  tags: vivaldi
+  become: true
+  ansible.builtin.deb822_repository:
+    name: vivaldi
+    types: [deb]
+    uris: https://repo.vivaldi.com/stable/deb/
+    signed_by: https://repo.vivaldi.com/archive/linux_signing_key.pub
+    suites: [stable]
+    components: [main]
+    architectures: [amd64]
+    state: present
+    enabled: true
+  when: ansible_os_family == "Debian" and ansible_architecture == "x86_64" and not common_gui_vivaldi_repo_exists.stat.exists
+
+- name: Install vivaldi browser (Ubuntu/Debian)
+  tags: vivaldi
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - vivaldi-stable
+  when: ansible_os_family == "Debian" and ansible_architecture == "x86_64"
+
+- name: Install vivaldi browser (macOS)
+  tags: vivaldi
+  community.general.homebrew_cask:
+    name: vivaldi
+    state: present
+  when: ansible_os_family == "Darwin"
+
 - name: Set dock icons
   tags: dock
   become: true
