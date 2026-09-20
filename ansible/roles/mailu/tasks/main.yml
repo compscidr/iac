@@ -77,6 +77,19 @@
     delay: 10
     timeout: 120
 
+# Connect via the host's routable IP, not localhost: localhost hits docker-proxy
+# (which accepts even when the container has nothing bound), the routable IP is
+# DNAT'd straight into the container like real traffic - see #557.
+- name: Check mail ports are listening
+  ansible.builtin.wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: "{{ item }}"
+    timeout: 60
+  loop:
+    - "{{ mailu_smtp_port }}"
+    - "{{ mailu_smtps_port }}"
+    - "{{ mailu_imaps_port }}"
+
 - name: Create admin user
   become: true
   ansible.builtin.command:
