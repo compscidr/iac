@@ -33,7 +33,7 @@ onepassword_vault: "Infrastructure"
 # daemon sits entirely outside sshd and is the actual supported receive
 # path - proven end-to-end, dump landed on the 91TB array over the
 # tailnet. Enabling it is a MANUAL UGOS UI prerequisite (module `storage`
-# -> /volume1/storage, `auth users = jason:rw`); ansible does not and
+# -> /volume1/storage, `auth users = svcbackup:rw`); ansible does not and
 # cannot configure it. See roles/backup_nas/README.md and
 # roles/rustd_xyz/templates/rustd-db-backup.sh.j2 for the full story.
 rustd_xyz_backup_nas_host: nas # tailnet short name - set via backup_nas_tailnet_hostname

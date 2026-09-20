@@ -13,7 +13,7 @@
 # `command=` (so no ssh-jail is possible at all), and the admin account
 # gets full passthrough anyway. The vendor's own rsync *daemon* (enabled in
 # the UGOS UI, listening on 873, module `storage` -> /volume1/storage,
-# `auth users = jason:rw`) sits entirely outside sshd and turned out to be
+# `auth users = svcbackup:rw`) sits entirely outside sshd and turned out to be
 # the actual supported receive path - proven end-to-end, dump landed on the
 # 91TB array over the tailnet. Enabling that daemon is a MANUAL UGOS UI
 # prerequisite; ansible does not and cannot configure it (see
