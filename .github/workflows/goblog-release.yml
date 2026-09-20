@@ -1,0 +1,85 @@
+name: goblog release
+# goblog's tagged-release workflow sends a repository_dispatch here as soon as
+# the image is on Docker Hub. Renovate would open the same PR eventually, but
+# only when its shared queue reaches this repo (hours); doing it here makes
+# the bump land minutes after the release. workflow_dispatch is the manual
+# fallback for a tag that was missed.
+on:
+  repository_dispatch:
+    types: [goblog-released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "goblog image tag, e.g. v0.5.0"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          tag="${{ github.event.client_payload.tag || github.event.inputs.tag }}"
+          # Strict vX.Y.Z: the tag goes into a URL, a branch name and a sed
+          # replacement below, so nothing but digits and dots may follow the v.
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::not a release tag: $tag"; exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # The dispatch fires right after the push; give Docker Hub's API a
+      # moment to list the tag before we pin it.
+      - name: Wait for the image on Docker Hub
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf --connect-timeout 5 --max-time 15 "https://hub.docker.com/v2/repositories/compscidr/goblog/tags/${{ steps.tag.outputs.tag }}" >/dev/null; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::compscidr/goblog:${{ steps.tag.outputs.tag }} never appeared on Docker Hub"
+          exit 1
+
+      - name: Bump the pins
+        id: bump
+        run: |
+          files="ansible/roles/jasonernst_com/tasks/main.yml ansible/roles/projects/tasks/main.yml"
+          sed -i -E "s|(image: compscidr/goblog:)v[0-9]+\.[0-9]+\.[0-9]+|\1${{ steps.tag.outputs.tag }}|" $files
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "already at ${{ steps.tag.outputs.tag }}"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat
+          fi
+
+      # A PR opened with the default GITHUB_TOKEN gets no CI run (GitHub
+      # refuses to trigger workflows from Actions-created events), and the
+      # branch protection needs Ansible Lint. IAC_TOKEN is the same
+      # fine-grained PAT goblog uses to send the dispatch; here it also needs
+      # Pull requests: write.
+      - name: Open the PR
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.IAC_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          branch="goblog/$TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -am "Update compscidr/goblog Docker tag to $TAG"
+          git push -u "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Update compscidr/goblog Docker tag to $TAG" \
+            --body "Opened by the goblog-release workflow on goblog's release dispatch. Release notes: https://github.com/goblogplatform/goblog/releases/tag/$TAG"
+          # Same policy as Renovate's automerge for this dependency: merge
+          # once the required checks pass.
+          gh pr merge "$branch" --auto --squash
