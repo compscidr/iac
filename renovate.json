@@ -22,6 +22,19 @@
     },
     {
       "customType": "regex",
+      "description": "Track zed-industries/zed releases for the zed_version pin in the zed role",
+      "managerFilePatterns": [
+        "/^ansible/roles/zed/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "zed_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "zed-industries/zed",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Track ansible and ansible-lint pins in the verify workflow",
       "managerFilePatterns": [
         "/^\\.github/workflows/verify\\.yml$/"
