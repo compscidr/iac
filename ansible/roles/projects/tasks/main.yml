@@ -232,13 +232,18 @@
     dest: /opt/goblog-live/site-theme
     version: main
     force: true
+  register: projects_goblog_live_site_theme
 
+# goblog parses theme templates at startup, so a theme pull alone needs a
+# restart; the container is otherwise unchanged and docker_container would
+# leave it running the old templates.
 - name: Deploy goblog.live
   tags: [projects, goblog-live]
   become: true
   community.docker.docker_container:
     name: goblog.live
     image: compscidr/goblog:v0.6.1
+    restart: "{{ projects_goblog_live_site_theme.changed | default(false) }}"
     volumes:
       - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog-live/site-theme:/go/src/github.com/compscidr/goblog/themes/site
