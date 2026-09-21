@@ -211,6 +211,20 @@
     sabnzbd_memory: "5g"
     sabnzbd_memory_swap: "5g"
 
+# The *arr apps keep their artwork cache under <config>/MediaCover — radarr's is 1.3G
+# and grows with the library. Same split as slskd below: config stays in /etc/<app>,
+# only MediaCover is layered over it from the array (#544).
+- name: Create *arr MediaCover directories on the array
+  tags: [sonarr, radarr, lidarr]
+  become: true
+  ansible.builtin.file:
+    path: "{{ media_storage_base_path }}/{{ item }}/MediaCover"
+    state: directory
+    mode: "755"
+    owner: "{{ media_user_uid }}"
+    group: "{{ media_user_gid }}"
+  loop: [sonarr, radarr, lidarr]
+
 - name: Install sonarr
   tags: sonarr
   ansible.builtin.include_role:
@@ -224,6 +238,8 @@
     sonarr_memory_swap: "1g"
     sonarr_virtual_host: "sonarr.jasonernst.com"
     sonarr_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
+    sonarr_extra_volumes:
+      - "{{ media_storage_base_path }}/sonarr/MediaCover:/config/MediaCover:rw"
 
 - name: Install radarr
   tags: radarr
@@ -237,6 +253,8 @@
     radarr_memory_swap: "1g"
     radarr_virtual_host: "radarr.jasonernst.com"
     radarr_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
+    radarr_extra_volumes:
+      - "{{ media_storage_base_path }}/radarr/MediaCover:/config/MediaCover:rw"
 
 - name: Install prowlarr
   tags: prowlarr
@@ -320,6 +338,8 @@
     lidarr_plugins: true
     lidarr_memory: "1g"
     lidarr_memory_swap: "1g"
+    lidarr_extra_volumes:
+      - "{{ media_storage_base_path }}/lidarr/MediaCover:/config/MediaCover:rw"
 
 # Threadfin (xTeVe fork): M3U/XMLTV IPTV -> HDHomeRun emulation for Plex Live TV (#561)
 # Plex is bridge-mode on the media network, so add it in Plex as tuner
