@@ -53,6 +53,11 @@ ansible-playbook -i inventory.yml common.yml --limit <hostname> --ask-become-pas
 └─────────────────────┘       └─────────────────────┘
 ```
 
+## Hardware
+
+What's actually in the fleet — CPU/RAM/disk/GPU per host, phones, IoT, spares, and the
+host-side gotchas that go with them: [docs/hardware/README.md](docs/hardware/README.md).
+
 ## Opinionated Stuff
 - I hate snaps. Wherever possible I use apt on ubuntu.
 - SSH access via Tailscale SSH (no public SSH keys on servers)
