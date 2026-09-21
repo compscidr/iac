@@ -102,7 +102,7 @@ Archer's guest SSID, not VLANs.
 
 ## Smart home / IoT
 
-Home Assistant runs on `nas` (`roles/home_assistant`), and Zigbee goes through it:
+Home Assistant runs on `nas` (`ansible/roles/home_assistant`), and Zigbee goes through it:
 
 - **SONOFF ZBDongle-E** (EFR32MG24) Zigbee coordinator, USB on `nas`, passed into the HA
   container by `/dev/serial/by-id` as `/dev/ttyUSB0` for **ZHA**.
