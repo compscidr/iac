@@ -21,6 +21,7 @@
           tags: rust-weekly
       vars:
         rust_gameserver_identity: "weekly"
+        rust_gameserver_install_dir: "{{ rust_game_install_root }}/weekly"
         rust_gameserver_name: "California | Weekly | No BP Wipe"
         rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 11am PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
         rust_gameserver_worldsize: 3000
@@ -62,7 +63,7 @@
         force: "{{ item.force | default(true) }}"
       loop:
         - src: files/oxide.config.json
-          dest: /etc/rust/install/weekly/oxide/oxide.config.json
+          dest: "{{ rust_game_install_root }}/weekly/oxide/oxide.config.json"
           force: false
     # only if we want a modded server
     #    - src: files/Oxide.Ext.RustIO.dll
@@ -80,7 +81,7 @@
     - name: Remove the RustadminOnline plugin this role used to install (weekly)
       become: true
       ansible.builtin.file:
-        path: /etc/rust/install/weekly/oxide/plugins/RustadminOnline.cs
+        path: "{{ rust_game_install_root }}/weekly/oxide/plugins/RustadminOnline.cs"
         state: absent
 
     # rustd.xyz owns RustdMap now, but the copy on this host was written by an older
@@ -97,14 +98,14 @@
     - name: Check for the RustdMap plugin an older revision of this role installed (weekly)
       become: true
       ansible.builtin.stat:
-        path: /etc/rust/install/weekly/oxide/plugins/RustdMap.cs
+        path: "{{ rust_game_install_root }}/weekly/oxide/plugins/RustdMap.cs"
       register: rust_game_weekly_rustdmap
 
     - name: Let rustd.xyz replace that RustdMap copy (weekly)
       become: true
       when: rust_game_weekly_rustdmap.stat.exists
       ansible.builtin.file:
-        path: /etc/rust/install/weekly/oxide/plugins/RustdMap.cs
+        path: "{{ rust_game_install_root }}/weekly/oxide/plugins/RustdMap.cs"
         state: file
         mode: '0664'
 
@@ -120,6 +121,7 @@
           tags: rust-monthly
       vars:
         rust_gameserver_identity: "monthly"
+        rust_gameserver_install_dir: "{{ rust_game_install_root }}/monthly"
         rust_gameserver_name: "California | Monthly | No BP Wipe"
         rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Thursday of the Month at 11am PST\\nWorld Size:
           {{ rust_gameserver_worldsize }}"
@@ -159,7 +161,7 @@
         force: "{{ item.force | default(true) }}"
       loop:
         - src: files/oxide.config.json
-          dest: /etc/rust/install/monthly/oxide/oxide.config.json
+          dest: "{{ rust_game_install_root }}/monthly/oxide/oxide.config.json"
           force: false
     # only if we want a modded server
     #    - src: files/Oxide.Ext.RustIO.dll
@@ -177,7 +179,7 @@
     - name: Remove the RustadminOnline plugin this role used to install (monthly)
       become: true
       ansible.builtin.file:
-        path: /etc/rust/install/monthly/oxide/plugins/RustadminOnline.cs
+        path: "{{ rust_game_install_root }}/monthly/oxide/plugins/RustadminOnline.cs"
         state: absent
 
     # rustd.xyz owns RustdMap now, but the copy on this host was written by an older
@@ -194,14 +196,14 @@
     - name: Check for the RustdMap plugin an older revision of this role installed (monthly)
       become: true
       ansible.builtin.stat:
-        path: /etc/rust/install/monthly/oxide/plugins/RustdMap.cs
+        path: "{{ rust_game_install_root }}/monthly/oxide/plugins/RustdMap.cs"
       register: rust_game_monthly_rustdmap
 
     - name: Let rustd.xyz replace that RustdMap copy (monthly)
       become: true
       when: rust_game_monthly_rustdmap.stat.exists
       ansible.builtin.file:
-        path: /etc/rust/install/monthly/oxide/plugins/RustdMap.cs
+        path: "{{ rust_game_install_root }}/monthly/oxide/plugins/RustdMap.cs"
         state: file
         mode: '0664'
 
@@ -220,6 +222,7 @@
           tags: rust-build
       vars:
         rust_gameserver_identity: "build"
+        rust_gameserver_install_dir: "{{ rust_game_install_root }}/build"
         rust_gameserver_name: "California Build Server"
         rust_gameserver_description: "Build server — no wipes.\\nWorld Size: {{ rust_gameserver_worldsize }}"
         rust_gameserver_worldsize: 3000

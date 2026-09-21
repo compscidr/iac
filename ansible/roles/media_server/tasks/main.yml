@@ -270,6 +270,21 @@
     ombi_virtual_host: "ombi.jasonernst.com"
     ombi_letsencrypt_email: "{{ media_server_media_letsencrypt_email }}"
 
+# slskd keeps its databases under <config>/data, and search.db alone is 12G: on
+# this host /etc is UGOS's 107G overlay upper layer, so that lands on the system
+# partition while the array sits empty (#544). Config stays in /etc/slskd; only
+# data/ is layered over it from the array. Created here rather than left to
+# docker, which would make the missing host dir as root.
+- name: Create slskd data directory on the array
+  tags: slskd
+  become: true
+  ansible.builtin.file:
+    path: "{{ media_storage_base_path }}/slskd/data"
+    state: directory
+    mode: "755"
+    owner: "{{ media_user_uid }}"
+    group: "{{ media_user_gid }}"
+
 - name: Install slskd
   tags: slskd
   ansible.builtin.include_role:
@@ -280,6 +295,8 @@
   vars:
     slskd_memory: "1g"
     slskd_memory_swap: "1g"
+    slskd_extra_volumes:
+      - "{{ media_storage_base_path }}/slskd/data:/app/data:rw"
 
 - name: Install soularr
   tags: soularr
