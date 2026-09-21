@@ -67,10 +67,11 @@ rustd_xyz_backup_local_keep: 7
 # neither the vendor's patched rsync-over-ssh nor its global ForceCommand
 # come into play. Auth is a plain rsync-daemon username/password, not a key.
 #
-# rustd_xyz_backup_nas_rsync_user: the rsync daemon "auth users" entry
-# configured in the UGOS UI (module `storage`, `auth users = jason:rw`) -
-# NOT a Linux account, just a name inside the daemon's own auth file.
-rustd_xyz_backup_nas_rsync_user: jason
+# rustd_xyz_backup_nas_rsync_user: the rsync daemon "auth users" entry -
+# a dedicated non-admin UGOS user created in the UGOS UI with rw on the
+# `storage` share only (`auth users = svcbackup:rw` on that module), so the
+# password the droplet holds can't reach anything else on the nas (#502).
+rustd_xyz_backup_nas_rsync_user: svcbackup
 rustd_xyz_backup_nas_rsync_port: 873
 # The daemon module name, configured in the UGOS UI, mapped to
 # /volume1/storage on the nas.
@@ -86,8 +87,8 @@ rustd_xyz_backup_nas_rsync_subpath: backups/rustd-db
 # requirement for --password-file, and it keeps the secret out of the
 # process list / systemd unit).
 rustd_xyz_backup_rsync_password_file: /opt/rustd/.rsync-nas-pass
-# Filled from projects.yml via a 1Password lookup (the `ugnas` item,
-# Infrastructure vault - jason's actual nas login password, since the rsync
-# daemon's "auth users" password on this appliance IS the account password,
-# not a separate secret). no_log'd wherever it's consumed.
+# Filled from projects.yml via a 1Password lookup (the `nas-rsync` item,
+# Infrastructure vault - the `svcbackup` UGOS account's login password; the
+# rsync daemon's "auth users" password on this appliance IS the account
+# password). no_log'd wherever it's consumed.
 rustd_xyz_backup_nas_rsync_password: ""

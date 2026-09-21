@@ -4,7 +4,7 @@
 #
 # The actual receive path is the nas' built-in rsync daemon (UGOS's own
 # service, port 873) - a MANUAL prerequisite enabled once in the UGOS UI
-# (module `storage` -> /volume1/storage, `auth users = jason:rw`). This
+# (module `storage` -> /volume1/storage, `auth users = svcbackup:rw`). This
 # role does not and cannot configure that daemon; there is no ansible
 # module for UGOS's UI and no config file on disk this role is allowed to
 # template (closed vendor appliance). See README.md for the full field

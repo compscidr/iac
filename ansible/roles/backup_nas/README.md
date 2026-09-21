@@ -46,13 +46,17 @@ pipeline can receive anything, an operator has to, once, in the UGOS UI:
 1. Enable the **Rsync** service (Control Panel → Services, or equivalent — UGOS's own
    term for it).
 2. Configure a module named `storage` mapped to `/volume1/storage`.
-3. Add an **auth user**: `jason`, with `rw` access to that module
-   (`auth users = jason:rw`, in rsyncd.conf terms).
+3. Create a dedicated **non-admin** user `svcbackup` (Control Panel → Users; its own
+   generated password, **not** in the admin group), give it **read/write** on the
+   `storage` share only, and allow it to use rsync. In rsyncd.conf terms that yields
+   `auth users = svcbackup:rw` on the `storage` module and nothing on `docker`/`home`/
+   `homes`. Save the password as the 1Password item `nas-rsync` (Infrastructure vault,
+   `password` field) — every push side looks it up from there.
 
 Confirmed working config, field-verified: module `storage` → `path = /volume1/storage`,
-`auth users = jason:rw`. The daemon listens on port 873. Auth password is `jason`'s
-actual nas login password — see "Security note" below for why that's a real credential-
-sharing problem, not just a curiosity.
+`auth users = <user>:rw`. The daemon listens on port 873. Auth password is the UGOS
+account's actual login password (UGOS has no separate rsync-only secret) — which is
+exactly why it must be a dedicated account, see "Security note" below.
 
 ## Field reality: why this role used to be much bigger
 
@@ -85,33 +89,37 @@ none of the three blockers above apply to it, because it was never going through
 the first place. The droplet pushes with:
 
 ```
-rsync -a --mkpath --password-file=<file> <localdir>/ rsync://jason@nas:873/storage/backups/rustd-db/
+rsync -a --mkpath --password-file=<file> <localdir>/ rsync://svcbackup@nas:873/storage/backups/rustd-db/
 ```
 
 See `rustd_xyz`'s `templates/rustd-db-backup.sh.j2` for the real templated command.
 
-## Security note: shared credential (follow-up)
+## Security note: why a dedicated account
 
-The daemon's "auth users" password for `jason` **is `jason`'s actual nas login
-password**, not a separate, scoped rsync-only secret (UGOS doesn't appear to offer a way
-to set a distinct rsync-daemon password for the same auth-user name). That means the
-`rustd_xyz_backup_nas_rsync_password` value the droplet holds (1Password `ugnas` item,
-looked up in `projects.yml`) **is** jason's full nas login credential.
+The daemon's "auth users" password for a user **is that user's actual nas login
+password** — UGOS offers no separate rsync-only secret. The pipelines originally shipped
+authenticating as `jason` (the first thing that worked, see above), which meant the
+`.rsync-nas-pass` file on each droplet **was** jason's full nas login, with rw on every
+module the daemon exports (`docker`, `home`, `homes`, `storage`). A compromised droplet
+leaked the whole nas, not one backup directory.
 
-**Consequence:** a compromise of the rustd.xyz droplet — where that password sits in a
-root-owned, mode-0600 file (`rustd_xyz_backup_rsync_password_file`) — leaks full access
-to `jason`'s nas account, not just write access to one backup directory. This is a real
-blast-radius gap versus the (unimplementable) ssh-jail design's intent, and is flagged
-here as a follow-up rather than fixed now, because fixing it means changing the nas
-side, which is manual UGOS-UI work outside this role's reach:
+Fixed in #502: all three push sides authenticate as `svcbackup`, a dedicated non-admin UGOS
+user whose only share is `storage` (1Password `nas-rsync` item). A compromised droplet now
+gets write into `/volume1/storage` and nothing else. The `*_backup_nas_rsync_user`
+defaults in `rustd_xyz`, `jasonernst_com` and `mailu` name that account; if it's ever
+renamed in the UGOS UI, change all three.
 
-**Recommended follow-up:** create a dedicated, non-admin UGOS user (its own password,
-*not* `jason`'s login) with rsync access scoped to only the `storage` module (or better,
-a module rooted at `backups/rustd-db` directly, so it can't even see the rest of
-`/volume1/storage`). Point `rustd_xyz_backup_nas_rsync_user` /
-`rustd_xyz_backup_nas_rsync_password` at that account instead of `jason`. Until that's
-done, treat the droplet's rsync password file as equivalent in sensitivity to `jason`'s
-nas login, because it is one.
+Field notes from the cutover (2026-09-20): UGOS regenerated `rsyncd.conf` with
+`storage` as the *only* module and `svcbackup` as its only auth user, so `jason` was
+dropped from the daemon entirely (no separate "remove jason" step). The daemon now runs
+as `uid = svcbackup`, so new files land `svcbackup:users`; the pre-cutover ones stay
+`jason:admin` — harmless, the push never rewrites an unchanged dump and the prune runs as
+root. Editing the share also left `/volume1/storage` mode `000` for plain ssh/`jason`;
+read it with `sudo` on the nas.
+
+Ceiling, deliberately not chased: `storage` is wider than the `backups/` subtree — a
+module rooted at `/volume1/storage/backups` would be tighter still if UGOS ever lets a
+share be created there.
 
 ## Restoring
 
@@ -137,7 +145,7 @@ See `roles/rustd_xyz/README.md` "Restore drill" (`pg_restore --clean --if-exists
 
 ```bash
 cd /opt/goblog
-R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://jason@nas:873/storage/backups/goblog"
+R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/goblog"
 $R/db/goblog-YYYY-MM-DD.db prod/restore.db
 docker stop www.jasonernst.com
 cp prod/restore.db prod/database.db          # bind-mounted into the container as-is
@@ -162,7 +170,7 @@ afterwards so rspamd picks the restored keys up.
 
 ```bash
 cd /opt/mailu
-R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://jason@nas:873/storage/backups/mailu"
+R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/mailu"
 docker compose down
 $R/dkim/ dkim/
 $R/data/ data/                                # instance keys etc; live db excluded on push
