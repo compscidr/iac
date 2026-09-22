@@ -117,6 +117,14 @@ as `uid = svcbackup`, so new files land `svcbackup:users`; the pre-cutover ones 
 root. Editing the share also left `/volume1/storage` mode `000` for plain ssh/`jason`;
 read it with `sudo` on the nas.
 
+The share edit also reset `/volume1/storage`'s mode (000, then 750 `jason:admin` by
+hand), which locked `svcbackup` (only in `users`) out of the daemon's own module root:
+auth succeeded, then every push got `change_dir ... Permission denied (13)` for two nights
+until the freshness check fired. The role now sets an ACL (`u:svcbackup:rx`) on the module
+root every run (`backup_nas_rsync_module_root` / `backup_nas_rsync_user`), so re-run
+`nas.yml --tags backup` after any share edit in the UGOS UI rather than fixing the mode by
+hand.
+
 Ceiling, deliberately not chased: `storage` is wider than the `backups/` subtree — a
 module rooted at `/volume1/storage/backups` would be tighter still if UGOS ever lets a
 share be created there.
