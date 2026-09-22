@@ -52,7 +52,8 @@ restoring into a fresh/empty `rustd-db`, not a sign the restore failed.
 
 All secrets (`rustd_xyz_ghcr_token`, `rustd_xyz_db_password`,
 `rustd_xyz_smtp_username`, `rustd_xyz_smtp_password`,
-`rustd_xyz_backup_nas_rsync_password`) are 1Password lookups set as `vars` in
+`rustd_xyz_backup_nas_rsync_password`, `rustd_xyz_stripe_secret_key`,
+`rustd_xyz_stripe_webhook_secret`) are 1Password lookups set as `vars` in
 `projects.yml` — never hardcoded in `defaults/main.yml`. The postgres password
 comes from the `rustd-db` item (Infrastructure vault), created manually by the
 operator before the first deploy. The rsync-daemon backup password comes from

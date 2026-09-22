@@ -60,6 +60,22 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_discord_bot_token: "{{ lookup('community.general.onepassword', 'rustd-discord', field='bot token', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
+    # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
+    # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
+    # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, named like
+    # sair's above; same rule as rustd-discord: a missing item OR a missing `credential`
+    # field is a hard failure for the whole play, so all four must exist with that
+    # field present. A blank value is fine: billing off (the panel enforces plans but
+    # /billing and /stripe answer 404), so the price items can hold placeholders until
+    # the Stripe products exist.
+    rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID - RUSTD', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE_ID - RUSTD', field='credential',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
     # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
     # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
     # so a compromised droplet can't reach the rest of the nas (#502).
