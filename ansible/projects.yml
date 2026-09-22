@@ -62,18 +62,19 @@
       account_id=onepassword_account_id) }}"
     # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
     # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
-    # price ids (Solo $5/mo, Community $20/mo). One secure note, four fields, same
-    # missing-item rule as rustd-discord: the item must exist for this play to run.
-    # Any field blank = billing off (the panel enforces plans but /billing and /stripe
-    # answer 404), so the item can be created with blank fields before Stripe is set up.
-    rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'rustd-stripe', field='secret key', vault=onepassword_vault,
+    # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, named like
+    # sair's above; same missing-item rule as rustd-discord: all four must exist for
+    # this play to run. Any value blank = billing off (the panel enforces plans but
+    # /billing and /stripe answer 404), so the price items can hold placeholders until
+    # the Stripe products exist.
+    rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'rustd-stripe', field='webhook secret', vault=onepassword_vault,
+    rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'rustd-stripe', field='price solo', vault=onepassword_vault,
+    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'rustd-stripe', field='price community', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
+    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE_ID - RUSTD', field='credential',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
     # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
     # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
     # so a compromised droplet can't reach the rest of the nas (#502).

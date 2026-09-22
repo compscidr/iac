@@ -50,7 +50,8 @@ rustd_xyz_discord_bot_token: ""
 # /billing and /stripe answer 404. Set the four, deploy, THEN add the webhook endpoint
 # https://<domain>/stripe/webhook in the Stripe dashboard (events
 # customer.subscription.created/updated/deleted) - its signing secret is the second
-# field. From projects.yml (1Password item rustd-stripe).
+# value. From projects.yml (1Password items STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET /
+# STRIPE_SOLO_PRICE_ID / STRIPE_COMMUNITY_PRICE_ID, each suffixed "- RUSTD").
 rustd_xyz_stripe_secret_key: ""
 rustd_xyz_stripe_webhook_secret: ""
 rustd_xyz_stripe_price_solo: ""
