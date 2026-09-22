@@ -77,6 +77,20 @@
     owner: root
     group: root
     mode: "644"
+  notify: Reload nginx-proxy
+
+# nginx only re-reads conf.d on a reload, and nginx-proxy's docker-gen reloads it only when
+# the config it GENERATES changes - a new or edited file here needs the handler.
+- name: Deploy nginx gzip (off in the base image; nginx-proxy only sets gzip_types)
+  tags: nginx
+  become: true
+  ansible.builtin.copy:
+    src: nginx-gzip.conf
+    dest: /etc/nginx/conf.d/gzip.conf
+    owner: root
+    group: root
+    mode: "644"
+  notify: Reload nginx-proxy
 
 - name: Deploy Nginx Reverse Proxy
   tags: nginx
