@@ -26,6 +26,18 @@
 # own hostname (DXP8800PLUS-3F06), which must never become the tailnet name.
 backup_nas_tailnet_hostname: nas
 
+# The rsync daemon's module root and the UGOS account it runs as (the
+# `auth users` of the `storage` module - same name the three push-side
+# `*_backup_nas_rsync_user` defaults dial). UGOS rewrites the root's mode
+# whenever the share is edited in its UI (2026-09-20: 000, then 750
+# jason:admin), and svcbackup is only in `users`, so the daemon lost
+# traverse on its own root and every push failed with EACCES for two
+# nights before the freshness check fired. The role re-asserts an ACL
+# for svcbackup on the root every run - the one receive-side thing
+# ansible CAN own here.
+backup_nas_rsync_module_root: /volume1/storage
+backup_nas_rsync_user: svcbackup
+
 # --- Backup freshness alerting (issue #479) --------------------------------
 #
 # Daily dead-man's switch: alert to discord #dev-alerts when a pipeline's

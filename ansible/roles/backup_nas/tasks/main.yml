@@ -93,10 +93,24 @@
 # manages its own module root (/volume1/storage), its own directory
 # creation under it (rsync --mkpath on the push side), and its own
 # username/password auth entirely separate from Linux accounts and sshd.
-# There is nothing left for ansible to create or authorize on the receive
-# side; see README.md for why every earlier attempt at an ssh-based
-# receiver (dedicated user, target-dir ownership, rrsync, then a
-# forced-command receive script) was abandoned.
+# See README.md for why every earlier attempt at an ssh-based receiver
+# (dedicated user, target-dir ownership, rrsync, then a forced-command
+# receive script) was abandoned.
+#
+# The one thing ansible does own on the receive side: the daemon runs as
+# svcbackup, and UGOS resets the module root's mode on every share edit
+# (see defaults). Without traverse on the root the daemon answers every
+# push with `change_dir ... failed: Permission denied (13)` after a
+# successful auth. Re-asserted every run so a UI edit can't silently
+# take the pipeline down again.
+- name: Let the rsync daemon user traverse its module root
+  become: true
+  ansible.posix.acl:
+    path: "{{ backup_nas_rsync_module_root }}"
+    entity: "{{ backup_nas_rsync_user }}"
+    etype: user
+    permissions: rx
+    state: present
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true
