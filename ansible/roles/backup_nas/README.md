@@ -117,13 +117,21 @@ as `uid = svcbackup`, so new files land `svcbackup:users`; the pre-cutover ones 
 root. Editing the share also left `/volume1/storage` mode `000` for plain ssh/`jason`;
 read it with `sudo` on the nas.
 
-The share edit also reset `/volume1/storage`'s mode (000, then 750 `jason:admin` by
-hand), which locked `svcbackup` (only in `users`) out of the daemon's own module root:
-auth succeeded, then every push got `change_dir ... Permission denied (13)` for two nights
-until the freshness check fired. The role now sets an ACL (`u:svcbackup:rx`) on the module
-root every run (`backup_nas_rsync_module_root` / `backup_nas_rsync_user`), so re-run
-`nas.yml --tags backup` after any share edit in the UGOS UI rather than fixing the mode by
-hand.
+**UGOS does not check POSIX permissions on its shares.** Directories carry a UGOS-native
+NFSv4-style ACL ("ugacl", an xattr, read/written with `ugacltool get|add|del_one PATH`), and
+where one exists the mode bits are ignored: `backups/` is `777` and still refuses
+`svcbackup`, because its ugacl names only `jason` and `admin`. Granting a user on a share
+in the UGOS UI writes an *inheritable* ugacl entry on the share root; that entry is what
+the daemon is checked against. At the cutover the root then read as mode `000` to plain
+ssh, and the by-hand `chown jason:admin; chmod 750` that made it readable stripped the
+ugacl (the root fell back to "Linux mode"). Auth still succeeded, then every push got
+`change_dir ... Permission denied (13)` for two nights until the freshness check fired.
+
+The role now re-asserts the entry every run (`backup_nas_rsync_ugacl_entry`, same shape as
+the ones UGOS writes, compare `ugacltool get /volume1/docker`). **Never chmod/chown/setfacl
+the share root by hand** - re-run `nas.yml --tags backup` instead. `ugacltool get_perm PATH
+USER` shows what UGOS actually grants a user on a path; that is the thing to read when a
+push is refused, not `ls -l`.
 
 Ceiling, deliberately not chased: `storage` is wider than the `backups/` subtree — a
 module rooted at `/volume1/storage/backups` would be tighter still if UGOS ever lets a
