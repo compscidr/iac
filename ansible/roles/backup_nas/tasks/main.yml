@@ -98,19 +98,21 @@
 # receive script) was abandoned.
 #
 # The one thing ansible does own on the receive side: the daemon runs as
-# svcbackup, and UGOS resets the module root's mode on every share edit
-# (see defaults). Without traverse on the root the daemon answers every
-# push with `change_dir ... failed: Permission denied (13)` after a
-# successful auth. Re-asserted every run so a UI edit can't silently
-# take the pipeline down again.
-- name: Let the rsync daemon user traverse its module root
+# svcbackup, and UGOS checks it against its own ACL layer (ugacl - see
+# defaults), not POSIX bits. Re-asserted every run so a hand edit of the
+# share root can't silently take the pipeline down again.
+- name: Read the UGOS ACL on the rsync module root
   become: true
-  ansible.posix.acl:
-    path: "{{ backup_nas_rsync_module_root }}"
-    entity: "{{ backup_nas_rsync_user }}"
-    etype: user
-    permissions: rx
-    state: present
+  ansible.builtin.command:
+    cmd: ugacltool get {{ backup_nas_rsync_module_root }}
+  register: backup_nas_ugacl
+  changed_when: false
+
+- name: Grant the rsync daemon user an inheritable UGOS ACL entry on its module root
+  become: true
+  ansible.builtin.command:
+    cmd: ugacltool add {{ backup_nas_rsync_module_root }} "{{ backup_nas_rsync_ugacl_entry }}"
+  when: backup_nas_rsync_ugacl_entry not in backup_nas_ugacl.stdout
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true

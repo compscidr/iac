@@ -28,15 +28,25 @@ backup_nas_tailnet_hostname: nas
 
 # The rsync daemon's module root and the UGOS account it runs as (the
 # `auth users` of the `storage` module - same name the three push-side
-# `*_backup_nas_rsync_user` defaults dial). UGOS rewrites the root's mode
-# whenever the share is edited in its UI (2026-09-20: 000, then 750
-# jason:admin), and svcbackup is only in `users`, so the daemon lost
-# traverse on its own root and every push failed with EACCES for two
-# nights before the freshness check fired. The role re-asserts an ACL
-# for svcbackup on the root every run - the one receive-side thing
-# ansible CAN own here.
+# `*_backup_nas_rsync_user` defaults dial).
+#
+# UGOS does not use POSIX permissions on its shares. It has its own
+# NFSv4-style ACL ("ugacl", an xattr, managed by `ugacltool`), and where a
+# directory carries one the mode bits are ignored - `backups/` is 777 and
+# still refuses svcbackup, because its ugacl names only jason and admin.
+# Share-level access is an inheritable ugacl entry on the share ROOT; the
+# UGOS UI writes one when a user is granted rw on the share. A by-hand
+# chmod/chown on the root (2026-09-20, to make it readable as jason)
+# stripped that entry and dropped the root to "Linux mode", so every push
+# since authenticated and then failed with EACCES for two nights before
+# the freshness check fired. The role re-asserts the entry every run.
+# Never chmod/chown/setfacl the share root by hand; the POSIX layer is not
+# what the daemon is checked against.
 backup_nas_rsync_module_root: /volume1/storage
 backup_nas_rsync_user: svcbackup
+# Same shape as the entries UGOS itself writes for a share user (compare
+# `ugacltool get /volume1/docker`): allow, full rw, inherit to files and dirs.
+backup_nas_rsync_ugacl_entry: "user:{{ backup_nas_rsync_user }}:allow:rwxpdDaARWc--:-fd-"
 
 # --- Backup freshness alerting (issue #479) --------------------------------
 #
