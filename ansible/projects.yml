@@ -62,12 +62,15 @@
       account_id=onepassword_account_id) }}"
     # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
     # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
-    # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, named like
-    # sair's above; same rule as rustd-discord: a missing item OR a missing `credential`
-    # field is a hard failure for the whole play, so all four must exist with that
-    # field present. A blank value is fine: billing off (the panel enforces plans but
-    # /billing and /stripe answer 404), so the price items can hold placeholders until
-    # the Stripe products exist.
+    # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, value in the
+    # `credential` field, named EXACTLY as the lookups below spell them (the "- RUSTD"
+    # suffix marks them apart from sair's, whose price item is STRIPE_SOLO_PRICE_ID with
+    # no suffix). Same rule as rustd-discord: a missing item OR a missing `credential`
+    # field is a hard failure for the whole play. A blank value is fine: billing off (the
+    # panel enforces plans but /billing and /stripe answer 404), so the price items can
+    # hold placeholders until the Stripe products exist. The price values are the
+    # price_... ids from each product's Pricing row - NOT the product's own prod_... id,
+    # which Checkout rejects with "No such price" (seen 2026-09-22).
     rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
     rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential', vault=onepassword_vault,
