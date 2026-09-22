@@ -72,9 +72,9 @@
       account_id=onepassword_account_id) }}"
     rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID - RUSTD', field='credential', vault=onepassword_vault,
+    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE - RUSTD', field='credential', vault=onepassword_vault,
       account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE_ID - RUSTD', field='credential',
+    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE - RUSTD', field='credential',
       vault=onepassword_vault, account_id=onepassword_account_id) }}"
     # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
     # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
