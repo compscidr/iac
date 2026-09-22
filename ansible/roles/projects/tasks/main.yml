@@ -242,7 +242,7 @@
   become: true
   community.docker.docker_container:
     name: goblog.live
-    image: compscidr/goblog:v0.7.0
+    image: compscidr/goblog:v0.8.0
     restart: "{{ projects_goblog_live_site_theme.changed | default(false) }}"
     volumes:
       - /opt/goblog-live/uploads:/go/src/github.com/compscidr/goblog/www/uploads
