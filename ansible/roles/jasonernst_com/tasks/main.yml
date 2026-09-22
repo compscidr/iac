@@ -332,7 +332,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: www.jasonernst.com
-    image: compscidr/goblog:v0.9.0
+    image: compscidr/goblog:v0.9.1
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/prod/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
@@ -372,7 +372,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: staging.jasonernst.com
-    image: compscidr/goblog:v0.9.0
+    image: compscidr/goblog:v0.9.1
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/staging/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
