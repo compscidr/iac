@@ -63,8 +63,9 @@
     # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
     # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
     # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, named like
-    # sair's above; same missing-item rule as rustd-discord: all four must exist for
-    # this play to run. Any value blank = billing off (the panel enforces plans but
+    # sair's above; same rule as rustd-discord: a missing item OR a missing `credential`
+    # field is a hard failure for the whole play, so all four must exist with that
+    # field present. A blank value is fine: billing off (the panel enforces plans but
     # /billing and /stripe answer 404), so the price items can hold placeholders until
     # the Stripe products exist.
     rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
