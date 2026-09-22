@@ -114,7 +114,12 @@
     cmd: ugacltool add {{ backup_nas_rsync_module_root }} "{{ backup_nas_rsync_ugacl_entry }}"
   # Guarded by the `get` above, so when it runs it always changes something.
   changed_when: true
-  when: backup_nas_rsync_ugacl_entry not in backup_nas_ugacl.stdout
+  # Guard on the principal, not the exact entry: `get` prints entries in the
+  # same `user:NAME:allow:PERMS:FLAGS` form the role writes (verified against
+  # the nas), but if the UGOS UI ever writes a different entry for the same
+  # user, an exact match would stack a duplicate ACE on every run. A weaker
+  # existing entry is left alone; the freshness check catches that case.
+  when: "'user:' ~ backup_nas_rsync_user ~ ':' not in backup_nas_ugacl.stdout"
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true
