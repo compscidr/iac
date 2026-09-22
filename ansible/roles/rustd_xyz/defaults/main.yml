@@ -44,6 +44,18 @@ rustd_xyz_discord_application_id: ""
 rustd_xyz_discord_public_key: ""
 rustd_xyz_discord_bot_token: ""
 
+# Stripe billing (compscidr/rustd.xyz#668): secret key, webhook signing secret, and the
+# Solo/Community price ids. All four blank means billing is off - plans are still
+# enforced (trial, cap, moderators, read-only when lapsed) but nothing is sold and
+# /billing and /stripe answer 404. Set the four, deploy, THEN add the webhook endpoint
+# https://<domain>/stripe/webhook in the Stripe dashboard (events
+# customer.subscription.created/updated/deleted) - its signing secret is the second
+# field. From projects.yml (1Password item rustd-stripe).
+rustd_xyz_stripe_secret_key: ""
+rustd_xyz_stripe_webhook_secret: ""
+rustd_xyz_stripe_price_solo: ""
+rustd_xyz_stripe_price_community: ""
+
 # SMTP for account claim / notification mail
 rustd_xyz_smtp_host: "mail.rustd.xyz"
 rustd_xyz_smtp_port: 465
