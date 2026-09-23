@@ -31,12 +31,21 @@
   pre_tasks:
     - name: Reach the host over the tailnet when away from home
       ansible.builtin.include_tasks: lan_or_tailnet.yml
+    # Secrets fetched ONCE per host into facts, not play vars re-read at
+    # every reference (#542). The agent token is per host by design.
+    - name: Read the GHCR PAT from 1Password
+      tags: always
+      ansible.builtin.set_fact:
+        rustd_render_agent_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+      no_log: true
+    - name: Read this host's agent token from 1Password
+      tags: always
+      ansible.builtin.set_fact:
+        rustd_render_agent_token: "{{ lookup('community.general.onepassword', 'rustd-render-agent-' ~ inventory_hostname_short, field='credential',
+          vault=onepassword_vault, account_id=onepassword_account_id) }}"
+      no_log: true
   vars_files:
     - vars/user.yml
-  vars:
-    rustd_render_agent_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_render_agent_token: "{{ lookup('community.general.onepassword', 'rustd-render-agent-' ~ inventory_hostname_short, field='credential',
-      vault=onepassword_vault, account_id=onepassword_account_id) }}"
   roles:
     - rustd_render_agent

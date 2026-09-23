@@ -2,6 +2,16 @@
 # Same shape as minecraft_game and minecraft_bedrock: no become except the crontab
 # write, which needs root only because /var/spool/cron/crontabs is root-owned on this
 # appliance.
+# Two `op` calls for the role: the factorio.com account item (username + token,
+# split where used) and the shared rcon secret (#542).
+- name: Read this role's 1Password items
+  tags: [factorio]
+  ansible.builtin.set_fact:
+    factorio_game_op_item: "{{ lookup('community.general.onepassword_raw', 'factorio', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    factorio_game_op_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Check whether the factorio data directory exists
   tags: [factorio]
   ansible.builtin.stat:
@@ -55,10 +65,8 @@
     dest: "{{ factorio_game_data_dir }}/config/server-settings.json"
     mode: "0600"
   vars:
-    factorio_game_username: "{{ lookup('community.general.onepassword', 'factorio', field='username', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    factorio_game_token: "{{ lookup('community.general.onepassword', 'factorio', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
+    factorio_game_username: "{{ factorio_game_op_item | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+    factorio_game_token: "{{ factorio_game_op_item | community.general.json_query(\"fields[?label=='credential' || id=='credential'].value | [0]\") }}"
   notify: Restart factorio
 
 # An empty whitelist is not "nobody can join" - Factorio only enforces a whitelist
@@ -111,8 +119,7 @@
       RCON_PORT: "{{ factorio_game_rcon_port | string }}"
       # The estate's shared game-server rcon secret, same item cs2_game and
       # minecraft_game use - no new 1Password item needed for a first run.
-      RCON_PASSWORD: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-        account_id=onepassword_account_id) }}"
+      RCON_PASSWORD: "{{ factorio_game_op_rcon_password }}"
       # Load the newest save in saves/ rather than a fixed name, so re-seeding from an
       # export is a file copy and not a config change. The inverse is also true: an
       # empty saves/ makes the entrypoint generate a fresh map on start, which is how

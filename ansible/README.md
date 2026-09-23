@@ -100,6 +100,39 @@ op-work      # Sign into work account (jason@bumpapp.xyz)
 
 The session lasts 30 minutes, so you can run multiple playbooks without re-authenticating.
 
+### 1Password rate limit (read this before adding a lookup)
+1Password caps API reads per hour, and the counter is **account-wide**: one budget
+shared by every play, terraform's 1Password provider (locally and in CI), and any
+`op` command run by hand. A play that gets `Too many requests. Your client has been
+rate-limited` also blocks `./tf apply` until the window resets, and the error never
+says when that is - `op service-account ratelimit` is the only way to see it:
+
+```bash
+op service-account ratelimit   # `account read_write` is the shared counter
+```
+
+Every `lookup('community.general.onepassword', ...)` is one `op` call, and a lookup
+in a play var, role default, or task `vars:` is re-run at **every reference** (each
+task that uses it, each `when` that tests it, each loop that evaluates the structure
+holding it), and on every host of the play. That was ~30 calls for 8 secrets in
+hermes.yml and 60+ for a `common.yml` run (#542). The rules that keep it bounded:
+
+- Read secrets **once**, at the top of the play (`pre_tasks`) or role, into facts with
+  `set_fact` + `no_log: true`; never as a play var or role default holding a lookup.
+  Tag the task `always` in a playbook, or with the union of its consumers' tags in a
+  role, so `--tags` runs still have them.
+- One call per **item**, not per field: read multi-field items with
+  `community.general.onepassword_raw` and split locally with
+  `community.general.json_query("fields[?label=='x' || id=='x'].value | [0]")`. Match
+  on `id` as well as `label` - some items (the `SMTP_USER - *` logins) carry custom
+  labels, and only the id is stable.
+- A play against many hosts reads each shared item once: `run_once: true` on the
+  `set_fact` broadcasts the fact to every host in the play.
+- A lazy var you cannot move (a role default a playbook overrides) is resolved once by
+  assigning it to itself: `set_fact: {foo: "{{ foo }}"}`.
+
+See `hermes.yml`, `projects.yml`, and `roles/common_cli/tasks/main.yml` for the shape.
+
 After signing in, you can run any of the example commands below. You'll still need to use
 `--ask-become-pass` to provide your sudo password (typing it once per playbook run is simpler
 than dealing with 1Password desktop app prompts for every secret lookup).
@@ -154,6 +187,6 @@ export OP_SERVICE_ACCOUNT_TOKEN="your-personal-account-token"
 cd ansible
 python -m venv venv
 . venv/bin/activate
-pip install molecule molecule-docker passlib
+pip install molecule molecule-docker passlib jmespath  # jmespath: the json_query filter that splits raw 1Password items
 molecule test
 ```

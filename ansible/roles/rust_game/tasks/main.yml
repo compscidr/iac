@@ -9,6 +9,14 @@
 # states which servers it wants (see nas.yml and cube.yml), so a host can never pick up
 # a server nobody asked it to run. Omitting it fails the play on the first `when` with
 # "'rust_game_servers' is undefined", which is the intended outcome.
+# The estate's shared game-server rcon secret, read ONCE for all three servers (#542).
+- name: Read the rcon password from 1Password
+  tags: [rust-weekly, rust-monthly, rust-build]
+  ansible.builtin.set_fact:
+    rust_game_op_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Rust weekly server
   when: "'weekly' in rust_game_servers"
   tags: rust-weekly
@@ -29,8 +37,7 @@
         rust_gameserver_query_port: 27016
         rust_gameserver_rcon_port: 27017
         rust_gameserver_app_port: 27082
-        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-          account_id=onepassword_account_id) }}"
+        rust_gameserver_rcon_password: "{{ rust_game_op_rcon_password }}"
         rust_gameserver_wipe: "weekly"
         rust_gameserver_manage_wipe_cron: false
         # Defined once in vars/main.yml — see there for why this is group membership
@@ -130,8 +137,7 @@
         rust_gameserver_query_port: 28016
         rust_gameserver_rcon_port: 28017
         rust_gameserver_app_port: 28082
-        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-          account_id=onepassword_account_id) }}"
+        rust_gameserver_rcon_password: "{{ rust_game_op_rcon_password }}"
         rust_gameserver_wipe: "monthly"
         rust_gameserver_manage_wipe_cron: false
         # Defined once in vars/main.yml — see there for why this is group membership
@@ -236,8 +242,7 @@
         # default (8080) collides with anything already on 8080 — which is exactly what failed on
         # ubuntu-cube, where something else already holds it.
         rust_gameserver_rcon_web_port: 8002
-        rust_gameserver_rcon_password: "{{ lookup('community.general.onepassword', 'rust-rcon-password', field='password', vault=onepassword_vault,
-          account_id=onepassword_account_id) }}"
+        rust_gameserver_rcon_password: "{{ rust_game_op_rcon_password }}"
         # A build server should never wipe on a timer. The cron is removed and rustd.xyz
         # owns any wipe that does happen, deliberately, from the panel.
         rust_gameserver_wipe: "monthly"
