@@ -44,9 +44,18 @@ backup_nas_tailnet_hostname: nas
 # what the daemon is checked against.
 backup_nas_rsync_module_root: /volume1/storage
 backup_nas_rsync_user: svcbackup
-# Same shape as the entries UGOS itself writes for a share user (compare
-# `ugacltool get /volume1/docker`): allow, full rw, inherit to files and dirs.
-backup_nas_rsync_ugacl_entry: "user:{{ backup_nas_rsync_user }}:allow:rwxpdDaARWc--:-fd-"
+# Every principal the root must admit, not just svcbackup. Writing a ugacl
+# with ONLY the daemon user (2026-09-22) locked everyone else out: the ACL
+# replaces the mode bits, so the 750 jason:admin root stopped admitting
+# uid 999 / gid 10 (jason:admin) - the PUID/PGID every media container
+# (plex, sonarr, sabnzbd, ...) runs as - and Plex went down 2 seconds
+# after the play. `owner::` and `group:admin` are the two entries UGOS
+# itself puts on every share (compare `ugacltool get /volume1/docker`);
+# same shape throughout: allow, full rw, inherit to files and dirs.
+backup_nas_rsync_ugacl_entries:
+  - "owner::allow:rwxpdDaARWc--:-fd-"
+  - "group:admin:allow:rwxpdDaARWc--:-fd-"
+  - "user:{{ backup_nas_rsync_user }}:allow:rwxpdDaARWc--:-fd-"
 
 # --- Backup freshness alerting (issue #479) --------------------------------
 #
