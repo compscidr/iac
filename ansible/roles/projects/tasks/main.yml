@@ -216,6 +216,14 @@
     modification_time: preserve
     access_time: preserve
 
+# One `op` call for the whole OAuth item, split below, instead of one per field (#542).
+- name: Read the github_auth_goblog_live item from 1Password
+  tags: [projects, goblog-live]
+  ansible.builtin.set_fact:
+    projects_op_item_github_auth: "{{ lookup('community.general.onepassword_raw', 'github_auth_goblog_live', vault='www.jasonernst.com',
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Copy goblog.live .env
   tags: [projects, goblog-live]
   become: true
@@ -223,10 +231,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='username', vault='www.jasonernst.com',
-        account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth_goblog_live', field='credential', vault='www.jasonernst.com',
-        account_id=onepassword_account_id) }}
+      client_id={{ projects_op_item_github_auth | community.general.json_query("fields[?label=='username' || id=='username'].value | [0]") }}
+      client_secret={{ projects_op_item_github_auth | community.general.json_query("fields[?label=='credential' || id=='credential'].value | [0]") }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
       ENABLE_DYNAMIC_PLUGINS=true

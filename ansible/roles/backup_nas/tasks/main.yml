@@ -183,6 +183,13 @@
 # injected in nas.yml from 1Password), and deploying that would mean a blank
 # webhook file and a cron that errors every morning - the exact silent-ish
 # failure this feature exists to prevent.
+# The playbook passes this as a lazy lookup; assigning it to itself resolves
+# it once instead of at each of the three references below (#542).
+- name: Resolve the discord webhook once
+  ansible.builtin.set_fact:
+    backup_nas_discord_webhook: "{{ backup_nas_discord_webhook }}"
+  no_log: true
+
 - name: Ensure the discord webhook is configured
   ansible.builtin.assert:
     that: backup_nas_discord_webhook | length > 0

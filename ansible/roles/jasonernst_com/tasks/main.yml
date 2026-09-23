@@ -1,4 +1,13 @@
 ---
+# The goblog GitHub OAuth app credentials: one `op` call for the whole item,
+# split where it is used, instead of two fields x two .env files (#542).
+- name: Read the github_auth item from 1Password
+  tags: website
+  ansible.builtin.set_fact:
+    jasonernst_com_op_item_github_auth: "{{ lookup('community.general.onepassword_raw', 'github_auth', vault='www.jasonernst.com',
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Create nginx directory on host
   tags: nginx
   become: true
@@ -175,9 +184,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
-        account_id=onepassword_account_id) }}
+      client_id={{ jasonernst_com_op_item_github_auth | community.general.json_query("fields[?label=='username' || id=='username'].value | [0]") }}
+      client_secret={{ jasonernst_com_op_item_github_auth | community.general.json_query("fields[?label=='credential' || id=='credential'].value | [0]") }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
       smtp_host={{ jasonernst_com_smtp_host }}
@@ -197,9 +205,8 @@
     content: |
       database=sqlite
       sqlite_db=../database.db
-      client_id={{ lookup('community.general.onepassword', 'github_auth', field='username', vault='www.jasonernst.com', account_id=onepassword_account_id) }}
-      client_secret={{ lookup('community.general.onepassword', 'github_auth', field='credential', vault='www.jasonernst.com',
-        account_id=onepassword_account_id) }}
+      client_id={{ jasonernst_com_op_item_github_auth | community.general.json_query("fields[?label=='username' || id=='username'].value | [0]") }}
+      client_secret={{ jasonernst_com_op_item_github_auth | community.general.json_query("fields[?label=='credential' || id=='credential'].value | [0]") }}
       admin_login={{ goblog_admin_login }}
       admin_github_id={{ goblog_admin_github_id }}
       smtp_host={{ jasonernst_com_smtp_host }}

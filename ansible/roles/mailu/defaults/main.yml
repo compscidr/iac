@@ -9,44 +9,41 @@ mailu_hostname: mail.jasonernst.com
 # Installation path
 mailu_install_path: /opt/mailu
 
-# Secret key (override in vault or host vars!)
-mailu_secret_key: "{{ lookup('community.general.onepassword', 'Mailu Secret Key', field='password', vault='Infrastructure', account_id=onepassword_account_id)
-  }}"
+# Secrets. Every mailu_op_* below is a fact set by the first task of the role
+# from the matching 1Password item (Infrastructure vault), one `op` call each.
+# They are NOT looked up here: a role default holding a lookup is re-run at
+# every reference, and mailu_additional_domains alone is referenced by three
+# loops and two templates (#542).
+mailu_secret_key: "{{ mailu_op_secret_key }}"
 
 # Admin account
 mailu_admin_user: admin
-mailu_admin_password: "{{ lookup('community.general.onepassword', 'Mailu Admin', field='password', vault='Infrastructure', account_id=onepassword_account_id)
-  }}"
+mailu_admin_password: "{{ mailu_op_admin_password }}"
 
 # Initial user accounts (created on first run)
 mailu_users:
   - user: jason
-    password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - jason', field='password', vault='Infrastructure',
-      account_id=onepassword_account_id) }}"
+    password: "{{ mailu_op_jasonernst_com_jason_password }}"
   - user: kai
-    password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure',
-      account_id=onepassword_account_id) }}"
+    password: "{{ mailu_op_jasonernst_com_kai_password }}"
   # Service account used by www/staging.jasonernst.com (goblog) to send
   # one-time login codes (goblogplatform/goblog#523). Same shape as the
   # sair.run / rustd.xyz noreply accounts below. The password must match
   # what goblog is given: jasonernst_com_smtp_password in
   # ansible/jasonernst_com.yml reads the same 1Password item.
   - user: noreply
-    password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault='Infrastructure',
-      account_id=onepassword_account_id) }}"
+    password: "{{ mailu_op_goblog_smtp_password }}"
 
 # Additional domains hosted on this Mailu instance
 mailu_additional_domains:
   - domain: sair.run
     users:
       - user: jason
-        password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault='Infrastructure',
-          account_id=onepassword_account_id) }}"
+        password: "{{ mailu_op_sair_run_jason_password }}"
       # Service account the sair.run app authenticates as to send magic-link
       # emails. Credentials must stay in sync with the app's SMTP config.
       - user: noreply
-        password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault='Infrastructure',
-          account_id=onepassword_account_id) }}"
+        password: "{{ mailu_op_sair_smtp_password }}"
   # Adding a domain here also adds mail.<domain> to the front container's
   # VIRTUAL_HOST and LETSENCRYPT_HOST, which resolve to a single SAN cert
   # covering every mail hostname. Do not add a domain until mail.<domain>
@@ -55,14 +52,12 @@ mailu_additional_domains:
   - domain: rustd.xyz
     users:
       - user: jason
-        password: "{{ lookup('community.general.onepassword', 'mail.rustd.xyz - jason', field='password', vault='Infrastructure',
-          account_id=onepassword_account_id) }}"
+        password: "{{ mailu_op_rustd_xyz_jason_password }}"
       # Service account for rustd.xyz passwordless login. The app hardcodes
       # quarkus.mailer.from=noreply@rustd.xyz and has no password fallback,
       # so this account is what makes the panel loginable at all.
       - user: noreply
-        password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault='Infrastructure',
-          account_id=onepassword_account_id) }}"
+        password: "{{ mailu_op_rustd_smtp_password }}"
 
 # Mail aliases (local@domain -> destination). Created idempotently at deploy;
 # Mailu's CLI errors on existing aliases, tolerated the same way user creation is.

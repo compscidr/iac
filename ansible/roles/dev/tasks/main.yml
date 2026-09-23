@@ -1,4 +1,21 @@
 ---
+# Same secrets for every dev host: read each item ONCE per play run and
+# broadcast (set_fact + run_once) instead of once per host - see #542 and
+# roles/common_cli/tasks/main.yml. Tagged with the consuming tasks' tags.
+- name: Read this role's 1Password items (once per play, not per host)
+  tags: [doctl, aws, gh]
+  run_once: true
+  ansible.builtin.set_fact:
+    dev_op_digitalocean_token: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    dev_op_aws_key_id: "{{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    dev_op_aws_secret_access_key: "{{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    dev_op_gh_cli_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Install prereqs
   become: true
   tags: prereqs
@@ -262,8 +279,7 @@
   become: true
   tags: doctl
   ansible.builtin.copy:
-    content: "DIGITALOCEAN_ACCESS_TOKEN={{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
+    content: "DIGITALOCEAN_ACCESS_TOKEN={{ dev_op_digitalocean_token }}"
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
 
@@ -290,10 +306,8 @@
   tags: aws
   ansible.builtin.copy:
     content: |
-      AWS_ACCESS_KEY_ID={{ lookup('community.general.onepassword', 'aws_key_id', field='credential', vault=onepassword_vault,
-        account_id=onepassword_account_id) }}
-      AWS_SECRET_ACCESS_KEY={{ lookup('community.general.onepassword', 'aws_secret_access_key', field='credential', vault=onepassword_vault,
-        account_id=onepassword_account_id) }}
+      AWS_ACCESS_KEY_ID={{ dev_op_aws_key_id }}
+      AWS_SECRET_ACCESS_KEY={{ dev_op_aws_secret_access_key }}
       AWS_DEFAULT_REGION=us-west-1
       AWS_DEFAULT_OUTPUT=json
     dest: /etc/environment.d/90-aws.conf
@@ -428,8 +442,7 @@
       vars:
         github_cli_user: "{{ username }}"
         github_cli_username: "compscidr"
-        github_cli_gh_token: "{{ lookup('community.general.onepassword', 'GH CLI token', field='credential', vault=onepassword_vault,
-          account_id=onepassword_account_id) }}"
+        github_cli_gh_token: "{{ dev_op_gh_cli_token }}"
   tags: gh
 
 # https://github.com/dlvhdr/gh-dash

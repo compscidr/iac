@@ -1,0 +1,89 @@
+# Terraform checks live in their own workflow so they only run when terraform/
+# changes. The plan job reads 1Password (op read x3 + the provider's
+# onepassword_item data sources) on every run, and that budget is
+# account-wide and shared with every ansible play - a plan on every
+# renovate/ansible PR was a real slice of it (#542). Not a required status
+# check, so PRs that skip it still merge.
+name: terraform
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "v1.16.3"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+
+      - name: Run TFLint
+        run: tflint --init && tflint
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: terraform  # Run after validate passes
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "v1.16.3"
+
+      - name: Terraform Init
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          # Get DO Spaces credentials from 1Password for backend
+          export AWS_ACCESS_KEY_ID=$(op read "op://Infrastructure/DO Spaces/username")
+          export AWS_SECRET_ACCESS_KEY=$(op read "op://Infrastructure/DO Spaces/credential")
+          terraform init
+
+      - name: Terraform Plan
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          # Get credentials from 1Password
+          export AWS_ACCESS_KEY_ID=$(op read "op://Infrastructure/DO Spaces/username")
+          export AWS_SECRET_ACCESS_KEY=$(op read "op://Infrastructure/DO Spaces/credential")
+          export DIGITALOCEAN_TOKEN=$(op read "op://Infrastructure/DigitalOcean/credential")
+          terraform plan -no-color -input=false

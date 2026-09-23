@@ -10,72 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  terraform:
-    name: Terraform Validate
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: "v1.16.3"
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-
-      - name: Terraform Init (no backend)
-        run: terraform init -backend=false
-
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v6
-
-      - name: Run TFLint
-        run: tflint --init && tflint
-
-  terraform-plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    needs: terraform  # Run after validate passes
-    defaults:
-      run:
-        working-directory: terraform
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install 1Password CLI
-        uses: 1password/install-cli-action@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: "v1.16.3"
-
-      - name: Terraform Init
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: |
-          # Get DO Spaces credentials from 1Password for backend
-          export AWS_ACCESS_KEY_ID=$(op read "op://Infrastructure/DO Spaces/username")
-          export AWS_SECRET_ACCESS_KEY=$(op read "op://Infrastructure/DO Spaces/credential")
-          terraform init
-
-      - name: Terraform Plan
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: |
-          # Get credentials from 1Password
-          export AWS_ACCESS_KEY_ID=$(op read "op://Infrastructure/DO Spaces/username")
-          export AWS_SECRET_ACCESS_KEY=$(op read "op://Infrastructure/DO Spaces/credential")
-          export DIGITALOCEAN_TOKEN=$(op read "op://Infrastructure/DigitalOcean/credential")
-          terraform plan -no-color -input=false
-
   lint:
     name: Ansible Lint # Naming the build is important to use it as a status check
     runs-on: ubuntu-latest
@@ -128,6 +62,6 @@ jobs:
           # jobs test the same core; the driver is molecule-plugins, not the retired
           # molecule-docker 2.1.0 that could not run on ansible-core >= 2.19. Exact pins so
           # Renovate moves them together.
-          python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4
+          python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4 jmespath==1.0.1
           export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=1
           molecule test

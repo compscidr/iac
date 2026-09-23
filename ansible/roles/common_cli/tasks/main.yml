@@ -1,4 +1,30 @@
 ---
+# Every secret this role needs is read from 1Password ONCE per play run, up
+# front. This role runs against `hosts: all` and these are the same items for
+# every host, so run_once reads each item one time and broadcasts the fact to
+# every host in the play (that is what set_fact + run_once does) instead of
+# ~5 `op` calls x every host against an ACCOUNT-WIDE hourly budget (#542).
+# Tagged with the union of the consuming tasks' tags so `--tags gpg` etc.
+# still have what they need; an untagged run gets them anyway.
+- name: Read this role's 1Password items (once per play, not per host)
+  tags: [tailscale, user, gpg, ssh, network-tools]
+  run_once: true
+  ansible.builtin.set_fact:
+    common_cli_op_tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    common_cli_op_user_password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    common_cli_op_gpg_key: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    # Whole item (ssid + passphrase), split where it is used
+    common_cli_op_item_wifi: "{{ lookup('community.general.onepassword_raw', 'Wi-Fi', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    # The fleet-wide deploy key. group_vars/all.yml's deploy_ssh_private_key
+    # picks this up when it is defined, so the "Obtain ssh key" task below
+    # costs no `op` call per host.
+    common_cli_fleet_deploy_ssh_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Install prereqs (Ubuntu/Debian)
   become: true
   tags: prereqs
@@ -62,8 +88,7 @@
   ansible.builtin.command:
     cmd: "tailscale up --authkey={{ tailscale_authkey }} --ssh"
   vars:
-    tailscale_authkey: "{{ lookup('community.general.onepassword', 'Tailscale', field='credential', vault=onepassword_vault, account_id=onepassword_account_id)
-      }}"
+    tailscale_authkey: "{{ common_cli_op_tailscale_authkey }}"
   register: common_cli_tailscale_up
   changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
@@ -73,8 +98,7 @@
   become: true
   ansible.builtin.user:
     name: "{{ username }}"
-    password: "{{ lookup('community.general.onepassword', 'System Account', field='password', vault=onepassword_vault, account_id=onepassword_account_id) |
-      password_hash('sha512') }}"
+    password: "{{ common_cli_op_user_password | password_hash('sha512') }}"
     comment: "{{ fullname }}"
     shell: "{{ '/bin/zsh' if ansible_os_family == 'Darwin' else '/bin/bash' }}"
     append: true
@@ -132,7 +156,7 @@
   become: true
   become_user: "{{ username }}"
   ansible.builtin.copy:
-    content: "{{ lookup('community.general.onepassword', 'GPG Key', field='notesPlain', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    content: "{{ common_cli_op_gpg_key }}"
     dest: "~/.gpg/{{ username }}.gpg"
     mode: "0600"
 
@@ -514,12 +538,11 @@
     - ansible_os_family == "Debian"
     - common_cli_use_systemd_networkd | default(false)
 
-- name: Get WiFi credentials from 1Password (Ubuntu/Debian headless)
+- name: Extract WiFi credentials from the 1Password item (Ubuntu/Debian headless)
   tags: network-tools
   ansible.builtin.set_fact:
-    common_cli_wifi_ssid: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='username', vault=onepassword_vault, account_id=onepassword_account_id) }}"
-    common_cli_wifi_passphrase: "{{ lookup('community.general.onepassword', 'Wi-Fi', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
+    common_cli_wifi_ssid: "{{ common_cli_op_item_wifi | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+    common_cli_wifi_passphrase: "{{ common_cli_op_item_wifi | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
   no_log: true
   when:
     - ansible_os_family == "Debian"

@@ -3,6 +3,17 @@
 # Creates user and installs Docker
 # Run after Tailscale is already installed (via cloud-init for servers)
 
+# bootstrap_username (a 1Password lookup in defaults) is referenced by a dozen
+# tasks and bootstrap_user_password by five `when`s: each reference re-runs
+# the lookup. Assigning them to themselves evaluates each exactly once and
+# the fact shadows the lazy var from here on (#542).
+- name: Resolve the 1Password-backed vars once
+  tags: always
+  ansible.builtin.set_fact:
+    bootstrap_username: "{{ bootstrap_username }}"
+    bootstrap_user_password: "{{ bootstrap_user_password }}"
+  no_log: true
+
 - name: Create docker group
   become: true
   tags: [bootstrap, docker]

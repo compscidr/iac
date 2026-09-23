@@ -9,81 +9,109 @@
   pre_tasks:
     - name: Check Tailscale connectivity
       ansible.builtin.include_tasks: tailscale_check.yml
+
+    # Secrets are fetched ONCE into facts here rather than declared as play
+    # vars: a play var holding a lookup is re-evaluated at every reference
+    # (each task, each `when`), which turned these 15 items into dozens of
+    # `op` calls per run against an ACCOUNT-WIDE hourly budget (#542; same
+    # pattern as hermes.yml). Items with one wanted field use the field
+    # lookup; items with several are read raw once and split below - one
+    # `op` call per item either way. Tagged always so --tags runs have them.
+    - name: Read single-field 1Password items
+      ansible.builtin.set_fact:
+        # SAIR orchestrator + portal
+        sair_orchestrator_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # One PAT shared by every GHCR login on this host (see the aliases below)
+        projects_op_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        sair_portal_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - SAIR', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        sair_portal_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - SAIR', field='credential',
+          vault=onepassword_vault, account_id=onepassword_account_id) }}"
+        sair_portal_stripe_solo_price_id: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # rustd.xyz
+        rustd_xyz_db_password: "{{ lookup('community.general.onepassword', 'rustd-db', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # MaxMind GeoLite2 key for country-by-IP on player profiles. The item must exist
+        # before this playbook runs - a onepassword lookup for a missing item is a hard
+        # failure, not an empty string.
+        rustd_xyz_geoip_license_key: "{{ lookup('community.general.onepassword', 'maxmind-geolite2', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
+        # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
+        # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, value in the
+        # `credential` field, named EXACTLY as the lookups below spell them (the "- RUSTD"
+        # suffix marks them apart from sair's, whose price item is STRIPE_SOLO_PRICE_ID with
+        # no suffix). Same rule as rustd-discord: a missing item OR a missing `credential`
+        # field is a hard failure for the whole play. A blank value is fine: billing off (the
+        # panel enforces plans but /billing and /stripe answer 404), so the price items can
+        # hold placeholders until the Stripe products exist. The price values are the
+        # price_... ids from each product's Pricing row - NOT the product's own prod_... id,
+        # which Checkout rejects with "No such price" (seen 2026-09-22).
+        rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential',
+          vault=onepassword_vault, account_id=onepassword_account_id) }}"
+        rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE - RUSTD', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE - RUSTD', field='credential',
+          vault=onepassword_vault, account_id=onepassword_account_id) }}"
+        # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
+        # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
+        # so a compromised droplet can't reach the rest of the nas (#502).
+        rustd_xyz_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+      no_log: true
+      tags: [always]
+
+    - name: Read multi-field 1Password items
+      ansible.builtin.set_fact:
+        projects_op_item_sair_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - sair', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        projects_op_item_rustd_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - rustd', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        # Discord /verify account linking (compscidr/rustd.xyz#463 slice 2, PR #603): the ONE
+        # Discord application the panel owns. Operators never see these; they invite the bot
+        # from the settings card. A secure note with three fields; like maxmind-geolite2
+        # above, a missing item OR field is a hard failure for the whole play, so the item
+        # must exist for THIS playbook to run at all. To deploy with verification switched
+        # off, keep the item and blank its three fields (the panel treats three empty values
+        # as "off") - do not delete or omit the item. The role's blank defaults only cover
+        # playbooks that never set these vars.
+        projects_op_item_rustd_discord: "{{ lookup('community.general.onepassword_raw', 'rustd-discord', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+      no_log: true
+      tags: [always]
+
+    # Split the raw items locally. Match on `id` as well as `label`, like the
+    # field lookup does: the SMTP items label username/password as
+    # localpart/pw in the 1Password UI, and only their ids are stable.
+    - name: Extract fields from the multi-field items
+      ansible.builtin.set_fact:
+        sair_orchestrator_ghcr_token: "{{ projects_op_ghcr_token }}"
+        sair_portal_ghcr_token: "{{ projects_op_ghcr_token }}"
+        rustd_xyz_ghcr_token: "{{ projects_op_ghcr_token }}"
+        sair_portal_smtp_username: "{{ projects_op_item_sair_smtp
+          | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+        sair_portal_smtp_password: "{{ projects_op_item_sair_smtp
+          | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
+        sair_portal_smtp_from: "{{ projects_op_item_sair_smtp | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+        rustd_xyz_smtp_username: "{{ projects_op_item_rustd_smtp
+          | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+        rustd_xyz_smtp_password: "{{ projects_op_item_rustd_smtp
+          | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
+        rustd_xyz_discord_application_id: "{{ projects_op_item_rustd_discord
+          | community.general.json_query(\"fields[?label=='application ID'].value | [0]\") }}"
+        rustd_xyz_discord_public_key: "{{ projects_op_item_rustd_discord | community.general.json_query(\"fields[?label=='public key'].value | [0]\") }}"
+        rustd_xyz_discord_bot_token: "{{ projects_op_item_rustd_discord | community.general.json_query(\"fields[?label=='bot token'].value | [0]\") }}"
+      no_log: true
+      tags: [always]
   vars:
     # Enable nginx fail2ban jails (logs mounted from Docker)
     fail2ban_nginx_enabled: true
     fail2ban_nginx_botscan_enabled: true
-    # SAIR orchestrator
-    sair_orchestrator_api_key: "{{ lookup('community.general.onepassword', 'sair-api-key', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_orchestrator_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_smtp_username: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='username', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_smtp_from: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='username', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - SAIR', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - SAIR', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    sair_portal_stripe_solo_price_id: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE_ID', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    # rustd.xyz
-    rustd_xyz_ghcr_token: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_db_password: "{{ lookup('community.general.onepassword', 'rustd-db', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    # MaxMind GeoLite2 key for country-by-IP on player profiles. The item must exist
-    # before this playbook runs - a onepassword lookup for a missing item is a hard
-    # failure, not an empty string.
-    rustd_xyz_geoip_license_key: "{{ lookup('community.general.onepassword', 'maxmind-geolite2', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_smtp_username: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='username', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    # Discord /verify account linking (compscidr/rustd.xyz#463 slice 2, PR #603): the ONE
-    # Discord application the panel owns. Operators never see these; they invite the bot
-    # from the settings card. A secure note with three fields; like maxmind-geolite2
-    # above, a missing item OR field is a hard failure for the whole play, so the item
-    # must exist for THIS playbook to run at all. To deploy with verification switched
-    # off, keep the item and blank its three fields (the panel treats three empty values
-    # as "off") - do not delete or omit the item. The role's blank defaults only cover
-    # playbooks that never set these vars.
-    rustd_xyz_discord_application_id: "{{ lookup('community.general.onepassword', 'rustd-discord', field='application ID', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_discord_public_key: "{{ lookup('community.general.onepassword', 'rustd-discord', field='public key', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_discord_bot_token: "{{ lookup('community.general.onepassword', 'rustd-discord', field='bot token', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    # Stripe billing (compscidr/rustd.xyz#668): the panel's secret key, the signing secret
-    # of the webhook endpoint https://rustd.xyz/stripe/webhook, and the two recurring
-    # price ids (Solo $5/mo, Community $20/mo). Four API-credential items, value in the
-    # `credential` field, named EXACTLY as the lookups below spell them (the "- RUSTD"
-    # suffix marks them apart from sair's, whose price item is STRIPE_SOLO_PRICE_ID with
-    # no suffix). Same rule as rustd-discord: a missing item OR a missing `credential`
-    # field is a hard failure for the whole play. A blank value is fine: billing off (the
-    # panel enforces plans but /billing and /stripe answer 404), so the price items can
-    # hold placeholders until the Stripe products exist. The price values are the
-    # price_... ids from each product's Pricing row - NOT the product's own prod_... id,
-    # which Checkout rejects with "No such price" (seen 2026-09-22).
-    rustd_xyz_stripe_secret_key: "{{ lookup('community.general.onepassword', 'STRIPE_SECRET_KEY - RUSTD', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_webhook_secret: "{{ lookup('community.general.onepassword', 'STRIPE_WEBHOOK_SECRET - RUSTD', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_solo: "{{ lookup('community.general.onepassword', 'STRIPE_SOLO_PRICE - RUSTD', field='credential', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
-    rustd_xyz_stripe_price_community: "{{ lookup('community.general.onepassword', 'STRIPE_COMMUNITY_PRICE - RUSTD', field='credential',
-      vault=onepassword_vault, account_id=onepassword_account_id) }}"
-    # nas rsync-daemon auth: the dedicated non-admin `svcbackup` UGOS account
-    # (`nas-rsync` item, Infrastructure vault) - rw on the `storage` share only,
-    # so a compromised droplet can't reach the rest of the nas (#502).
-    rustd_xyz_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
-      account_id=onepassword_account_id) }}"
     www_redirect_domains:
       - { domain: sair.run, letsencrypt_email: "ernstjason1@gmail.com" }
       - { domain: goblog.live, letsencrypt_email: "ernstjason1@gmail.com" }

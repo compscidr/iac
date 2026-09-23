@@ -119,5 +119,12 @@ factorio_backup_nas_keep: 30
 #   host_vars/projects.yml a GitHub-only key, authorized on no machine
 #   host_vars/hermes.yml   off; the hermes role deploys kai's own key
 deploy_ssh_key_enabled: false
-deploy_ssh_private_key: "{{ lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault=onepassword_vault,
-  account_id=onepassword_account_id) }}"
+# Lazy on purpose, and read at most once per play: common.yml (the common_cli
+# role) fetches the item one time for the whole fleet into
+# common_cli_fleet_deploy_ssh_key, and this resolves to that fact. Plays
+# without that fact (bootstrap.yml) fall back to the lookup, once per host.
+# Jinja's conditional expression only evaluates the branch it takes, so the
+# lookup is not run when the fact exists (#542).
+deploy_ssh_private_key: >-
+  {{ common_cli_fleet_deploy_ssh_key if common_cli_fleet_deploy_ssh_key is defined
+     else lookup('community.general.onepassword', 'Github SSH', field='notesPlain', vault=onepassword_vault, account_id=onepassword_account_id) }}

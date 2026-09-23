@@ -1,6 +1,30 @@
 ---
 # Mailu mail server deployment (consolidated on www with nginx-proxy)
 
+# Read every secret the defaults reference ONCE, up front: one `op` call per
+# item. See defaults/main.yml for why they are not looked up in place (#542).
+- name: Read this role's 1Password items
+  ansible.builtin.set_fact:
+    mailu_op_secret_key: "{{ lookup('community.general.onepassword', 'Mailu Secret Key', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_admin_password: "{{ lookup('community.general.onepassword', 'Mailu Admin', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_jasonernst_com_jason_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - jason', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_jasonernst_com_kai_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_goblog_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_sair_run_jason_password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_sair_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_rustd_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.rustd.xyz - jason', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+    mailu_op_rustd_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
+  no_log: true
+
 - name: Create Mailu directory
   become: true
   ansible.builtin.file:
