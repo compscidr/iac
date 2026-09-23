@@ -4,4 +4,4 @@
 # the pinned GitHub release so every dev_gui host runs the same build.
 # Renovate tracks this pin via a custom manager in renovate.json
 # (prereleases are tagged `-pre` and skipped).
-zed_version: "1.20.2"
+zed_version: "1.21.0"
