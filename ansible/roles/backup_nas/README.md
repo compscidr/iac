@@ -127,8 +127,12 @@ ssh, and the by-hand `chown jason:admin; chmod 750` that made it readable stripp
 ugacl (the root fell back to "Linux mode"). Auth still succeeded, then every push got
 `change_dir ... Permission denied (13)` for two nights until the freshness check fired.
 
-The role now re-asserts the entry every run (`backup_nas_rsync_ugacl_entry`, same shape as
-the ones UGOS writes, compare `ugacltool get /volume1/docker`). **Never chmod/chown/setfacl
+The role now re-asserts the entries every run (`backup_nas_rsync_ugacl_entries`, same shape
+as the ones UGOS writes, compare `ugacltool get /volume1/docker`). All three, not just
+svcbackup's: the first version of this task (2026-09-22) wrote a svcbackup-only ugacl, which
+replaced the root's mode bits and locked out uid 999 / gid 10 - jason:admin, the PUID/PGID
+every media container runs as. Plex, sonarr and sabnzbd lost the share 2 seconds after the
+play; `owner::` and `group:admin` are what let them back in. **Never chmod/chown/setfacl
 the share root by hand** - re-run `nas.yml --tags backup` instead. `ugacltool get_perm PATH
 USER` shows what UGOS actually grants a user on a path; that is the thing to read when a
 push is refused, not `ls -l`.

@@ -108,18 +108,20 @@
   register: backup_nas_ugacl
   changed_when: false
 
-- name: Grant the rsync daemon user an inheritable UGOS ACL entry on its module root
+- name: Assert the inheritable UGOS ACL entries on the rsync module root
   become: true
   ansible.builtin.command:
-    cmd: ugacltool add {{ backup_nas_rsync_module_root }} "{{ backup_nas_rsync_ugacl_entry }}"
+    cmd: ugacltool add {{ backup_nas_rsync_module_root }} "{{ item }}"
+  loop: "{{ backup_nas_rsync_ugacl_entries }}"
   # Guarded by the `get` above, so when it runs it always changes something.
   changed_when: true
-  # Guard on the principal, not the exact entry: `get` prints entries in the
-  # same `user:NAME:allow:PERMS:FLAGS` form the role writes (verified against
-  # the nas), but if the UGOS UI ever writes a different entry for the same
-  # user, an exact match would stack a duplicate ACE on every run. A weaker
-  # existing entry is left alone; the freshness check catches that case.
-  when: "'user:' ~ backup_nas_rsync_user ~ ':' not in backup_nas_ugacl.stdout"
+  # Guard on the principal (`owner::`, `group:admin:`, `user:svcbackup:`),
+  # not the exact entry: `get` prints entries in the same form the role
+  # writes (verified against the nas), but if the UGOS UI ever writes a
+  # different entry for the same principal, an exact match would stack a
+  # duplicate ACE on every run. A weaker existing entry is left alone; the
+  # freshness check catches that case for svcbackup.
+  when: item | regex_replace('allow:.*$', '') not in backup_nas_ugacl.stdout
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true
