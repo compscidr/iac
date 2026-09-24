@@ -328,12 +328,12 @@ resource "digitalocean_record" "rustd-TXT-google" {
 # same as home/plex/ombi in jasonernst-com.tf. That includes the cube servers:
 # the name only has to reach the router, and the port picks the machine.
 locals {
-  rustd_game_servers = {
-    monthly = "nas"  # rust_game on the nas
-    weekly  = "nas"  # rust_game on the nas
-    build   = "cube" # rust build server on cube
-    test    = "cube" # rust_test_server on cube
-  }
+  rustd_game_servers = toset([
+    "monthly", # rust_game on the nas
+    "weekly",  # rust_game on the nas
+    "build",   # rust build server on cube
+    "test",    # rust_test_server on cube
+  ])
 }
 
 resource "digitalocean_record" "rustd-CNAME-game" {
