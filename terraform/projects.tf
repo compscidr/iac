@@ -321,19 +321,18 @@ resource "digitalocean_record" "rustd-TXT-google" {
   value  = "google-site-verification=peYDuNWMZhlBjpK83cfx_HEMVyFl6Vbo9R5Njm-KJ14"
 }
 
-# Game server connect addresses (#677). nas and cube both sit behind the home
-# router, which forwards each server's ports to the right machine, so all four
-# share the home IP. They CNAME to nas.jasonernst.com - the record the nas' dyndns
-# container keeps current - rather than publishing the dynamic IP a second time,
-# same as home/plex/ombi in jasonernst-com.tf. That includes the cube servers:
-# the name only has to reach the router, and the port picks the machine.
+# Game server connect addresses (#677): each CNAMEs to the dyndns name of the
+# machine it runs on, which that machine's dyndns container keeps current (see
+# ansible/roles/dyndns). Per machine, not one shared home name: both sit behind the
+# home router so their A records match, but IPv6 has no NAT - each machine's AAAA is
+# its own address, and a v6 client sent to the nas can't reach a server on cube.
 locals {
-  rustd_game_servers = toset([
-    "monthly", # rust_game on the nas
-    "weekly",  # rust_game on the nas
-    "build",   # rust build server on cube
-    "test",    # rust_test_server on cube
-  ])
+  rustd_game_servers = {
+    monthly = "nas.jasonernst.com."  # rust_game on the nas
+    weekly  = "nas.jasonernst.com."  # rust_game on the nas
+    build   = "cube.jasonernst.com." # rust build server on cube
+    test    = "cube.jasonernst.com." # rust_test_server on cube
+  }
 }
 
 resource "digitalocean_record" "rustd-CNAME-game" {
@@ -342,7 +341,7 @@ resource "digitalocean_record" "rustd-CNAME-game" {
   domain = digitalocean_domain.rustd-xyz.name
   type   = "CNAME"
   name   = each.key
-  value  = "nas.jasonernst.com."
+  value  = each.value
 }
 
 # ============================================================================
