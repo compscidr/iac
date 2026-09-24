@@ -30,14 +30,20 @@
     name: "dyndns-home"
     state: absent
 
-# disabled till we figure out how to deal with multiple NICs flip flopping
-# between ipv6 addresses
-# - name: Set DynDns configuration for ubuntu-cube.local
-#   tags: dyndns
-#   set_fact:
-#     dyndns_name: "vpn"
-#     dyndns_container_name: "dyndns"
-#   when: inventory_hostname == 'ubuntu-cube.local'
+# cube publishes `cube` - the rustd.xyz build/test servers CNAME to it
+# (terraform/projects.tf). Its own name rather than reusing nas': the A record is the
+# same shared public IPv4 either way, but IPv6 has no NAT, so only cube's own AAAA
+# reaches the servers on cube over v6.
+#
+# This was once disabled (as `vpn`) because cube's wired and wifi NICs flip-flopped
+# the published IPv6. That no longer happens: only the wired NIC carries a global
+# IPv6 address and the only v6 default route is via it.
+- name: Set DynDns configuration for ubuntu-cube.local
+  tags: dyndns
+  ansible.builtin.set_fact:
+    dyndns_name: "cube"
+    dyndns_container_name: "dyndns"
+  when: inventory_hostname == 'ubuntu-cube.local'
 
 - name: Deploy DynDns
   tags: dyndns

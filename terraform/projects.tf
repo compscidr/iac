@@ -321,6 +321,29 @@ resource "digitalocean_record" "rustd-TXT-google" {
   value  = "google-site-verification=peYDuNWMZhlBjpK83cfx_HEMVyFl6Vbo9R5Njm-KJ14"
 }
 
+# Game server connect addresses (#677): each CNAMEs to the dyndns name of the
+# machine it runs on, which that machine's dyndns container keeps current (see
+# ansible/roles/dyndns). Per machine, not one shared home name: both sit behind the
+# home router so their A records match, but IPv6 has no NAT - each machine's AAAA is
+# its own address, and a v6 client sent to the nas can't reach a server on cube.
+locals {
+  rustd_game_servers = {
+    monthly = "nas.jasonernst.com."  # rust_game on the nas
+    weekly  = "nas.jasonernst.com."  # rust_game on the nas
+    build   = "cube.jasonernst.com." # rust build server on cube
+    test    = "cube.jasonernst.com." # rust_test_server on cube
+  }
+}
+
+resource "digitalocean_record" "rustd-CNAME-game" {
+  for_each = local.rustd_game_servers
+
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "CNAME"
+  name   = each.key
+  value  = each.value
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
