@@ -321,6 +321,30 @@ resource "digitalocean_record" "rustd-TXT-google" {
   value  = "google-site-verification=peYDuNWMZhlBjpK83cfx_HEMVyFl6Vbo9R5Njm-KJ14"
 }
 
+# Game server connect addresses (#677). nas and cube both sit behind the home
+# router, which forwards each server's ports to the right machine, so all four
+# share the home IP. They CNAME to nas.jasonernst.com - the record the nas' dyndns
+# container keeps current - rather than publishing the dynamic IP a second time,
+# same as home/plex/ombi in jasonernst-com.tf. That includes the cube servers:
+# the name only has to reach the router, and the port picks the machine.
+locals {
+  rustd_game_servers = {
+    monthly = "nas"  # rust_game on the nas
+    weekly  = "nas"  # rust_game on the nas
+    build   = "cube" # rust build server on cube
+    test    = "cube" # rust_test_server on cube
+  }
+}
+
+resource "digitalocean_record" "rustd-CNAME-game" {
+  for_each = local.rustd_game_servers
+
+  domain = digitalocean_domain.rustd-xyz.name
+  type   = "CNAME"
+  name   = each.key
+  value  = "nas.jasonernst.com."
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================
