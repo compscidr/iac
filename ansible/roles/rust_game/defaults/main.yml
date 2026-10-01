@@ -17,3 +17,13 @@ rust_game_runtime_user: ""
 # server. NOT under /volume1/storage: the UGOS rsync daemon hands that whole module to
 # the backup credential read-write, and this tree holds the RustDedicated binary.
 rust_game_install_root: /etc/rust/install
+
+# CPU priority of every Rust server container against the host's other containers
+# (collection 0.6.3+, `rust_gameserver_cpu_shares`). Rust's server tick is mostly one thread,
+# and both hosts share their cores with CPU-heavy CI: the nas with the bump-* GitHub runners,
+# ubuntu-cube with the SAIR runners. On 2026-10-01 a Gradle build at ~300% CPU pushed the game
+# containers' cgroup CPU pressure from ~2% to ~8% at the exact moment players reported 1000ms+
+# ping spikes (#694). A weight, not a cap: CI still gets every core the game is not using.
+# 26214 measured as cgroup v2 cpu.weight 1394 against the default 100. Applied in place by
+# Docker, so a run that changes it does not restart the servers.
+rust_game_cpu_shares: 26214
