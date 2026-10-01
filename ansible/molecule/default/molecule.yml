@@ -19,7 +19,6 @@ platforms:
       - nas
       - academic_gui
       - java_runner
-      - android_runner
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
     # dockerfile: Dockerfile
     volumes:
@@ -39,7 +38,6 @@ platforms:
       - nas
       - academic_gui
       - java_runner
-      - android_runner
     image: "geerlingguy/docker-ubuntu2604-ansible:latest"
     # dockerfile: Dockerfile
     volumes:
