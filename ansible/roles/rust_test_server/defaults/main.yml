@@ -9,6 +9,10 @@ rust_test_server_user: jason
 rust_test_server_root: /opt/rust-test
 rust_test_server_steamcmd_dir: /opt/steamcmd
 
+# How long start.sh lets steamcmd update the game before giving up and booting the
+# installed build (a coreutils `timeout` duration). A full update is several GB.
+rust_test_server_update_timeout: 20m
+
 # Where the Steamworks loader looks for steamclient.so — it resolves the path from the
 # SERVER PROCESS's $HOME, not from the install directory, so this has to track the user
 # above rather than rust_test_server_root.
