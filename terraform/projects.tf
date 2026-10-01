@@ -321,17 +321,19 @@ resource "digitalocean_record" "rustd-TXT-google" {
   value  = "google-site-verification=peYDuNWMZhlBjpK83cfx_HEMVyFl6Vbo9R5Njm-KJ14"
 }
 
-# Game server connect addresses (#677): each CNAMEs to the dyndns name of the
-# machine it runs on, which that machine's dyndns container keeps current (see
-# ansible/roles/dyndns). Per machine, not one shared home name: both sit behind the
-# home router so their A records match, but IPv6 has no NAT - each machine's AAAA is
-# its own address, and a v6 client sent to the nas can't reach a server on cube.
+# Game server connect addresses (#677): each CNAMEs to the IPv4-only dyndns name of
+# the machine it runs on (nas4/cube4), which that machine's dyndns-v4 container keeps
+# current (see ansible/roles/dyndns). IPv4-only because the Rust game client cannot use
+# an AAAA: pointed at the dual-stack cube.jasonernst.com it fails with "no ipv6 support"
+# rather than falling back to the A record (seen 2026-09-30). Still per machine rather
+# than one shared name, so that if the client ever gains IPv6 these can go back to the
+# dual-stack names, where each machine's AAAA is its own (IPv6 has no NAT).
 locals {
   rustd_game_servers = {
-    monthly = "nas.jasonernst.com."  # rust_game on the nas
-    weekly  = "nas.jasonernst.com."  # rust_game on the nas
-    build   = "cube.jasonernst.com." # rust build server on cube
-    test    = "cube.jasonernst.com." # rust_test_server on cube
+    monthly = "nas4.jasonernst.com."  # rust_game on the nas
+    weekly  = "nas4.jasonernst.com."  # rust_game on the nas
+    build   = "cube4.jasonernst.com." # rust build server on cube
+    test    = "cube4.jasonernst.com." # rust_test_server on cube
   }
 }
 

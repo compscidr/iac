@@ -4,6 +4,7 @@
   ansible.builtin.set_fact:
     dyndns_name: "nas"
     dyndns_container_name: "dyndns"
+    dyndns_v4_name: "nas4"
   when: inventory_hostname == 'nas.local'
 
 # beast publishes `beast`, not `home`. `home` used to mean this workstation, which
@@ -30,10 +31,9 @@
     name: "dyndns-home"
     state: absent
 
-# cube publishes `cube` - the rustd.xyz build/test servers CNAME to it
-# (terraform/projects.tf). Its own name rather than reusing nas': the A record is the
-# same shared public IPv4 either way, but IPv6 has no NAT, so only cube's own AAAA
-# reaches the servers on cube over v6.
+# cube publishes `cube`, dual-stack. Its own name rather than reusing nas': the A
+# record is the same shared public IPv4 either way, but IPv6 has no NAT, so only cube's
+# own AAAA reaches a service on cube over v6.
 #
 # This was once disabled (as `vpn`) because cube's wired and wifi NICs flip-flopped
 # the published IPv6. That no longer happens: only the wired NIC carries a global
@@ -43,6 +43,7 @@
   ansible.builtin.set_fact:
     dyndns_name: "cube"
     dyndns_container_name: "dyndns"
+    dyndns_v4_name: "cube4"
   when: inventory_hostname == 'ubuntu-cube.local'
 
 - name: Deploy DynDns
@@ -62,3 +63,26 @@
     restart_policy: unless-stopped
     memory: 1g
   when: dyndns_name is defined
+
+# An IPv4-ONLY name beside the dual-stack one, for clients that cannot use the AAAA. The
+# Rust game client is one: given test.rustd.xyz -> cube.jasonernst.com it fails with
+# "no ipv6 support" instead of falling back to the A record (2026-09-30). The rustd.xyz
+# game names CNAME to these (terraform/projects.tf). A second container, not a second
+# NAME in the first: the script runs one mode per container, and in its default
+# IPv4-only mode it manages the A record alone, so no AAAA is ever published here.
+- name: Deploy IPv4-only DynDns
+  tags: dyndns
+  community.docker.docker_container:
+    name: "dyndns-v4"
+    image: compscidr/digitalocean-dyndns
+    pull: true
+    env:
+      DIGITALOCEAN_TOKEN: "{{ lookup('community.general.onepassword', 'DigitalOcean', field='credential', vault=onepassword_vault,
+        account_id=onepassword_account_id) }}"
+      DOMAIN: "jasonernst.com"
+      NAME: "{{ dyndns_v4_name }}"
+      SLEEP_INTERVAL: "60"
+      REMOVE_DUPLICATES: "true"
+    restart_policy: unless-stopped
+    memory: 1g
+  when: dyndns_v4_name is defined
