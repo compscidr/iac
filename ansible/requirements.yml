@@ -39,4 +39,4 @@ collections:
   - name: compscidr.spotify
     version: "0.0.5"
   - name: compscidr.keybase
-    version: "0.0.1"
+    version: "0.0.2"
