@@ -38,7 +38,9 @@ common_cli_tools_ubuntu:
   - jq # command line JSON processor
   - lm-sensors # suggested installed with htop
   - nano # simple command line editor
-  - neofetch # cli system info
+  # cli system info: neofetch was dropped from the archive in 26.04 (resolute), and its
+  # successor fastfetch is not packaged before 25.04, so pick per release.
+  - "{{ 'fastfetch' if ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>=') else 'neofetch' }}"
   - nvme-cli # get temperature / stats on nmves
   - powerline # prompt and statusline utility
   - screen # terminal multiplexer

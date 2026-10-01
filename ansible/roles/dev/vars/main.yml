@@ -5,7 +5,10 @@
 php_memory_limit: "128M" # noqa: var-naming[no-role-prefix]
 php_max_execution_time: "90" # noqa: var-naming[no-role-prefix]
 php_upload_max_filesize: "256M" # noqa: var-naming[no-role-prefix]
-php_default_version_debian: "8.3" # noqa: var-naming[no-role-prefix]
+# Ondrej's PHP PPA only publishes for these releases. Elsewhere php comes from the
+# archive, which on 26.04 (resolute) is 8.5 only - no 8.3 packages exist there.
+dev_php_ppa_releases: [jammy, noble]
+php_default_version_debian: "{{ '8.3' if ansible_distribution_release in dev_php_ppa_releases else '8.5' }}" # noqa: var-naming[no-role-prefix]
 php_packages: # noqa: var-naming[no-role-prefix]
   - "php{{ php_default_version_debian }}"
   - "php{{ php_default_version_debian }}-cli"

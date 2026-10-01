@@ -390,14 +390,17 @@
     - ansible_os_family == "Debian"
     - common_cli_use_systemd_networkd | default(false)
 
+# Gated on the generator existing, not on netplan.disabled being absent: dpkg owns
+# the generator path, so any netplan.io upgrade (including do-release-upgrade)
+# reinstalls it next to a stale netplan.disabled. -f overwrites that stale copy.
 - name: Disable netplan generator to prevent phantom interface waits (Ubuntu/Debian headless)
   become: true
   tags:
     - network-tools
     - molecule-idempotence-notest
   ansible.builtin.command:
-    cmd: mv /usr/lib/systemd/system-generators/netplan /usr/lib/systemd/system-generators/netplan.disabled
-    creates: /usr/lib/systemd/system-generators/netplan.disabled
+    cmd: mv -f /usr/lib/systemd/system-generators/netplan /usr/lib/systemd/system-generators/netplan.disabled
+  changed_when: true
   when:
     - ansible_os_family == "Debian"
     - common_cli_use_systemd_networkd | default(false)
