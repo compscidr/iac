@@ -70,11 +70,20 @@
       - strace
       - ltrace
       - valgrind
-      - hotspot
       - heaptrack
       - clang-format
       - clang-tidy
       - pkg-config
+
+# hotspot (perf GUI) fell out of Debian testing on an RC bug and so is not in
+# Ubuntu 25.10+ (absent from resolute). KDAB publishes an AppImage if it's missed.
+- name: Install hotspot (not on Ubuntu 26.04+)
+  tags: cpp
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - hotspot
+  when: not (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>='))
 
 - name: Install ubuntu-specific development tools (perf)
   tags: cpp
