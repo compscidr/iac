@@ -115,6 +115,17 @@ resource "digitalocean_record" "CNAME-sonarr" {
   value  = "nas.jasonernst.com."
 }
 
+# maven.jasonernst.com -> nas (same dynamic IP, managed by dyndns container).
+# The Bump CI caching Maven mirror (Reposilite), served through nas' nginx-proxy.
+# The container and its VIRTUAL_HOST live in the bump repo (infra/ansible,
+# maven_mirror role), not here.
+resource "digitalocean_record" "CNAME-maven" {
+  domain = digitalocean_domain.default.name
+  type   = "CNAME"
+  name   = "maven"
+  value  = "nas.jasonernst.com."
+}
+
 # home.jasonernst.com -> nas (same dynamic IP, managed by dyndns container)
 #
 # A CNAME rather than a second dyndns container publishing `home` directly: the nas
