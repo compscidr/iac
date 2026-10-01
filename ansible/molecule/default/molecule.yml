@@ -9,6 +9,7 @@ dependency:
 driver:
   name: docker
 platforms:
+  # Both LTSes while the fleet is mid-migration to 26.04.
   - name: ubuntu-24.04
     groups:
       - dev
@@ -18,8 +19,26 @@ platforms:
       - nas
       - academic_gui
       - java_runner
-      - android_runner
     image: "geerlingguy/docker-ubuntu2404-ansible:latest"
+    # dockerfile: Dockerfile
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    env:
+      OP_SERVICE_ACCOUNT_TOKEN: "${OP_SERVICE_ACCOUNT_TOKEN}"
+  - name: ubuntu-26.04
+    groups:
+      - dev
+      - dev_gui
+      - gui
+      - android_runner
+      - nas
+      - academic_gui
+      - java_runner
+    image: "geerlingguy/docker-ubuntu2604-ansible:latest"
     # dockerfile: Dockerfile
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw

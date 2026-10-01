@@ -70,11 +70,20 @@
       - strace
       - ltrace
       - valgrind
-      - hotspot
       - heaptrack
       - clang-format
       - clang-tidy
       - pkg-config
+
+# hotspot (perf GUI) fell out of Debian testing on an RC bug and so is not in
+# Ubuntu 25.10+ (absent from resolute). KDAB publishes an AppImage if it's missed.
+- name: Install hotspot (not on Ubuntu 26.04+)
+  tags: cpp
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - hotspot
+  when: not (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>='))
 
 - name: Install ubuntu-specific development tools (perf)
   tags: cpp
@@ -187,7 +196,9 @@
     url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB8DC7E53946656EFBCE4C1DD71DAEAAB4AD4CAB6"
     dest: /usr/share/keyrings/php-ppa.asc
     mode: "0644"
-  when: not dev_php_ppa_key_exists.stat.exists
+  when:
+    - ansible_distribution_release in dev_php_ppa_releases
+    - not dev_php_ppa_key_exists.stat.exists
 
 - name: Add php ppa repository
   become: true
@@ -201,7 +212,20 @@
     components: [main]
     signed_by: "/usr/share/keyrings/php-ppa.asc"
     enabled: true
-  when: not dev_php_ppa_repo_exists.stat.exists
+  when:
+    - ansible_distribution_release in dev_php_ppa_releases
+    - not dev_php_ppa_repo_exists.stat.exists
+
+# A host upgraded in place past the PPA's releases keeps a php-ppa.sources pinned
+# to the old suite (do-release-upgrade only disables it). Remove it so apt stops
+# carrying a stale third-party source and php comes from the archive.
+- name: Remove php ppa repository on releases it does not publish for
+  become: true
+  tags: php
+  ansible.builtin.deb822_repository:
+    name: php-ppa
+    state: absent
+  when: ansible_distribution_release not in dev_php_ppa_releases
 
 # todo: see why this is failing molecule
 - name: Install php and php dev tools
