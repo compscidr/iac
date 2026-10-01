@@ -33,6 +33,23 @@ if [ -z "${RUST_SERVER_SEED:-}" ]; then
   exit 1
 fi
 
+# Update on every start, not just on every play. Rust clients update themselves, so a
+# server that only updates when the playbook runs falls behind at the next game update
+# and refuses every client with "wrong connection protocol: server update required" —
+# it sat on a 2026-08-18 build until 2026-09-30 that way. With Restart=always, an RCON
+# `restart 0` is now also how to pick up a new build.
+#
+# No `validate` (the play keeps it): it rehashes the whole install, minutes per boot for
+# nothing. A failed update (Steam down, no network) must not keep the server down, so it
+# warns and boots the build already on disk.
+if ! {{ rust_test_server_steamcmd_dir }}/steamcmd.sh \
+  +force_install_dir {{ rust_test_server_root }} \
+  +login anonymous \
+  +app_update 258550 \
+  +quit; then
+  echo "WARNING: steamcmd update failed; starting the installed build" >&2
+fi
+
 exec {{ rust_test_server_root }}/RustDedicated -batchmode -nographics \
   +server.identity "{{ rust_test_server_identity }}" \
   +server.hostname "{{ rust_test_server_name }}" \
