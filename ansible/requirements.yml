@@ -33,7 +33,7 @@ collections:
   - name: compscidr.rust_gameserver
     version: "0.6.2"
   - name: compscidr.github_cli
-    version: "0.0.17"
+    version: "0.0.18"
   - name: compscidr.onepassword
     version: "0.1.6"
   - name: compscidr.spotify
