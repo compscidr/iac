@@ -45,12 +45,15 @@
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"
         labels: "self-hosted,sair-enabled,linux"
+      # jvmToolchain(17) builds: the image's JDK satisfies it, so Gradle needn't download one.
       - name: "hello-kotlin-android"
         repo_url: "https://github.com/compscidr/hello-kotlin-android"
         labels: "self-hosted,sair-enabled,linux"
+        image: "compscidr/github-runner-android:jdk17"
       - name: "icmp"
         repo_url: "https://github.com/compscidr/icmp"
         labels: "self-hosted,sair-enabled,linux"
+        image: "compscidr/github-runner-android:jdk17"
   roles:
     - sair
 
