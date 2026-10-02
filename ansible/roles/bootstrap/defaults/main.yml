@@ -13,6 +13,10 @@ bootstrap_user_groups:
 # Password - empty for servers (NOPASSWD sudo), set in group_vars/dev.yml for workstations
 bootstrap_user_password: ""
 
+# NOPASSWD sudo. Defaults to "no password set" (servers); host_vars turn it on
+# for dev-group machines that have a password but aren't workstations (#697).
+bootstrap_passwordless_sudo: "{{ bootstrap_user_password | length == 0 }}"
+
 # Docker
 bootstrap_docker_enabled: true
 

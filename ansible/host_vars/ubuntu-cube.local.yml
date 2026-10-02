@@ -1,0 +1,4 @@
+---
+# Headless runner box, not a workstation: ssh-key access is the gate, so sudo
+# doesn't prompt (#697). Keeps its password for console login.
+bootstrap_passwordless_sudo: true
