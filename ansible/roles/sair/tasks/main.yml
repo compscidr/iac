@@ -126,7 +126,7 @@
   become: true
   community.docker.docker_container:
     name: "sair-runner-{{ item.name }}"
-    image: "{{ sair_runner_image }}"
+    image: "{{ item.image | default(sair_runner_image) }}"
     state: started
     restart_policy: unless-stopped
     network_mode: host

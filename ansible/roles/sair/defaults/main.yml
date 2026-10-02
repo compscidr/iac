@@ -30,7 +30,8 @@ sair_ghcr_user: "compscidr"
 # GitHub runner image
 sair_runner_image: "compscidr/github-runner-android:latest"
 
-# GitHub runners (list of runner containers)
+# GitHub runners (list of runner containers). A runner may set `image` to
+# override sair_runner_image, e.g. a jdkNN tag matching its Gradle toolchain.
 sair_runners:
   - name: "sair"
     repo_url: "https://github.com/compscidr/sair"
