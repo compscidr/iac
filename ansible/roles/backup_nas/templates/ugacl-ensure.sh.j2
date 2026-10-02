@@ -9,11 +9,13 @@
 # the exact entry: if the UGOS UI ever writes a different entry for the same
 # principal, an exact match would stack a duplicate ACE on every run.
 set -eu
+# Absolute path: cron runs this with PATH=/usr/bin:/bin.
+ugacltool=/usr/bin/ugacltool
 root={{ backup_nas_rsync_module_root }}
-acl=$(ugacltool get "$root")
+acl=$("$ugacltool" get "$root")
 {% for entry in backup_nas_rsync_ugacl_entries %}
 case "$acl" in
   *"{{ entry | regex_replace('allow:.*$', '') }}"*) ;;
-  *) ugacltool add "$root" "{{ entry }}" && echo "added {{ entry }}" ;;
+  *) "$ugacltool" add "$root" "{{ entry }}" && echo "added {{ entry }}" ;;
 esac
 {% endfor %}
