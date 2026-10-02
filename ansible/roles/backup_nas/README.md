@@ -132,7 +132,9 @@ as the ones UGOS writes, compare `ugacltool get /volume1/docker`). All three, no
 svcbackup's: the first version of this task (2026-09-22) wrote a svcbackup-only ugacl, which
 replaced the root's mode bits and locked out uid 999 / gid 10 - jason:admin, the PUID/PGID
 every media container runs as. Plex, sonarr and sabnzbd lost the share 2 seconds after the
-play; `owner::` and `group:admin` are what let them back in. **Never chmod/chown/setfacl
+play; `owner::` and `group:admin` are what let them back in. A UGOS firmware update reset
+the ugacl the same way on 2026-10-02, so the re-assert (`/usr/local/bin/backup-nas-ugacl-ensure.sh`)
+also runs from root cron every 15 minutes - no play needed after updates. **Never chmod/chown/setfacl
 the share root by hand** - re-run `nas.yml --tags backup` instead. `ugacltool get_perm PATH
 USER` shows what UGOS actually grants a user on a path; that is the thing to read when a
 push is refused, not `ls -l`.

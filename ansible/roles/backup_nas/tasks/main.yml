@@ -100,28 +100,34 @@
 # The one thing ansible does own on the receive side: the daemon runs as
 # svcbackup, and UGOS checks it against its own ACL layer (ugacl - see
 # defaults), not POSIX bits. Re-asserted every run so a hand edit of the
-# share root can't silently take the pipeline down again.
-- name: Read the UGOS ACL on the rsync module root
+# share root can't silently take the pipeline down again. The same script
+# also runs from root cron, because UGOS firmware updates reset the ACL
+# too (2026-10-02) and nobody re-runs the play after those.
+- name: Deploy the UGOS ACL re-assert script
   become: true
-  ansible.builtin.command:
-    cmd: ugacltool get {{ backup_nas_rsync_module_root }}
-  register: backup_nas_ugacl
-  changed_when: false
+  ansible.builtin.template:
+    src: ugacl-ensure.sh.j2
+    dest: /usr/local/bin/backup-nas-ugacl-ensure.sh
+    owner: root
+    group: root
+    mode: "0700"
 
 - name: Assert the inheritable UGOS ACL entries on the rsync module root
   become: true
   ansible.builtin.command:
-    cmd: ugacltool add {{ backup_nas_rsync_module_root }} "{{ item }}"
-  loop: "{{ backup_nas_rsync_ugacl_entries }}"
-  # Guarded by the `get` above, so when it runs it always changes something.
-  changed_when: true
-  # Guard on the principal (`owner::`, `group:admin:`, `user:svcbackup:`),
-  # not the exact entry: `get` prints entries in the same form the role
-  # writes (verified against the nas), but if the UGOS UI ever writes a
-  # different entry for the same principal, an exact match would stack a
-  # duplicate ACE on every run. A weaker existing entry is left alone; the
-  # freshness check catches that case for svcbackup.
-  when: item | regex_replace('allow:.*$', '') not in backup_nas_ugacl.stdout
+    cmd: /usr/local/bin/backup-nas-ugacl-ensure.sh
+  register: backup_nas_ugacl_ensure
+  # The script prints one line per entry it added, nothing otherwise.
+  changed_when: backup_nas_ugacl_ensure.stdout | length > 0
+
+# Every 15 minutes, not nightly: an update can land just before the ~04:00
+# push window, and a missing entry costs a whole night's backup.
+- name: Re-assert the UGOS ACL entries after firmware updates
+  become: true
+  ansible.builtin.cron:
+    name: "re-assert backup rsync ugacl"
+    minute: "*/15"
+    job: /usr/local/bin/backup-nas-ugacl-ensure.sh
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true

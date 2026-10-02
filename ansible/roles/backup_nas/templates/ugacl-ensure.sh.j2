@@ -1,0 +1,19 @@
+#!/bin/sh
+# {{ ansible_managed }}
+# Re-assert the inheritable UGOS ACL entries on the rsync module root (see
+# backup_nas_rsync_ugacl_entries in defaults). Run by the play and by root
+# cron: a UGOS firmware update reset this ACL (2026-10-02) and locked
+# svcbackup out until nas.yml was re-run by hand. Prints what it added.
+#
+# Guard on the principal (`owner::`, `group:admin:`, `user:svcbackup:`), not
+# the exact entry: if the UGOS UI ever writes a different entry for the same
+# principal, an exact match would stack a duplicate ACE on every run.
+set -eu
+root={{ backup_nas_rsync_module_root }}
+acl=$(ugacltool get "$root")
+{% for entry in backup_nas_rsync_ugacl_entries %}
+case "$acl" in
+  *"{{ entry | regex_replace('allow:.*$', '') }}"*) ;;
+  *) ugacltool add "$root" "{{ entry }}" && echo "added {{ entry }}" ;;
+esac
+{% endfor %}
