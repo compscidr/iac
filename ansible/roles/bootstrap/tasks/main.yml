@@ -46,7 +46,7 @@
     update_password: on_create
   when: bootstrap_user_password | length > 0
 
-- name: Allow passwordless sudo (servers - no password set)
+- name: Allow passwordless sudo (servers, and non-workstation dev hosts)
   become: true
   tags: [bootstrap, user]
   ansible.builtin.copy:
@@ -54,15 +54,15 @@
     dest: "/etc/sudoers.d/{{ bootstrap_username }}"
     mode: "0440"
     validate: "visudo -cf %s"
-  when: bootstrap_user_password | length == 0
+  when: bootstrap_passwordless_sudo | bool
 
-- name: Allow sudo with password (workstations - password set)
+- name: Allow sudo with password (workstations)
   become: true
   tags: [bootstrap, user]
   ansible.builtin.file:
     path: "/etc/sudoers.d/{{ bootstrap_username }}"
     state: absent
-  when: bootstrap_user_password | length > 0
+  when: not bootstrap_passwordless_sudo | bool
 
 - name: Install Docker (Ubuntu/Debian)
   become: true
