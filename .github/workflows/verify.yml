@@ -52,6 +52,10 @@ jobs:
         env: # Or as an environment variable
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           ANSIBLE_CONDITIONALS_ALLOW_BROKEN: "1"
+          # community.docker's API read timeout (default 60s). Removing the two
+          # fully-converged privileged containers in the final destroy can take
+          # longer on a busy runner, failing an otherwise green run.
+          DOCKER_TIMEOUT: "300"
         run: |
           pwd
           ls 
