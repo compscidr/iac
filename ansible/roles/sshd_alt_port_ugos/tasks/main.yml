@@ -24,6 +24,8 @@
 #
 # The vendor config is never read or written; a firmware update that stomps
 # /etc/systemd/system or /etc/ssh/sshd_config_alt is repaired by re-running this role.
+# An update that only leaves ssh-alt stopped/disabled (what 2026-10-01 looked like:
+# unit and config survived, :2222 was dead, #692) self-heals from root cron below.
 
 - name: Install the alternate sshd config
   become: true
@@ -77,3 +79,13 @@
     enabled: true
     state: started
     daemon_reload: true
+
+# Root cron survives UGOS firmware updates (backup_nas' crons did); the enable state
+# of ssh-alt did not (#692). Restores it within 5 minutes, without a play. Can't help
+# if an update deletes the unit file itself - re-run the role for that.
+- name: Re-enable ssh-alt after firmware updates
+  become: true
+  ansible.builtin.cron:
+    name: "re-enable ssh-alt"
+    minute: "*/5"
+    job: systemctl is-active -q ssh-alt || systemctl enable --now ssh-alt
