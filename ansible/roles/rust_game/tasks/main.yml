@@ -30,6 +30,7 @@
       vars:
         rust_gameserver_identity: "weekly"
         rust_gameserver_install_dir: "{{ rust_game_install_root }}/weekly"
+        rust_gameserver_cpu_shares: "{{ rust_game_cpu_shares }}"
         rust_gameserver_name: "California | Weekly | No BP Wipe"
         rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on Thursdays at 11am PST\\nWorld Size: {{ rust_gameserver_worldsize }}"
         rust_gameserver_worldsize: 3000
@@ -129,6 +130,7 @@
       vars:
         rust_gameserver_identity: "monthly"
         rust_gameserver_install_dir: "{{ rust_game_install_root }}/monthly"
+        rust_gameserver_cpu_shares: "{{ rust_game_cpu_shares }}"
         rust_gameserver_name: "California | Monthly | No BP Wipe"
         rust_gameserver_description: "Self hosted in Redwood City CA\\nWipes on 1st Thursday of the Month at 11am PST\\nWorld Size:
           {{ rust_gameserver_worldsize }}"
@@ -229,6 +231,7 @@
       vars:
         rust_gameserver_identity: "build"
         rust_gameserver_install_dir: "{{ rust_game_install_root }}/build"
+        rust_gameserver_cpu_shares: "{{ rust_game_cpu_shares }}"
         rust_gameserver_name: "California Build Server"
         rust_gameserver_description: "Build server — no wipes.\\nWorld Size: {{ rust_gameserver_worldsize }}"
         rust_gameserver_worldsize: 3000
