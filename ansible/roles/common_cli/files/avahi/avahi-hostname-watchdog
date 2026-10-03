@@ -1,0 +1,25 @@
+#!/bin/sh
+# Managed by ansible (roles/common_cli) - do not edit.
+#
+# Take this host's mDNS name back after avahi renamed it to <host>-N.local.
+#
+# On a host-name conflict avahi renames itself and never retries the original
+# name, so a one-off conflict leaves <host>.local unresolvable until avahi is
+# restarted. The known trigger is a host with two links on the same LAN (wired
+# + wifi): a delayed copy of its own boot-time link-local AAAA announcement,
+# heard on the other link after avahi withdrew that record, looks like another
+# host claiming the name. use-ipv6=no removes that trigger; this is the safety
+# net for anything else. A genuine duplicate on the LAN just loses the probe
+# again, and every attempt is logged.
+set -u
+
+want=$(hostname -s)
+# Not running (or no D-Bus): nothing to fix.
+have=$(busctl --system call org.freedesktop.Avahi / org.freedesktop.Avahi.Server GetHostName 2>/dev/null) || exit 0
+have=${have#s \"}
+have=${have%\"}
+
+[ "$have" = "$want" ] && exit 0
+
+echo "avahi host name is ${have}.local, expected ${want}.local - reclaiming it"
+exec busctl --system call org.freedesktop.Avahi / org.freedesktop.Avahi.Server SetHostName s "$want"

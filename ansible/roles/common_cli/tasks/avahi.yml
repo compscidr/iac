@@ -1,0 +1,52 @@
+---
+# mDNS (<host>.local) hardening for hosts that may sit on the LAN with more than
+# one link (e.g. wired/powerline + wifi). Both links keep answering, so .local
+# stays reachable if either one drops.
+#
+# use-ipv6=no: avahi publishes a link's fe80:: address only until a global IPv6
+# address appears, then withdraws it (avahi_interface_address_is_relevant). A
+# delayed copy of that boot-time announcement heard on the other link no longer
+# matches anything we publish, so avahi takes it for another host and renames
+# itself to <host>-2.local (seen on ubuntu-silverstone after the 26.04 upgrade).
+# IPv4 addresses arrive once from DHCP with no link-local stage, so there is no
+# churn to race. Ubuntu resolves .local via nss mdns4_minimal (IPv4 only), so
+# nothing here was using the IPv6 mDNS records.
+- name: Disable IPv6 in avahi (Ubuntu/Debian)
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/avahi/avahi-daemon.conf
+    regexp: '^#?\s*use-ipv6\s*='
+    line: use-ipv6=no
+    insertafter: '^\[server\]'
+  notify: Restart avahi-daemon
+
+- name: Install avahi host-name watchdog script (Ubuntu/Debian)
+  become: true
+  ansible.builtin.copy:
+    src: avahi/avahi-hostname-watchdog
+    dest: /usr/local/sbin/avahi-hostname-watchdog
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Install avahi host-name watchdog units (Ubuntu/Debian)
+  become: true
+  ansible.builtin.copy:
+    src: "systemd/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+    owner: root
+    group: root
+  loop:
+    - avahi-hostname-watchdog.service
+    - avahi-hostname-watchdog.timer
+  notify: Reload systemd
+
+- name: Enable avahi host-name watchdog timer (Ubuntu/Debian)
+  become: true
+  tags: molecule-notest # systemd isn't PID 1 in the molecule container
+  ansible.builtin.systemd:
+    name: avahi-hostname-watchdog.timer
+    enabled: true
+    state: started
+    daemon_reload: true

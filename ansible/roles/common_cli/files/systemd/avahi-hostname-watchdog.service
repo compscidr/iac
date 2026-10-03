@@ -1,0 +1,8 @@
+# Managed by ansible (roles/common_cli) - do not edit.
+[Unit]
+Description=Reclaim the avahi mDNS host name after a conflict rename
+After=avahi-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/avahi-hostname-watchdog

@@ -8,3 +8,7 @@
 # a droplet with only a link-local address after its next reboot. That is what
 # took projects offline on 2026-08-27. See roles/common_cli/defaults/main.yml.
 common_cli_manage_network: false
+
+# Leave avahi alone on the droplets: nothing reaches them by .local, and their
+# network config is fragile enough that untouched is the safe default.
+common_cli_manage_avahi: false

@@ -282,6 +282,16 @@
     pkg: "{{ common_cli_network_tools_ubuntu }}"
   when: ansible_os_family == "Debian"
 
+- name: Harden avahi against host-name conflict renames (Ubuntu/Debian)
+  tags: [network-tools, avahi]
+  ansible.builtin.include_tasks:
+    file: avahi.yml
+    apply:
+      tags: [network-tools, avahi]
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_manage_avahi | bool
+
 - name: Install network tools (macOS)
   tags: network-tools
   community.general.homebrew:
