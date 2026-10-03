@@ -141,5 +141,12 @@
       LABELS: "{{ item.labels }}"
       REPO_URL: "{{ item.repo_url }}"
       DISABLE_AUTO_UPDATE: "true"
+      # Keep the runner's registration in the /runner-data volume, like the
+      # github_runner collection's runners. Without these the image keeps it in
+      # the container's own filesystem ("Runner reusage is disabled"), so after
+      # any unclean stop (e.g. killed at reboot) every restart fails with
+      # "already configured" and the container crash-loops.
+      CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner-data
+      DISABLE_AUTOMATIC_DEREGISTRATION: "true"
   loop: "{{ sair_runners }}"
   no_log: true # Hide runner PAT
