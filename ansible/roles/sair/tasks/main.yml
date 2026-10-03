@@ -99,11 +99,24 @@
 
 # --- GitHub runners ---
 
+# In its own sysctl.d file, not /etc/sysctl.conf: Ubuntu 26.04 dropped the
+# /etc/sysctl.d/99-sysctl.conf -> ../sysctl.conf symlink, so sysctl.conf is no
+# longer applied at boot. The name must sort after the dev role's
+# 99-allow-ping.conf ("1000 1000"), since the last file applied wins and the
+# runner containers run as root (gid 0).
+- name: Remove the old ping_group_range entry from /etc/sysctl.conf
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^\s*net\.ipv4\.ping_group_range\s*='
+    state: absent
+
 - name: Allow ICMP DGRAM sockets (needed for SOCK_DGRAM ICMP tests)
   become: true
   ansible.posix.sysctl:
     name: net.ipv4.ping_group_range
     value: "0 2147483647"
+    sysctl_file: /etc/sysctl.d/99-sair-ping-group.conf
     sysctl_set: true
     reload: true
 

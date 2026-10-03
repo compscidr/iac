@@ -82,7 +82,7 @@
     sair_adb_only: true
     sair_runners:
       - name: "sair-orchestrator"
-        repo_url: "https://github.com/compscidr/sair-ochestrator"
+        repo_url: "https://github.com/compscidr/sair-orchestrator"
         labels: "self-hosted,sair-enabled,linux"
   roles:
     - sair
