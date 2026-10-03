@@ -28,3 +28,9 @@ common_cli_watchtower_notification_url: ""
 # the DigitalOcean recovery console. When false, the role also removes what
 # an earlier run left behind (tasks/cloud_network_restore.yml).
 common_cli_manage_network: true
+
+# avahi mDNS hardening (tasks/avahi.yml): use-ipv6=no plus a timer that takes
+# <host>.local back if avahi ever renames itself to <host>-N.local. Meant for
+# the LAN hosts, which can have two links on the home network; off for the
+# cloud droplets (group_vars/tailscale.yml), which don't use .local names.
+common_cli_manage_avahi: true

@@ -44,3 +44,16 @@
   ansible.builtin.debug:
     msg: "Warning: Failed to reload systemd daemon: {{ common_cli_systemd_daemon_reload_result.msg | default('Unknown error') }}"
   when: common_cli_systemd_daemon_reload_result is failed
+
+- name: Restart avahi-daemon
+  become: true
+  ansible.builtin.systemd:
+    name: avahi-daemon
+    state: restarted
+  register: common_cli_restart_avahi_result
+  ignore_errors: true
+
+- name: Warn if avahi-daemon restart failed
+  ansible.builtin.debug:
+    msg: "Warning: Failed to restart avahi-daemon: {{ common_cli_restart_avahi_result.msg | default('Unknown error') }}"
+  when: common_cli_restart_avahi_result is failed

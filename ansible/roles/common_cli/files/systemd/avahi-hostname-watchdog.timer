@@ -1,0 +1,10 @@
+# Managed by ansible (roles/common_cli) - do not edit.
+[Unit]
+Description=Check every 2 minutes that avahi still publishes this host's own name
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+
+[Install]
+WantedBy=timers.target
