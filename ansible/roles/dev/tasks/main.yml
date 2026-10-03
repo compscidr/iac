@@ -323,6 +323,9 @@
     chdir: "/tmp/aws"
   register: dev_awscli_status
   changed_when: "'changed' in dev_awscli_status.stdout"
+  # command never runs in --check anyway, but ansible-core still validates chdir,
+  # and /tmp/aws only exists once the unarchive above has really run.
+  when: not ansible_check_mode
 
 # note: this will require a restart to apply changes
 - name: Set aws access token
