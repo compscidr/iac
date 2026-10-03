@@ -9,6 +9,11 @@ php_upload_max_filesize: "256M" # noqa: var-naming[no-role-prefix]
 # archive, which on 26.04 (resolute) is 8.5 only - no 8.3 packages exist there.
 dev_php_ppa_releases: [jammy, noble]
 php_default_version_debian: "{{ '8.3' if ansible_distribution_release in dev_php_ppa_releases else '8.5' }}" # noqa: var-naming[no-role-prefix]
+# PHP 8.5 compiles OPcache in; there is no opcache.so, so geerlingguy.php's
+# 10-opcache.ini (zend_extension=opcache.so) only produces a startup warning on
+# every php call. "0" makes the role remove that file; the built-in OPcache then
+# runs with its defaults (enable=1, enable_cli=0), the same values the role set.
+php_opcache_enable: "{{ '0' if php_default_version_debian is version('8.5', '>=') else '1' }}" # noqa: var-naming[no-role-prefix]
 php_packages: # noqa: var-naming[no-role-prefix]
   - "php{{ php_default_version_debian }}"
   - "php{{ php_default_version_debian }}-cli"
@@ -20,3 +25,6 @@ php_packages: # noqa: var-naming[no-role-prefix]
   - "php{{ php_default_version_debian }}-sqlite3"
   - "php{{ php_default_version_debian }}-xml"
   - "php{{ php_default_version_debian }}-intl"
+  # geerlingguy.php writes 20-apcu.ini (php_enable_apc defaults true), so install
+  # the module it loads; on 24.04 the PPA happened to pull it in.
+  - "php{{ php_default_version_debian }}-apcu"
