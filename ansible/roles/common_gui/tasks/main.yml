@@ -43,6 +43,30 @@
   register: common_gui_cli_integration_result
   changed_when: '"1Password CLI integration enabled" in common_gui_cli_integration_result.stdout'
 
+# Route ssh through the 1Password agent, except for LAN hosts: those
+# accept the fleet deploy key (~/.ssh/id_rsa, dev group), and asking the
+# agent first pops a 1Password approval on every `ssh host.local` and
+# every ansible run. First match wins in ssh_config, so *.local goes first.
+- name: Configure ssh to use 1Password agent except for .local hosts
+  tags: [1password, ssh]
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.blockinfile:
+    path: ~/.ssh/config
+    create: true
+    mode: "0600"
+    insertbefore: BOF
+    marker: "# {mark} ANSIBLE MANAGED: 1Password ssh agent"
+    block: |
+      Host *.local
+        IdentityAgent none
+        IdentityFile ~/.ssh/id_rsa
+        IdentitiesOnly yes
+
+      Host *
+        IdentityAgent {{ '"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"'
+          if ansible_os_family == 'Darwin' else '~/.1password/agent.sock' }}
+
 - name: Install discord apt repo (Ubuntu/Debian)
   tags: discord
   become: true
