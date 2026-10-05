@@ -82,6 +82,39 @@
     creates: /usr/bin/tailscale
     executable: /bin/bash
 
+# The install above only runs when tailscale is missing. After
+# do-release-upgrade the Tailscale apt source is left behind: it couldn't be
+# converted to deb822, so tailscale.list is commented out and tailscale stops
+# updating. Re-running the vendor script rewrites the source for this release.
+# LAN hosts only (common_cli_repair_tailscale_source): the droplets are reached
+# over the tailnet, and the script can restart tailscaled mid-run.
+- name: Check the Tailscale apt source targets this release (Ubuntu/Debian)
+  tags: [tailscale]
+  # find/contains matches line by line in Python: no grep exit-status
+  # differences between releases, and a missing file just isn't matched.
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    patterns: [tailscale.list, tailscale.sources]
+    contains: '^\s*[^#\s].*\b{{ ansible_distribution_release }}\b'
+  register: common_cli_tailscale_source
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_repair_tailscale_source | bool
+
+- name: Repair the Tailscale apt source after a release upgrade (Ubuntu/Debian)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |  # noqa: command-instead-of-module
+    set -o pipefail
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    executable: /bin/bash
+  changed_when: true
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_repair_tailscale_source | bool
+    - common_cli_tailscale_source.matched | default(1) == 0
+
 - name: Connect to Tailscale
   become: true
   tags: [tailscale]

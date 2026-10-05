@@ -34,3 +34,9 @@ common_cli_manage_network: true
 # the LAN hosts, which can have two links on the home network; off for the
 # cloud droplets (group_vars/tailscale.yml), which don't use .local names.
 common_cli_manage_avahi: true
+
+# Re-run Tailscale's install script when its apt source no longer targets this
+# release (left commented out by do-release-upgrade). Off for the droplets
+# (group_vars/tailscale.yml): they're managed over the tailnet, and the script
+# can restart tailscaled mid-run.
+common_cli_repair_tailscale_source: true

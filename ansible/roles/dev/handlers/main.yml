@@ -1,0 +1,6 @@
+---
+# Removing a sysctl.d file doesn't change the running value; re-apply them all.
+- name: Re-apply sysctl settings
+  become: true
+  ansible.builtin.command: sysctl --system
+  changed_when: true

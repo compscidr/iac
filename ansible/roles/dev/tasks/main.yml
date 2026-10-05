@@ -439,6 +439,10 @@
     creates: /home/jason/.local/bin/{{ item }}
   with_items: "{{ pipx_packages }}"
 
+# Up to 24.04 the kernel default (1 0) lets nobody open unprivileged ICMP
+# sockets, so this widens it to uid/gid 1000. From 26.04 Ubuntu ships
+# 0 2147483647 in /usr/lib/sysctl.d/50-default.conf, which this file would
+# only narrow (it sorts later), so remove it there.
 - name: Copy userspace icmp socket permission file
   become: true
   tags: ping
@@ -448,6 +452,16 @@
     mode: "0644"
     owner: "root"
     group: "root"
+  when: not (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>='))
+
+- name: Remove userspace icmp socket permission file (Ubuntu 26.04+)
+  become: true
+  tags: ping
+  ansible.builtin.file:
+    path: /etc/sysctl.d/99-allow-ping.conf
+    state: absent
+  notify: Re-apply sysctl settings
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>=')
 
 - name: Download and install speedtest from Ookla
   tags: speedtest
