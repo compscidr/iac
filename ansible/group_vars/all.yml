@@ -14,6 +14,14 @@ onepassword_vault: "Infrastructure"
 # Note: Use --ask-become-pass when running playbooks to provide sudo password
 # Automatic 1Password lookup causes too many desktop app prompts
 
+# Ubuntu 26.04 makes `sudo` sudo-rs, which wraps a custom prompt as
+# "[sudo: <prompt>] Password:". Ansible only accepts a line *starting* with its
+# prompt, so with --ask-become-pass every task times out ("waiting for privilege
+# escalation prompt") on hosts that need a sudo password. Classic sudo is still
+# installed there as sudo.ws: use it when present, plain sudo elsewhere (24.04,
+# Debian, macOS). Expanded by the remote shell, so it works before facts exist.
+ansible_become_exe: "$(command -v sudo.ws || echo sudo)"
+
 # rustd.xyz nightly DB backup -> nas: the coordinates both ends of the pipeline
 # need to agree on. Lives here (not in roles/rustd_xyz/defaults/main.yml)
 # because the two ends run in separate playbooks with no shared vars_file:
