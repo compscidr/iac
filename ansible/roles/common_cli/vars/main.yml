@@ -1,6 +1,6 @@
 ---
 # compscidr/dotfiles commit to check out into ~/dotfiles
-common_cli_dotfiles_version: 307db45cc5ad7f54d98289df08cec0dbdb4b1961
+common_cli_dotfiles_version: 98446611b370be23fc693dc3b9de14054cf87541
 
 # Dotfile packages to stow on each platform
 common_cli_dotfile_packages_ubuntu:
