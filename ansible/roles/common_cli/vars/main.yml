@@ -1,12 +1,15 @@
 ---
+# compscidr/dotfiles commit to check out into ~/dotfiles
+common_cli_dotfiles_version: 307db45cc5ad7f54d98289df08cec0dbdb4b1961
+
 # Dotfile packages to stow on each platform
 common_cli_dotfile_packages_ubuntu:
   - autostart # GUI app autostart
-  - bashrc # Bash shell config
   - claude # Claude Code config
   - nano # Text editor
   - tmux # Terminal multiplexer
   - variety # Wallpaper manager
+  # bashrc is not stowed: ~/.bashrc is a local file that sources it (tasks/dotfiles.yml)
 
 common_cli_dotfile_packages_macos:
   - claude # Claude Code config
@@ -14,6 +17,17 @@ common_cli_dotfile_packages_macos:
   - tmux # Terminal multiplexer (cross-platform)
   # Skip: autostart (Linux GUI), bashrc (use zsh), profile (Ubuntu-specific), variety (Linux GUI)
   # Consider adding: fish/ or zshrc/ directories to your dotfiles repo for shell configs
+
+# Files that apps rewrite: copied from the repo once instead of stowed, so
+# the app's own writes don't dirty ~/dotfiles (paths are package/path-in-home).
+common_cli_dotfile_seed_files:
+  - claude/.claude/settings.json
+  - claude/.claude/plugins/installed_plugins.json
+
+# Links an older version of this role stowed that are no longer stowed; they're
+# turned into local copies (keeping what tools appended) if still present.
+common_cli_dotfile_legacy_links:
+  - profile/.profile
 
 common_cli_prereq_packages_ubuntu:
   - curl

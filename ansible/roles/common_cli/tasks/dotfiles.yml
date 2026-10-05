@@ -1,0 +1,144 @@
+---
+# ~/dotfiles is stowed into ~, but tools write to the files they find there:
+# installers append to ~/.bashrc / ~/.profile, Claude Code rewrites its
+# settings, apps drop runtime files into stowed directories. With those files
+# being symlinks into the repo, every such write dirtied ~/dotfiles and made the
+# next git update fail ("Local modifications exist").
+#
+# So anything a tool is expected to write is no longer a symlink:
+# - ~/.bashrc is a small local file that sources the repo copy; installers
+#   append below it.
+# - app-owned config (common_cli_dotfile_seed_files) is copied from the repo
+#   once, then belongs to the app.
+# - stow runs with --no-folding, so a fresh host gets real directories with
+#   per-file links instead of a whole directory linked into the repo.
+# migrate-dotfiles.sh converts hosts that still have the old links, keeping
+# whatever tools already wrote, before the repo is updated.
+
+- name: Look up the dotfiles user's home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ username }}"
+
+- name: Set the dotfiles home directory
+  ansible.builtin.set_fact:
+    common_cli_dotfiles_home: "{{ getent_passwd[username][4] }}"
+
+- name: Move tool-written dotfiles out of the dotfiles repo
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.script:
+    cmd: >-
+      dotfiles/migrate-dotfiles.sh
+      {{ common_cli_dotfile_migrate_specs | map('quote') | join(' ') }}
+  vars:
+    common_cli_dotfile_migrate_specs: >-
+      {{ ['bashrc/.bashrc|.bashrc|loader']
+         + (common_cli_dotfile_seed_files + common_cli_dotfile_legacy_links)
+           | map('regex_replace', '^[^/]+/(.*)$', '\g<0>|\g<1>|materialize') | list }}
+  register: common_cli_dotfiles_migrate
+  changed_when: "'changed:' in common_cli_dotfiles_migrate.stdout"
+
+# https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
+# without version pinning we get lint errors
+- name: Clone dotfile repo
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.git:
+    # https, not ssh: the repo is public, and cloning it was the only
+    # reason most hosts needed a private key at all.
+    repo: https://github.com/compscidr/dotfiles.git
+    dest: "{{ common_cli_dotfiles_home }}/dotfiles"
+    # Pinned commit ignores app runtime files in the stowed variety/autostart dirs
+    version: "{{ common_cli_dotfiles_version }}"
+
+- name: Check ~/.bashrc (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.stat:
+    path: "{{ common_cli_dotfiles_home }}/.bashrc"
+    checksum_algorithm: sha256
+  register: common_cli_bashrc
+  when: ansible_os_family != "Darwin"
+
+- name: Check the distribution's default ~/.bashrc (Linux)
+  ansible.builtin.stat:
+    path: /etc/skel/.bashrc
+    checksum_algorithm: sha256
+  register: common_cli_skel_bashrc
+  when: ansible_os_family != "Darwin"
+
+# A fresh install's ~/.bashrc is the stock /etc/skel copy, which would redo the
+# prompt etc. after ours, so replace it. Anything else is kept and gets the
+# loader block on top.
+- name: Replace the stock ~/.bashrc (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "{{ common_cli_dotfiles_home }}/.bashrc"
+    state: absent
+  when:
+    - ansible_os_family != "Darwin"
+    - common_cli_bashrc.stat.exists
+    - common_cli_skel_bashrc.stat.exists
+    - common_cli_bashrc.stat.checksum | default('') == common_cli_skel_bashrc.stat.checksum
+
+- name: Source the shared bashrc from ~/.bashrc (Linux)
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.blockinfile:
+    path: "{{ common_cli_dotfiles_home }}/.bashrc"
+    create: true
+    mode: "0644"
+    insertbefore: BOF
+    marker: "# {mark} common_cli dotfiles (managed by ansible) {mark}"
+    marker_begin: ">>>"
+    marker_end: "<<<"
+    # Must match loader_file in files/dotfiles/migrate-dotfiles.sh.
+    block: |
+      # Shared config lives in ~/dotfiles/bashrc/.bashrc. Everything below the
+      # end marker is local to this machine: installers that append to ~/.bashrc
+      # land there and never touch the dotfiles repo.
+      [ -f "$HOME/dotfiles/bashrc/.bashrc" ] && . "$HOME/dotfiles/bashrc/.bashrc"
+  when: ansible_os_family != "Darwin"
+
+- name: Deploy dotfiles
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.command:
+    argv: >-
+      {{ [common_cli_stow]
+         + ['--verbose', '--no-folding']
+         + (common_cli_dotfile_seed_files | map('basename') | map('regex_escape')
+            | map('regex_replace', '^', '--ignore=') | list)
+         + [item] }}
+    chdir: "{{ common_cli_dotfiles_home }}/dotfiles"
+  vars:
+    common_cli_stow: "{{ '/opt/homebrew/bin/stow' if ansible_os_family == 'Darwin' else 'stow' }}"
+  loop: "{{ common_cli_dotfile_packages_macos if ansible_os_family == 'Darwin' else common_cli_dotfile_packages_ubuntu }}"
+  register: common_cli_dotfiles_result
+  changed_when: "'LINK:' in common_cli_dotfiles_result.stderr or 'MKDIR:' in common_cli_dotfiles_result.stderr"
+
+- name: Create directories for app-owned config
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "{{ common_cli_dotfiles_home }}/{{ item | regex_replace('^[^/]+/', '') | dirname }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ common_cli_dotfile_seed_files }}"
+  when: (item | split('/') | first) in (common_cli_dotfile_packages_macos if ansible_os_family == 'Darwin' else common_cli_dotfile_packages_ubuntu)
+
+# Copied once; after that the app owns the file and the repo copy is only the
+# starting point for new hosts.
+- name: Seed app-owned config from the dotfiles repo
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.copy:
+    src: "{{ common_cli_dotfiles_home }}/dotfiles/{{ item }}"
+    dest: "{{ common_cli_dotfiles_home }}/{{ item | regex_replace('^[^/]+/', '') }}"
+    remote_src: true
+    force: false
+    mode: "0644"
+  loop: "{{ common_cli_dotfile_seed_files }}"
+  when: (item | split('/') | first) in (common_cli_dotfile_packages_macos if ansible_os_family == 'Darwin' else common_cli_dotfile_packages_ubuntu)
