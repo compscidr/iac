@@ -10,8 +10,11 @@
 #   append below it.
 # - app-owned config (common_cli_dotfile_seed_files) is copied from the repo
 #   once, then belongs to the app.
-# - stow runs with --no-folding, so a fresh host gets real directories with
-#   per-file links instead of a whole directory linked into the repo.
+# - packages in common_cli_dotfile_no_folding_packages (claude) are stowed
+#   with --no-folding: a fresh host gets a real ~/.claude with per-file links,
+#   not the whole directory linked into the repo for Claude Code to fill with
+#   session data. Other packages still fold, so e.g. a new autostart entry
+#   shows up in the repo, ready to commit.
 # migrate-dotfiles.sh converts hosts that still have the old links, keeping
 # whatever tools already wrote, before the repo is updated.
 
@@ -102,13 +105,24 @@
       [ -f "$HOME/dotfiles/bashrc/.bashrc" ] && . "$HOME/dotfiles/bashrc/.bashrc"
   when: ansible_os_family != "Darwin"
 
+# On a brand-new account ~/.config may not exist yet; stow would then fold the
+# whole of ~/.config into the first package that has a .config directory.
+- name: Ensure ~/.config exists before stowing
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.file:
+    path: "{{ common_cli_dotfiles_home }}/.config"
+    state: directory
+    mode: u+rwx # only ensure it exists; don't fight the mode stow or the desktop set
+
 - name: Deploy dotfiles
   become: true
   become_user: "{{ username }}"
   ansible.builtin.command:
     argv: >-
       {{ [common_cli_stow]
-         + ['--verbose', '--no-folding']
+         + ['--verbose']
+         + (['--no-folding'] if item in common_cli_dotfile_no_folding_packages else [])
          + (common_cli_dotfile_seed_files | map('basename') | map('regex_escape')
             | map('regex_replace', '^', '--ignore=') | list)
          + [item] }}

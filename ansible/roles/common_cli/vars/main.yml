@@ -24,6 +24,13 @@ common_cli_dotfile_seed_files:
   - claude/.claude/settings.json
   - claude/.claude/plugins/installed_plugins.json
 
+# Packages stowed with --no-folding (per-file links, real directories). Only
+# where an app writes lots of its own data into the directory; elsewhere a
+# folded directory link is useful: new files (e.g. autostart entries) land in
+# the repo, ready to commit and restore on a fresh install.
+common_cli_dotfile_no_folding_packages:
+  - claude
+
 # Links an older version of this role stowed that are no longer stowed; they're
 # turned into local copies (keeping what tools appended) if still present.
 common_cli_dotfile_legacy_links:
