@@ -18,7 +18,32 @@
     regexp: '^#?\s*use-ipv6\s*='
     line: use-ipv6=no
     insertafter: '^\[server\]'
+  register: common_cli_avahi_conf
   notify: Restart avahi-daemon
+
+# The handler above is lost if a later task fails in the same run, and the next
+# run sees the config as unchanged - avahi then keeps running with the old
+# setting until the next reboot (happened on silverstone and cube). So also
+# restart whenever avahi has been running since before its config last changed.
+- name: Check whether avahi is running an older config (Ubuntu/Debian)
+  ansible.builtin.shell: |
+    started=$(systemctl show avahi-daemon -p ActiveEnterTimestamp --value 2>/dev/null)
+    [ -n "$started" ] || exit 0
+    [ "$(date -d "$started" +%s)" -lt "$(stat -c %Y /etc/avahi/avahi-daemon.conf)" ] && echo stale
+    exit 0
+  register: common_cli_avahi_age
+  changed_when: false
+  check_mode: false
+  when: common_cli_avahi_conf is not changed
+
+- name: Restart avahi running an older config (Ubuntu/Debian)
+  become: true
+  ansible.builtin.systemd:
+    name: avahi-daemon
+    state: restarted
+  when:
+    - common_cli_avahi_conf is not changed
+    - "'stale' in common_cli_avahi_age.stdout | default('')"
 
 - name: Install avahi host-name watchdog script (Ubuntu/Debian)
   become: true
