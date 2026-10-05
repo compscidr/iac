@@ -80,12 +80,21 @@
     pkg:
       - dconf-editor
 
+# Ubuntu 24.04's VirtualBox (7.0.16) can't build its kernel module for the 7.x
+# HWE kernel: the install leaves virtualbox-dkms half-configured and dpkg
+# broken (ubuntu-beast), or "succeeds" with no module (an install made on an
+# older kernel). 26.04 ships 7.2, which supports kernel 7. Skip the combination
+# that can't work.
 - name: Virtualbox
   tags: virtualbox
   become: true
   ansible.builtin.apt:
     pkg:
       - virtualbox
+  when: >-
+    not (ansible_distribution == 'Ubuntu'
+         and ansible_distribution_version is version('26.04', '<')
+         and ansible_kernel is version('7.0', '>='))
 
 - name: Lapce
   ansible.builtin.include_role:
