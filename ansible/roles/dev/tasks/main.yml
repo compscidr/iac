@@ -351,6 +351,17 @@
     pkg:
       - python3-debian
 
+# Google's older install instructions put the same repo in a one-line
+# google-cloud-sdk.list with a different keyring. Next to the deb822 source
+# below, apt refuses both ("Conflicting values set for option Signed-By") and
+# every apt operation on the host fails - hit on ubuntu-beast.
+- name: Remove legacy google cloud sdk source
+  become: true
+  tags: gcloud
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/google-cloud-sdk.list
+    state: absent
+
 - name: Add google cloud sdk repository
   become: true
   tags: gcloud
