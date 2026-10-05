@@ -733,60 +733,12 @@
 
 # GitHub known_hosts is handled by bootstrap role
 
-# https://github.com/Strum355/ansible-dotfiles/blob/master/roles/dotfiles/tasks/main.yaml
-# without version pinning we get lint errors
-- name: Clone dotfile repo
-  become: true
-  become_user: "{{ username }}"
+- name: Deploy dotfiles
   tags: dotfiles
-  ansible.builtin.git:
-    # https, not ssh: the repo is public, and cloning it was the only
-    # reason most hosts needed a private key at all.
-    repo: https://github.com/compscidr/dotfiles.git
-    dest: ~/dotfiles
-    # Pinned commit adds claude stow package, bashrc.local sourcing
-    version: 307db45cc5ad7f54d98289df08cec0dbdb4b1961
-
-- name: Test .bashrc file to see if its a symlink
-  tags: dotfiles
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.stat:
-    path: ~/.bashrc
-  register: common_cli_bash_test
-
-- name: Remove .bashrc file so stow has no conflicts
-  tags: dotfiles
-  become: true
-  become_user: "{{ username }}"
-  ansible.builtin.file:
-    dest: ~/.bashrc
-    state: absent
-  when: common_cli_bash_test.stat.exists and not common_cli_bash_test.stat.islnk
-
-- name: Deploy dotfiles (Ubuntu/Debian)
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  with_items: "{{ common_cli_dotfile_packages_ubuntu }}"
-  ansible.builtin.command: "stow {{ item }}"
-  register: common_cli_dotfiles_result
-  changed_when: "'changed' in common_cli_dotfiles_result.stdout"
-  args:
-    chdir: ~/dotfiles
-  when: ansible_os_family == "Debian"
-
-- name: Deploy dotfiles (macOS)
-  become: true
-  become_user: "{{ username }}"
-  tags: dotfiles
-  with_items: "{{ common_cli_dotfile_packages_macos }}"
-  ansible.builtin.command: "/opt/homebrew/bin/stow {{ item }}"
-  register: common_cli_dotfiles_result
-  changed_when: "'changed' in common_cli_dotfiles_result.stdout"
-  args:
-    chdir: ~/dotfiles
-  when: ansible_os_family == "Darwin"
+  ansible.builtin.include_tasks:
+    file: dotfiles.yml
+    apply:
+      tags: dotfiles
 
 # https://github.com/jorgebucaran/fisher
 - name: Check if fisher install needed

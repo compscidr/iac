@@ -1,12 +1,17 @@
 ---
+# compscidr/dotfiles commit to check out into ~/dotfiles. 9844661 is
+# compscidr/dotfiles#12: .gitignore for app runtime state in the stowed
+# variety/autostart directories.
+common_cli_dotfiles_version: 98446611b370be23fc693dc3b9de14054cf87541
+
 # Dotfile packages to stow on each platform
 common_cli_dotfile_packages_ubuntu:
   - autostart # GUI app autostart
-  - bashrc # Bash shell config
   - claude # Claude Code config
   - nano # Text editor
   - tmux # Terminal multiplexer
   - variety # Wallpaper manager
+  # bashrc is not stowed: ~/.bashrc is a local file that sources it (tasks/dotfiles.yml)
 
 common_cli_dotfile_packages_macos:
   - claude # Claude Code config
@@ -14,6 +19,24 @@ common_cli_dotfile_packages_macos:
   - tmux # Terminal multiplexer (cross-platform)
   # Skip: autostart (Linux GUI), bashrc (use zsh), profile (Ubuntu-specific), variety (Linux GUI)
   # Consider adding: fish/ or zshrc/ directories to your dotfiles repo for shell configs
+
+# Files that apps rewrite: copied from the repo once instead of stowed, so
+# the app's own writes don't dirty ~/dotfiles (paths are package/path-in-home).
+common_cli_dotfile_seed_files:
+  - claude/.claude/settings.json
+  - claude/.claude/plugins/installed_plugins.json
+
+# Packages stowed with --no-folding (per-file links, real directories). Only
+# where an app writes lots of its own data into the directory; elsewhere a
+# folded directory link is useful: new files (e.g. autostart entries) land in
+# the repo, ready to commit and restore on a fresh install.
+common_cli_dotfile_no_folding_packages:
+  - claude
+
+# Links an older version of this role stowed that are no longer stowed; they're
+# turned into local copies (keeping what tools appended) if still present.
+common_cli_dotfile_legacy_links:
+  - profile/.profile
 
 common_cli_prereq_packages_ubuntu:
   - curl
