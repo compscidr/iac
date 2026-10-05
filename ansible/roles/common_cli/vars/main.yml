@@ -1,5 +1,7 @@
 ---
-# compscidr/dotfiles commit to check out into ~/dotfiles
+# compscidr/dotfiles commit to check out into ~/dotfiles. 9844661 is
+# compscidr/dotfiles#12: .gitignore for app runtime state in the stowed
+# variety/autostart directories.
 common_cli_dotfiles_version: 98446611b370be23fc693dc3b9de14054cf87541
 
 # Dotfile packages to stow on each platform

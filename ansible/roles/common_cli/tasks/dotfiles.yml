@@ -18,14 +18,17 @@
 # migrate-dotfiles.sh converts hosts that still have the old links, keeping
 # whatever tools already wrote, before the repo is updated.
 
-- name: Look up the dotfiles user's home directory
+# getent only exists on Linux; macOS homes are /Users/<name>.
+- name: Look up the dotfiles user's home directory (Linux)
   ansible.builtin.getent:
     database: passwd
     key: "{{ username }}"
+  when: ansible_os_family != "Darwin"
 
 - name: Set the dotfiles home directory
   ansible.builtin.set_fact:
-    common_cli_dotfiles_home: "{{ getent_passwd[username][4] }}"
+    common_cli_dotfiles_home: >-
+      {{ ('/Users/' ~ username) if ansible_os_family == 'Darwin' else getent_passwd[username][4] }}
 
 - name: Move tool-written dotfiles out of the dotfiles repo
   become: true
@@ -52,7 +55,6 @@
     # reason most hosts needed a private key at all.
     repo: https://github.com/compscidr/dotfiles.git
     dest: "{{ common_cli_dotfiles_home }}/dotfiles"
-    # Pinned commit ignores app runtime files in the stowed variety/autostart dirs
     version: "{{ common_cli_dotfiles_version }}"
 
 - name: Check ~/.bashrc (Linux)
