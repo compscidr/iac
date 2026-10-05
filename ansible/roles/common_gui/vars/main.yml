@@ -18,3 +18,19 @@ common_gui_terminal_emulators_macos:
   # macOS-specific options
   - iterm2 # popular macOS terminal
   - warp # modern AI-powered terminal
+
+# Ubuntu's default terminal is Ptyxis from 25.10 (GNOME's xdg-terminal-exec
+# lists only org.gnome.Ptyxis.desktop, so Ctrl+Alt+T and "Open in Terminal"
+# launch it). GNOME Terminal is still installed on upgraded hosts but nags to
+# be made the default, so pin Ptyxis there. Ptyxis isn't packaged for 24.04.
+common_gui_use_ptyxis: >-
+  {{ ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>=') }}
+
+# Dock (GNOME favorite-apps), in order.
+common_gui_dock_apps:
+  - "{{ 'org.gnome.Ptyxis.desktop' if common_gui_use_ptyxis | bool else 'org.gnome.Terminal.desktop' }}"
+  - google-chrome.desktop
+  - firefox_firefox.desktop
+  - org.gnome.Nautilus.desktop
+  - code.desktop
+  - snap-store_snap-store.desktop
