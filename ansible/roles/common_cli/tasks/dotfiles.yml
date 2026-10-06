@@ -117,6 +117,35 @@
     state: directory
     mode: u+rwx # only ensure it exists; don't fight the mode stow or the desktop set
 
+# Apps can replace a stowed link with a regular file when they rewrite it
+# (Variety rewrites its autostart entry on every upgrade), which makes stow
+# refuse to run. Identical copies go back to being links; changed ones are kept
+# and skipped by stow below. See files/dotfiles/prepare-stow.sh.
+- name: Let stow relink files apps replaced with copies
+  become: true
+  become_user: "{{ username }}"
+  ansible.builtin.script:
+    cmd: >-
+      dotfiles/prepare-stow.sh
+      {{ (common_cli_dotfile_seed_files + ['--'] + common_cli_dotfile_packages) | map('quote') | join(' ') }}
+  vars:
+    common_cli_dotfile_packages: "{{ common_cli_dotfile_packages_macos if ansible_os_family == 'Darwin' else common_cli_dotfile_packages_ubuntu }}"
+  register: common_cli_dotfiles_prepare
+  changed_when: "'changed:' in common_cli_dotfiles_prepare.stdout"
+
+- name: Collect dotfiles kept as local copies
+  ansible.builtin.set_fact:
+    common_cli_dotfiles_kept: >-
+      {{ common_cli_dotfiles_prepare.stdout_lines | default([])
+         | select('match', '^keep: ') | map('regex_replace', '^keep: ', '') | list }}
+
+- name: Note dotfiles kept as local copies
+  ansible.builtin.debug:
+    msg: >-
+      Kept local files that differ from ~/dotfiles (stow skips them): {{ common_cli_dotfiles_kept | join(', ') }}.
+      Commit the local version to the dotfiles repo, or delete it to get the repo's.
+  when: common_cli_dotfiles_kept | length > 0
+
 - name: Deploy dotfiles
   become: true
   become_user: "{{ username }}"
@@ -127,8 +156,8 @@
          + (['--no-folding'] if item in common_cli_dotfile_no_folding_packages
               or item in (common_cli_dotfile_seed_files | map('split', '/') | map('first'))
             else [])
-         + (common_cli_dotfile_seed_files | map('basename') | map('regex_escape')
-            | map('regex_replace', '^', '--ignore=') | list)
+         + ((common_cli_dotfile_seed_files + common_cli_dotfiles_kept)
+            | map('basename') | map('regex_escape') | map('regex_replace', '^', '--ignore=') | list)
          + [item] }}
     chdir: "{{ common_cli_dotfiles_home }}/dotfiles"
   vars:
