@@ -25,11 +25,17 @@ common_cli_dotfile_packages_macos:
 common_cli_dotfile_seed_files:
   - claude/.claude/settings.json
   - claude/.claude/plugins/installed_plugins.json
+  # Variety rewrites its config on upgrades and preference changes (0.9 on
+  # Ubuntu 26.04 added keys and renumbered sources on first start).
+  - variety/.config/variety/variety.conf
 
 # Packages stowed with --no-folding (per-file links, real directories). Only
 # where an app writes lots of its own data into the directory; elsewhere a
 # folded directory link is useful: new files (e.g. autostart entries) land in
-# the repo, ready to commit and restore on a fresh install.
+# the repo, ready to commit and restore on a fresh install. Packages with
+# common_cli_dotfile_seed_files are always stowed --no-folding as well (see
+# tasks/dotfiles.yml): a folded directory would put the repo copy where the
+# seed belongs.
 common_cli_dotfile_no_folding_packages:
   - claude
 

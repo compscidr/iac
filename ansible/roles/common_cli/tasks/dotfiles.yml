@@ -124,7 +124,9 @@
     argv: >-
       {{ [common_cli_stow]
          + ['--verbose']
-         + (['--no-folding'] if item in common_cli_dotfile_no_folding_packages else [])
+         + (['--no-folding'] if item in common_cli_dotfile_no_folding_packages
+              or item in (common_cli_dotfile_seed_files | map('split', '/') | map('first'))
+            else [])
          + (common_cli_dotfile_seed_files | map('basename') | map('regex_escape')
             | map('regex_replace', '^', '--ignore=') | list)
          + [item] }}
