@@ -450,19 +450,22 @@
     creates: /home/jason/.local/bin/{{ item }}
   with_items: "{{ pipx_packages }}"
 
-# A pipx venv can be tied to a specific interpreter (python3.12 on hosts where
-# an older pipx created it). A release upgrade removes that interpreter, and
-# the install above skips on `creates:`, so the tool stays broken ("bad
-# interpreter" - ansible-lint on ubuntu-beast after 26.04). Rebuild when any
-# venv's python no longer runs.
-- name: Find pipx venvs whose python no longer exists
+# A release upgrade that changes the Python version breaks pipx venvs, and the
+# install above skips on `creates:`, so the tool stays broken. Two ways:
+# - venv python pinned to the old interpreter (python3.12), which is gone:
+#   "bad interpreter" (ansible-lint on ubuntu-beast after 26.04);
+# - venv python is the generic python3, now a newer version, but the packages
+#   are under lib/python3.12: "No module named ..." (cube, silverstone).
+# Rebuild when a venv's python fails or has no lib/pythonX.Y of its own.
+- name: Find pipx venvs broken by a Python version change
   tags: ansible
   become: true
   become_user: jason
   ansible.builtin.shell: |
     for d in "$HOME"/.local/share/pipx/venvs/*/; do
       [ -d "$d" ] || continue
-      "$d/bin/python" -c "" 2>/dev/null || basename "$d"
+      v=$("$d/bin/python" -c 'import sys; print("python%d.%d" % sys.version_info[:2])' 2>/dev/null) \
+        && [ -d "$d/lib/$v" ] || basename "$d"
     done
   register: dev_pipx_broken
   changed_when: false
