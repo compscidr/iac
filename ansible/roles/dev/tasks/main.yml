@@ -450,6 +450,33 @@
     creates: /home/jason/.local/bin/{{ item }}
   with_items: "{{ pipx_packages }}"
 
+# A pipx venv can be tied to a specific interpreter (python3.12 on hosts where
+# an older pipx created it). A release upgrade removes that interpreter, and
+# the install above skips on `creates:`, so the tool stays broken ("bad
+# interpreter" - ansible-lint on ubuntu-beast after 26.04). Rebuild when any
+# venv's python no longer runs.
+- name: Find pipx venvs whose python no longer exists
+  tags: ansible
+  become: true
+  become_user: jason
+  ansible.builtin.shell: |
+    for d in "$HOME"/.local/share/pipx/venvs/*/; do
+      [ -d "$d" ] || continue
+      "$d/bin/python" -c "" 2>/dev/null || basename "$d"
+    done
+  register: dev_pipx_broken
+  changed_when: false
+  check_mode: false
+
+- name: Rebuild pipx venvs after a Python upgrade
+  tags: ansible
+  become: true
+  become_user: jason
+  ansible.builtin.command:
+    cmd: pipx reinstall-all
+  changed_when: true
+  when: dev_pipx_broken.stdout_lines | length > 0
+
 # Up to 24.04 the kernel default (1 0) lets nobody open unprivileged ICMP
 # sockets, so this widens it to uid/gid 1000. From 26.04 Ubuntu ships
 # 0 2147483647 in /usr/lib/sysctl.d/50-default.conf, which this file would
