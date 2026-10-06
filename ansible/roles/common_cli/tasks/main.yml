@@ -299,6 +299,28 @@
     state: present
   when: ansible_os_family == "Darwin"
 
+# Ubuntu 26.04 split cloud-init and moved its logrotate config to
+# /etc/logrotate.d/cloud-init-base, but a release upgrade leaves the old
+# /etc/logrotate.d/cloud-init behind as an obsolete conffile. Both match
+# /var/log/cloud-init*.log, so logrotate rejects the duplicate and
+# logrotate.service fails every day (silverstone, cube, beast).
+- name: Check for cloud-init-base's logrotate config (Ubuntu/Debian)
+  tags: logrotate
+  ansible.builtin.stat:
+    path: /etc/logrotate.d/cloud-init-base
+  register: common_cli_logrotate_cloud_init_base
+  when: ansible_os_family == "Debian"
+
+- name: Remove the obsolete cloud-init logrotate config left by a release upgrade (Ubuntu/Debian)
+  tags: logrotate
+  become: true
+  ansible.builtin.file:
+    path: /etc/logrotate.d/cloud-init
+    state: absent
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_logrotate_cloud_init_base.stat.exists
+
 - name: Remove obsolete isc-dhcp-client (Ubuntu/Debian)
   become: true
   tags: network-tools
