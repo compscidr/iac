@@ -164,6 +164,14 @@
     pkg: "{{ common_gui_terminal_emulators_ubuntu }}"
   when: ansible_os_family == "Debian"
 
+- name: Install Ptyxis, the default terminal from Ubuntu 26.04 (pinned in the dock)
+  tags: [terminal-emulators, dock]
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - ptyxis
+  when: common_gui_use_ptyxis | bool
+
 - name: Install terminal emulators (macOS)
   tags: terminal-emulators
   community.general.homebrew_cask:
@@ -400,8 +408,9 @@
   become_user: "{{ username }}" # really important to have the username here, or it will seem like it isn't taking effect
   community.general.dconf:
     key: "/org/gnome/shell/favorite-apps"
-    value: "['org.gnome.Terminal.desktop', 'google-chrome.desktop', 'firefox_firefox.desktop', 'org.gnome.Nautilus.desktop', 'code.desktop',
-      'snap-store_snap-store.desktop']"
+    # Same GVariant text gsettings prints (single quotes, ", "), so an
+    # unchanged dock compares equal and the task stays idempotent.
+    value: "['{{ common_gui_dock_apps | join(\"', '\") }}']"
     state: present
   when: ansible_os_family == "Debian"
 
