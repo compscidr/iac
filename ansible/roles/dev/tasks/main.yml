@@ -474,6 +474,13 @@
   notify: Re-apply sysctl settings
   when: ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('26.04', '>=')
 
+# Re-apply now rather than at the end of the play: if a later task fails, the
+# handler never runs and the next run finds the file already gone, leaving the
+# narrow 1000 1000 range live until a reboot (ubuntu-beast).
+- name: Apply the sysctl change right away
+  tags: ping
+  ansible.builtin.meta: flush_handlers
+
 - name: Download and install speedtest from Ookla
   tags: speedtest
   become: true

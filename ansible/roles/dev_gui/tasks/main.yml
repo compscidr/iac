@@ -20,6 +20,18 @@
     enabled: true
   when: not dev_gui_vscode_repo_exists.stat.exists
 
+# The repo task above only writes the file once, so it never undoes the
+# "Enabled: no" that do-release-upgrade adds to third-party sources. The suite
+# (stable) is release-independent, so re-enabling is always right.
+- name: Re-enable vscode apt repo after an Ubuntu release upgrade
+  tags: vscode
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/vscode.sources
+    regexp: '^Enabled:\s*no\s*$'
+    state: absent
+  when: dev_gui_vscode_repo_exists.stat.exists
+
 - name: Install vscode
   become: true
   tags: vscode
