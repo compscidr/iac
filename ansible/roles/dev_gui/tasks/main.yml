@@ -132,10 +132,9 @@
       become: true
   tags: spotify
 
-# Claude Desktop — installed from a pinned `.deb` on aaddrick's GitHub
-# Releases. See roles/dev_gui/defaults/main.yml for the pin + context.
-# We deliberately avoid aaddrick's apt channel (their Release file has
-# been intermittently broken) and fetch the .deb asset directly.
+# Earlier versions of this role used aaddrick's community claude-desktop apt
+# channel, as claude-desktop.sources. Anthropic's official repo (below) uses
+# claude-desktop.list, so drop the old file.
 - name: Remove legacy aaddrick claude-desktop apt source
   tags: claude-desktop
   become: true
@@ -144,63 +143,100 @@
     state: absent
   notify: Refresh apt cache after removing legacy claude-desktop source
 
-# Fail fast when the host arch isn't one of the two aaddrick ships. Any
-# other value would silently pick the wrong asset URL and download a
-# bogus .deb.
-- name: Validate host architecture for claude-desktop .deb
+# Claude Desktop: Anthropic's official Linux build (beta), from their apt repo.
+# https://code.claude.com/docs/en/desktop-linux
+# The claude-desktop package installs the signing key and registers the repo
+# itself (same paths as below) and keeps both current, so only bootstrap them
+# when missing - a fresh host, or after do-release-upgrade disabled the list.
+# Rewriting them every run would fight the package's own copies.
+- name: Check claude-desktop is published for this architecture
   tags: claude-desktop
   ansible.builtin.assert:
-    that:
-      - ansible_architecture in ['x86_64', 'amd64', 'aarch64', 'arm64']
+    that: ansible_facts['architecture'] in ['x86_64', 'aarch64']
     fail_msg: >-
-      claude-desktop .deb is only published for x86_64/amd64 and
-      aarch64/arm64 hosts by aaddrick; got {{ ansible_architecture }}.
+      Anthropic publishes claude-desktop for amd64 and arm64 only; this host is
+      {{ ansible_facts['architecture'] }}.
 
-# Fail fast if the pinned tag doesn't match aaddrick's convention
-# (v<their>+claude<upstream>). Renovate could conceivably land a tag
-# with a different shape, at which point the regex below would silently
-# produce a broken download URL; surface the mismatch explicitly.
-- name: Validate dev_gui_claude_desktop_tag format
+- name: Check for the claude-desktop apt key and source
   tags: claude-desktop
-  ansible.builtin.assert:
-    that:
-      - dev_gui_claude_desktop_tag is match('^v[^+]+\\+claude[^ ]+$')
-    fail_msg: >-
-      dev_gui_claude_desktop_tag must match `v<aaddrick>+claude<upstream>` (e.g.
-      v2.0.5+claude1.3883.0); got `{{ dev_gui_claude_desktop_tag }}`. Review the
-      Renovate bump and update the regex_replace below if aaddrick's
-      release naming has changed.
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /usr/share/keyrings/claude-desktop-archive-keyring.asc
+    - /etc/apt/sources.list.d/claude-desktop.list
+  register: dev_gui_claude_desktop_repo_files
 
-# As of Aug 2026 aaddrick's assets are named `claude-desktop_<claude-version>_<arch>.deb`
-# (previously `claude-desktop_<claude-version>-<aaddrick-version>_<arch>.deb`), and the
-# package's internal Version field is the bare claude version — so both the download
-# filename and the dpkg-query comparison use just the upstream part of the tag.
-- name: Derive claude-desktop .deb filename version (upstream claude version)
+# Download to a temp file and install the key only once its primary key is
+# exactly the fingerprint from Anthropic's docs.
+- name: Bootstrap the claude-desktop apt key
   tags: claude-desktop
-  ansible.builtin.set_fact:
-    dev_gui_claude_desktop_filename_version: "{{ dev_gui_claude_desktop_tag | regex_replace('^v(.+)\\+claude(.+)$', '\\2') }}"
-    dev_gui_claude_desktop_deb_arch: "{{ {'x86_64': 'amd64', 'amd64': 'amd64', 'aarch64': 'arm64', 'arm64': 'arm64'}[ansible_architecture] }}"
+  become: true
+  when: not dev_gui_claude_desktop_repo_files.results[0].stat.exists
+  block:
+    - name: Install gpg (needed to verify the claude-desktop key)
+      ansible.builtin.apt:
+        name: gpg
+        state: present
 
-- name: Query currently installed claude-desktop version
-  tags: claude-desktop
-  ansible.builtin.command: dpkg-query -f '${Version}' -W claude-desktop
-  register: dev_gui_claude_desktop_installed
-  changed_when: false
-  failed_when: false
-  check_mode: false
+    - name: Create temp file for the claude-desktop key
+      ansible.builtin.tempfile:
+        suffix: .asc
+      register: dev_gui_claude_desktop_key_tmp
 
-- name: Download pinned claude-desktop .deb
+    - name: Download the claude-desktop key
+      ansible.builtin.get_url:
+        url: https://downloads.claude.ai/claude-desktop/key.asc
+        dest: "{{ dev_gui_claude_desktop_key_tmp.path }}"
+        mode: "0644"
+        force: true
+
+    - name: Read the claude-desktop key's primary fingerprints
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          gpg --show-keys --with-colons {{ dev_gui_claude_desktop_key_tmp.path }}
+          | awk -F: '/^pub/ {p=1; next} p && /^fpr/ {print $10; p=0}'
+        executable: /bin/bash
+      register: dev_gui_claude_desktop_key_fingerprints
+      changed_when: false
+
+    - name: Verify the claude-desktop key fingerprint
+      ansible.builtin.assert:
+        that: dev_gui_claude_desktop_key_fingerprints.stdout_lines == [dev_gui_claude_desktop_key_fingerprint]
+        fail_msg: >-
+          Downloaded claude-desktop key has primary fingerprint(s)
+          {{ dev_gui_claude_desktop_key_fingerprints.stdout_lines }}, expected only
+          {{ dev_gui_claude_desktop_key_fingerprint }}. Not installing it.
+        quiet: true
+
+    - name: Install the claude-desktop apt key
+      ansible.builtin.copy:
+        src: "{{ dev_gui_claude_desktop_key_tmp.path }}"
+        dest: /usr/share/keyrings/claude-desktop-archive-keyring.asc
+        remote_src: true
+        mode: "0644"
+  always:
+    - name: Remove the temp claude-desktop key
+      ansible.builtin.file:
+        path: "{{ dev_gui_claude_desktop_key_tmp.path }}"
+        state: absent
+      when: dev_gui_claude_desktop_key_tmp.path is defined
+
+- name: Register Anthropic's claude-desktop apt repository
   tags: claude-desktop
-  ansible.builtin.get_url:
-    url: "https://github.com/aaddrick/claude-desktop-debian/releases/download/{{ dev_gui_claude_desktop_tag
-      }}/claude-desktop_{{ dev_gui_claude_desktop_filename_version }}_{{ dev_gui_claude_desktop_deb_arch }}.deb"
-    dest: "/tmp/claude-desktop_{{ dev_gui_claude_desktop_filename_version }}_{{ dev_gui_claude_desktop_deb_arch }}.deb"
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/claude-desktop.list
+    content: |
+      deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/claude-desktop-archive-keyring.asc] https://downloads.claude.ai/claude-desktop/apt/stable stable main
     mode: "0644"
-  when: dev_gui_claude_desktop_installed.stdout != dev_gui_claude_desktop_filename_version
+  when: not dev_gui_claude_desktop_repo_files.results[1].stat.exists
 
-- name: Install claude-desktop from pinned .deb
+# Present, not latest: new versions arrive with regular apt upgrades.
+- name: Install claude-desktop
   tags: claude-desktop
   become: true
   ansible.builtin.apt:
-    deb: "/tmp/claude-desktop_{{ dev_gui_claude_desktop_filename_version }}_{{ dev_gui_claude_desktop_deb_arch }}.deb"
-  when: dev_gui_claude_desktop_installed.stdout != dev_gui_claude_desktop_filename_version
+    name: claude-desktop
+    state: present
+    update_cache: true

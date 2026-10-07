@@ -9,19 +9,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Track aaddrick/claude-desktop-debian releases for the dev_gui_claude_desktop_tag pin in dev_gui role",
-      "managerFilePatterns": [
-        "/^ansible/roles/dev_gui/defaults/main\\.yml$/"
-      ],
-      "matchStrings": [
-        "dev_gui_claude_desktop_tag:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "aaddrick/claude-desktop-debian",
-      "versioningTemplate": "loose"
-    },
-    {
-      "customType": "regex",
       "description": "Track zed-industries/zed releases for the zed_version pin in the zed role",
       "managerFilePatterns": [
         "/^ansible/roles/zed/defaults/main\\.yml$/"
