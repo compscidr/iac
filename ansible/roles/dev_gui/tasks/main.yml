@@ -147,8 +147,9 @@
 # https://code.claude.com/docs/en/desktop-linux
 # The claude-desktop package installs the signing key and registers the repo
 # itself (same paths as below) and keeps both current, so only bootstrap them
-# when missing - a fresh host, or after do-release-upgrade disabled the list.
-# Rewriting them every run would fight the package's own copies.
+# when they're missing or inactive - a fresh host, or after do-release-upgrade
+# commented the list out or renamed it. Rewriting them every run would fight
+# the package's own copies.
 - name: Check claude-desktop is published for this architecture
   tags: claude-desktop
   ansible.builtin.assert:
@@ -157,21 +158,28 @@
       Anthropic publishes claude-desktop for amd64 and arm64 only; this host is
       {{ ansible_facts['architecture'] }}.
 
-- name: Check for the claude-desktop apt key and source
+- name: Check for the claude-desktop apt key
   tags: claude-desktop
   ansible.builtin.stat:
-    path: "{{ item }}"
-  loop:
-    - /usr/share/keyrings/claude-desktop-archive-keyring.asc
-    - /etc/apt/sources.list.d/claude-desktop.list
-  register: dev_gui_claude_desktop_repo_files
+    path: /usr/share/keyrings/claude-desktop-archive-keyring.asc
+  register: dev_gui_claude_desktop_key
+
+# Active = an uncommented deb line for the repo. do-release-upgrade can leave
+# the file in place with everything commented out (seen on ubuntu-beast).
+- name: Check for an active claude-desktop apt source
+  tags: claude-desktop
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    patterns: claude-desktop.list
+    contains: '^\s*deb\s.*downloads\.claude\.ai/claude-desktop/apt'
+  register: dev_gui_claude_desktop_source
 
 # Download to a temp file and install the key only once its primary key is
 # exactly the fingerprint from Anthropic's docs.
 - name: Bootstrap the claude-desktop apt key
   tags: claude-desktop
   become: true
-  when: not dev_gui_claude_desktop_repo_files.results[0].stat.exists
+  when: not dev_gui_claude_desktop_key.stat.exists
   block:
     - name: Install gpg (needed to verify the claude-desktop key)
       ansible.builtin.apt:
@@ -230,7 +238,7 @@
     content: |
       deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/claude-desktop-archive-keyring.asc] https://downloads.claude.ai/claude-desktop/apt/stable stable main
     mode: "0644"
-  when: not dev_gui_claude_desktop_repo_files.results[1].stat.exists
+  when: dev_gui_claude_desktop_source.matched == 0
 
 # Present, not latest: new versions arrive with regular apt upgrades.
 - name: Install claude-desktop
