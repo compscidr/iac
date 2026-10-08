@@ -47,8 +47,8 @@
       ] + unmanic_library_volumes }}
     env:
       TZ: "{{ unmanic_tz }}"
-      PUID: "{{ ansible_user_uid }}"
-      PGID: "{{ ansible_user_gid }}"
+      PUID: "{{ ansible_user_uid | string }}"
+      PGID: "{{ ansible_user_gid | string }}"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
     device_requests:
