@@ -1,0 +1,13 @@
+# Managed by ansible (roles/common_cli) - do not edit.
+[Unit]
+Description=Remove unused Docker images and build cache older than a week
+After=docker.service
+ConditionPathExists=/run/docker.sock
+
+[Service]
+Type=oneshot
+# Only images no container uses (running or stopped) and build cache. Never
+# containers or volumes. The week's grace keeps the previous image of a
+# redeployed :latest container around for a rollback.
+ExecStart=/usr/bin/docker image prune --all --force --filter until=168h
+ExecStart=/usr/bin/docker builder prune --all --force --filter until=168h

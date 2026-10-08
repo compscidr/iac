@@ -292,6 +292,77 @@
     pkg: "{{ common_cli_tools_ubuntu }}"
   when: ansible_os_family == "Debian"
 
+# Nothing else removes old images: every redeploy of a :latest container leaves
+# the previous image behind (projects had 143 unused images, ~35 GB, by
+# 2026-10). A weekly timer prunes what no container uses.
+- name: Install the weekly Docker image prune units (Ubuntu/Debian)
+  become: true
+  tags: [docker, docker-prune]
+  ansible.builtin.copy:
+    src: "systemd/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+    owner: root
+    group: root
+  loop:
+    - docker-image-prune.service
+    - docker-image-prune.timer
+  register: common_cli_docker_prune_units
+  notify: Reload systemd
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_docker_image_prune | bool
+
+- name: Enable the weekly Docker image prune timer (Ubuntu/Debian)
+  become: true
+  tags: [docker, docker-prune, molecule-notest] # systemd isn't PID 1 in the molecule container
+  ansible.builtin.systemd:
+    name: docker-image-prune.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  # In --check the units above are only simulated, so systemd can't find the
+  # timer yet. Skip only then; on a host that has it, check mode still verifies.
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_docker_image_prune | bool
+    - not (ansible_check_mode and common_cli_docker_prune_units is changed)
+
+- name: Check for the Docker image prune timer (opted out)
+  tags: [docker, docker-prune]
+  ansible.builtin.stat:
+    path: /etc/systemd/system/docker-image-prune.timer
+  register: common_cli_docker_prune_timer
+  when:
+    - ansible_os_family == "Debian"
+    - not (common_cli_docker_image_prune | bool)
+
+- name: Disable the Docker image prune timer (opted out)
+  become: true
+  tags: [docker, docker-prune, molecule-notest] # systemd isn't PID 1 in the molecule container
+  ansible.builtin.systemd:
+    name: docker-image-prune.timer
+    enabled: false
+    state: stopped
+  when:
+    - ansible_os_family == "Debian"
+    - not (common_cli_docker_image_prune | bool)
+    - common_cli_docker_prune_timer.stat.exists
+
+- name: Remove the Docker image prune units (opted out)
+  become: true
+  tags: [docker, docker-prune]
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}"
+    state: absent
+  loop:
+    - docker-image-prune.service
+    - docker-image-prune.timer
+  notify: Reload systemd
+  when:
+    - ansible_os_family == "Debian"
+    - not (common_cli_docker_image_prune | bool)
+
 - name: Install various cli tools (macOS)
   tags: cli-tools
   community.general.homebrew:
