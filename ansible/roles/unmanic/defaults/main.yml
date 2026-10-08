@@ -12,9 +12,15 @@ unmanic_nas_export: /volume1/storage
 unmanic_mount: /mnt/nas/storage
 # Only tv/ and movies/ are exposed to the container, not the whole share:
 # downloads/ and the *arr config dirs have no business being re-encoded.
+# The same two folders are bound a second time under *-hdr: Unmanic wants a
+# distinct path per library, and HDR files need their own transcode config
+# (GPU tone-map to SDR) while the SDR library skips them. Both libraries see
+# the same files; the dynamic-range filter decides which one acts.
 unmanic_library_volumes:
   - "{{ unmanic_mount }}/tv:/library/tv:rw"
   - "{{ unmanic_mount }}/movies:/library/movies:rw"
+  - "{{ unmanic_mount }}/tv:/library/tv-hdr:rw"
+  - "{{ unmanic_mount }}/movies:/library/movies-hdr:rw"
 
 unmanic_folder: /etc/unmanic
 # Working copies land here during an encode. A remux is 40-80G, and two workers
