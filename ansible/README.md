@@ -28,6 +28,7 @@
 | `media_server` | Plex, Sonarr, Radarr, etc. | NAS |
 | `home_assistant` | Home automation | NAS |
 | `dyndns` | Dynamic DNS updater | NAS, workstations |
+| `unmanic` | GPU re-encoding of the NAS media library over NFS | ubuntu-beast |
 
 ### Game Server Roles
 | Role | Purpose | Used By |

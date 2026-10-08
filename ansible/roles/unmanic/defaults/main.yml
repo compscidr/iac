@@ -1,0 +1,26 @@
+---
+# Unmanic: re-encodes the oversized remuxes/Bluray encodes on the NAS down to
+# streamable H.264 using the NVIDIA GPUs on this host. The NAS exports
+# /volume1/storage over NFSv3 (UGOS: File Service -> NFS, plus the share's NFS
+# permission list naming this host); it is mounted here and bound into the
+# container as /library/<name>. Encodes happen in the local cache dir and the
+# result is written back over NFS once, so the link sees one read + one write
+# per file.
+
+unmanic_nas_host: nas.local
+unmanic_nas_export: /volume1/storage
+unmanic_mount: /mnt/nas/storage
+# Only tv/ and movies/ are exposed to the container, not the whole share:
+# downloads/ and the *arr config dirs have no business being re-encoded.
+unmanic_library_volumes:
+  - "{{ unmanic_mount }}/tv:/library/tv:rw"
+  - "{{ unmanic_mount }}/movies:/library/movies:rw"
+
+unmanic_folder: /etc/unmanic
+# Working copies land here during an encode. A remux is 40-80G, and two workers
+# can be mid-file at once, so keep this on the big nvme, not /tmp.
+unmanic_cache: /var/cache/unmanic
+unmanic_port: 8888
+unmanic_tz: "America/Los_Angeles"
+unmanic_memory: "8g"
+unmanic_memory_swap: "8g"
