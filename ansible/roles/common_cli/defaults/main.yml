@@ -9,6 +9,12 @@ common_cli_watchtower_timezone: "America/Los_Angeles"
 common_cli_watchtower_monitor_only: false
 common_cli_watchtower_notification_url: ""
 
+# Weekly systemd timer that removes Docker images no container uses and that
+# are over a week old, plus old build cache (tasks/main.yml). Never touches
+# containers or volumes. Set false on a host whose hand-built or pulled-ahead
+# images should stay (the timer and units are then removed).
+common_cli_docker_image_prune: true
+
 # Whether this role may take over the host's network stack (the "Ubuntu/Debian
 # headless" block: systemd-networkd + DHCP + wpa_supplicant, with cloud-init's
 # network config and the netplan generator disabled). Meant for the LAN boxes

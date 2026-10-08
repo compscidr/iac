@@ -1,0 +1,11 @@
+# Managed by ansible (roles/common_cli) - do not edit.
+[Unit]
+Description=Weekly removal of unused Docker images
+
+[Timer]
+OnCalendar=weekly
+RandomizedDelaySec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
