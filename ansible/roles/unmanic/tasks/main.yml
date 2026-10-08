@@ -1,0 +1,62 @@
+---
+- name: Install NFS client
+  tags: unmanic
+  become: true
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+
+# nofail + automount: a NAS that is off or still booting must not hang this
+# host's boot. The mount is established on first access instead.
+# 1M rsize/wsize: beast and the NAS share a 10GbE link; the default block
+# size leaves most of it idle.
+- name: Mount NAS storage export
+  tags: unmanic
+  become: true
+  ansible.posix.mount:
+    src: "{{ unmanic_nas_host }}:{{ unmanic_nas_export }}"
+    path: "{{ unmanic_mount }}"
+    fstype: nfs
+    opts: vers=3,rw,hard,rsize=1048576,wsize=1048576,nofail,_netdev,x-systemd.automount
+    state: mounted
+
+- name: Create Unmanic directories
+  tags: unmanic
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "755"
+    owner: "{{ ansible_user_uid }}"
+    group: "{{ ansible_user_gid }}"
+  loop:
+    - "{{ unmanic_folder }}"
+    - "{{ unmanic_cache }}"
+
+- name: Deploy unmanic
+  tags: unmanic
+  become: true
+  community.docker.docker_container:
+    name: unmanic
+    image: josh5/unmanic:0.4.1
+    pull: true
+    published_ports:
+      - "{{ unmanic_port }}:8888"
+    volumes: >-
+      {{ [
+        unmanic_folder ~ ':/config:rw',
+        unmanic_cache ~ ':/tmp/unmanic:rw',
+      ] + unmanic_library_volumes }}
+    env:
+      TZ: "{{ unmanic_tz }}"
+      PUID: "{{ ansible_user_uid | string }}"
+      PGID: "{{ ansible_user_gid | string }}"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+    device_requests:
+      - driver: nvidia
+        count: -1
+        capabilities: [["gpu"]]
+    restart_policy: unless-stopped
+    memory: "{{ unmanic_memory }}"
+    memory_swap: "{{ unmanic_memory_swap }}"
