@@ -161,6 +161,22 @@
     group: "{{ rust_test_server_user }}"
     force: false
 
+# Empty on purpose. start.sh does not source it — this rig never boots a custom map — but
+# since compscidr/rustd.xyz#576 every seed-changing wipe also rewrites rust.env (to clear
+# RUST_SERVER_LEVELURL), and the panel refuses to create a missing file (#407). Without
+# this the wipe's precheck refuses with "rust.env does not exist on the server"
+# (seen 2026-10-08). Never overwritten, for the same reason as seed.env.
+- name: Create rust.env (never overwritten — wipes rewrite it at runtime)
+  tags: rust-test
+  become: true
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ rust_test_server_data_dir }}/rust.env"
+    mode: '0644'
+    owner: "{{ rust_test_server_user }}"
+    group: "{{ rust_test_server_user }}"
+    force: false
+
 - name: Install the launch script
   tags: rust-test
   become: true
