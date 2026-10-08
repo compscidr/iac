@@ -426,7 +426,9 @@
     image: postgres:18-alpine
     pull: true
     volumes:
-      - "{{ media_storage_base_path }}/bitmagnet/postgres:/var/lib/postgresql/data"
+      # postgres 18+ images refuse a mount at .../data; the mount must be the
+      # parent and the image keeps data in a per-major-version subdirectory.
+      - "{{ media_storage_base_path }}/bitmagnet/postgres:/var/lib/postgresql"
     env:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bitmagnet
