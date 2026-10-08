@@ -346,6 +346,26 @@
     lidarr_extra_volumes:
       - "{{ media_storage_base_path }}/lidarr/MediaCover:/config/MediaCover:rw"
 
+# Cleanuparr: strikes and removes stalled / failed-import / malware downloads
+# across the *arrs and blocklists them so they are not re-grabbed. UI on
+# http://nas.local:11011 - set an account under Settings -> Account on first
+# login, there is no auth until then. Port 11011 is published on every host
+# interface and only unreachable from the internet because the router does
+# not forward it (same story as threadfin/bitmagnet below). Point it at the
+# apps by container name (http://sonarr:8989, http://transmission:9091, ...)
+# and enable "Sync Reject Blocklisted Torrent Hashes While Grabbing" on each
+# Prowlarr app so blocked releases stay blocked.
+- name: Install cleanuparr
+  tags: cleanuparr
+  ansible.builtin.include_role:
+    name: compscidr.media_server.cleanuparr
+    apply:
+      become: true
+      tags: cleanuparr
+  vars:
+    cleanuparr_memory: "1g"
+    cleanuparr_memory_swap: "1g"
+
 # Threadfin (xTeVe fork): M3U/XMLTV IPTV -> HDHomeRun emulation for Plex Live TV (#561)
 # Plex is bridge-mode on the media network, so add it in Plex as tuner
 # address "threadfin:34400". IPTV playlist/EPG URLs are entered in the
