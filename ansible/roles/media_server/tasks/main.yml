@@ -280,7 +280,7 @@
       become: true
       tags: flaresolverr
   vars:
-    flare_port: 8191
+    flaresolverr_port: 8191
 
 - name: Install ombi
   tags: ombi
