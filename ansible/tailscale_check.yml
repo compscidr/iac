@@ -3,10 +3,11 @@
 #   pre_tasks:
 #     - ansible.builtin.include_tasks: tailscale_check.yml
 
-# Runs on the controller. The including plays set `become: true`, which a
-# delegated task inherits - that made this `sudo tailscale status` on the
-# controller, failing with "a password is required" unless -K was given or
-# sudo happened to have a cached timestamp. The CLI needs no root to read status.
+# Runs on the controller. A delegated task inherits the play's `become`, and
+# common.yml sets `become: true` - that made this `sudo tailscale status` on
+# the controller, failing with "a password is required" unless -K was given or
+# sudo happened to have a cached timestamp. The CLI needs no root to read
+# status, so never become here, whichever play includes this file.
 - name: Check Tailscale status
   ansible.builtin.command:
     cmd: tailscale status
