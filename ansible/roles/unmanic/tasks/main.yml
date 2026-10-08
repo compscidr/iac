@@ -8,6 +8,8 @@
 
 # nofail + automount: a NAS that is off or still booting must not hang this
 # host's boot. The mount is established on first access instead.
+# 1M rsize/wsize: beast and the NAS share a 10GbE link; the default block
+# size leaves most of it idle.
 - name: Mount NAS storage export
   tags: unmanic
   become: true
@@ -15,7 +17,7 @@
     src: "{{ unmanic_nas_host }}:{{ unmanic_nas_export }}"
     path: "{{ unmanic_mount }}"
     fstype: nfs
-    opts: vers=3,rw,hard,nofail,_netdev,x-systemd.automount
+    opts: vers=3,rw,hard,rsize=1048576,wsize=1048576,nofail,_netdev,x-systemd.automount
     state: mounted
 
 - name: Create Unmanic directories
