@@ -429,6 +429,39 @@
     owner: "{{ media_user_uid }}"
     group: "{{ media_user_gid }}"
 
+# Widget API keys come straight from each app's own config on this host, so
+# there is no second copy to keep in sync. Homepage substitutes
+# {{HOMEPAGE_VAR_*}} in its YAML from the container environment.
+- name: Read service API keys for homepage widgets
+  tags: homepage
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ item.src }}"
+  loop:
+    - { name: SONARR_KEY, src: /etc/sonarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
+    - { name: RADARR_KEY, src: /etc/radarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
+    - { name: LIDARR_KEY, src: /etc/lidarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
+    - { name: PROWLARR_KEY, src: /etc/prowlarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
+    - { name: SABNZBD_KEY, src: /etc/sabnzbd/sabnzbd.ini, re: '(?m)^api_key = (\S+)' }
+    - name: PLEX_TOKEN
+      src: "{{ media_storage_base_path }}/plex/Library/Application Support/Plex Media Server/Preferences.xml"
+      re: 'PlexOnlineToken="([^"]+)"'
+  loop_control:
+    label: "{{ item.name }}"
+  register: media_server_homepage_key_files
+  no_log: true
+
+- name: Build homepage widget environment
+  tags: homepage
+  ansible.builtin.set_fact:
+    media_server_homepage_env: >-
+      {{ media_server_homepage_env | default({})
+         | combine({'HOMEPAGE_VAR_' ~ item.item.name: (item.content | b64decode | regex_search(item.item.re, '\\1') | first)}) }}
+  loop: "{{ media_server_homepage_key_files.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  no_log: true
+
 - name: Deploy homepage
   tags: homepage
   become: true
@@ -440,11 +473,13 @@
       - "3000:3000"
     volumes:
       - /etc/homepage:/app/config:rw
-    env:
-      TZ: "America/Los_Angeles"
-      PUID: "{{ media_user_uid | string }}"
-      PGID: "{{ media_user_gid | string }}"
-      HOMEPAGE_ALLOWED_HOSTS: "nas.local:3000,192.168.0.15:3000"
+    env: >-
+      {{ {
+        'TZ': 'America/Los_Angeles',
+        'PUID': media_user_uid | string,
+        'PGID': media_user_gid | string,
+        'HOMEPAGE_ALLOWED_HOSTS': 'nas.local:3000,192.168.0.15:3000',
+      } | combine(media_server_homepage_env) }}
     networks:
       - name: media
     restart_policy: unless-stopped

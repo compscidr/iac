@@ -1,17 +1,24 @@
 ---
 # One tile per service. Public hostnames where one exists, otherwise the
 # LAN port on nas.local (same exposure story as the services themselves).
+# Widgets talk to the apps by container name on the media network; the
+# {{HOMEPAGE_VAR_*}} keys are env vars the role reads out of each app's own
+# config file at deploy time (see tasks/main.yml), so nothing lives here.
 - Watch:
     - Plex:
-        href: https://plex.jasonernst.com
+        href: http://nas.local:32400/web
         description: Movies, TV, music, live TV
         icon: plex.png
+        widget:
+          type: plex
+          url: http://plex:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
     - Ombi:
         href: https://ombi.jasonernst.com
         description: Request movies and shows
         icon: ombi.png
     - Threadfin:
-        href: http://nas.local:34400
+        href: http://nas.local:34400/web/
         description: IPTV -> Plex Live TV tuner
         icon: mdi-television-classic
 
@@ -20,18 +27,34 @@
         href: https://sonarr.jasonernst.com
         description: TV
         icon: sonarr.png
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
     - Radarr:
         href: https://radarr.jasonernst.com
         description: Movies
         icon: radarr.png
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
     - Lidarr:
         href: http://nas.local:8686
         description: Music
         icon: lidarr.png
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
     - Prowlarr:
         href: http://nas.local:9696
         description: Indexers
         icon: prowlarr.png
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
     - Cleanuparr:
         href: http://nas.local:11011
         description: Stalled / malware download cleanup
@@ -42,10 +65,17 @@
         href: http://nas.local:9091
         description: Torrents (via NordVPN)
         icon: transmission.png
+        widget:
+          type: transmission
+          url: http://transmission:9091
     - SABnzbd:
         href: http://nas.local:8080
         description: Usenet
         icon: sabnzbd.png
+        widget:
+          type: sabnzbd
+          url: http://sabnzbd:8080
+          key: "{{HOMEPAGE_VAR_SABNZBD_KEY}}"
     - slskd:
         href: http://nas.local:5030
         description: Soulseek
