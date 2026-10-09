@@ -101,7 +101,9 @@
           method: POST
           headers:
             Content-Type: application/json
-          requestBody: '{"query": "{ torrentContent { search(input: {limit: 0, totalCount: true, facets: {contentType: {aggregate: true}}}) { totalCount aggregations { contentType { value count } } } } }"}'
+          requestBody: >-
+            {"query": "{ torrentContent { search(input: {limit: 0, totalCount: true, facets: {contentType: {aggregate: true}}})
+            { totalCount aggregations { contentType { value count } } } } }"}
           # ponytail: the facet list is sorted by type name (audiobook, comic,
           # ebook, movie, music, software, tv_show, xxx, null), so movie=3 and
           # tv_show=6 by index; if a type ever drops to zero the indexes shift.
