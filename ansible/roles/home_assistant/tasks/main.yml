@@ -7,11 +7,63 @@
     path: "/etc/homeassistant"
     state: directory
 
+# HACS lives in /config/custom_components/hacs as an unzipped release. The
+# installed version is read from HACS's own manifest, so a run that fails
+# part-way cannot leave the role believing the upgrade happened.
+- name: Read installed HACS version
+  tags: homeassistant
+  become: true
+  ansible.builtin.command:
+    cmd: cat /etc/homeassistant/custom_components/hacs/manifest.json
+  register: home_assistant_hacs_manifest
+  changed_when: false
+  failed_when: false
+
+- name: Install HACS {{ home_assistant_hacs_version }}
+  tags: homeassistant
+  become: true
+  when: >-
+    (home_assistant_hacs_manifest.stdout | default('') | regex_findall('"version": *"([^"]+)"') | first | default(''))
+    != home_assistant_hacs_version
+  block:
+    - name: Download HACS
+      ansible.builtin.get_url:
+        url: "https://github.com/hacs/integration/releases/download/{{ home_assistant_hacs_version }}/hacs.zip"
+        dest: /tmp/hacs-{{ home_assistant_hacs_version }}.zip
+        mode: "644"
+
+    - name: Create HACS directory
+      ansible.builtin.file:
+        path: /etc/homeassistant/custom_components/hacs
+        state: directory
+        mode: "755"
+        owner: "999"
+        group: "10"
+
+    - name: Unpack HACS into custom_components
+      ansible.builtin.unarchive:
+        src: /tmp/hacs-{{ home_assistant_hacs_version }}.zip
+        dest: /etc/homeassistant/custom_components/hacs
+        remote_src: true
+        owner: "999"
+        group: "10"
+      notify: Restart homeassistant container
+
+- name: Remove the version marker from the first draft of this
+  tags: homeassistant
+  become: true
+  ansible.builtin.file:
+    path: /etc/homeassistant/custom_components/hacs/.ansible-hacs-version
+    state: absent
+
 - name: Deploy Home Assistant
   tags: homeassistant
   community.docker.docker_container:
     name: homeassistant
     image: lscr.io/linuxserver/homeassistant:latest
+    # HA takes well over the default 60s to stop; a recreate used to die
+    # with "Error removing container ... Read timed out".
+    timeout: 300
     network_mode: host
     pull: true
     env:
