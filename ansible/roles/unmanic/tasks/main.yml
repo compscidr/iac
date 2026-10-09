@@ -34,21 +34,35 @@
 
 # The libraries, plugin settings and flows all live under /config, and the
 # second instance should start from the first one's rather than be clicked
-# through again. One-time seed: copy on first deploy only, then drop the
-# copied task queue so the new instance does not start on the other one's
-# backlog. Each instance then keeps just its own two libraries (deleted by
-# hand in the other's UI).
+# through again. One-time seed: copy on first deploy only (creates guard),
+# then drop the copied task queue so the new instance does not start on the
+# other one's backlog. Each instance then keeps just its own two libraries
+# (deleted by hand in the other's UI). The first instance may still be
+# running, so its SQLite DB is taken through the online backup API rather
+# than the raw file copy, which could tear a WAL-mode database. On a host
+# where the first instance has never run there is nothing to seed from and
+# the later instances just start empty.
+- name: Check whether the first instance has a config to seed from
+  tags: unmanic
+  ansible.builtin.stat:
+    path: /etc/{{ unmanic_instances[0].name }}/.unmanic/config/unmanic.db
+  register: unmanic_seed_src
+
 - name: Seed later instances' config from the first
   tags: unmanic
   become: true
   ansible.builtin.shell:
     cmd: >-
       cp -a /etc/{{ unmanic_instances[0].name }}/. /etc/{{ item.name }}/ &&
-      python3 -c "import sqlite3; c=sqlite3.connect('/etc/{{ item.name }}/.unmanic/config/unmanic.db'); c.execute('delete from tasks'); c.commit()"
+      python3 -c "import sqlite3;
+      s=sqlite3.connect('/etc/{{ unmanic_instances[0].name }}/.unmanic/config/unmanic.db');
+      d=sqlite3.connect('/etc/{{ item.name }}/.unmanic/config/unmanic.db');
+      s.backup(d); d.execute('delete from tasks'); d.commit()"
     creates: /etc/{{ item.name }}/.unmanic
   loop: "{{ unmanic_instances[1:] }}"
   loop_control:
     label: "{{ item.name }}"
+  when: unmanic_seed_src.stat.exists
 
 - name: Deploy unmanic
   tags: unmanic
