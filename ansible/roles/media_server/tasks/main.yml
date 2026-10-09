@@ -466,6 +466,19 @@
   register: media_server_homepage_key_files
   no_log: true
 
+# Ombi keeps its API key in a sqlite settings table rather than a text file.
+- name: Read the Ombi API key for the homepage widget
+  tags: homepage
+  become: true
+  ansible.builtin.command:
+    cmd: >-
+      python3 -c "import sqlite3, json;
+      c = sqlite3.connect('file:/etc/ombi/OmbiSettings.db?mode=ro', uri=True);
+      print(json.loads(c.execute(\"select Content from GlobalSettings where SettingsName = 'OmbiSettings'\").fetchone()[0])['ApiKey'])"
+  register: media_server_homepage_ombi_key
+  changed_when: false
+  no_log: true
+
 - name: Build homepage widget environment
   tags: homepage
   ansible.builtin.set_fact:
@@ -488,6 +501,7 @@
       - "3000:3000"
     volumes:
       - /etc/homepage:/app/config:rw
+      - "{{ media_storage_base_path }}:/mnt/storage:ro"
     env: >-
       {{ {
         'TZ': 'America/Los_Angeles',
@@ -496,6 +510,7 @@
         'HOMEPAGE_ALLOWED_HOSTS': 'nas.local:3000,192.168.0.15:3000',
         'HOMEPAGE_VAR_HA_TOKEN': lookup('community.general.onepassword', 'homeassistant', field='credential',
                                         vault=onepassword_vault, account_id=onepassword_account_id),
+        'HOMEPAGE_VAR_OMBI_KEY': media_server_homepage_ombi_key.stdout,
       } | combine(media_server_homepage_env) }}
     networks:
       - name: media
