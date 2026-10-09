@@ -29,24 +29,41 @@
     mode: "755"
     owner: "{{ ansible_user_uid }}"
     group: "{{ ansible_user_gid }}"
-  loop:
-    - "{{ unmanic_folder }}"
-    - "{{ unmanic_cache }}"
+  loop: "{{ unmanic_instances | map(attribute='name') | map('regex_replace', '^', '/etc/') | list
+    + unmanic_instances | map(attribute='name') | map('regex_replace', '^', '/var/cache/') | list }}"
+
+# The libraries, plugin settings and flows all live under /config, and the
+# second instance should start from the first one's rather than be clicked
+# through again. One-time seed: copy on first deploy only, then drop the
+# copied task queue so the new instance does not start on the other one's
+# backlog. Each instance then keeps just its own two libraries (deleted by
+# hand in the other's UI).
+- name: Seed later instances' config from the first
+  tags: unmanic
+  become: true
+  ansible.builtin.shell:
+    cmd: >-
+      cp -a /etc/{{ unmanic_instances[0].name }}/. /etc/{{ item.name }}/ &&
+      python3 -c "import sqlite3; c=sqlite3.connect('/etc/{{ item.name }}/.unmanic/config/unmanic.db'); c.execute('delete from tasks'); c.commit()"
+    creates: /etc/{{ item.name }}/.unmanic
+  loop: "{{ unmanic_instances[1:] }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Deploy unmanic
   tags: unmanic
   become: true
   community.docker.docker_container:
-    name: unmanic
+    name: "{{ item.name }}"
     image: josh5/unmanic:0.4.1
     pull: true
     published_ports:
-      - "{{ unmanic_port }}:8888"
+      - "{{ item.port }}:8888"
     volumes: >-
       {{ [
-        unmanic_folder ~ ':/config:rw',
-        unmanic_cache ~ ':/tmp/unmanic:rw',
-      ] + unmanic_library_volumes }}
+        '/etc/' ~ item.name ~ ':/config:rw',
+        '/var/cache/' ~ item.name ~ ':/tmp/unmanic:rw',
+      ] + item.volumes }}
     env:
       TZ: "{{ unmanic_tz }}"
       PUID: "{{ ansible_user_uid | string }}"
@@ -60,3 +77,6 @@
     restart_policy: unless-stopped
     memory: "{{ unmanic_memory }}"
     memory_swap: "{{ unmanic_memory_swap }}"
+  loop: "{{ unmanic_instances }}"
+  loop_control:
+    label: "{{ item.name }}"

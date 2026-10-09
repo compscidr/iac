@@ -10,23 +10,26 @@
 unmanic_nas_host: nas.local
 unmanic_nas_export: /volume1/storage
 unmanic_mount: /mnt/nas/storage
-# Only tv/ and movies/ are exposed to the container, not the whole share:
-# downloads/ and the *arr config dirs have no business being re-encoded.
-# The same two folders are bound a second time under *-hdr: Unmanic wants a
-# distinct path per library, and HDR files need their own transcode config
-# (GPU tone-map to SDR) while the SDR library skips them. Both libraries see
-# the same files; the dynamic-range filter decides which one acts.
-unmanic_library_volumes:
-  - "{{ unmanic_mount }}/tv:/library/tv:rw"
-  - "{{ unmanic_mount }}/movies:/library/movies:rw"
-  - "{{ unmanic_mount }}/tv:/library/tv-hdr:rw"
-  - "{{ unmanic_mount }}/movies:/library/movies-hdr:rw"
+# Unmanic's free tier allows two libraries per instance, and the HDR files
+# need their own libraries (different transcode config: GPU tone-map to SDR),
+# so there are two instances of the same image on the same GPU. Each binds
+# only tv/ and movies/ (not the whole share: downloads/ and the *arr config
+# dirs have no business being re-encoded); both see the same files and the
+# dynamic-range filter in each library decides which instance acts.
+# Config in /etc/<name>, encode cache in /var/cache/<name> on the nvme (a
+# remux is 40-80G and two workers can be mid-file at once, so not /tmp).
+unmanic_instances:
+  - name: unmanic
+    port: 8888
+    volumes:
+      - "{{ unmanic_mount }}/tv:/library/tv:rw"
+      - "{{ unmanic_mount }}/movies:/library/movies:rw"
+  - name: unmanic-hdr
+    port: 8889
+    volumes:
+      - "{{ unmanic_mount }}/tv:/library/tv-hdr:rw"
+      - "{{ unmanic_mount }}/movies:/library/movies-hdr:rw"
 
-unmanic_folder: /etc/unmanic
-# Working copies land here during an encode. A remux is 40-80G, and two workers
-# can be mid-file at once, so keep this on the big nvme, not /tmp.
-unmanic_cache: /var/cache/unmanic
-unmanic_port: 8888
 unmanic_tz: "America/Los_Angeles"
 unmanic_memory: "8g"
 unmanic_memory_swap: "8g"
