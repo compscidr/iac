@@ -8,14 +8,14 @@ headerStyle: underlined
 hideVersion: true
 useEqualHeights: true
 target: _blank
-# Dark film-reel photo, blurred and dimmed, with translucent cards over it.
+# Dark film-reel photo, blurred and dimmed. Card blur is documented as
+# incompatible with these background filters, so it is not set.
 background:
   image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=2560&q=60"
   blur: sm
   saturate: 50
-  brightness: 40
+  brightness: 50
   opacity: 60
-cardBlur: md
 # Four equal columns everywhere so cards line up row to row regardless of
 # how many a group has.
 layout:
