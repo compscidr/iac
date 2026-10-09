@@ -3,7 +3,8 @@
 #
 # Runs on ubuntu-beast (RTX 3080 + 5080, nvidia container runtime already set
 # up by the ollama role). Mounts nas.local:/volume1/storage over NFSv3 and
-# transcodes tv/ and movies/ in place. UI on http://ubuntu-beast.local:8888.
+# transcodes tv/ and movies/ in place. Two instances (free tier = two
+# libraries each): SDR on http://ubuntu-beast.local:8888, HDR on :8889.
 #
 # Usage:
 #   ansible-playbook -i inventory.yml unmanic.yml --limit ubuntu-beast.local --ask-become-pass
