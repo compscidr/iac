@@ -1,0 +1,11 @@
+---
+# Shipping this file replaces Homepage's default widgets (search box etc.).
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+- resources:
+    label: NAS
+    cpu: true
+    memory: true
