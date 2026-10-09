@@ -37,8 +37,17 @@ jobs:
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
     runs-on: ubuntu-26.04
-    name: Molecule Test
+    name: Molecule Test (${{ matrix.platform }})
     timeout-minutes: 60
+    # One runner per molecule platform instead of both containers converging
+    # on one runner: roughly halves wall-clock time. fail-fast off so a flake
+    # on one release doesn't cancel the other's result.
+    # Must match the `platforms:` names in ansible/molecule/default/molecule.yml:
+    # a platform added there but not here goes untested in CI.
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-24.04, ubuntu-26.04]
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python
@@ -68,4 +77,4 @@ jobs:
           # Renovate moves them together.
           python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4 jmespath==1.0.1
           export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=1
-          molecule test
+          molecule test --platform-name ${{ matrix.platform }}
