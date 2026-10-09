@@ -1,0 +1,80 @@
+---
+# One tile per service. Public hostnames where one exists, otherwise the
+# LAN port on nas.local (same exposure story as the services themselves).
+- Watch:
+    - Plex:
+        href: https://plex.jasonernst.com
+        description: Movies, TV, music, live TV
+        icon: plex.png
+    - Ombi:
+        href: https://ombi.jasonernst.com
+        description: Request movies and shows
+        icon: ombi.png
+    - Threadfin:
+        href: http://nas.local:34400
+        description: IPTV -> Plex Live TV tuner
+        icon: mdi-television-classic
+
+- Manage:
+    - Sonarr:
+        href: https://sonarr.jasonernst.com
+        description: TV
+        icon: sonarr.png
+    - Radarr:
+        href: https://radarr.jasonernst.com
+        description: Movies
+        icon: radarr.png
+    - Lidarr:
+        href: http://nas.local:8686
+        description: Music
+        icon: lidarr.png
+    - Prowlarr:
+        href: http://nas.local:9696
+        description: Indexers
+        icon: prowlarr.png
+    - Cleanuparr:
+        href: http://nas.local:11011
+        description: Stalled / malware download cleanup
+        icon: mdi-broom
+
+- Download:
+    - Transmission:
+        href: http://nas.local:9091
+        description: Torrents (via NordVPN)
+        icon: transmission.png
+    - SABnzbd:
+        href: http://nas.local:8080
+        description: Usenet
+        icon: sabnzbd.png
+    - slskd:
+        href: http://nas.local:5030
+        description: Soulseek
+        icon: slskd.png
+    - Bitmagnet:
+        href: http://nas.local:3333
+        description: Self-hosted DHT indexer
+        icon: mdi-magnet
+
+- Encode:
+    - Unmanic SDR:
+        href: http://ubuntu-beast.local:8888
+        description: Re-encode oversized SDR files (GPU)
+        icon: unmanic.png
+    - Unmanic HDR:
+        href: http://ubuntu-beast.local:8889
+        description: Tone-map HDR to SDR (GPU)
+        icon: unmanic.png
+
+- Infra:
+    - NAS:
+        href: https://nas.jasonernst.com
+        description: UGOS
+        icon: mdi-nas
+    - Home Assistant:
+        href: http://nas.local:8123
+        description: Home automation
+        icon: home-assistant.png
+    - Uptime Kuma:
+        href: https://uptime.jasonernst.com
+        description: Service monitoring
+        icon: uptime-kuma.png

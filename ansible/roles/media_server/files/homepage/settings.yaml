@@ -1,0 +1,22 @@
+---
+# Homepage (gethomepage.dev) dashboard settings. Links-only for now; service
+# widgets (queue counts etc.) need per-app API keys and can come later.
+title: Media
+headerStyle: clean
+hideVersion: true
+layout:
+  Watch:
+    style: row
+    columns: 3
+  Manage:
+    style: row
+    columns: 5
+  Download:
+    style: row
+    columns: 4
+  Encode:
+    style: row
+    columns: 2
+  Infra:
+    style: row
+    columns: 3
