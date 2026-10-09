@@ -7,6 +7,30 @@
     path: "/etc/homeassistant"
     state: directory
 
+# HACS lives in /config/custom_components/hacs as an unzipped release. The
+# version marker is what makes this idempotent: writing a new version is the
+# change that triggers the download + unpack + restart handlers.
+- name: Create HACS directory
+  tags: homeassistant
+  become: true
+  ansible.builtin.file:
+    path: /etc/homeassistant/custom_components/hacs
+    state: directory
+    mode: "755"
+    owner: "999"
+    group: "10"
+
+- name: Record the HACS version to install
+  tags: homeassistant
+  become: true
+  ansible.builtin.copy:
+    content: "{{ home_assistant_hacs_version }}\n"
+    dest: /etc/homeassistant/custom_components/hacs/.ansible-hacs-version
+    mode: "644"
+    owner: "999"
+    group: "10"
+  notify: Install HACS
+
 - name: Deploy Home Assistant
   tags: homeassistant
   community.docker.docker_container:

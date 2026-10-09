@@ -1,0 +1,6 @@
+---
+# HACS (custom integrations store) is a plain unzip into custom_components;
+# it cannot update itself once it is too old for the running Home Assistant
+# (1.34 broke on HA 2026.9 with "property 'config_entry' ... has no setter").
+# Pinned here and bumped by Renovate.
+home_assistant_hacs_version: "2.0.5"

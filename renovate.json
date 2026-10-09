@@ -22,6 +22,18 @@
     },
     {
       "customType": "regex",
+      "description": "Track hacs/integration releases for the home_assistant_hacs_version pin in the home_assistant role",
+      "managerFilePatterns": [
+        "/^ansible/roles/home_assistant/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "home_assistant_hacs_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "hacs/integration"
+    },
+    {
+      "customType": "regex",
       "description": "Track ansible and ansible-lint pins in the verify workflow",
       "managerFilePatterns": [
         "/^\\.github/workflows/verify\\.yml$/"
