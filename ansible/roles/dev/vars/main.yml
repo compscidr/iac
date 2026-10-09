@@ -28,3 +28,7 @@ php_packages: # noqa: var-naming[no-role-prefix]
   # geerlingguy.php writes 20-apcu.ini (php_enable_apc defaults true), so install
   # the module it loads; on 24.04 the PPA happened to pull it in.
   - "php{{ php_default_version_debian }}-apcu"
+# AWS CLI v2, pinned so the install is idempotent (the unversioned "latest"
+# zip changes under you, which broke molecule's idempotence check). Renovate
+# bumps it from aws/aws-cli tags.
+dev_awscli_version: "2.37.12"

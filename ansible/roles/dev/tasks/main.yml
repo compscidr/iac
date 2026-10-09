@@ -307,25 +307,35 @@
     dest: /etc/environment.d/90-digitalocean.conf
     mode: "644"
 
-- name: Download awscli
-  become: true
+- name: Check installed awscli version
   tags: aws
-  ansible.builtin.unarchive:
-    src: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}.zip"
-    dest: /tmp
-    remote_src: true
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: dev_awscli_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
 
-- name: Install awscli
+# Only download and install when the pinned version is not already there, so
+# a converged host does nothing on re-run.
+- name: Install awscli {{ dev_awscli_version }}
   become: true
   tags: aws
-  ansible.builtin.command: ./install --update
-  args:
-    chdir: "/tmp/aws"
-  register: dev_awscli_status
-  changed_when: "'changed' in dev_awscli_status.stdout"
-  # command never runs in --check anyway, but ansible-core still validates chdir,
-  # and /tmp/aws only exists once the unarchive above has really run.
-  when: not ansible_check_mode
+  when: ('aws-cli/' ~ dev_awscli_version ~ ' ') not in dev_awscli_installed.stdout | default('')
+  block:
+    - name: Download awscli
+      ansible.builtin.unarchive:
+        src: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}-{{ dev_awscli_version }}.zip"
+        dest: /tmp
+        remote_src: true
+
+    - name: Install awscli
+      ansible.builtin.command: ./install --update
+      args:
+        chdir: "/tmp/aws"
+      changed_when: true
+      # command never runs in --check anyway, but ansible-core still validates chdir,
+      # and /tmp/aws only exists once the unarchive above has really run.
+      when: not ansible_check_mode
 
 # note: this will require a restart to apply changes
 - name: Set aws access token
