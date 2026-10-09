@@ -113,8 +113,10 @@
         description: TP-Link Archer GE800
         icon: router.png
         # Client counts and WAN throughput come from Home Assistant's TP-Link
-        # Router integration (HACS). HA runs host-networked on the NAS, so its
-        # LAN IP; the token is the 1Password "homeassistant" item.
+        # Router integration (HACS). HA runs with host networking rather than
+        # on the media docker network, so it has no container name to resolve
+        # and is reached at the NAS's LAN IP. The token is the 1Password
+        # "homeassistant" item.
         widget:
           type: homeassistant
           url: http://192.168.0.15:8123
