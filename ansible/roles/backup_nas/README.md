@@ -134,7 +134,12 @@ replaced the root's mode bits and locked out uid 999 / gid 10 - jason:admin, the
 every media container runs as. Plex, sonarr and sabnzbd lost the share 2 seconds after the
 play; `owner::` and `group:admin` are what let them back in. A UGOS firmware update reset
 the ugacl the same way on 2026-10-02, so the re-assert (`/usr/local/bin/backup-nas-ugacl-ensure.sh`)
-also runs from root cron every 15 minutes - no play needed after updates. **Never chmod/chown/setfacl
+also runs from root cron every 15 minutes - no play needed after updates - and appends a
+timestamped line to `/var/log/backup-nas-ugacl-ensure.log` for every entry it re-adds, so that
+log says *when* a reset happened (both 2026-10-02 and 2026-10-09 hit the 21:00-21:15 PDT push
+window the night after a nas reboot; the trigger is still unidentified). The three push units
+also `Restart=on-failure` every 20 min, up to 4 starts in 3h, so a push that lands inside a
+reset window retries after the cron has repaired it instead of losing the night. **Never chmod/chown/setfacl
 the share root by hand** - re-run `nas.yml --tags backup` instead. `ugacltool get_perm PATH
 USER` shows what UGOS actually grants a user on a path; that is the thing to read when a
 push is refused, not `ls -l`.

@@ -1,6 +1,16 @@
 [Unit]
 Description=mailu nightly dkim/db/mailboxes/config backup, shipped to the nas
 
+# A push that lands inside a nas-side ugacl reset window (UGOS drops the
+# svcbackup entry; the backup_nas role's 15-min root cron re-adds it) gets
+# "Permission denied (13)" from the daemon and lost the whole night (2026-10-02,
+# 2026-10-09). Retry a few times, spaced wider than that cron, instead.
+# Bounded: 4 starts in 3h, then stay failed and let the freshness check alert.
+StartLimitIntervalSec=3h
+StartLimitBurst=4
+
 [Service]
 Type=oneshot
 ExecStart={{ mailu_install_path }}/mailu-backup.sh
+Restart=on-failure
+RestartSec=20min
