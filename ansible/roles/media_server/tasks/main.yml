@@ -456,7 +456,7 @@
   ansible.builtin.set_fact:
     media_server_homepage_env: >-
       {{ media_server_homepage_env | default({})
-         | combine({'HOMEPAGE_VAR_' ~ item.item.name: (item.content | b64decode | regex_search(item.item.re, '\\1') | first)}) }}
+         | combine({'HOMEPAGE_VAR_' ~ item.item.name: (item.content | b64decode | regex_findall(item.item.re) | first)}) }}
   loop: "{{ media_server_homepage_key_files.results }}"
   loop_control:
     label: "{{ item.item.name }}"
