@@ -110,5 +110,23 @@
         icon: uptime-kuma.png
     - Router:
         href: http://192.168.0.1
-        description: Gateway
+        description: TP-Link Archer GE800
         icon: router.png
+        # Client counts and WAN throughput come from Home Assistant's TP-Link
+        # Router integration (HACS). HA runs host-networked on the NAS, so its
+        # LAN IP; the token is the 1Password "homeassistant" item.
+        widget:
+          type: homeassistant
+          url: http://192.168.0.15:8123
+          key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
+          custom:
+            - state: sensor.tp_link_router_total_wired_clients
+              label: wired
+              value: "{state}"
+            - state: sensor.tp_link_router_total_main_wifi_clients
+              label: wifi
+              value: "{state}"
+            - state: sensor.archer_ge800_download_speed
+              label: down
+            - state: sensor.archer_ge800_upload_speed
+              label: up
