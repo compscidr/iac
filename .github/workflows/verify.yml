@@ -82,8 +82,9 @@ jobs:
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
     needs: changes
-    # always() so a skipped `changes` job (non-PR events) doesn't skip this one.
-    if: always() && (github.event_name != 'pull_request' || needs.changes.outputs.molecule == 'true')
+    # !cancelled() (not always()) so a skipped `changes` job on non-PR events
+    # doesn't skip this one, while a superseded run still gets cancelled.
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.molecule == 'true') }}
     runs-on: ubuntu-26.04
     name: Molecule Test (${{ matrix.platform }})
     timeout-minutes: 60
