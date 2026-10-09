@@ -1,24 +1,5 @@
 ---
-- name: Download HACS
-  become: true
-  ansible.builtin.get_url:
-    url: "https://github.com/hacs/integration/releases/download/{{ home_assistant_hacs_version }}/hacs.zip"
-    dest: /tmp/hacs-{{ home_assistant_hacs_version }}.zip
-    mode: "644"
-  listen: Install HACS
-
-- name: Unpack HACS into custom_components
-  become: true
-  ansible.builtin.unarchive:
-    src: /tmp/hacs-{{ home_assistant_hacs_version }}.zip
-    dest: /etc/homeassistant/custom_components/hacs
-    remote_src: true
-    owner: "999"
-    group: "10"
-  listen: Install HACS
-
 - name: Restart homeassistant container
   community.docker.docker_container:
     name: homeassistant
     restart: true
-  listen: Install HACS
