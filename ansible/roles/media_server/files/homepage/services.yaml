@@ -138,20 +138,20 @@
           key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
           custom:
             - template: >-
-                {% set t = states('sensor.mysa_969708_current_temperature') %}
-                {% set h = states('sensor.mysa_969708_current_humidity') %}
+                {%- set t = states('sensor.mysa_969708_current_temperature') -%}
+                {%- set h = states('sensor.mysa_969708_current_humidity') -%}
                 {{ (t | float | round(1)) if is_number(t) else '–' }}°
                 {{ (h | float | round) if is_number(h) else '–' }}%
               label: bedroom
             - template: >-
-                {% set t = states('sensor.mysa_d1a6f8_current_temperature') %}
-                {% set h = states('sensor.mysa_d1a6f8_current_humidity') %}
+                {%- set t = states('sensor.mysa_d1a6f8_current_temperature') -%}
+                {%- set h = states('sensor.mysa_d1a6f8_current_humidity') -%}
                 {{ (t | float | round(1)) if is_number(t) else '–' }}°
                 {{ (h | float | round) if is_number(h) else '–' }}%
               label: dining
             - template: >-
-                {% set t = states('sensor.mysa_d1a788_current_temperature') %}
-                {% set h = states('sensor.mysa_d1a788_current_humidity') %}
+                {%- set t = states('sensor.mysa_d1a788_current_temperature') -%}
+                {%- set h = states('sensor.mysa_d1a788_current_humidity') -%}
                 {{ (t | float | round(1)) if is_number(t) else '–' }}°
                 {{ (h | float | round) if is_number(h) else '–' }}%
               label: living
