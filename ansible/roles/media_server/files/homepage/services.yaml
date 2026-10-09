@@ -13,6 +13,7 @@
           type: plex
           url: http://plex:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+          fields: ["streams", "movies", "tv"]
     - Ombi:
         href: https://ombi.jasonernst.com
         description: Request movies and shows
@@ -96,7 +97,7 @@
           method: POST
           headers:
             Content-Type: application/json
-          requestBody: '{"query": "{ torrentContent { search(input: {limit: 0}) { totalCount } } }"}'
+          requestBody: '{"query": "{ torrentContent { search(input: {limit: 0, totalCount: true}) { totalCount } } }"}'
           mappings:
             - field: data.torrentContent.search.totalCount
               label: Indexed
@@ -127,6 +128,35 @@
         href: http://nas.local:8123
         description: Home automation
         icon: home-assistant.png
+        # Four values is the widget's limit, so each is an HA template that
+        # folds a room's temperature and humidity (Mysa thermostats) into one,
+        # and the AirCube's CO2 + light into the fourth. The is_number guards
+        # keep an offline thermostat from erroring the whole tile.
+        widget:
+          type: homeassistant
+          url: http://192.168.0.15:8123
+          key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
+          custom:
+            - template: >-
+                {%- set t = states('sensor.mysa_969708_current_temperature') -%}
+                {%- set h = states('sensor.mysa_969708_current_humidity') -%}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
+              label: bedroom
+            - template: >-
+                {%- set t = states('sensor.mysa_d1a6f8_current_temperature') -%}
+                {%- set h = states('sensor.mysa_d1a6f8_current_humidity') -%}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
+              label: dining
+            - template: >-
+                {%- set t = states('sensor.mysa_d1a788_current_temperature') -%}
+                {%- set h = states('sensor.mysa_d1a788_current_humidity') -%}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
+              label: living
+            - template: "{{ states('sensor.stuckatprototype_aircube_carbon_dioxide') }} ppm · {{ states('sensor.stuckatprototype_aircube_illuminance') }} lx"
+              label: co2 / light
     - Uptime Kuma:
         href: https://uptime.jasonernst.com
         description: Service monitoring
