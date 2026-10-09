@@ -86,8 +86,10 @@
     - name: Create stand-in device nodes
       ansible.builtin.shell: |
         set -e
-        mkdir -p /dev/dri /dev/bus/usb /dev/serial/by-id /run/dbus
-        for d in /dev/dri/renderD128 \
+        # /dev/bus/usb is mapped whole, and docker rejects it if it holds no
+        # device node at all, as on a runner VM with no USB.
+        mkdir -p /dev/dri /dev/bus/usb/001 /dev/serial/by-id /run/dbus
+        for d in /dev/dri/renderD128 /dev/bus/usb/001/001 \
           /dev/serial/by-id/usb-SONOFF_SONOFF_Dongle_Plus_MG24_26ae5d834775f011aef2ad2f1045c30f-if00-port0; do
           [ -e "$d" ] || mknod "$d" c 1 3
         done
