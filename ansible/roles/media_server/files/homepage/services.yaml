@@ -20,7 +20,7 @@
     - Threadfin:
         href: http://nas.local:34400/web/
         description: IPTV -> Plex Live TV tuner
-        icon: mdi-television-classic
+        icon: threadfin.png
 
 - Manage:
     - Sonarr:
@@ -58,7 +58,7 @@
     - Cleanuparr:
         href: http://nas.local:11011
         description: Stalled / malware download cleanup
-        icon: mdi-broom
+        icon: cleanuparr.png
 
 - Download:
     - Transmission:
@@ -83,7 +83,7 @@
     - Bitmagnet:
         href: http://nas.local:3333
         description: Self-hosted DHT indexer
-        icon: mdi-magnet
+        icon: bitmagnet.png
 
 - Encode:
     - Unmanic SDR:
@@ -99,7 +99,7 @@
     - NAS:
         href: https://nas.jasonernst.com
         description: UGOS
-        icon: mdi-nas
+        icon: ugreen.png
     - Home Assistant:
         href: http://nas.local:8123
         description: Home automation
@@ -108,3 +108,7 @@
         href: https://uptime.jasonernst.com
         description: Service monitoring
         icon: uptime-kuma.png
+    - Router:
+        href: http://192.168.0.1
+        description: Gateway
+        icon: router.png
