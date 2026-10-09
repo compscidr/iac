@@ -32,6 +32,13 @@
       - /opt/uptime-kuma:/app/data
     networks:
       - name: nginx-proxy
+    # Don't inherit the droplet's Tailscale search domain. With it, glibc
+    # first asks Docker's embedded DNS for "<name>.tail21090.ts.net", and
+    # Docker answered that with a local container's address, so the
+    # jasonernst.com -> www redirect was followed to the wrong host and the
+    # monitor read down. "." clears the search list; container names and
+    # public names both still resolve.
+    dns_search_domains: ["."]
     restart_policy: unless-stopped
     env:
       VIRTUAL_HOST: "uptime.jasonernst.com"
