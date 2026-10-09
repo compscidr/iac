@@ -5,3 +5,9 @@
     name: nas-proxy
     restart: true
     state: started
+
+- name: Restart slskd container
+  become: true
+  community.docker.docker_container:
+    name: slskd
+    restart: true
