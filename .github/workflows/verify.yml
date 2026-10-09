@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Weekly full run catches outside drift (upstream packages, new tool
+  # releases) that no PR would trigger.
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,8 +39,51 @@ jobs:
           cd ansible
           ansible-lint .
 
+  # Molecule only converges common.yml and dev.yml, so on pull requests it is
+  # skipped unless something those playbooks reach changed. The filter is
+  # deliberately broad (shared vars/config, every role they reach directly or
+  # via include_role/meta deps, external role pins). Push to main, the weekly
+  # schedule and manual runs always test, so a gap in this list surfaces on
+  # main right after merge rather than never.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      molecule: ${{ steps.filter.outputs.molecule }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            molecule:
+              - .github/workflows/verify.yml
+              - ansible/molecule/**
+              - ansible/common.yml
+              - ansible/dev.yml
+              - ansible/tailscale_check.yml
+              - ansible/ansible.cfg
+              - ansible/inventory.yml
+              - ansible/requirements.yml
+              - ansible/group_vars/**
+              - ansible/host_vars/**
+              - ansible/vars/**
+              - ansible/roles/bootstrap/**
+              - ansible/roles/common_cli/**
+              - ansible/roles/common_gui/**
+              - ansible/roles/dev/**
+              - ansible/roles/dev_gui/**
+              - ansible/roles/dyndns/**
+              - ansible/roles/fnm/**
+              - ansible/roles/rustup/**
+              - ansible/roles/sshd_alt_port/**
+              - ansible/roles/zed/**
+
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
+    needs: changes
+    # always() so a skipped `changes` job (non-PR events) doesn't skip this one.
+    if: always() && (github.event_name != 'pull_request' || needs.changes.outputs.molecule == 'true')
     runs-on: ubuntu-26.04
     name: Molecule Test (${{ matrix.platform }})
     timeout-minutes: 60
