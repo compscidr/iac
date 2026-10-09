@@ -174,10 +174,10 @@ See `roles/rustd_xyz/README.md` "Restore drill" (`pg_restore --clean --if-exists
 cd /opt/goblog
 R="rsync -a --password-file=/opt/goblog/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/goblog"
 $R/db/goblog-YYYY-MM-DD.db prod/restore.db
-docker stop www.jasonernst.com
+docker stop goblog-prod
 cp prod/restore.db prod/database.db          # bind-mounted into the container as-is
 $R/uploads/ prod/uploads/
-docker start www.jasonernst.com
+docker start goblog-prod
 ```
 
 The db is a plain bind mount, so a file swap while the container is stopped is the
