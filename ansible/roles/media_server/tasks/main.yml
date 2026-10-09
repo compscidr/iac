@@ -410,6 +410,9 @@
 # gets no inbound peers and runs slow. Postgres is not published and is
 # reachable only on the media network, so its password is upstream's
 # default. The DB grows to tens of GB, hence the storage pool.
+# Owned by the image's postgres user (uid/gid 70 on alpine): the entrypoint
+# drops privileges before creating the 18/docker data subdir, and a root-only
+# parent leaves it with "mkdir: can't create directory: Permission denied".
 - name: Create bitmagnet postgres directory
   tags: bitmagnet
   become: true
@@ -417,6 +420,8 @@
     path: "{{ media_storage_base_path }}/bitmagnet/postgres"
     state: directory
     mode: "700"
+    owner: "70"
+    group: "70"
 
 - name: Deploy bitmagnet postgres
   tags: bitmagnet
