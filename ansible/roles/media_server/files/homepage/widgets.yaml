@@ -6,5 +6,11 @@
       dateStyle: long
       timeStyle: short
 - resources:
+    label: NAS
     cpu: true
     memory: true
+    uptime: true
+# The array, bound read-only into the container for this one number.
+- resources:
+    label: Storage
+    disk: /mnt/storage
