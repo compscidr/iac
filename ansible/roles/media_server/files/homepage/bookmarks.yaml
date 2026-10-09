@@ -1,7 +1,4 @@
 ---
-# Shipping this file replaces Homepage's default Developer/Social/Entertainment
-# bookmark rows.
-- Network:
-    - Router:
-        - href: http://192.168.0.1
-          icon: mdi-router-wireless
+# Intentionally empty: shipping this file stops Homepage generating its
+# sample Developer/Social/Entertainment rows. Links live in services.yaml.
+[]

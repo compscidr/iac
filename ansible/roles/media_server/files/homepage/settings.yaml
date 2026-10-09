@@ -1,22 +1,36 @@
 ---
-# Homepage (gethomepage.dev) dashboard settings. Links-only for now; service
-# widgets (queue counts etc.) need per-app API keys and can come later.
+# Homepage (gethomepage.dev) dashboard settings. Links + widgets; API keys
+# come from the role at deploy time (see tasks/main.yml).
 title: Media
-headerStyle: clean
+theme: dark
+color: slate
+headerStyle: underlined
 hideVersion: true
+useEqualHeights: true
+target: _blank
+# Dark film-reel photo, blurred and dimmed, with translucent cards over it.
+background:
+  image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=2560&q=60"
+  blur: sm
+  saturate: 50
+  brightness: 40
+  opacity: 60
+cardBlur: md
+# Four equal columns everywhere so cards line up row to row regardless of
+# how many a group has.
 layout:
   Watch:
     style: row
-    columns: 3
+    columns: 4
   Manage:
     style: row
-    columns: 5
+    columns: 4
   Download:
     style: row
     columns: 4
   Encode:
     style: row
-    columns: 2
+    columns: 4
   Infra:
     style: row
-    columns: 3
+    columns: 4
