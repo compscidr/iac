@@ -3,7 +3,9 @@
 # Re-assert the inheritable UGOS ACL entries on the rsync module root (see
 # backup_nas_rsync_ugacl_entries in defaults). Run by the play and by root
 # cron: a UGOS firmware update reset this ACL (2026-10-02) and locked
-# svcbackup out until nas.yml was re-run by hand. Prints what it added.
+# svcbackup out until nas.yml was re-run by hand. Prints what it added
+# (timestamped: the cron appends to backup_nas_ugacl_ensure_log, which is the
+# only record of WHEN a reset happened - see 2026-10-09).
 #
 # Guard on the principal (`owner::`, `group:admin:`, `user:svcbackup:`), not
 # the exact entry: if the UGOS UI ever writes a different entry for the same
@@ -16,6 +18,6 @@ acl=$("$ugacltool" get "$root")
 {% for entry in backup_nas_rsync_ugacl_entries %}
 case "$acl" in
   *"{{ entry | regex_replace('allow:.*$', '') }}"*) ;;
-  *) "$ugacltool" add "$root" "{{ entry }}" && echo "added {{ entry }}" ;;
+  *) "$ugacltool" add "$root" "{{ entry }}" && echo "$(date -Is) added {{ entry }}" ;;
 esac
 {% endfor %}

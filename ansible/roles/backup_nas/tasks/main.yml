@@ -127,7 +127,7 @@
   ansible.builtin.cron:
     name: "re-assert backup rsync ugacl"
     minute: "*/15"
-    job: /usr/local/bin/backup-nas-ugacl-ensure.sh
+    job: "/usr/local/bin/backup-nas-ugacl-ensure.sh >> {{ backup_nas_ugacl_ensure_log }} 2>&1"
 
 - name: Prune rustd.xyz backups older than the retention window
   become: true
