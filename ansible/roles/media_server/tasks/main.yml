@@ -432,6 +432,19 @@
 # Widget API keys come straight from each app's own config on this host, so
 # there is no second copy to keep in sync. Homepage substitutes
 # {{HOMEPAGE_VAR_*}} in its YAML from the container environment.
+# slskd ships its config with a placeholder API key and the slskd role does not
+# manage slskd.yml (it holds the hand-set web login). Replace the placeholder
+# once with a generated key; after that the pattern no longer matches, so this
+# is a no-op. The key only ever lives on the NAS and is read back below.
+- name: Set an API key in slskd.yml for the homepage widget
+  tags: homepage
+  become: true
+  ansible.builtin.replace:
+    path: /etc/slskd/slskd.yml
+    regexp: 'key: yourslskdapikeygoeshere'
+    replace: "key: {{ lookup('password', '/dev/null', chars=['ascii_letters', 'digits'], length=48) }}"
+  notify: Restart slskd container
+
 - name: Read service API keys for homepage widgets
   tags: homepage
   become: true
@@ -443,6 +456,7 @@
     - { name: LIDARR_KEY, src: /etc/lidarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
     - { name: PROWLARR_KEY, src: /etc/prowlarr/config.xml, re: '<ApiKey>([^<]+)</ApiKey>' }
     - { name: SABNZBD_KEY, src: /etc/sabnzbd/sabnzbd.ini, re: '(?m)^api_key = (\S+)' }
+    - { name: SLSKD_KEY, src: /etc/slskd/slskd.yml, re: '(?s)api_keys:.*?key: (\S+)' }
     - name: PLEX_TOKEN
       src: "{{ media_storage_base_path }}/plex/Library/Application Support/Plex Media Server/Preferences.xml"
       re: 'PlexOnlineToken="([^"]+)"'
