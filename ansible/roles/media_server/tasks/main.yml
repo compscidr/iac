@@ -443,6 +443,7 @@
     path: /etc/slskd/slskd.yml
     regexp: 'key: yourslskdapikeygoeshere'
     replace: "key: {{ lookup('password', '/dev/null', chars=['ascii_letters', 'digits'], length=48) }}"
+  no_log: true
   notify: Restart slskd container
 
 - name: Read service API keys for homepage widgets
