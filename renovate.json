@@ -34,6 +34,19 @@
     },
     {
       "customType": "regex",
+      "description": "Track aws/aws-cli v2 tags for the dev_awscli_version pin in the dev role",
+      "managerFilePatterns": [
+        "/^ansible/roles/dev/vars/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "dev_awscli_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "aws/aws-cli",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "description": "Track ansible and ansible-lint pins in the verify workflow",
       "managerFilePatterns": [
         "/^\\.github/workflows/verify\\.yml$/"
