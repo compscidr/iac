@@ -1,0 +1,17 @@
+#!/bin/sh
+# Stand-in for the 1Password CLI in the nas scenario: answers the calls the
+# community.general.onepassword lookups make, with the same dummy item for
+# every name. Keeps real secrets out of CI.
+case "$1" in
+  --version) echo 2.30.0 ;;
+  item)
+    cat <<'JSON'
+{"id":"molecule","title":"molecule","fields":[
+ {"id":"username","label":"username","value":"molecule"},
+ {"id":"password","label":"password","value":"molecule-password"},
+ {"id":"credential","label":"credential","value":"molecule-credential"},
+ {"id":"notesPlain","label":"notesPlain","value":"molecule"}]}
+JSON
+    ;;
+  *) echo '{}' ;;
+esac

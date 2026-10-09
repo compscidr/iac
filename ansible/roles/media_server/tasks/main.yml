@@ -137,6 +137,8 @@
 # Media storage folders are now created automatically by the media_storage role
 # which is a dependency of the media roles below
 
+# root:root to match the collection's transmission role, which re-asserts that
+# right after; owning it as the media user here flipped it on every run.
 - name: Create Transmission Directories
   tags: transmission
   become: true
@@ -144,8 +146,8 @@
     path: "/etc/transmission/"
     state: directory
     mode: "755"
-    owner: "{{ media_user_user }}"
-    group: "{{ media_user_group }}"
+    owner: root
+    group: root
 
 - name: Read the NordVPN item from 1Password
   tags: transmission

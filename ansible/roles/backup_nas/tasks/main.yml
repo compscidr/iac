@@ -114,6 +114,8 @@
 
 - name: Assert the inheritable UGOS ACL entries on the rsync module root
   become: true
+  # Tagged so molecule (no ugacltool off-appliance) can skip just this.
+  tags: [ugacl]
   ansible.builtin.command:
     cmd: /usr/local/bin/backup-nas-ugacl-ensure.sh
   register: backup_nas_ugacl_ensure

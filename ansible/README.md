@@ -191,3 +191,7 @@ python -m venv venv
 pip install molecule molecule-docker passlib jmespath  # jmespath: the json_query filter that splits raw 1Password items
 molecule test
 ```
+`molecule test -s nas` converges `nas.yml` against a UGOS-like Debian 12 container
+(`molecule/nas`). It needs no token: the scenario puts a stub `op` first on `PATH`, so every
+1Password lookup gets a dummy value, and blocks container egress so nothing it deploys goes
+live from your machine or a CI runner.

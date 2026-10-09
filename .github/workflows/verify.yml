@@ -50,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       molecule: ${{ steps.filter.outputs.molecule }}
+      nas: ${{ steps.filter.outputs.nas }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -78,6 +79,27 @@ jobs:
               - ansible/roles/rustup/**
               - ansible/roles/sshd_alt_port/**
               - ansible/roles/zed/**
+            # The nas scenario: nas.yml and every role it reaches.
+            nas:
+              - .github/workflows/verify.yml
+              - ansible/molecule/nas/**
+              - ansible/molecule/default/dependency.sh
+              - ansible/nas.yml
+              - ansible/tailscale_check.yml
+              - ansible/ansible.cfg
+              - ansible/inventory.yml
+              - ansible/requirements.yml
+              - ansible/group_vars/**
+              - ansible/vars/**
+              - ansible/roles/backup_nas/**
+              - ansible/roles/dyndns/**
+              - ansible/roles/factorio_game/**
+              - ansible/roles/home_assistant/**
+              - ansible/roles/media_server/**
+              - ansible/roles/minecraft_bedrock/**
+              - ansible/roles/minecraft_game/**
+              - ansible/roles/rust_game/**
+              - ansible/roles/sshd_alt_port_ugos/**
 
   # https://github.com/geerlingguy/ansible-role-redis/blob/master/.github/workflows/ci.yml
   deploy-test:
@@ -127,3 +149,34 @@ jobs:
           python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4 jmespath==1.0.1
           export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=1
           molecule test --platform-name ${{ matrix.platform }}
+  # nas.yml against a UGOS-like container (ansible/molecule/nas, #769). Its
+  # own job: it pulls every image the NAS runs (several GB), and needs no
+  # 1Password access (the scenario stubs `op`).
+  nas-test:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.nas == 'true') }}
+    runs-on: ubuntu-26.04
+    name: Molecule Test (nas)
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      # The NAS's images come to ~14G; make room by dropping SDKs this job never uses.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Install and run molecule
+        env:
+          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1"
+          DOCKER_TIMEOUT: "300"
+        run: |
+          cd ansible
+          python -m venv venv
+          . venv/bin/activate
+          # Same pins as deploy-test above; Renovate moves them together.
+          python -m pip install ansible-core==2.21.4 molecule==26.8.0 'molecule-plugins[docker]==26.7.15' passlib==1.7.4 jmespath==1.0.1
+          molecule test -s nas
