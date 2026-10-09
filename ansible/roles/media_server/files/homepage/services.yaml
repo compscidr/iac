@@ -130,23 +130,30 @@
         icon: home-assistant.png
         # Four values is the widget's limit, so each is an HA template that
         # folds a room's temperature and humidity (Mysa thermostats) into one,
-        # and the AirCube's CO2 + light into the fourth.
+        # and the AirCube's CO2 + light into the fourth. The is_number guards
+        # keep an offline thermostat from erroring the whole tile.
         widget:
           type: homeassistant
           url: http://192.168.0.15:8123
           key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
           custom:
             - template: >-
-                {{ states('sensor.mysa_969708_current_temperature') | float | round(1) }}°
-                {{ states('sensor.mysa_969708_current_humidity') | float | round }}%
+                {% set t = states('sensor.mysa_969708_current_temperature') %}
+                {% set h = states('sensor.mysa_969708_current_humidity') %}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
               label: bedroom
             - template: >-
-                {{ states('sensor.mysa_d1a6f8_current_temperature') | float | round(1) }}°
-                {{ states('sensor.mysa_d1a6f8_current_humidity') | float | round }}%
+                {% set t = states('sensor.mysa_d1a6f8_current_temperature') %}
+                {% set h = states('sensor.mysa_d1a6f8_current_humidity') %}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
               label: dining
             - template: >-
-                {{ states('sensor.mysa_d1a788_current_temperature') | float | round(1) }}°
-                {{ states('sensor.mysa_d1a788_current_humidity') | float | round }}%
+                {% set t = states('sensor.mysa_d1a788_current_temperature') %}
+                {% set h = states('sensor.mysa_d1a788_current_humidity') %}
+                {{ (t | float | round(1)) if is_number(t) else '–' }}°
+                {{ (h | float | round) if is_number(h) else '–' }}%
               label: living
             - template: "{{ states('sensor.stuckatprototype_aircube_carbon_dioxide') }} ppm · {{ states('sensor.stuckatprototype_aircube_illuminance') }} lx"
               label: co2 / light
