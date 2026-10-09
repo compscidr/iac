@@ -42,6 +42,8 @@ jobs:
     # One runner per molecule platform instead of both containers converging
     # on one runner: roughly halves wall-clock time. fail-fast off so a flake
     # on one release doesn't cancel the other's result.
+    # Must match the `platforms:` names in ansible/molecule/default/molecule.yml:
+    # a platform added there but not here goes untested in CI.
     strategy:
       fail-fast: false
       matrix:
