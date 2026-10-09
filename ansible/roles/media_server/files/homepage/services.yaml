@@ -136,11 +136,17 @@
           url: http://192.168.0.15:8123
           key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
           custom:
-            - template: "{{ states('sensor.mysa_969708_current_temperature') | float | round(1) }}° {{ states('sensor.mysa_969708_current_humidity') | float | round }}%"
+            - template: >-
+                {{ states('sensor.mysa_969708_current_temperature') | float | round(1) }}°
+                {{ states('sensor.mysa_969708_current_humidity') | float | round }}%
               label: bedroom
-            - template: "{{ states('sensor.mysa_d1a6f8_current_temperature') | float | round(1) }}° {{ states('sensor.mysa_d1a6f8_current_humidity') | float | round }}%"
+            - template: >-
+                {{ states('sensor.mysa_d1a6f8_current_temperature') | float | round(1) }}°
+                {{ states('sensor.mysa_d1a6f8_current_humidity') | float | round }}%
               label: dining
-            - template: "{{ states('sensor.mysa_d1a788_current_temperature') | float | round(1) }}° {{ states('sensor.mysa_d1a788_current_humidity') | float | round }}%"
+            - template: >-
+                {{ states('sensor.mysa_d1a788_current_temperature') | float | round(1) }}°
+                {{ states('sensor.mysa_d1a788_current_humidity') | float | round }}%
               label: living
             - template: "{{ states('sensor.stuckatprototype_aircube_carbon_dioxide') }} ppm · {{ states('sensor.stuckatprototype_aircube_illuminance') }} lx"
               label: co2 / light
