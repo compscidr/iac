@@ -170,8 +170,11 @@
                 {{ (t | float | round(1)) if is_number(t) else '–' }}°
                 {{ (h | float | round) if is_number(h) else '–' }}%
               label: living
-            - template: "{{ states('sensor.stuckatprototype_aircube_carbon_dioxide') }} ppm · {{ states('sensor.stuckatprototype_aircube_illuminance') }} lx"
-              label: co2 / light
+            - template: >-
+                {%- set c = states('sensor.stuckatprototype_aircube_carbon_dioxide') -%}
+                {%- set l = states('sensor.stuckatprototype_aircube_illuminance') -%}
+                {{ (c | float | round) if is_number(c) else '–' }} ppm ·
+                {{ (l | float | round) if is_number(l) else '–' }} lx
     - Uptime Kuma:
         href: https://uptime.jasonernst.com
         description: Service monitoring
@@ -202,7 +205,13 @@
             - state: sensor.tp_link_router_total_main_wifi_clients
               label: wifi
               value: "{state}"
-            - state: sensor.archer_ge800_download_speed
+            - template: >-
+                {%- set v = states('sensor.archer_ge800_download_speed') -%}
+                {{ (v | float | round) if is_number(v) else '–' }}
+                {{ state_attr('sensor.archer_ge800_download_speed', 'unit_of_measurement') }}
               label: down
-            - state: sensor.archer_ge800_upload_speed
+            - template: >-
+                {%- set v = states('sensor.archer_ge800_upload_speed') -%}
+                {{ (v | float | round) if is_number(v) else '–' }}
+                {{ state_attr('sensor.archer_ge800_upload_speed', 'unit_of_measurement') }}
               label: up
