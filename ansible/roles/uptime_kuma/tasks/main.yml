@@ -27,7 +27,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: uptime-kuma
-    image: louislam/uptime-kuma:2.5.5
+    image: louislam/uptime-kuma:2.5.6
     volumes:
       - /opt/uptime-kuma:/app/data
     networks:
