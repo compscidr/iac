@@ -99,7 +99,7 @@
     - NAS:
         href: https://nas.jasonernst.com
         description: UGOS
-        icon: ugreen.png
+        icon: mdi-nas
     - Home Assistant:
         href: http://nas.local:8123
         description: Home automation

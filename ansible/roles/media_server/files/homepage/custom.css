@@ -1,0 +1,4 @@
+/* Homepage loads this file from /app/config. The footer "revalidate" button
+   re-reads the YAML and refetches every widget; widgets poll on their own and
+   the role redeploys config, so it is noise here. No setting hides it. */
+#revalidate { display: none; }

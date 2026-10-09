@@ -6,6 +6,5 @@
       dateStyle: long
       timeStyle: short
 - resources:
-    label: NAS
     cpu: true
     memory: true
