@@ -333,12 +333,28 @@
     - profiles.json
     - articles.json
 
+# The site containers used to be named after their hostnames. Docker's
+# embedded DNS then answered "www.jasonernst.com" with the container's own IP
+# for anything on the nginx-proxy network, so uptime-kuma following the
+# apex -> www redirect hit the bare app on :443 and reported the site down.
+# Remove the old names so nginx-proxy doesn't balance across both copies.
+- name: Remove site containers under their old hostname names
+  tags: website
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  community.docker.docker_container:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - www.jasonernst.com
+    - staging.jasonernst.com
+
 - name: Deploy www.jasonernst.com
   tags: website
   vars:
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
-    name: www.jasonernst.com
+    name: goblog-prod
     image: compscidr/goblog:v0.15.0
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
@@ -378,7 +394,7 @@
   vars:
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
-    name: staging.jasonernst.com
+    name: goblog-staging
     image: compscidr/goblog:v0.15.0
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
