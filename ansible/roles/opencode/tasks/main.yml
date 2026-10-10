@@ -6,12 +6,15 @@
 # same tasks work on every host in the `dev` group without platform
 # branching.
 
+# The installer replaces the binary in place, so a per-version stamp (not the
+# binary) gates re-runs: bumping opencode_version reinstalls.
 - name: Install opencode via upstream script
   ansible.builtin.shell: |
     set -euo pipefail
-    curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/install | bash
+    curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/install | bash -s -- --version {{ opencode_version | quote }}
+    touch "{{ ansible_facts['user_dir'] }}/.opencode/.installed-{{ opencode_version }}"
   args:
-    creates: "{{ ansible_facts['user_dir'] }}/.opencode/bin/opencode"
+    creates: "{{ ansible_facts['user_dir'] }}/.opencode/.installed-{{ opencode_version }}"
     executable: /bin/bash
   tags:
     - opencode
