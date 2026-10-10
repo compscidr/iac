@@ -49,6 +49,9 @@
         sair_ghcr_token: "{{ sair_runner_pat }}"
       no_log: true
   vars:
+    # A hostname, so acquire also proves DNS works (icmp's instrumented tests
+    # need it). Not jasonernst.com: icmp's pingDnsTimeout wants that host cold.
+    sair_wifi_ping_host: "google.com"
     sair_runners:
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"

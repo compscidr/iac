@@ -63,6 +63,9 @@
       {% if sair_wifi_ssid %}
       WIFI_SSID={{ sair_wifi_ssid | to_json(ensure_ascii=False) }}
       WIFI_PASSPHRASE={{ sair_wifi_passphrase | to_json(ensure_ascii=False) }}
+      {% if sair_wifi_ping_host %}
+      WIFI_PING_HOST={{ sair_wifi_ping_host }}
+      {% endif %}
       {% endif %}
   notify:
     - Restart device source
