@@ -16,7 +16,7 @@
     # `--tags backup` (untagged tasks are otherwise skipped).
     - name: Check Tailscale connectivity
       tags: always
-      ansible.builtin.include_tasks: tailscale_check.yml
+      ansible.builtin.include_tasks: tasks/tailscale_check.yml
   roles:
     - media_server
     - home_assistant

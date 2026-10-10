@@ -8,7 +8,7 @@
     - vars/user.yml
   pre_tasks:
     - name: Check Tailscale connectivity
-      ansible.builtin.include_tasks: tailscale_check.yml
+      ansible.builtin.include_tasks: tasks/tailscale_check.yml
 
     # Secrets are fetched ONCE into facts here rather than declared as play
     # vars: a play var holding a lookup is re-evaluated at every reference

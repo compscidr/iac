@@ -62,13 +62,14 @@ jobs:
               - ansible/molecule/**
               - ansible/common.yml
               - ansible/dev.yml
-              - ansible/tailscale_check.yml
+              - ansible/tasks/**
               - ansible/ansible.cfg
               - ansible/inventory.yml
               - ansible/requirements.yml
               - ansible/group_vars/**
               - ansible/host_vars/**
               - ansible/vars/**
+              - ansible/roles/academic_gui/**
               - ansible/roles/bootstrap/**
               - ansible/roles/common_cli/**
               - ansible/roles/common_gui/**
@@ -76,6 +77,7 @@ jobs:
               - ansible/roles/dev_gui/**
               - ansible/roles/dyndns/**
               - ansible/roles/fnm/**
+              - ansible/roles/opencode/**
               - ansible/roles/rustup/**
               - ansible/roles/sshd_alt_port/**
               - ansible/roles/zed/**
@@ -85,7 +87,7 @@ jobs:
               - ansible/molecule/nas/**
               - ansible/molecule/default/dependency.sh
               - ansible/nas.yml
-              - ansible/tailscale_check.yml
+              - ansible/tasks/**
               - ansible/ansible.cfg
               - ansible/inventory.yml
               - ansible/requirements.yml

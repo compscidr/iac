@@ -2,18 +2,12 @@
 - name: Include common playbook
   ansible.builtin.import_playbook: ../../common.yml
 
-# not working for some reason
-# - name: Include academic playbook
-#   ansible.builtin.import_playbook: academic.yml
-
+# Also runs the academic_gui and opencode plays (both platforms are in those groups).
 - name: Include dev playbook
   ansible.builtin.import_playbook: ../../dev.yml
 
 # - name: Include jasonernst_com playbook
 #   ansible.builtin.import_playbook: jasonernst_com.yml
-
-# - name: Include nas playbook
-#   ansible.builtin.import_playbook: nas.yml
 
 # - name: Include runners playbook
 #   ansible.builtin.import_playbook: runners.yml

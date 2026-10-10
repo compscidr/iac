@@ -50,7 +50,7 @@
     - vars/user.yml
   pre_tasks:
     - name: Verify Tailscale reachability to hermes host
-      ansible.builtin.include_tasks: tailscale_check.yml
+      ansible.builtin.include_tasks: tasks/tailscale_check.yml
 
     # Secrets are fetched ONCE into facts rather than declared as play
     # vars. A play var holding a lookup is lazily re-evaluated at every
