@@ -5,9 +5,6 @@
 # Used in all onepassword lookups across roles
 onepassword_account_id: "CZG3A4373RA2FC5W5JKFUMYILI"
 onepassword_vault: "Infrastructure"
-# Bump's 1Password account, for the few items bump owns that land on hosts
-# deployed from here (see sair.yml). Separate account, so lookups name it.
-onepassword_bump_account_id: "MXTDB3RE3FGANKJ2EAWMLWM2KU"
 
 # Bootstrap defaults (servers): no password, NOPASSWD sudo
 # Override per group in group_vars/<group>.yml or per host in inventory

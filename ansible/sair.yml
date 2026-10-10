@@ -16,7 +16,8 @@
 #   2. 1Password items: sair-user-api-key and Wi-Fi (ubuntu-cube), sair-api-key (ubuntu-silverstone),
 #      gh-actions-runner-pat (also used for GHCR login; needs read:packages scope).
 #      ubuntu-cube also reads sair_bump_api_key from the bump account's Service
-#      Integrations vault (BumpApp/bump#6128), so `op` must be signed in there too.
+#      Integrations vault (BumpApp/bump#6128) through a bump service account with
+#      read access to that vault; its token is the bump-op-service-account item here.
 #   3. Orchestrator deployed on projects droplet (projects.yml)
 #
 # Usage:
@@ -38,9 +39,13 @@
           account_id=onepassword_account_id) }}"
         sair_op_item_wifi: "{{ lookup('community.general.onepassword_raw', 'Wi-Fi', vault=onepassword_vault, account_id=onepassword_account_id) }}"
         # bump's own sair account locks cube's phones as a guest (compscidr/sair#67).
-        # Lives in bump's 1Password account, not ours.
+        # The key lives in bump's 1Password account and is read with a bump service
+        # account, whose token is kept in our vault. Desktop-app integration
+        # authorizes each account per terminal session, which a lookup run from
+        # Ansible can't satisfy for a second account (community.general#10792).
         sair_bump_api_key: "{{ lookup('community.general.onepassword', 'sair_bump_api_key', field='credential', vault='Service Integrations',
-          account_id=onepassword_bump_account_id) }}"
+          service_account_token=lookup('community.general.onepassword', 'bump-op-service-account', field='credential',
+          vault=onepassword_vault, account_id=onepassword_account_id)) }}"
       no_log: true
     # The phones join the same network the host does (see common_cli).
     - name: Bench Wi-Fi for the phones
