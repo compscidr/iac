@@ -48,7 +48,7 @@
   tags: [factorio]
   when: not item.stat.exists
   ansible.builtin.file:
-    path: "{{ item.item }}"
+    path: "{{ factorio_game_data_dir }}/{{ item.item }}"
     state: directory
     mode: "0755"
   loop: "{{ factorio_game_subdir_stat.results }}"

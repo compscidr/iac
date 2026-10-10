@@ -1,0 +1,54 @@
+---
+# nas.yml against a UGOS-like container (#769). UGOS is Debian 12 underneath;
+# prepare.yml adds the parts the roles depend on (uid 999 / gid 10 jason,
+# /volume1, a real dockerd with its root on /volume1/@docker).
+prerun: false
+
+dependency:
+  name: shell
+  command: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/dependency.sh
+driver:
+  name: docker
+platforms:
+  # nas.yml targets `hosts: nas.local`, and dyndns keys off inventory_hostname.
+  - name: nas.local
+    image: "geerlingguy/docker-debian12-ansible:latest"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      # A real volume, not the container's overlay root: the nested dockerd
+      # keeps its data on /volume1/@docker (as on the NAS) and overlay2
+      # cannot sit on overlayfs. Unlike the default scenario there is no host
+      # docker.sock here: the roles bind-mount /etc/<app> and /volume1 paths,
+      # which must resolve inside this container, not on the CI runner.
+      - molecule-nas-volume1:/volume1
+    # Boot the image's systemd: dockerd, cron and ssh-alt run as services.
+    override_command: false
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles:${MOLECULE_PROJECT_DIRECTORY}/.molecule-roles
+    ANSIBLE_COLLECTIONS_PATH: ${MOLECULE_PROJECT_DIRECTORY}/.molecule-collections
+    # Stub `op` first on PATH: every 1Password lookup gets a dummy value, so no
+    # real secret (DigitalOcean token, Tailscale key, ...) reaches the test host.
+    PATH: ${MOLECULE_SCENARIO_DIRECTORY}/bin:${PATH}
+    OP_SERVICE_ACCOUNT_TOKEN: ""
+  options:
+    # tailscale: `tailscale up` would join the runner to the tailnet as `nas`.
+    # backup_nas's ugacl script needs UGOS's ugacltool, which has no stand-in.
+    skip-tags: tailscale,ugacl
+scenario:
+  # No idempotence step yet: the rust-server image chowns its whole install tree
+  # on every container start and the collection chowns rust.env/seed.env back,
+  # so those two tasks always report changed (worse here, where the servers
+  # crash-loop without egress). Add it back once that is fixed upstream.
+  test_sequence:
+    - dependency
+    - destroy
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy

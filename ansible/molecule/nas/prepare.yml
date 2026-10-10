@@ -1,0 +1,144 @@
+---
+# Turn the stock Debian 12 image into enough of a UGOS host for nas.yml (#769).
+- name: Prepare a UGOS-like host
+  hosts: all
+  become: true
+  tasks:
+    - name: Install what UGOS ships and the roles assume
+      ansible.builtin.apt:
+        name: [cron, curl, iptables, openssh-server, python3-docker, python3-requests, unzip]
+        update_cache: true
+
+    # UGOS's jason is uid 999 in `admin` (gid 10), not 1000 (Debian's gid 10 is uucp).
+    - name: Rename gid 10 to admin
+      ansible.builtin.shell: getent group admin || groupmod -n admin uucp
+      changed_when: true
+
+    - name: Create jason as on the NAS
+      ansible.builtin.user:
+        name: jason
+        uid: 999
+        group: admin
+        home: /volume1/@home/jason
+
+    # The Rust servers' account, already present on the NAS. Fresh-host creation
+    # is the collection's job, not what this scenario models.
+    - name: Create the steam group as on the NAS
+      ansible.builtin.group:
+        name: steam
+        gid: 1000
+
+    - name: Create steam as on the NAS
+      ansible.builtin.user:
+        name: steam
+        uid: 1000
+        group: steam
+        create_home: false
+
+    - name: Create the UGOS volume layout
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [/volume1/storage, /volume1/@appdata, /volume1/@docker]
+
+    # The vendor sshd on :22; ssh-alt validates against the /run/sshd it keeps.
+    - name: Start sshd
+      ansible.builtin.systemd_service:
+        name: ssh
+        state: started
+        enabled: true
+
+    # Docker CE, as on UGOS, with its root on the array.
+    - name: Install Docker
+      ansible.builtin.shell: |  # noqa: command-instead-of-module
+        set -o pipefail
+        curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/dockerd
+        executable: /bin/bash
+
+    - name: Keep Docker's data on /volume1
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        # Classic image store: Docker 29's containerd snapshotter would keep
+        # layers under /var/lib/containerd, back on the container's overlayfs.
+        content: '{"data-root": "/volume1/@docker", "features": {"containerd-snapshotter": false}}'
+        mode: "0644"
+
+    - name: Start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+        enabled: true
+
+    # Containers get no egress. Without this a converge would go live from the
+    # runner: Rust/Factorio servers downloading and advertising themselves, the
+    # DHT crawler, LetsEncrypt, dyndns. Images still pull (dockerd itself is not
+    # forwarded traffic), and host-network containers (Home Assistant) are not
+    # affected, which is harmless with the stub secrets.
+    - name: Block container egress
+      ansible.builtin.command: iptables -I DOCKER-USER -j DROP
+      changed_when: true
+
+    # Hardware the containers map in. Stand-ins (/dev/null's major/minor) so
+    # docker accepts the device mappings; nothing reads them.
+    - name: Create stand-in device nodes
+      ansible.builtin.shell: |
+        set -e
+        # /dev/bus/usb is mapped whole, and docker rejects it if it holds no
+        # device node at all, as on a runner VM with no USB.
+        mkdir -p /dev/dri /dev/bus/usb/001 /dev/serial/by-id /run/dbus
+        for d in /dev/dri/renderD128 /dev/bus/usb/001/001 \
+          /dev/serial/by-id/usb-SONOFF_SONOFF_Dongle_Plus_MG24_26ae5d834775f011aef2ad2f1045c30f-if00-port0; do
+          [ -e "$d" ] || mknod "$d" c 1 3
+        done
+      changed_when: true
+
+    # App state an established NAS has and a fresh install lacks: homepage
+    # (media_server) reads its widget keys out of these. slskd's carries the
+    # placeholder the role replaces; Plex's token only exists once claimed.
+    # Seeded rather than waited for, so the apps' first-start writes cannot race
+    # the read.
+    - name: Create app config directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: jason
+        group: admin
+        mode: "0755"
+      loop:
+        - /etc/sonarr
+        - /etc/radarr
+        - /etc/lidarr
+        - /etc/prowlarr
+        - /etc/sabnzbd
+        - /etc/slskd
+        - /volume1/storage/plex/Library/Application Support/Plex Media Server
+
+    - name: Seed app configs holding the homepage widget keys
+      ansible.builtin.copy:
+        dest: "{{ item.dest }}"
+        content: "{{ item.content }}"
+        owner: jason
+        group: admin
+        mode: "0644"
+        force: false
+      loop:
+        - { dest: /etc/sonarr/config.xml, content: "<Config><ApiKey>moleculesonarrkey</ApiKey></Config>\n" }
+        - { dest: /etc/radarr/config.xml, content: "<Config><ApiKey>moleculeradarrkey</ApiKey></Config>\n" }
+        - { dest: /etc/lidarr/config.xml, content: "<Config><ApiKey>moleculelidarrkey</ApiKey></Config>\n" }
+        - { dest: /etc/prowlarr/config.xml, content: "<Config><ApiKey>moleculeprowlarrkey</ApiKey></Config>\n" }
+        - { dest: /etc/sabnzbd/sabnzbd.ini, content: "[misc]\napi_key = moleculesabnzbdkey\n" }
+        - dest: /etc/slskd/slskd.yml
+          content: |
+            web:
+              authentication:
+                api_keys:
+                  homepage:
+                    key: yourslskdapikeygoeshere
+                    role: readonly
+        - dest: /volume1/storage/plex/Library/Application Support/Plex Media Server/Preferences.xml
+          content: |
+            <?xml version="1.0" encoding="utf-8"?>
+            <Preferences PlexOnlineToken="moleculeplextoken"/>

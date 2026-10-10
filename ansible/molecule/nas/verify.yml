@@ -1,0 +1,68 @@
+---
+# Containers can't do their real jobs here (no egress, stub secrets, stand-in
+# devices), so this checks what nas.yml defines, not that the apps are healthy.
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Read every container nas.yml deploys
+      community.docker.docker_container_info:
+        name: "{{ item }}"
+      register: nas_containers
+      loop:
+        - nginx-proxy
+        - letsencrypt
+        - nas-proxy
+        - transmission
+        - plex
+        - sabnzbd
+        - sonarr
+        - radarr
+        - prowlarr
+        - flaresolverr
+        - ombi
+        - slskd
+        - soularr
+        - lidarr
+        - cleanuparr
+        - threadfin
+        - homepage
+        - bitmagnet-postgres
+        - bitmagnet
+        - homeassistant
+        - rust-weekly
+        - rust-monthly
+        - minecraft
+        - minecraft-bedrock
+        - factorio
+        - dyndns
+        - dyndns-v4
+
+    - name: Assert they all exist
+      ansible.builtin.assert:
+        that: item.exists
+        fail_msg: "{{ item.item }} was not created"
+        quiet: true
+      loop: "{{ nas_containers.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # #756: every widget key made it from the app configs into homepage's env.
+    - name: Assert homepage got every widget key
+      vars:
+        homepage_env: "{{ (nas_containers.results | selectattr('item', '==', 'homepage') | first).container.Config.Env }}"
+      ansible.builtin.assert:
+        that: homepage_env | select('match', 'HOMEPAGE_VAR_' ~ item ~ '=.+') | length == 1
+        fail_msg: "homepage has no HOMEPAGE_VAR_{{ item }}"
+        quiet: true
+      loop: [SONARR_KEY, RADARR_KEY, LIDARR_KEY, PROWLARR_KEY, SABNZBD_KEY, SLSKD_KEY, PLEX_TOKEN, OMBI_KEY, HA_TOKEN]
+
+    - name: Check the alternate sshd is running
+      ansible.builtin.systemd_service:
+        name: ssh-alt
+      register: nas_ssh_alt
+
+    - name: Assert the alternate sshd is running
+      ansible.builtin.assert:
+        that: nas_ssh_alt.status.ActiveState == 'active'
+        quiet: true
