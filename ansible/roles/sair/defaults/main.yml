@@ -31,6 +31,9 @@ sair_ghcr_user: "compscidr"
 # from on release (sair >= v0.1.5). Empty SSID = Wi-Fi not managed on this host.
 sair_wifi_ssid: ""
 sair_wifi_passphrase: ""
+# Host a phone must ping before acquire hands it over; empty = sair's default
+# (8.8.8.8, which does not exercise DNS).
+sair_wifi_ping_host: ""
 
 # GitHub runner image
 sair_runner_image: "compscidr/github-runner-android:latest"
