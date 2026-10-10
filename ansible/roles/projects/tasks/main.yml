@@ -157,6 +157,7 @@
       - docker-compose.yml # Exclude override file (sets external: false for local dev)
     state: present
     pull: always
+    build: always # php-fpm image is built from the repo's Dockerfile; default only builds when missing
   environment:
     # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
