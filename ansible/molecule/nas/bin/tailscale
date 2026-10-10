@@ -1,4 +1,4 @@
 #!/bin/sh
-# tailscale_check.yml runs `tailscale status` on the controller; the runner is
+# tasks/tailscale_check.yml runs `tailscale status` on the controller; the runner is
 # not on the tailnet and does not need to be for this scenario.
 exit 0

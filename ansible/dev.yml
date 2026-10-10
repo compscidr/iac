@@ -14,3 +14,20 @@
     - vars/user.yml
   roles:
     - dev_gui
+
+- name: Academic tools
+  hosts: academic_gui
+  vars_files:
+    - vars/deb_arch.yml
+    - vars/user.yml
+  roles:
+    - { role: academic_gui, tags: [academic] }
+
+# opencode (terminal AI coding assistant), configured to use the Ollama server
+# on ubuntu-beast (beast.yml) over Tailscale. Alone: --tags opencode.
+- name: Opencode
+  hosts: dev
+  vars_files:
+    - vars/user.yml
+  roles:
+    - { role: opencode, tags: [opencode] }

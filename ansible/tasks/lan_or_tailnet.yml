@@ -20,7 +20,7 @@
 #     hosts: ubuntu-cube.local
 #     gather_facts: false
 #     pre_tasks:
-#       - ansible.builtin.include_tasks: lan_or_tailnet.yml
+#       - ansible.builtin.include_tasks: tasks/lan_or_tailnet.yml
 #       - ansible.builtin.setup:
 #
 # Hosts not ending in .local are left alone.
@@ -39,7 +39,7 @@
   delegate_to: localhost
   when: inventory_hostname is match('.*\.local$')
 
-- name: Reach {{ inventory_hostname }} over the tailnet instead
+- name: Reach the host over the tailnet instead - {{ inventory_hostname }}
   ansible.builtin.set_fact:
     ansible_host: "{{ inventory_hostname | regex_replace('\\.local$', '') }}"
   when:

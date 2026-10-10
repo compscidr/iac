@@ -1,7 +1,7 @@
 ---
 # Include in pre_tasks of any play targeting Tailscale hosts:
 #   pre_tasks:
-#     - ansible.builtin.include_tasks: tailscale_check.yml
+#     - ansible.builtin.include_tasks: tasks/tailscale_check.yml
 
 # Runs on the controller. A delegated task inherits the play's `become`, and
 # common.yml sets `become: true` - that made this `sudo tailscale status` on

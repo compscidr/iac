@@ -3,6 +3,8 @@
   tags: latex
   become: true
   ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
     pkg:
       - texmaker
       - fonts-font-awesome

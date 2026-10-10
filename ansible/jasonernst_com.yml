@@ -9,7 +9,7 @@
     # invoked with --tags (untagged tasks are otherwise skipped).
     - name: Check Tailscale connectivity
       tags: always
-      ansible.builtin.include_tasks: tailscale_check.yml
+      ansible.builtin.include_tasks: tasks/tailscale_check.yml
     # Secrets are fetched ONCE into facts (see projects.yml / #542 for why
     # play vars holding lookups are the wrong place): one `op` call for the
     # nas-rsync password and one for the whole SMTP item.

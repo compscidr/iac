@@ -9,3 +9,11 @@
           - requests
           - docker
         state: present
+
+    # The minimal test images drop /usr/share/man; openjdk's postinst (pulled
+    # in by academic_gui's texlive) fails registering its man page without it.
+    - name: Create the man1 directory the images strip
+      ansible.builtin.file:
+        path: /usr/share/man/man1
+        state: directory
+        mode: "0755"
