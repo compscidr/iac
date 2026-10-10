@@ -103,5 +103,8 @@
       - name: "sair-orchestrator"
         repo_url: "https://github.com/compscidr/sair-orchestrator"
         labels: "self-hosted,sair-enabled,linux"
+        # jvmToolchain(21) in the orchestrator build: `latest` follows the newest JDK
+        # (27 since Oct 2026) and the dogfood job's setup-java only adds 25, so pin 21.
+        image: "compscidr/github-runner-android:jdk21"
   roles:
     - sair
