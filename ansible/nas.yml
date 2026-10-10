@@ -4,7 +4,6 @@
   vars_files:
     - vars/deb_arch.yml
     - vars/user.yml
-    - vars/secrets.yml
   pre_tasks:
     # nas.local itself is reached over LAN mDNS regardless of Tailscale
     # state, but backup_nas's whole job is putting the nas ON the
