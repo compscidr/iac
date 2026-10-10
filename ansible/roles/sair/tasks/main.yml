@@ -66,6 +66,7 @@
       {% endif %}
   notify:
     - Restart device source
+  no_log: true # Hide API key and Wi-Fi passphrase
   when: not sair_adb_only
 
 - name: Configure proxy environment
