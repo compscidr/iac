@@ -14,7 +14,9 @@
 # Prerequisites:
 #   1. Host bootstrapped (bootstrap.yml)
 #   2. 1Password items: sair-user-api-key and Wi-Fi (ubuntu-cube), sair-api-key (ubuntu-silverstone),
-#      gh-actions-runner-pat (also used for GHCR login; needs read:packages scope)
+#      gh-actions-runner-pat (also used for GHCR login; needs read:packages scope).
+#      ubuntu-cube also reads sair_bump_api_key from the bump account's Service
+#      Integrations vault (BumpApp/bump#6128), so `op` must be signed in there too.
 #   3. Orchestrator deployed on projects droplet (projects.yml)
 #
 # Usage:
@@ -35,6 +37,10 @@
         sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
         sair_op_item_wifi: "{{ lookup('community.general.onepassword_raw', 'Wi-Fi', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+        # bump's own sair account locks cube's phones as a guest (compscidr/sair#67).
+        # Lives in bump's 1Password account, not ours.
+        sair_bump_api_key: "{{ lookup('community.general.onepassword', 'sair_bump_api_key', field='credential', vault='Service Integrations',
+          account_id=onepassword_bump_account_id) }}"
       no_log: true
     # The phones join the same network the host does (see common_cli).
     - name: Bench Wi-Fi for the phones
@@ -52,6 +58,8 @@
     # A hostname, so acquire also proves DNS works (icmp's instrumented tests
     # need it). Not jasonernst.com: icmp's pingDnsTimeout wants that host cold.
     sair_wifi_ping_host: "google.com"
+    sair_guest_api_keys:
+      - "{{ sair_bump_api_key }}"
     sair_runners:
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"

@@ -23,6 +23,12 @@ sair_proxy_http_port: 8550
 
 # Secrets (override in playbook via 1Password lookups)
 sair_api_key: ""
+# Other accounts' sair API keys the proxy accepts beside its own (sair >= the
+# release after v0.1.5; older proxies ignore the variable). Listing a key here
+# is the owner's consent: that account may lock this host's phones locally,
+# under its own billing, without sharing them in the portal. See
+# https://github.com/compscidr/sair#guest-tenants
+sair_guest_api_keys: []
 sair_runner_pat: ""
 sair_ghcr_token: ""
 sair_ghcr_user: "compscidr"

@@ -81,6 +81,7 @@
       ORCHESTRATOR_ADDR={{ sair_orchestrator_addr }}
       ORCHESTRATOR_TLS={{ sair_orchestrator_tls | lower }}
       SAIR_API_KEY={{ sair_api_key }}
+      SAIR_GUEST_API_KEYS={{ sair_guest_api_keys | join(',') }}
       ADB_PROXY_PORT={{ sair_proxy_adb_port }}
       PROXY_HTTP_PORT={{ sair_proxy_http_port }}
       PROXY_HTTP_HOST=0.0.0.0
