@@ -5,7 +5,7 @@
 # a new sair release shows up as a Renovate PR here (preset
 # github>compscidr/renovate-config:sair); merging it does not deploy anything,
 # re-run sair.yml against the host to upgrade. Empty would mean latest.
-sair_version: "v0.1.4"
+sair_version: "v0.1.5"
 
 # When true, only install the ADB server systemd service (not proxy/device-source).
 # Use this on hosts where CI runs its own local sair stack.
@@ -26,6 +26,11 @@ sair_api_key: ""
 sair_runner_pat: ""
 sair_ghcr_token: ""
 sair_ghcr_user: "compscidr"
+
+# Bench Wi-Fi the device source joins phones to on acquire and resets them
+# from on release (sair >= v0.1.5). Empty SSID = Wi-Fi not managed on this host.
+sair_wifi_ssid: ""
+sair_wifi_passphrase: ""
 
 # GitHub runner image
 sair_runner_image: "compscidr/github-runner-android:latest"

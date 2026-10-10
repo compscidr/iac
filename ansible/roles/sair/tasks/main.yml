@@ -60,6 +60,10 @@
       DEVICE_SOURCE_PORT={{ sair_device_source_port }}
       ADB_PORT={{ sair_adb_server_port }}
       SAIR_API_KEY={{ sair_api_key }}
+      {% if sair_wifi_ssid %}
+      WIFI_SSID={{ sair_wifi_ssid | to_json(ensure_ascii=False) }}
+      WIFI_PASSPHRASE={{ sair_wifi_passphrase | to_json(ensure_ascii=False) }}
+      {% endif %}
   notify:
     - Restart device source
   when: not sair_adb_only

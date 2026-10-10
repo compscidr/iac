@@ -13,7 +13,7 @@
 #
 # Prerequisites:
 #   1. Host bootstrapped (bootstrap.yml)
-#   2. 1Password items: sair-user-api-key (ubuntu-cube), sair-api-key (ubuntu-silverstone),
+#   2. 1Password items: sair-user-api-key and Wi-Fi (ubuntu-cube), sair-api-key (ubuntu-silverstone),
 #      gh-actions-runner-pat (also used for GHCR login; needs read:packages scope)
 #   3. Orchestrator deployed on projects droplet (projects.yml)
 #
@@ -34,6 +34,14 @@
           account_id=onepassword_account_id) }}"
         sair_runner_pat: "{{ lookup('community.general.onepassword', 'gh-actions-runner-pat', field='credential', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
+        sair_op_item_wifi: "{{ lookup('community.general.onepassword_raw', 'Wi-Fi', vault=onepassword_vault, account_id=onepassword_account_id) }}"
+      no_log: true
+    # The phones join the same network the host does (see common_cli).
+    - name: Bench Wi-Fi for the phones
+      tags: always
+      ansible.builtin.set_fact:
+        sair_wifi_ssid: "{{ sair_op_item_wifi | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+        sair_wifi_passphrase: "{{ sair_op_item_wifi | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
       no_log: true
     - name: Alias the PAT for the GHCR login
       tags: always
