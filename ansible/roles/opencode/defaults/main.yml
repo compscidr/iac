@@ -5,6 +5,12 @@
 # renders an Ansible-owned opencode.json pointing at the Ollama server
 # on ubuntu-beast. Runs as the connecting user — no `become` needed.
 
+# opencode release to install. Pinned so the installer skips its
+# unauthenticated GitHub API lookup of "latest", which rate-limits on shared
+# CI runners ("Failed to fetch version information"). Renovate bumps it
+# (customManagers in renovate.json); a bump reinstalls on the next run.
+opencode_version: "1.18.35"
+
 # Ollama endpoint (reachable from all dev hosts via Tailscale)
 opencode_ollama_base_url: "http://ubuntu-beast:11434/v1"
 opencode_ollama_provider_name: "Ollama (local)"

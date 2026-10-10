@@ -22,6 +22,19 @@
     },
     {
       "customType": "regex",
+      "description": "Track anomalyco/opencode releases for the opencode_version pin in the opencode role",
+      "managerFilePatterns": [
+        "/^ansible/roles/opencode/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "opencode_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "anomalyco/opencode",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Track hacs/integration releases for the home_assistant_hacs_version pin in the home_assistant role",
       "managerFilePatterns": [
         "/^ansible/roles/home_assistant/defaults/main\\.yml$/"
