@@ -21,6 +21,26 @@
     # rebuild only when the checkout moved
     force_source: "{{ ipfs_indexer_checkout.changed }}"
 
+# Takedowns: add a line (cid, cid/path or /ipfs/cid/path) to local.deny; the indexer re-reads
+# it every 5 min and drops matches from the index. force: false never overwrites your entries.
+- name: Create ipfs_indexer config directory
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.file:
+    path: "{{ ipfs_indexer_config_dir }}"
+    state: directory
+    mode: "755"
+
+- name: Create local denylist
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ ipfs_indexer_config_dir }}/local.deny"
+    content: |
+      # one entry per line: cid, cid/path or /ipfs/cid/path (see ipfs_indexer README)
+    force: false
+    mode: "644"
+
 # docker_container recreates the container when the image id changes
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
@@ -31,6 +51,10 @@
     state: "{{ ipfs_indexer_state }}"
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
+    # the directory, not the file: editors that replace the file would detach a file mount
+    volumes:
+      - "{{ ipfs_indexer_config_dir }}:/etc/ipfs_indexer:ro"
     env:
       RUST_LOG: info
+      LOCAL_DENYLIST: /etc/ipfs_indexer/local.deny
     restart_policy: unless-stopped
