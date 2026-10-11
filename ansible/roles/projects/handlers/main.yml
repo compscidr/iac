@@ -24,3 +24,32 @@
   failed_when: projects_nginx_reload.rc != 0
   changed_when: true
   when: projects_nginx_proxy.exists and projects_nginx_proxy.container.State.Running
+
+# darksearch's default.conf is bind-mounted as a single file. git replaces the file on update,
+# and a single-file mount keeps serving the old one (even across `nginx -s reload`) until the
+# container restarts. Compose won't restart web since its own config didn't change, so without
+# this nginx changes (rate limits, real client IP) would silently never apply.
+- name: Restart darksearch web
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ projects_base_path }}/darksearch"
+    files:
+      - docker-compose.yml
+    services:
+      - web
+    state: restarted
+  environment:
+    LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+
+# Same single-file default.conf mount as darksearch (see "Restart darksearch web").
+- name: Restart network-tools web
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ projects_base_path }}/network-tools"
+    files:
+      - docker-compose.yml
+    services:
+      - web
+    state: restarted
+  environment:
+    LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"

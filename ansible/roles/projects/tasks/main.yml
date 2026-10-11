@@ -147,6 +147,8 @@
     dest: "{{ projects_base_path }}/network-tools"
     version: main
     accept_hostkey: true
+  # default.conf is a single-file bind mount; see the handler
+  notify: Restart network-tools web
 
 - name: Deploy network-tools stack
   tags: [projects, network-tools]
@@ -172,6 +174,9 @@
     dest: "{{ projects_base_path }}/darksearch"
     version: main
     accept_hostkey: true
+  # default.conf is bind-mounted as a single file, which keeps pointing at the old file after
+  # git replaces it; only a container restart picks up nginx changes. See the handler.
+  notify: Restart darksearch web
 
 - name: Deploy darksearch stack
   tags: [projects, darksearch]
