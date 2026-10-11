@@ -9,6 +9,8 @@ ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
 ipfs_indexer_version: main
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
+# holds local.deny, the takedown list
+ipfs_indexer_config_dir: /etc/ipfs_indexer
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
