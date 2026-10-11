@@ -23,6 +23,8 @@
       account_id=onepassword_account_id) }}"
     mailu_op_rustd_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault='Infrastructure',
       account_id=onepassword_account_id) }}"
+    mailu_op_darksearch_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.darksearch.xyz - jason', field='password', vault='Infrastructure',
+      account_id=onepassword_account_id) }}"
   no_log: true
 
 - name: Create Mailu directory
