@@ -172,6 +172,9 @@
     dest: "{{ projects_base_path }}/darksearch"
     version: main
     accept_hostkey: true
+  # default.conf is bind-mounted as a single file, which keeps pointing at the old file after
+  # git replaces it; only a container restart picks up nginx changes. See the handler.
+  notify: Restart darksearch web
 
 - name: Deploy darksearch stack
   tags: [projects, darksearch]
