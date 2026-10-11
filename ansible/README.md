@@ -29,6 +29,7 @@
 | `home_assistant` | Home automation | NAS |
 | `dyndns` | Dynamic DNS updater | NAS, workstations |
 | `unmanic` | GPU re-encoding of the NAS media library over NFS | ubuntu-beast |
+| `ipfs_indexer` | darksearch.xyz search backend, built from source, port 9090 | ubuntu-beast |
 
 ### Game Server Roles
 | Role | Purpose | Used By |
