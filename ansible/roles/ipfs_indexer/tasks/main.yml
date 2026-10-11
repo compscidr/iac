@@ -1,0 +1,36 @@
+---
+- name: Clone ipfs_indexer
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.git:
+    repo: "{{ ipfs_indexer_repo }}"
+    dest: "{{ ipfs_indexer_src }}"
+    version: "{{ ipfs_indexer_version }}"
+  register: ipfs_indexer_checkout
+
+- name: Build ipfs_indexer image
+  tags: ipfs-indexer
+  become: true
+  community.docker.docker_image:
+    name: ipfs-indexer
+    tag: local
+    source: build
+    build:
+      path: "{{ ipfs_indexer_src }}"
+      dockerfile: docker/Dockerfile
+    # rebuild only when the checkout moved
+    force_source: "{{ ipfs_indexer_checkout.changed }}"
+
+# docker_container recreates the container when the image id changes
+- name: Deploy ipfs_indexer
+  tags: ipfs-indexer
+  become: true
+  community.docker.docker_container:
+    name: ipfs-indexer
+    image: ipfs-indexer:local
+    state: "{{ ipfs_indexer_state }}"
+    published_ports:
+      - "{{ ipfs_indexer_port }}:9090"
+    env:
+      RUST_LOG: info
+    restart_policy: unless-stopped
