@@ -40,3 +40,16 @@
     state: restarted
   environment:
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+
+# Same single-file default.conf mount as darksearch (see "Restart darksearch web").
+- name: Restart network-tools web
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ projects_base_path }}/network-tools"
+    files:
+      - docker-compose.yml
+    services:
+      - web
+    state: restarted
+  environment:
+    LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"

@@ -147,6 +147,8 @@
     dest: "{{ projects_base_path }}/network-tools"
     version: main
     accept_hostkey: true
+  # default.conf is a single-file bind mount; see the handler
+  notify: Restart network-tools web
 
 - name: Deploy network-tools stack
   tags: [projects, network-tools]
