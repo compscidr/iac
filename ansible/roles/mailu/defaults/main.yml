@@ -58,6 +58,14 @@ mailu_additional_domains:
       # so this account is what makes the panel loginable at all.
       - user: noreply
         password: "{{ mailu_op_rustd_smtp_password }}"
+  # darksearch.xyz: one mailbox; abuse@, dmca@ and postmaster@ are aliases into it
+  # (below). The domain and its DKIM key were created first, out of band, with the
+  # same config-import as the tasks, so terraform/mail-darksearch.tf carries the
+  # real key (see the ordering note above).
+  - domain: darksearch.xyz
+    users:
+      - user: jason
+        password: "{{ mailu_op_darksearch_xyz_jason_password }}"
 
 # Mail aliases (local@domain -> destination). Created idempotently at deploy;
 # Mailu's CLI errors on existing aliases, tolerated the same way user creation is.
@@ -65,6 +73,27 @@ mailu_aliases:
   - local: contact
     domain: rustd.xyz
     destination: jason@rustd.xyz
+  # RFC 5321 requires every mail domain to accept postmaster@; none did (550 User unknown).
+  - local: postmaster
+    domain: jasonernst.com
+    destination: jason@jasonernst.com
+  - local: postmaster
+    domain: sair.run
+    destination: jason@sair.run
+  - local: postmaster
+    domain: rustd.xyz
+    destination: jason@rustd.xyz
+  - local: postmaster
+    domain: darksearch.xyz
+    destination: jason@darksearch.xyz
+  # Published on darksearch.xyz for abuse reports/takedowns and DMCA notices
+  # (the DMCA designated agent registration uses dmca@).
+  - local: abuse
+    domain: darksearch.xyz
+    destination: jason@darksearch.xyz
+  - local: dmca
+    domain: darksearch.xyz
+    destination: jason@darksearch.xyz
 
 # Features
 mailu_webmail: roundcube # roundcube, snappymail, or none
