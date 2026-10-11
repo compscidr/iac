@@ -44,6 +44,12 @@ services:
     image: {{ mailu_images.unbound.image }}@{{ mailu_images.unbound.digest }}
     restart: always
     env_file: mailu.env
+    # The image bakes in its root trust anchor at build time and unbound's RFC 5011
+    # rollover needs 30 days of uptime, which a recreated container never gets. After
+    # the 2026-10-11 root KSK rollover the baked anchor (KSK-2017 only) SERVFAILed
+    # every lookup and took admin down. unbound-anchor refreshes it from IANA's signed
+    # root-anchors.xml when it doesn't validate; it exits 1 on update, hence the `;`.
+    command: /bin/sh -c "unbound-anchor -a /etc/unbound/trusted-key.key; chown unbound:unbound /etc/unbound/trusted-key.key; exec /start.py"
     networks:
       mailu:
         ipv4_address: {{ mailu_resolver_ip }}
