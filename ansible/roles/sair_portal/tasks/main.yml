@@ -18,7 +18,18 @@
     state: directory
     owner: "{{ sair_portal_uid }}"
     group: "{{ sair_portal_gid }}"
-    mode: "0775"
+    # setgid: the orchestrator opens portal.db as root, and the -shm/-wal files
+    # it creates must stay in the portal's group or the portal gets SQLITE_CANTOPEN.
+    mode: "2775"
+
+# setgid only covers new files; regroup any sidecars already left as root.
+# Group only, no mode, so recursing doesn't stamp 2775 onto the DB files.
+- name: Keep existing portal data files in the portal group
+  become: true
+  ansible.builtin.file:
+    path: "{{ sair_portal_data_dir }}"
+    group: "{{ sair_portal_gid }}"
+    recurse: true
 
 - name: Deploy SAIR portal
   become: true
