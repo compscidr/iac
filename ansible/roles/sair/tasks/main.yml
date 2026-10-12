@@ -111,13 +111,23 @@
 # Masking makes a manual `systemctl restart` refuse instead of quietly starting
 # one. The unit files are leftovers from before the host went adb-only; mask
 # can't replace a real file, so remove them first.
+- name: Check for proxy and device-source unit files on adb-only hosts
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ item }}.service"
+  loop: [sair-device-source, sair-proxy]
+  register: _sair_ci_only_units
+  when: sair_adb_only
+
+# Regular files only: once masked the path is a /dev/null symlink, which must stay.
 - name: Remove proxy and device-source unit files on adb-only hosts
   become: true
   ansible.builtin.file:
-    path: "/etc/systemd/system/{{ item }}.service"
+    path: "{{ item.stat.path }}"
     state: absent
-  loop: [sair-device-source, sair-proxy]
-  when: sair_adb_only
+  loop: "{{ _sair_ci_only_units.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: sair_adb_only and item.stat.isreg | default(false)
 
 - name: Mask and stop proxy and device-source on adb-only hosts
   become: true
