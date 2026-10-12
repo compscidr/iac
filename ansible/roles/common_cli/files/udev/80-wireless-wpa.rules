@@ -1,3 +1,5 @@
 # Managed by Ansible - do not edit manually
-# Automatically enable wpa_supplicant for wireless interfaces
-ACTION=="add", SUBSYSTEM=="net", KERNEL=="wl*", RUN+="systemctl --no-block start wpa_supplicant@%k.service"
+# Start wpa_supplicant@<iface> when a wireless interface appears, via the device
+# unit rather than multi-user.target, so a missing or renamed card never holds
+# up boot. $name is the post-rename name (80-net-setup-link.rules sorts first).
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wl*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="wpa_supplicant@$name.service"
