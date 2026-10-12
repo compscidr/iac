@@ -763,37 +763,51 @@
     - common_cli_use_systemd_networkd | default(false)
     - common_cli_udev_rules_dir.stat.exists
 
-- name: Create wpa_supplicant override directory (Ubuntu/Debian headless)
+# The old drop-in tried to blank Requires= on the device, but systemd ignores empty
+# dependency assignments, so it was a no-op. The udev rule above now starts the unit.
+- name: Remove obsolete wpa_supplicant service override (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.file:
     path: /etc/systemd/system/wpa_supplicant@.service.d
-    state: directory
-    mode: "0755"
-  when:
-    - ansible_os_family == "Debian"
-    - common_cli_use_systemd_networkd | default(false)
-
-- name: Deploy wpa_supplicant service override to not block boot (Ubuntu/Debian headless)
-  become: true
-  tags: network-tools
-  ansible.builtin.copy:
-    src: systemd/wpa_supplicant@.service.d/override.conf
-    dest: /etc/systemd/system/wpa_supplicant@.service.d/override.conf
-    mode: "0644"
-    owner: root
-    group: root
+    state: absent
   notify: Reload systemd
   when:
     - ansible_os_family == "Debian"
     - common_cli_use_systemd_networkd | default(false)
 
-- name: Enable and start wpa_supplicant for each wireless interface (Ubuntu/Debian headless)
+# Instances enabled into multi-user.target make boot wait 90s for their device; a
+# renamed card (wlp5s0 -> wlp4s0 on ubuntu-cube) left one waiting on every boot.
+- name: Find wpa_supplicant instances enabled at boot (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.find:
+    paths: /etc/systemd/system/multi-user.target.wants
+    patterns: "wpa_supplicant@*.service"
+    file_type: link
+  register: common_cli_wpa_boot_instances
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_use_systemd_networkd | default(false)
+
+- name: Disable boot-time wpa_supplicant instances (Ubuntu/Debian headless)
+  become: true
+  tags: network-tools
+  ansible.builtin.systemd:
+    name: "{{ item.path | basename }}"
+    enabled: false
+  loop: "{{ common_cli_wpa_boot_instances.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when:
+    - ansible_os_family == "Debian"
+    - common_cli_use_systemd_networkd | default(false)
+
+- name: Start wpa_supplicant for each wireless interface (Ubuntu/Debian headless)
   become: true
   tags: network-tools
   ansible.builtin.systemd:
     name: "wpa_supplicant@{{ item }}"
-    enabled: true
     state: started
   loop: "{{ common_cli_wireless_interfaces.stdout_lines | default([]) }}"
   when:
