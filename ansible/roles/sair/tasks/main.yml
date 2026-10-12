@@ -106,6 +106,29 @@
     state: started
   loop: "{{ ['sair-adb-server'] if sair_adb_only else ['sair-adb-server', 'sair-device-source', 'sair-proxy'] }}"
 
+# On adb-only hosts CI runs its own proxy and device-source on :5037/:8080 (host
+# network), so a host copy breaks every job with "address already in use".
+# Masking makes a manual `systemctl restart` refuse instead of quietly starting
+# one. The unit files are leftovers from before the host went adb-only; mask
+# can't replace a real file, so remove them first.
+- name: Remove proxy and device-source unit files on adb-only hosts
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.service"
+    state: absent
+  loop: [sair-device-source, sair-proxy]
+  when: sair_adb_only
+
+- name: Mask and stop proxy and device-source on adb-only hosts
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+    state: stopped
+    daemon_reload: true
+  loop: [sair-device-source, sair-proxy]
+  when: sair_adb_only
+
 # --- GitHub runners ---
 
 # In its own sysctl.d file, not /etc/sysctl.conf: Ubuntu 26.04 dropped the
