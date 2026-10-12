@@ -118,6 +118,18 @@
   register: _sair_ci_only_units
   when: sair_adb_only
 
+# Stop while the real unit file is still there: the systemd module refuses
+# `state` on a unit whose file is gone ("Could not find the requested service").
+- name: Stop proxy and device-source on adb-only hosts
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item.item }}"
+    state: stopped
+  loop: "{{ _sair_ci_only_units.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: sair_adb_only and item.stat.isreg | default(false)
+
 # Regular files only: once masked the path is a /dev/null symlink, which must stay.
 - name: Remove proxy and device-source unit files on adb-only hosts
   become: true
@@ -129,12 +141,11 @@
     label: "{{ item.item }}"
   when: sair_adb_only and item.stat.isreg | default(false)
 
-- name: Mask and stop proxy and device-source on adb-only hosts
+- name: Mask proxy and device-source on adb-only hosts
   become: true
   ansible.builtin.systemd:
     name: "{{ item }}"
     masked: true
-    state: stopped
     daemon_reload: true
   loop: [sair-device-source, sair-proxy]
   when: sair_adb_only
