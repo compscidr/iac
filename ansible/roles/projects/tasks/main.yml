@@ -181,6 +181,7 @@
 - name: Deploy darksearch stack
   tags: [projects, darksearch]
   become: true
+  no_log: true # INDEXER_ADMIN_TOKEN
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/darksearch"
     files:
@@ -190,6 +191,19 @@
   environment:
     # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
+    # bearer token for the indexer's /admin endpoints, used by the admin area
+    INDEXER_ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+
+# The darksearch admin area is tailnet only: the stack publishes it on 127.0.0.1:8081 and
+# `tailscale serve` exposes it as https://projects.<tailnet>.ts.net/ with the node's cert, adding
+# the Tailscale-User-Login header the admin pages require. Persistent, so re-runs are no-ops.
+- name: Serve the darksearch admin on the tailnet
+  tags: [projects, darksearch, tailscale]
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https=443 http://127.0.0.1:8081
+  register: projects_darksearch_tailscale_serve
+  changed_when: "'Available within your tailnet' in (projects_darksearch_tailscale_serve.stdout | default(''))"
 
 # ============================================================================
 # goblog.live - goblog project site
