@@ -32,7 +32,3 @@
     # movies/ in place. Two instances (free tier = two libraries each): SDR on
     # http://ubuntu-beast.local:8888, HDR on :8889.
     - { role: unmanic, tags: [unmanic] }
-    # Search backend for darksearch.xyz, built from source. Reachable on
-    # :9090 over LAN and Tailscale (darksearch on `projects` uses the tailnet
-    # name). Stop it without removing: -e ipfs_indexer_state=stopped.
-    - { role: ipfs_indexer, tags: [ipfs-indexer] }

@@ -1,5 +1,5 @@
 ---
-# Rust game servers on ubuntu-cube.local.
+# Services on ubuntu-cube.local: Rust game servers and the darksearch indexer.
 #
 # These are not community servers. The build server is for base design; the test
 # server (see the bare-metal work) is for exercising rustd.xyz against a real game
@@ -26,3 +26,8 @@
       rust_game_servers:
         - build
     - rust_test_server
+    # Search backend for darksearch.xyz, built from source. Reachable on :9090
+    # over LAN and Tailscale (darksearch on `projects` uses the tailnet name).
+    # The index is stored on /data (the HDD RAID); the role refuses to deploy if
+    # /data isn't mounted. Stop it without removing: -e ipfs_indexer_state=stopped.
+    - { role: ipfs_indexer, tags: [ipfs-indexer] }
