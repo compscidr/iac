@@ -192,7 +192,8 @@
     # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
     # bearer token for the indexer's /admin endpoints, used by the admin area
-    INDEXER_ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure', account_id=onepassword_account_id) }}"
+    INDEXER_ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
+                           account_id=onepassword_account_id) }}"
 
 # The darksearch admin area is tailnet only: the stack publishes it on 127.0.0.1:8081 and
 # `tailscale serve` exposes it as https://projects.<tailnet>.ts.net/ with the node's cert, adding
