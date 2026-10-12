@@ -178,10 +178,24 @@
   # git replaces it; only a container restart picks up nginx changes. See the handler.
   notify: Restart darksearch web
 
+# The admin area's bearer token for the indexer's /admin endpoints. In .env (not the task
+# environment) so any `docker compose up` in the directory keeps it, not just Ansible's.
+- name: Write darksearch .env
+  tags: [projects, darksearch]
+  become: true
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ projects_base_path }}/darksearch/.env"
+    content: |
+      INDEXER_ADMIN_TOKEN={{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
+         account_id=onepassword_account_id) }}
+    owner: root
+    group: root
+    mode: "0600"
+
 - name: Deploy darksearch stack
   tags: [projects, darksearch]
   become: true
-  no_log: true # INDEXER_ADMIN_TOKEN
   community.docker.docker_compose_v2:
     project_src: "{{ projects_base_path }}/darksearch"
     files:
@@ -191,9 +205,6 @@
   environment:
     # VIRTUAL_HOST and LETSENCRYPT_HOST are now hardcoded in docker-compose.yml
     LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
-    # bearer token for the indexer's /admin endpoints, used by the admin area
-    INDEXER_ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
-                           account_id=onepassword_account_id) }}"
 
 # The darksearch admin area is tailnet only: the stack publishes it on 127.0.0.1:8081 and
 # `tailscale serve` exposes it as https://projects.<tailnet>.ts.net/ with the node's cert, adding
