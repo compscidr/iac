@@ -24,12 +24,17 @@
     version: "{{ ipfs_indexer_version }}"
   register: ipfs_indexer_checkout
 
+# One image per commit, built whenever the image for the checked-out commit is missing. Keying
+# the rebuild on "the checkout changed in this run" missed runs that moved the checkout but
+# never reached the build (interrupted/failed): every later run saw no change and kept serving
+# the old binary. Old ipfs-indexer:<sha> tags are left behind (a few hundred MB each);
+# ponytail: prune them if disk on the host matters.
 - name: Build ipfs_indexer image
   tags: ipfs-indexer
   become: true
   community.docker.docker_image:
     name: ipfs-indexer
-    tag: local
+    tag: "{{ ipfs_indexer_checkout.after[:12] }}"
     source: build
     build:
       path: "{{ ipfs_indexer_src }}"
@@ -37,8 +42,6 @@
       # shown as the version in the indexer's /status and /version
       args:
         GIT_SHA: "{{ ipfs_indexer_checkout.after }}"
-    # rebuild only when the checkout moved
-    force_source: "{{ ipfs_indexer_checkout.changed }}"
 
 - name: Create ipfs_indexer data directory
   tags: ipfs-indexer
@@ -68,13 +71,13 @@
     force: false
     mode: "644"
 
-# docker_container recreates the container when the image id changes
+# docker_container recreates the container when the image changes (a new commit's tag)
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
   become: true
   community.docker.docker_container:
     name: ipfs-indexer
-    image: ipfs-indexer:local
+    image: "ipfs-indexer:{{ ipfs_indexer_checkout.after[:12] }}"
     state: "{{ ipfs_indexer_state }}"
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
