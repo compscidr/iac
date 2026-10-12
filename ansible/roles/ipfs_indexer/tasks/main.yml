@@ -75,18 +75,23 @@
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
   become: true
+  no_log: true # ADMIN_TOKEN
   community.docker.docker_container:
     name: ipfs-indexer
     image: "ipfs-indexer:{{ ipfs_indexer_checkout.after[:12] }}"
     state: "{{ ipfs_indexer_state }}"
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
-    # the directory, not the file: editors that replace the file would detach a file mount
+    # the directory, not the file: editors that replace the file would detach a file mount.
+    # read-write: the admin endpoints edit local.deny (temp file + rename, hence the directory)
     volumes:
-      - "{{ ipfs_indexer_config_dir }}:/etc/ipfs_indexer:ro"
+      - "{{ ipfs_indexer_config_dir }}:/etc/ipfs_indexer"
       - "{{ ipfs_indexer_data_dir }}:/var/lib/ipfs_indexer"
     env:
       RUST_LOG: info
       LOCAL_DENYLIST: /etc/ipfs_indexer/local.deny
       DATA_DIR: /var/lib/ipfs_indexer
+      # darksearch admin area's takedown endpoints (see ipfs_indexer README, ADMIN_TOKEN)
+      ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
+                     account_id=onepassword_account_id) }}"
     restart_policy: unless-stopped
