@@ -1,4 +1,20 @@
 ---
+- name: Check that the data filesystem is mounted
+  tags: ipfs-indexer
+  ansible.builtin.command: findmnt --mountpoint {{ ipfs_indexer_data_mount }}
+  register: ipfs_indexer_data_mounted
+  changed_when: false
+  failed_when: false
+
+- name: Refuse to deploy without the data filesystem
+  tags: ipfs-indexer
+  ansible.builtin.assert:
+    that: ipfs_indexer_data_mounted.rc == 0
+    fail_msg: >-
+      {{ ipfs_indexer_data_mount }} is not a mount point, so the index would land on the root
+      filesystem. Bring the array up (cat /proc/mdstat) and mount it first.
+    quiet: true
+
 - name: Clone ipfs_indexer
   tags: ipfs-indexer
   become: true
@@ -23,6 +39,14 @@
         GIT_SHA: "{{ ipfs_indexer_checkout.after }}"
     # rebuild only when the checkout moved
     force_source: "{{ ipfs_indexer_checkout.changed }}"
+
+- name: Create ipfs_indexer data directory
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.file:
+    path: "{{ ipfs_indexer_data_dir }}"
+    state: directory
+    mode: "755"
 
 # Takedowns: add a line (cid, cid/path or /ipfs/cid/path) to local.deny; the indexer re-reads
 # it every 5 min and drops matches from the index. force: false never overwrites your entries.
@@ -57,7 +81,9 @@
     # the directory, not the file: editors that replace the file would detach a file mount
     volumes:
       - "{{ ipfs_indexer_config_dir }}:/etc/ipfs_indexer:ro"
+      - "{{ ipfs_indexer_data_dir }}:/var/lib/ipfs_indexer"
     env:
       RUST_LOG: info
       LOCAL_DENYLIST: /etc/ipfs_indexer/local.deny
+      DATA_DIR: /var/lib/ipfs_indexer
     restart_policy: unless-stopped
