@@ -100,9 +100,10 @@
     force: false
     mode: "644"
 
-# Our own Kubo node, so crawling isn't held to a public gateway's rate limit. Only the indexer
-# reaches it (private network, no published ports); darksearch result links still use the
-# public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
+# Our own Kubo node, so crawling isn't held to a public gateway's rate limit. The indexer
+# reaches its gateway over a private network (8080 isn't published); the RPC API/WebUI on 5001
+# is published to LAN + tailnet with no auth (see Deploy Kubo). darksearch result links still
+# use the public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
 # it crawls, and caps its cache at 2GB.
 - name: Create ipfs_indexer network
   tags: ipfs-indexer
@@ -129,6 +130,20 @@
     force: true
     mode: "644"
 
+# The WebUI (http://<host>:5001/webui) calls the RPC API, which rejects origins it doesn't
+# list (only localhost by default), so allow the LAN names. Runs after indexer.sh on every start.
+- name: Allow the Kubo WebUI from the LAN
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ ipfs_indexer_config_dir }}/kubo-webui.sh"
+    content: |
+      #!/bin/sh
+      set -e
+      ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '{{ ipfs_indexer_kubo_webui_origins | to_json }}'
+      ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST"]'
+    mode: "755"
+
 - name: Deploy Kubo
   tags: ipfs-indexer
   become: true
@@ -140,8 +155,13 @@
     command: ["daemon", "--migrate=true", "--agent-version-suffix=docker", "--enable-gc"]
     networks:
       - name: ipfs-indexer
+    # RPC API + WebUI, LAN and tailnet like the indexer's port (no router forward). It's admin
+    # access to the node with no auth, so don't forward it.
+    published_ports:
+      - "{{ ipfs_indexer_kubo_webui_port }}:5001"
     volumes:
       - "{{ ipfs_indexer_src }}/docker/kubo-init.sh:/container-init.d/indexer.sh:ro"
+      - "{{ ipfs_indexer_config_dir }}/kubo-webui.sh:/container-init.d/webui.sh:ro"
       - "{{ ipfs_indexer_config_dir }}/denylists:/etc/ipfs/denylists:ro"
       - ipfs-indexer-kubo:/data/ipfs
     env:
