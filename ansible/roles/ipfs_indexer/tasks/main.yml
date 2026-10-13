@@ -110,12 +110,12 @@
     image: "ipfs-indexer:{{ ipfs_indexer_checkout.after[:12] }}"
     state: "{{ ipfs_indexer_state }}"
     # output to docker logs as before, and appended to a file on /data that outlives the
-    # container. ponytail: sh as PID 1 doesn't forward SIGTERM, so stops wait out docker's 10s
-    # and kill; harmless since the queue survives a crash (ipfs_indexer#224)
+    # container. exec keeps the indexer as PID 1 (docker stop signals it directly); tee runs as
+    # its child through bash's process substitution
     entrypoint:
-      - /bin/sh
+      - /bin/bash
       - -c
-      - /usr/local/bin/ipfs_indexer 2>&1 | tee -a /var/lib/ipfs_indexer/logs/indexer.log
+      - exec /usr/local/bin/ipfs_indexer > >(tee -a /var/lib/ipfs_indexer/logs/indexer.log) 2>&1
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
     # the directory, not the file: editors that replace the file would detach a file mount.
