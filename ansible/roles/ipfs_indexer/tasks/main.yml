@@ -15,6 +15,7 @@
       filesystem. Bring the array up (cat /proc/mdstat) and mount it first.
     quiet: true
 
+# Only for docker/kubo-init.sh (mounted into Kubo below), at the same tag as the image
 - name: Clone ipfs_indexer
   tags: ipfs-indexer
   become: true
@@ -22,26 +23,6 @@
     repo: "{{ ipfs_indexer_repo }}"
     dest: "{{ ipfs_indexer_src }}"
     version: "{{ ipfs_indexer_version }}"
-  register: ipfs_indexer_checkout
-
-# One image per commit, built whenever the image for the checked-out commit is missing. Keying
-# the rebuild on "the checkout changed in this run" missed runs that moved the checkout but
-# never reached the build (interrupted/failed): every later run saw no change and kept serving
-# the old binary. Old ipfs-indexer:<sha> tags are left behind (a few hundred MB each);
-# ponytail: prune them if disk on the host matters.
-- name: Build ipfs_indexer image
-  tags: ipfs-indexer
-  become: true
-  community.docker.docker_image:
-    name: ipfs-indexer
-    tag: "{{ ipfs_indexer_checkout.after[:12] }}"
-    source: build
-    build:
-      path: "{{ ipfs_indexer_src }}"
-      dockerfile: docker/Dockerfile
-      # shown as the version in the indexer's /status and /version
-      args:
-        GIT_SHA: "{{ ipfs_indexer_checkout.after }}"
 
 - name: Create ipfs_indexer data directory
   tags: ipfs-indexer
@@ -168,14 +149,15 @@
       IPFS_PROFILE: server
     restart_policy: unless-stopped
 
-# docker_container recreates the container when the image changes (a new commit's tag)
+# Pulls the release image if it isn't on the host yet (built by the indexer's release
+# workflow, not here), and recreates the container when the pinned tag changes
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
   become: true
   no_log: true # ADMIN_TOKEN
   community.docker.docker_container:
     name: ipfs-indexer
-    image: "ipfs-indexer:{{ ipfs_indexer_checkout.after[:12] }}"
+    image: "{{ ipfs_indexer_image }}:{{ ipfs_indexer_version }}"
     state: "{{ ipfs_indexer_state }}"
     # output to docker logs as before, and appended to a file on /data that outlives the
     # container. exec keeps the indexer as PID 1 (docker stop signals it directly); tee runs as

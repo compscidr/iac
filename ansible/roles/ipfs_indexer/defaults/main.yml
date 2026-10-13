@@ -1,13 +1,16 @@
 ---
 # ipfs_indexer (https://github.com/compscidr/ipfs_indexer), the search backend
-# for darksearch.xyz. Built from source on the host (no published image) and
+# for darksearch.xyz. Runs the image its release workflow publishes on ghcr and
 # crawls through its own Kubo node (no public gateway rate limit); it loads the badbits
 # denylist at startup. darksearch result links still use a public gateway.
 # darksearch reaches it over Tailscale at http://ubuntu-cube.tail21090.ts.net:9090.
 # The port is published on all interfaces: LAN + tailnet, no router forward.
 
 ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
-ipfs_indexer_version: main
+# A release tag (vX.Y.Z): the image to run, and the checkout kubo-init.sh comes from.
+# Publish one by pushing the tag in the indexer repo (see its README).
+ipfs_indexer_version: v0.1.0
+ipfs_indexer_image: ghcr.io/compscidr/ipfs_indexer
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
 # holds local.deny, the takedown list
