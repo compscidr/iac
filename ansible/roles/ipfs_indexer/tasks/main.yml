@@ -51,6 +51,35 @@
     state: directory
     mode: "755"
 
+# Container logs die with the container on every deploy, so the indexer also appends its output
+# here (see the entrypoint below), next to the index on /data
+- name: Create ipfs_indexer log directory
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.file:
+    path: "{{ ipfs_indexer_data_dir }}/logs"
+    state: directory
+    mode: "755"
+
+# copytruncate: the tee in the container keeps the file open (appending, so it carries on at
+# the start of the truncated file)
+- name: Rotate ipfs_indexer logs
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/logrotate.d/ipfs-indexer
+    content: |
+      {{ ipfs_indexer_data_dir }}/logs/*.log {
+          daily
+          rotate {{ ipfs_indexer_log_days }}
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+      }
+    mode: "644"
+
 # Takedowns: add a line (cid, cid/path or /ipfs/cid/path) to local.deny; the indexer re-reads
 # it every 5 min and drops matches from the index. force: false never overwrites your entries.
 - name: Create ipfs_indexer config directory
@@ -80,6 +109,13 @@
     name: ipfs-indexer
     image: "ipfs-indexer:{{ ipfs_indexer_checkout.after[:12] }}"
     state: "{{ ipfs_indexer_state }}"
+    # output to docker logs as before, and appended to a file on /data that outlives the
+    # container. ponytail: sh as PID 1 doesn't forward SIGTERM, so stops wait out docker's 10s
+    # and kill; harmless since the queue survives a crash (ipfs_indexer#224)
+    entrypoint:
+      - /bin/sh
+      - -c
+      - /usr/local/bin/ipfs_indexer 2>&1 | tee -a /var/lib/ipfs_indexer/logs/indexer.log
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
     # the directory, not the file: editors that replace the file would detach a file mount.

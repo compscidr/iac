@@ -20,3 +20,5 @@ ipfs_indexer_data_dir: "{{ ipfs_indexer_data_mount }}/ipfs_indexer"
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
+# days of logs kept in {{ ipfs_indexer_data_dir }}/logs (rotated daily)
+ipfs_indexer_log_days: 30
