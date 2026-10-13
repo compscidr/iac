@@ -248,3 +248,22 @@
     name: claude-desktop
     state: present
     update_cache: true
+
+# Orca (https://www.onorca.dev/): no apt repo, so install the release .deb from
+# GitHub. Only install when the package is missing or older than the pin: Orca
+# updates itself in-app, and reinstalling the pinned .deb would downgrade it.
+- name: Gather installed packages
+  tags: orca
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Install orca
+  tags: orca
+  become: true
+  ansible.builtin.apt:
+    deb: "https://github.com/stablyai/orca/releases/download/v{{ dev_gui_orca_version }}/orca-ide_{{ dev_gui_orca_version }}_{{ dev_gui_orca_arch }}.deb"
+  vars:
+    dev_gui_orca_arch: "{{ deb_architecture[ansible_architecture] }}"
+  when: >-
+    'orca-ide' not in ansible_facts.packages
+    or ansible_facts.packages['orca-ide'][0].version is version(dev_gui_orca_version, '<')

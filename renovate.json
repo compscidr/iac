@@ -22,6 +22,19 @@
     },
     {
       "customType": "regex",
+      "description": "Track stablyai/orca releases for the dev_gui_orca_version pin in the dev_gui role",
+      "managerFilePatterns": [
+        "/^ansible/roles/dev_gui/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "dev_gui_orca_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "stablyai/orca",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Track anomalyco/opencode releases for the opencode_version pin in the opencode role",
       "managerFilePatterns": [
         "/^ansible/roles/opencode/defaults/main\\.yml$/"
