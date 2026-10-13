@@ -100,9 +100,10 @@
     force: false
     mode: "644"
 
-# Our own Kubo node, so crawling isn't held to a public gateway's rate limit. Only the indexer
-# reaches it (private network, no published ports); darksearch result links still use the
-# public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
+# Our own Kubo node, so crawling isn't held to a public gateway's rate limit. The indexer
+# reaches its gateway over a private network (8080 isn't published); the RPC API/WebUI on 5001
+# is published to LAN + tailnet with no auth (see Deploy Kubo). darksearch result links still
+# use the public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
 # it crawls, and caps its cache at 2GB.
 - name: Create ipfs_indexer network
   tags: ipfs-indexer
