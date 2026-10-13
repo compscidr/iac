@@ -25,3 +25,10 @@ ipfs_indexer_state: started
 ipfs_indexer_log_days: 30
 # the node the indexer crawls through (matches ipfs_indexer's docker/docker-compose.yml)
 ipfs_indexer_kubo_version: v0.43.1
+# Kubo's WebUI at http://ubuntu-cube.local:5001/webui; open it by one of these origins
+ipfs_indexer_kubo_webui_port: 5001
+ipfs_indexer_kubo_webui_origins:
+  - "http://{{ inventory_hostname }}:{{ ipfs_indexer_kubo_webui_port }}"
+  - "http://{{ ansible_default_ipv4.address }}:{{ ipfs_indexer_kubo_webui_port }}"
+  - "http://localhost:{{ ipfs_indexer_kubo_webui_port }}"
+  - "http://127.0.0.1:{{ ipfs_indexer_kubo_webui_port }}"
