@@ -100,6 +100,54 @@
     force: false
     mode: "644"
 
+# Our own Kubo node, so crawling isn't held to a public gateway's rate limit. Only the indexer
+# reaches it (private network, no published ports); darksearch result links still use the
+# public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
+# it crawls, and caps its cache at 2GB.
+- name: Create ipfs_indexer network
+  tags: ipfs-indexer
+  become: true
+  community.docker.docker_network:
+    name: ipfs-indexer
+
+- name: Create Kubo denylists directory
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.file:
+    path: "{{ ipfs_indexer_config_dir }}/denylists"
+    state: directory
+    mode: "755"
+
+# Kubo refuses to serve badbits content; the indexer also checks badbits itself, so this is
+# a second layer. Refreshed on every run; Kubo picks it up when the container restarts.
+- name: Download badbits for Kubo
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.get_url:
+    url: https://badbits.dwebops.pub/badbits.deny
+    dest: "{{ ipfs_indexer_config_dir }}/denylists/badbits.deny"
+    force: true
+    mode: "644"
+
+- name: Deploy Kubo
+  tags: ipfs-indexer
+  become: true
+  community.docker.docker_container:
+    name: ipfs
+    image: "ipfs/kubo:{{ ipfs_indexer_kubo_version }}"
+    state: "{{ ipfs_indexer_state }}"
+    # --enable-gc: drop cached blocks once Datastore.StorageMax is reached
+    command: ["daemon", "--migrate=true", "--agent-version-suffix=docker", "--enable-gc"]
+    networks:
+      - name: ipfs-indexer
+    volumes:
+      - "{{ ipfs_indexer_src }}/docker/kubo-init.sh:/container-init.d/indexer.sh:ro"
+      - "{{ ipfs_indexer_config_dir }}/denylists:/etc/ipfs/denylists:ro"
+      - ipfs-indexer-kubo:/data/ipfs
+    env:
+      IPFS_PROFILE: server
+    restart_policy: unless-stopped
+
 # docker_container recreates the container when the image changes (a new commit's tag)
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
@@ -115,7 +163,9 @@
     entrypoint:
       - /bin/bash
       - -c
-      - exec /usr/local/bin/ipfs_indexer > >(tee -a /var/lib/ipfs_indexer/logs/indexer.log) 2>&1
+      - exec /usr/local/bin/ipfs_indexer ipfs:8080 > >(tee -a /var/lib/ipfs_indexer/logs/indexer.log) 2>&1
+    networks:
+      - name: ipfs-indexer
     published_ports:
       - "{{ ipfs_indexer_port }}:9090"
     # the directory, not the file: editors that replace the file would detach a file mount.
