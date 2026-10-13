@@ -1,7 +1,8 @@
 ---
 # ipfs_indexer (https://github.com/compscidr/ipfs_indexer), the search backend
 # for darksearch.xyz. Built from source on the host (no published image) and
-# run with the default public gateway; it loads the badbits denylist at startup.
+# crawls through its own Kubo node (no public gateway rate limit); it loads the badbits
+# denylist at startup. darksearch result links still use a public gateway.
 # darksearch reaches it over Tailscale at http://ubuntu-cube.tail21090.ts.net:9090.
 # The port is published on all interfaces: LAN + tailnet, no router forward.
 
@@ -20,3 +21,7 @@ ipfs_indexer_data_dir: "{{ ipfs_indexer_data_mount }}/ipfs_indexer"
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
+# days of logs kept in {{ ipfs_indexer_data_dir }}/logs (rotated daily)
+ipfs_indexer_log_days: 30
+# the node the indexer crawls through (matches ipfs_indexer's docker/docker-compose.yml)
+ipfs_indexer_kubo_version: v0.43.1
