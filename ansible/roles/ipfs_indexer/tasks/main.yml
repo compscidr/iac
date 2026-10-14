@@ -163,7 +163,7 @@
       RUST_LOG: info
       LOCAL_DENYLIST: /etc/ipfs_indexer/local.deny
       DATA_DIR: /var/lib/ipfs_indexer
-      CRAWL_WORKERS: "{{ ipfs_indexer_crawl_workers }}"
+      CRAWL_WORKERS: "{{ ipfs_indexer_crawl_workers | string }}"
       # darksearch admin area's takedown endpoints (see ipfs_indexer README, ADMIN_TOKEN)
       ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
                      account_id=onepassword_account_id) }}"
