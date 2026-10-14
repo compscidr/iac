@@ -9,7 +9,7 @@
 ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
 # A release tag (vX.Y.Z): the image to run, and the checkout kubo-init.sh comes from.
 # Publish one by pushing the tag in the indexer repo (see its README).
-ipfs_indexer_version: "v0.2.6"
+ipfs_indexer_version: "v0.2.7"
 ipfs_indexer_image: ghcr.io/compscidr/ipfs_indexer
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
@@ -19,6 +19,9 @@ ipfs_indexer_config_dir: /etc/ipfs_indexer
 # be on the /data HDD RAID, which random writes to index.sqlite pinned at 100% (#830).
 # Mounted into the container as DATA_DIR.
 ipfs_indexer_data_dir: /var/lib/ipfs_indexer
+# pages fetched at once (CRAWL_WORKERS, ipfs_indexer#246). Fetches through the local Kubo
+# take ~2 s, so each worker adds roughly 30 pages a minute; Kubo's limits weren't close at 30.
+ipfs_indexer_crawl_workers: 30
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
