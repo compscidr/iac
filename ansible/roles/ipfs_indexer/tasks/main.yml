@@ -1,20 +1,4 @@
 ---
-- name: Check that the data filesystem is mounted
-  tags: ipfs-indexer
-  ansible.builtin.command: findmnt --mountpoint {{ ipfs_indexer_data_mount }}
-  register: ipfs_indexer_data_mounted
-  changed_when: false
-  failed_when: false
-
-- name: Refuse to deploy without the data filesystem
-  tags: ipfs-indexer
-  ansible.builtin.assert:
-    that: ipfs_indexer_data_mounted.rc == 0
-    fail_msg: >-
-      {{ ipfs_indexer_data_mount }} is not a mount point, so the index would land on the root
-      filesystem. Bring the array up (cat /proc/mdstat) and mount it first.
-    quiet: true
-
 # Only for docker/kubo-init.sh (mounted into Kubo below), at the same tag as the image
 - name: Clone ipfs_indexer
   tags: ipfs-indexer
@@ -33,7 +17,7 @@
     mode: "755"
 
 # Container logs die with the container on every deploy, so the indexer also appends its output
-# here (see the entrypoint below), next to the index on /data
+# here (see the entrypoint below), next to the index
 - name: Create ipfs_indexer log directory
   tags: ipfs-indexer
   become: true
@@ -159,7 +143,7 @@
     name: ipfs-indexer
     image: "{{ ipfs_indexer_image }}:{{ ipfs_indexer_version }}"
     state: "{{ ipfs_indexer_state }}"
-    # output to docker logs as before, and appended to a file on /data that outlives the
+    # output to docker logs as before, and appended to a file on the host that outlives the
     # container. exec keeps the indexer as PID 1 (docker stop signals it directly); tee runs as
     # its child through bash's process substitution
     entrypoint:

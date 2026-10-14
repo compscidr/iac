@@ -15,12 +15,10 @@ ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
 # holds local.deny, the takedown list
 ipfs_indexer_config_dir: /etc/ipfs_indexer
-# The persisted index (ipfs_indexer#106) lives on the HDD RAID, not the NVMe. The role
-# refuses to deploy unless ipfs_indexer_data_mount is mounted: md0 was down for seven
-# months unnoticed (fstab nofail), and an unmounted /data would silently put the index
-# on the root filesystem instead. Mounted into the container as DATA_DIR.
-ipfs_indexer_data_mount: /data
-ipfs_indexer_data_dir: "{{ ipfs_indexer_data_mount }}/ipfs_indexer"
+# The persisted index (ipfs_indexer#106) and its logs, on the NVMe root volume. It used to
+# be on the /data HDD RAID, which random writes to index.sqlite pinned at 100% (#830).
+# Mounted into the container as DATA_DIR.
+ipfs_indexer_data_dir: /var/lib/ipfs_indexer
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
