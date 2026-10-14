@@ -93,6 +93,19 @@
       ],
       "datasourceTemplate": "docker",
       "depNameTemplate": "ghcr.io/compscidr/ipfs_indexer"
+    },
+    {
+      "customType": "regex",
+      "description": "Track compscidr/sair-orchestrator tags for the orchestrator and portal image pins; merging does not deploy, re-run projects.yml",
+      "managerFilePatterns": [
+        "/^ansible/roles/sair_(orchestrator|portal)/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "sair_(?:orchestrator|portal)_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "compscidr/sair-orchestrator",
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [

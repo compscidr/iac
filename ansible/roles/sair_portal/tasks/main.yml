@@ -37,8 +37,9 @@
   community.docker.docker_container:
     name: sair-portal
     image: "{{ sair_portal_image }}"
+    # pull without recreate: the container is replaced only when the image or
+    # its config changed, so re-running the play does not restart it.
     pull: true
-    recreate: true
     restart_policy: unless-stopped
     networks:
       - name: nginx-proxy
