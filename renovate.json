@@ -124,6 +124,13 @@
       "automerge": false
     },
     {
+      "description": "Merging the sair-orchestrator pin doesn't deploy it, and the PR can open (from the git tag) before docker.yml has pushed the images. Keep the PR open until the images exist and projects.yml has been run, then merge it by hand.",
+      "matchDepNames": [
+        "compscidr/sair-orchestrator"
+      ],
+      "automerge": false
+    },
+    {
       "description": "ansible-core patches dataclasses._is_type, which Python 3.15 removed (see #787). Lift once an ansible release supports 3.15.",
       "matchManagers": [
         "github-actions"
