@@ -196,6 +196,15 @@ resource "digitalocean_record" "darksearch-TXT-google" {
   value  = "google-site-verification=J6xMjc70juAif4t0FOuNIOApZH1VSwDgB-X0Oo7Zvso"
 }
 
+# Proves the xyz.darksearch/* namespace to the official MCP registry
+# (darksearch.xyz#60); the Ed25519 private key is in 1Password
+resource "digitalocean_record" "darksearch-TXT-mcp-registry" {
+  domain = digitalocean_domain.darksearch-xyz.name
+  type   = "TXT"
+  name   = "@"
+  value  = "v=MCPv1; k=ed25519; p=JB+7Es2wpP1tU+I1zjM92gmij6fRAthN49RtdMAelD4="
+}
+
 # ============================================================================
 # sair.run
 # ============================================================================
