@@ -41,6 +41,20 @@ common_cli_manage_network: true
 # cloud droplets (group_vars/tailscale.yml), which don't use .local names.
 common_cli_manage_avahi: true
 
+# Addresses fail2ban (installed with the network tools) never bans, written to
+# /etc/fail2ban/jail.d/ignore-local.conf. The stock Debian sshd jail bans after
+# 5 failures in 10 minutes, and one ssh as the wrong user from another box on
+# the LAN does that in about a second (ubuntu-beast locked out of
+# ubuntu-work-laptop on 2026-10-14). Hosts that also run the fail2ban role
+# (the droplets) get their ignoreip from its jail.local, which fail2ban reads
+# after jail.d/*.conf, so this list does not apply to them.
+common_cli_fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - ::1
+  - 192.168.0.0/24 # home LAN
+  - 100.64.0.0/10 # Tailscale CGNAT range
+  - fd7a:115c:a1e0::/48 # Tailscale IPv6
+
 # Re-run Tailscale's install script when its apt source no longer targets this
 # release (left commented out by do-release-upgrade). Off for the droplets
 # (group_vars/tailscale.yml): they're managed over the tailnet, and the script

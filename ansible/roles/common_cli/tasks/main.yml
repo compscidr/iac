@@ -408,6 +408,21 @@
     pkg: "{{ common_cli_network_tools_ubuntu }}"
   when: ansible_os_family == "Debian"
 
+- name: Never let fail2ban ban LAN or tailnet addresses (Ubuntu/Debian)
+  become: true
+  tags: [network-tools, fail2ban]
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/ignore-local.conf
+    content: |
+      # Managed by Ansible (common_cli) - do not edit manually
+      [DEFAULT]
+      ignoreip = {{ common_cli_fail2ban_ignoreip | join(' ') }}
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload fail2ban
+  when: ansible_os_family == "Debian"
+
 - name: Harden avahi against host-name conflict renames (Ubuntu/Debian)
   tags: [network-tools, avahi]
   ansible.builtin.include_tasks:

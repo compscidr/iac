@@ -57,3 +57,16 @@
   ansible.builtin.debug:
     msg: "Warning: Failed to restart avahi-daemon: {{ common_cli_restart_avahi_result.msg | default('Unknown error') }}"
   when: common_cli_restart_avahi_result is failed
+
+- name: Reload fail2ban
+  become: true
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: reloaded
+  register: common_cli_reload_fail2ban_result
+  ignore_errors: true
+
+- name: Warn if fail2ban reload failed
+  ansible.builtin.debug:
+    msg: "Warning: Failed to reload fail2ban: {{ common_cli_reload_fail2ban_result.msg | default('Unknown error') }}"
+  when: common_cli_reload_fail2ban_result is failed
