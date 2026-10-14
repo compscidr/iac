@@ -135,9 +135,9 @@ hermes.yml and 60+ for a `common.yml` run (#542). The rules that keep it bounded
 
 See `hermes.yml`, `projects.yml`, and `roles/common_cli/tasks/main.yml` for the shape.
 
-After signing in, you can run any of the example commands below. You'll still need to use
-`--ask-become-pass` to provide your sudo password (typing it once per playbook run is simpler
-than dealing with 1Password desktop app prompts for every secret lookup).
+After signing in, you can run any of the example commands below. Plays that reach a
+workstation or the nas still need `--ask-become-pass` (`-K`) for the sudo password. The
+servers have passwordless sudo, so plays that only target them don't need it.
 
 ## Example commands
 
@@ -159,6 +159,11 @@ ansible-playbook -i inventory.yml common.yml --tags sometag --ask-become-pass
 Run all roles in the common playbook on a specific machine:
 ```bash
 ansible-playbook -i inventory.yml common.yml --limit ubuntu-beast --ask-become-pass
+```
+
+Deploy one role to a server (passwordless sudo, no `--ask-become-pass`):
+```bash
+ansible-playbook -i inventory.yml cube.yml --tags ipfs-indexer
 ```
 
 Run all roles in the common playbook on a specific machine that requires an ssh password:
