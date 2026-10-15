@@ -27,6 +27,9 @@ ipfs_indexer_crawl_workers: 30
 ipfs_indexer_state: started
 # days of logs kept in {{ ipfs_indexer_data_dir }}/logs (rotated daily)
 ipfs_indexer_log_days: 30
+# `docker logs` keeps at most two files of this size; it had no limit and reached 3.7GB in
+# two days (a copy of the file above)
+ipfs_indexer_docker_log_size: 100m
 # the node the indexer crawls through (matches ipfs_indexer's docker/docker-compose.yml)
 ipfs_indexer_kubo_version: v0.43.1
 # Kubo's WebUI at http://ubuntu-cube.local:5001/webui; open it by one of these origins
