@@ -143,13 +143,17 @@
     name: ipfs-indexer
     image: "{{ ipfs_indexer_image }}:{{ ipfs_indexer_version }}"
     state: "{{ ipfs_indexer_state }}"
-    # output to docker logs as before, and appended to a file on the host that outlives the
-    # container. exec keeps the indexer as PID 1 (docker stop signals it directly); tee runs as
-    # its child through bash's process substitution
+    # output to docker logs as before (capped: the file below is the record), and appended to a
+    # file on the host that outlives the container. exec keeps the indexer as PID 1 (docker stop
+    # signals it directly); tee runs as its child through bash's process substitution
     entrypoint:
       - /bin/bash
       - -c
       - exec /usr/local/bin/ipfs_indexer ipfs:8080 > >(tee -a /var/lib/ipfs_indexer/logs/indexer.log) 2>&1
+    log_driver: json-file
+    log_options:
+      max-size: "{{ ipfs_indexer_docker_log_size }}"
+      max-file: "2"
     networks:
       - name: ipfs-indexer
     published_ports:
