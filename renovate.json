@@ -96,14 +96,14 @@
     },
     {
       "customType": "regex",
-      "description": "Track compscidr/sair-orchestrator tags for the orchestrator and portal image pins; merging does not deploy, re-run projects.yml",
+      "description": "Track compscidr/sair-orchestrator releases (like compscidr/sair) for the orchestrator and portal image pins; merging does not deploy, re-run projects.yml",
       "managerFilePatterns": [
         "/^ansible/roles/sair_(orchestrator|portal)/defaults/main\\.yml$/"
       ],
       "matchStrings": [
         "sair_(?:orchestrator|portal)_version:\\s*[\"'](?<currentValue>[^\"']+)[\"']"
       ],
-      "datasourceTemplate": "github-tags",
+      "datasourceTemplate": "github-releases",
       "depNameTemplate": "compscidr/sair-orchestrator",
       "versioningTemplate": "semver-coerced"
     }
@@ -124,7 +124,7 @@
       "automerge": false
     },
     {
-      "description": "Merging the sair-orchestrator pin doesn't deploy it, and the PR can open (from the git tag) before docker.yml has pushed the images. Keep the PR open until the images exist and projects.yml has been run, then merge it by hand.",
+      "description": "Merging the sair-orchestrator pin doesn't deploy it, and the PR can open (from the release) before docker.yml has pushed the images. Keep the PR open until the images exist and projects.yml has been run, then merge it by hand.",
       "matchDepNames": [
         "compscidr/sair-orchestrator"
       ],
