@@ -18,6 +18,10 @@ sair_orchestrator_device_source_addr: "ubuntu-cube:8080"
 # Portal database path (for API key validation)
 sair_orchestrator_portal_db_dir: "/opt/sair-portal/data"
 
+# URL of the Prometheus the admin dashboard charts read from (sair-orchestrator#713),
+# reached by container name on nginx-proxy. Empty disables the charts.
+sair_orchestrator_prometheus_url: "http://prometheus:9090"
+
 # Secrets (override in playbook via 1Password lookups)
 sair_orchestrator_api_key: ""
 sair_orchestrator_tenant_config: ""

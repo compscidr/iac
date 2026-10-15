@@ -34,6 +34,11 @@
             if sair_orchestrator_tenant_config | length > 0
             else {}
           )
+        | combine(
+            {'PROMETHEUS_URL': sair_orchestrator_prometheus_url}
+            if sair_orchestrator_prometheus_url | length > 0
+            else {}
+          )
       }}
 
 - name: Deploy SAIR orchestrator
