@@ -33,7 +33,8 @@ rust_test_server_name: "rustd.xyz test server"
 rust_test_server_description: "Test server for rustd.xyz. Wipes frequently."
 
 # 1000 is the smallest world Rust accepts. Map generation dominates a wipe, and this
-# server exists to have wipes run against it repeatedly.
+# server exists to have wipes run against it repeatedly. Only the default now: a
+# RUST_SERVER_WORLDSIZE in rust.env (a size the panel chose) wins.
 rust_test_server_worldsize: 1000
 rust_test_server_maxplayers: 5
 

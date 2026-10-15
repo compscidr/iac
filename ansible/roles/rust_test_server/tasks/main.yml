@@ -161,11 +161,12 @@
     group: "{{ rust_test_server_user }}"
     force: false
 
-# Empty on purpose. start.sh does not source it — this rig never boots a custom map — but
-# since compscidr/rustd.xyz#576 every seed-changing wipe also rewrites rust.env (to clear
-# RUST_SERVER_LEVELURL), and the panel refuses to create a missing file (#407). Without
-# this the wipe's precheck refuses with "rust.env does not exist on the server"
-# (seen 2026-10-08). Never overwritten, for the same reason as seed.env.
+# Empty to start with; rustd.xyz fills it. start.sh sources it (since 2026-10-15) for the
+# map URL a custom or combined-map wipe arms, the world size, and the hostname and
+# description, like the containerised servers. Every map-changing wipe rewrites it
+# (compscidr/rustd.xyz#576) and the panel refuses to create a missing file (#407): without
+# this the wipe's precheck refuses with "rust.env does not exist on the server" (seen
+# 2026-10-08). Never overwritten, for the same reason as seed.env.
 - name: Create rust.env (never overwritten — wipes rewrite it at runtime)
   tags: rust-test
   become: true

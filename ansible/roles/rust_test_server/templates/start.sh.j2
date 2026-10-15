@@ -12,6 +12,7 @@
 set -euo pipefail
 
 SEED_FILE="{{ rust_test_server_data_dir }}/seed.env"
+ENV_FILE="{{ rust_test_server_data_dir }}/rust.env"
 
 # Fail loudly rather than booting with an empty seed. Rust picks its own seed when
 # +server.seed is empty, so the running map would silently stop matching what
@@ -23,7 +24,18 @@ if [ ! -r "${SEED_FILE}" ]; then
 fi
 
 set -o allexport
-# Split out so a wipe can rotate the seed without touching this script.
+# rust.env first, as the containerised servers read it: rustd.xyz rewrites it in place
+# (the map URL a custom or combined-map wipe arms, the world size, the hostname and
+# description), and this script reads whatever it says at boot. Optional: the role creates
+# it empty, and an empty file changes nothing below. Before 2026-10-15 this rig never read
+# it, so a wipe that armed a combined map came back on the old procedural one and nothing
+# noticed (compscidr/rustd.xyz#913).
+if [ -r "${ENV_FILE}" ]; then
+  # shellcheck source=/dev/null
+  source "${ENV_FILE}"
+fi
+# Split out so a wipe can rotate the seed without touching this script. Second, so a
+# rotated seed always wins over a stale value in rust.env.
 # shellcheck source=/dev/null
 source "${SEED_FILE}"
 set +o allexport
@@ -58,15 +70,32 @@ if ! timeout --kill-after=30s {{ rust_test_server_update_timeout }} \
   echo "WARNING: steamcmd update failed or timed out; starting the installed build" >&2
 fi
 
+# The map, chosen the way the container image's /app/start.sh chooses it (read from the
+# rust-build container on the cube, 2026-10-15): a level URL boots that file and takes
+# neither size nor seed — the file has its own size; otherwise the world is generated
+# from the seed at the size rust.env names, or this rig's small default.
+if [ -n "${RUST_SERVER_LEVELURL:-}" ]; then
+  MAP_ARGS=(+server.levelurl "${RUST_SERVER_LEVELURL}")
+  echo "Using custom map: ${RUST_SERVER_LEVELURL}"
+else
+  MAP_ARGS=(+server.worldsize "${RUST_SERVER_WORLDSIZE:-{{ rust_test_server_worldsize }}}" +server.seed "${RUST_SERVER_SEED}")
+fi
+
+# Only when the panel has set one, as the image does.
+BANNER_ARGS=()
+if [ -n "${RUST_SERVER_BANNER_URL:-}" ]; then
+  BANNER_ARGS=(+server.headerimage "${RUST_SERVER_BANNER_URL}")
+fi
+
 exec {{ rust_test_server_root }}/RustDedicated -batchmode -nographics \
   +server.identity "{{ rust_test_server_identity }}" \
-  +server.hostname "{{ rust_test_server_name }}" \
-  +server.description "{{ rust_test_server_description }}" \
+  +server.hostname "${RUST_SERVER_NAME:-{{ rust_test_server_name }}}" \
+  +server.description "${RUST_SERVER_DESCRIPTION:-{{ rust_test_server_description }}}" \
+  "${BANNER_ARGS[@]}" \
   +server.port {{ rust_test_server_port }} \
   +server.queryport {{ rust_test_server_query_port }} \
   +server.maxplayers {{ rust_test_server_maxplayers }} \
-  +server.worldsize {{ rust_test_server_worldsize }} \
-  +server.seed "${RUST_SERVER_SEED}" \
+  "${MAP_ARGS[@]}" \
   +server.saveinterval 300 \
   +app.port {{ rust_test_server_app_port }} \
   +rcon.port {{ rust_test_server_rcon_port }} \
