@@ -140,5 +140,13 @@
       ],
       "allowedVersions": "<3.15"
     }
+  ],
+  "hostRules": [
+    {
+      "description": "compscidr/sair-orchestrator is private and the app token can't look up its releases (no-result); use a fine-grained PAT (Contents: read on that repo) stored as a Mend secret. Applies to all github-releases lookups since GraphQL can't be scoped per repo.",
+      "matchHost": "api.github.com",
+      "hostType": "github-releases",
+      "token": "{{ secrets.SAIR_ORCH_TOKEN }}"
+    }
   ]
 }
