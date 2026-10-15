@@ -1,0 +1,16 @@
+---
+# Prometheus on the projects droplet (#853). Scrapes sair-orchestrator over the
+# nginx-proxy docker network; the UI is tailnet only via `tailscale serve`.
+prometheus_image: "prom/prometheus:v3.15.0"
+prometheus_dir: /opt/prometheus
+# Host loopback port for the UI (9090 is taken by the orchestrator's gRPC)
+prometheus_port: 9091
+# tailscale serve HTTPS port: https://projects.<tailnet>.ts.net:8443/
+prometheus_tailscale_https_port: 8443
+prometheus_retention: 30d
+
+# Orchestrator dashboard port, reached by container name on nginx-proxy
+prometheus_sair_orchestrator_target: "sair-orchestrator:8081"
+
+# Bearer key for sair-orchestrator /metrics (set from 1Password in projects.yml)
+prometheus_sair_orchestrator_api_key: ""

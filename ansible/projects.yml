@@ -92,6 +92,7 @@
       ansible.builtin.set_fact:
         sair_orchestrator_ghcr_token: "{{ projects_op_ghcr_token }}"
         sair_portal_ghcr_token: "{{ projects_op_ghcr_token }}"
+        prometheus_sair_orchestrator_api_key: "{{ sair_orchestrator_api_key }}"
         rustd_xyz_ghcr_token: "{{ projects_op_ghcr_token }}"
         sair_portal_smtp_username: "{{ projects_op_item_sair_smtp
           | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
@@ -126,5 +127,6 @@
     - { role: projects, tags: [projects] }
     - { role: sair_orchestrator, tags: [sair-orchestrator, sair] }
     - { role: sair_portal, tags: [sair-portal, sair] }
+    - { role: prometheus, tags: [prometheus] }
     - { role: rustd_xyz, tags: [rustd, rustd-xyz] }
     - { role: fail2ban, tags: [fail2ban] }

@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: sair-orchestrator
+    metrics_path: /metrics
+    authorization:
+      credentials_file: /etc/prometheus/sair-orchestrator-key
+    static_configs:
+      - targets: ["{{ prometheus_sair_orchestrator_target }}"]
