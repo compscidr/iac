@@ -9,7 +9,7 @@
 ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
 # A release tag (vX.Y.Z): the image to run, and the checkout kubo-init.sh comes from.
 # Publish one by pushing the tag in the indexer repo (see its README).
-ipfs_indexer_version: "v0.4.0"
+ipfs_indexer_version: "v0.4.1"
 ipfs_indexer_image: ghcr.io/compscidr/ipfs_indexer
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
