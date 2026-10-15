@@ -42,8 +42,9 @@
   community.docker.docker_container:
     name: sair-orchestrator
     image: "{{ sair_orchestrator_image }}"
+    # pull without recreate: the container is replaced only when the image or
+    # its config changed, so re-running the play does not restart it.
     pull: true
-    recreate: true
     restart_policy: unless-stopped
     published_ports:
       - "{{ sair_orchestrator_port }}:{{ sair_orchestrator_port }}"
