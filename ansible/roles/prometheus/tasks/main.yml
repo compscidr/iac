@@ -1,0 +1,62 @@
+---
+# The image runs as nobody (65534), so the data dir and key file belong to it.
+- name: Create prometheus directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: "755"
+  loop:
+    - { path: "{{ prometheus_dir }}", owner: root }
+    - { path: "{{ prometheus_dir }}/data", owner: 65534 }
+
+- name: Deploy prometheus config
+  become: true
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_dir }}/prometheus.yml"
+    mode: "0644"
+  register: prometheus_config
+
+# Kept in its own file (credentials_file) so the key never lands in prometheus.yml
+- name: Deploy sair-orchestrator scrape key
+  become: true
+  ansible.builtin.copy:
+    content: "{{ prometheus_sair_orchestrator_api_key }}"
+    dest: "{{ prometheus_dir }}/sair-orchestrator-key"
+    owner: "65534"
+    group: "65534"
+    mode: "0400"
+  no_log: true
+  register: prometheus_key
+
+- name: Deploy prometheus
+  become: true
+  community.docker.docker_container:
+    name: prometheus
+    image: "{{ prometheus_image }}"
+    restart_policy: unless-stopped
+    # Config/key are bind mounts, so a changed file needs a restart to be read
+    restart: "{{ prometheus_config is changed or prometheus_key is changed }}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ prometheus_retention }}
+    published_ports:
+      - "127.0.0.1:{{ prometheus_port }}:9090"
+    networks:
+      - name: nginx-proxy
+    volumes:
+      - "{{ prometheus_dir }}/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "{{ prometheus_dir }}/sair-orchestrator-key:/etc/prometheus/sair-orchestrator-key:ro"
+      - "{{ prometheus_dir }}/data:/prometheus"
+
+# Same pattern as the darksearch admin in the projects role. Persistent, so re-runs are no-ops.
+- name: Serve the prometheus UI on the tailnet
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https={{ prometheus_tailscale_https_port }} http://127.0.0.1:{{ prometheus_port }}
+  register: prometheus_tailscale_serve
+  changed_when: "'Available within your tailnet' in (prometheus_tailscale_serve.stdout | default(''))"
