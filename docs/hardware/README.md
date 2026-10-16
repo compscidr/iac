@@ -35,10 +35,25 @@ sits there.
 |---|---|---|
 | `nas` | 4× 20 TB Seagate ST20000NM004E + 2× 22 TB ST22000NM000C (~124 TB raw) · NVMe: 931 GB GIGABYTE, 931 GB WD WDS100T1X0E, 119 GB YSO128GTLCW | `/volume1` (bcache) 91 T, 25 T free · `/overlay` 107 G system partition, ~24 G free (see #544) |
 | `ubuntu-beast` | `nvme0n1` 4 TB XG7000 (Linux, ext4 `/`) · `nvme1n1` 4 TB XG7000 (Windows) · `sda` 18 TB WUH721816ALE6L4 · `sdb` 1 TB WD1002FAEX | root 3.7 T, 2.8 T free. **The 18 TB and 1 TB HDDs are installed but unpartitioned and unmounted** |
-| `ubuntu-cube` | 3.7 TB SPCC NVMe (root) · 931 GB WDC SSD · 4× 931 GB WDC HDD | root 3.7 T, 3.4 T free |
+| `ubuntu-cube` | 3.7 TB SPCC NVMe (root) · 931 GB WDC SSD · 4× 931 GB WDC HDD | root 3.7 T, 3.4 T free · `/data` 931 G (3-disk RAID1) · `sdd` 931 G blank, unused (see below) |
 | `ubuntu-silverstone` | 954 GB SPCC SSD · 112 GB Corsair SSD | root 938 G, 851 G free |
 | `ubuntu-work-laptop` | 954 GB SK Hynix NVMe | root 937 G, 609 G free |
 | `jasons-macbook-air` | 228 GB internal | 87 GB free |
+
+### `ubuntu-cube` disks (checked 2026-10-16)
+
+- **NVMe** `nvme0n1`: root (LVM `ubuntu-vg-1`). The ipfs_indexer data and its kubo node live here.
+- **`/data`**: `md127`, a RAID1 of 3 HDDs (`sdc` WD1002FAEX, `sde` and `sdf` WD10EARS), each
+  behind bcache (`bcache3`, `bcache1`, `bcache2`, writethrough) with the 1 TB WDC SSD `sda`
+  as the shared cache.
+- **`sdd`** (WD1002FAEX, serial `WD-WMAW30957427`, ~27k power-on hours): **blank and unused,
+  treat as failing.** It was the fourth member of an older 4-way array (`ubuntu-cube:0`, last
+  written 2026-03-03) and was left attached to the SSD cache as `bcache0` (in writeback mode)
+  after `/data` was rebuilt on three disks. On 2026-10-16 smartd reported 38 offline
+  uncorrectable sectors; the drive then reallocated one sector and SMART reads PASSED with 0
+  pending, but a disk that just developed bad sectors is likely to develop more. The same day
+  `bcache0` was detached and stopped and `sdd` was wiped (`wipefs -a`). Scratch use only, or
+  pull it; don't add it back to `/data` or the cache.
 
 ### Memory detail
 
