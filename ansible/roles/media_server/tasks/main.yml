@@ -232,6 +232,8 @@
     group: "{{ media_user_gid }}"
   loop: [sonarr, radarr, lidarr]
 
+# Sonarr's profiles, custom formats and indexers live in its UI, not here.
+# One-off helper scripts for it are in files/scripts (see each header).
 - name: Install sonarr
   tags: sonarr
   ansible.builtin.include_role:
