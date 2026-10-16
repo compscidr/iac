@@ -2,7 +2,7 @@
 # SAIR portal role defaults
 
 # Built from the same sair-orchestrator tag as the orchestrator image.
-sair_portal_version: "v0.1.5"
+sair_portal_version: "v0.1.6"
 sair_portal_image: "ghcr.io/compscidr/sair-portal:{{ sair_portal_version | regex_replace('^v', '') }}"
 sair_portal_port: 8080
 sair_portal_domain: "sair.run"
