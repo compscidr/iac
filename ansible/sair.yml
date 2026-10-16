@@ -43,6 +43,11 @@
         # second account's item is copied here (community.general#10792). Rotate both.
         sair_bump_api_key: "{{ lookup('community.general.onepassword', 'sair-bump-api-key', field='credential', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
+        # A second key on bump's account, used by agents' local sair-acquire (copy of the item behind
+        # their ~/.config/sair/env). Keys on another account are only accepted when listed here,
+        # even on a proxy at or after sair v0.1.22 (compscidr/sair#121 covers the owner's account only).
+        sair_bump_agent_api_key: "{{ lookup('community.general.onepassword', 'sair-bump-agent-api-key', field='credential', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
       no_log: true
     # The phones join the same network the host does (see common_cli).
     - name: Bench Wi-Fi for the phones
@@ -62,6 +67,7 @@
     sair_wifi_ping_host: "google.com"
     sair_guest_api_keys:
       - "{{ sair_bump_api_key }}"
+      - "{{ sair_bump_agent_api_key }}"
     sair_runners:
       - name: "hello-java-android"
         repo_url: "https://github.com/compscidr/hello-java-android"
