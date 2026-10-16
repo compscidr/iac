@@ -17,11 +17,10 @@ import json, subprocess
 
 SERIES_ID = 179  # MasterChef (PL)
 
-def key():
-    return subprocess.check_output(["docker","exec","sonarr","sed","-n",r"s/.*<ApiKey>\([^<]*\)<.*/\1/p","/config/config.xml"]).decode().strip()
+KEY = subprocess.check_output(["docker","exec","sonarr","sed","-n",r"s/.*<ApiKey>\([^<]*\)<.*/\1/p","/config/config.xml"]).decode().strip()
 
 def api(method, path, body=None):
-    cmd=["curl","-s","-X",method,"-H","X-Api-Key: "+key(),"-H","Content-Type: application/json",f"http://localhost:8989/api/v3/{path}"]
+    cmd=["curl","-s","-X",method,"-H","X-Api-Key: "+KEY,"-H","Content-Type: application/json",f"http://localhost:8989/api/v3/{path}"]
     if body is not None: cmd += ["-d", json.dumps(body)]
     out=subprocess.check_output(cmd).decode()
     return json.loads(out) if out.strip() else None
