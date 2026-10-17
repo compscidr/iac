@@ -9,6 +9,11 @@ sair_orchestrator_image: "ghcr.io/compscidr/sair-orchestrator:{{ sair_orchestrat
 sair_orchestrator_port: 9090
 sair_orchestrator_dashboard_port: 8081
 sair_orchestrator_domain: "orchestrator.sair.run"
+# Agent API host (/api/v1/ runs, leases, devices): the default SAIR_API_URL of
+# sair-mcp. Served by the same container and cert as the dashboard. Its DNS
+# record (terraform/projects.tf) must exist before the play, for Let's Encrypt.
+# Empty turns the agent API off.
+sair_orchestrator_api_domain: "api.sair.run"
 sair_orchestrator_letsencrypt_email: "ernstjason1@gmail.com"
 
 # DeviceSource address (reachable from the orchestrator container)

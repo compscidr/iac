@@ -4,6 +4,9 @@
 projects_base_path: /opt/projects
 projects_letsencrypt_email: "ernstjason1@gmail.com"
 projects_git_user: jason # User with SSH keys for cloning private repos
+# Request body limit for every vhost behind nginx-proxy. The sair agent API
+# (api.sair.run) takes an app and a test APK of up to 200 MB each in one POST.
+projects_nginx_client_max_body_size: "512m"
 
 # Project repos
 projects_repos:

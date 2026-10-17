@@ -4,6 +4,7 @@
 # - dumpers.xyz (https://github.com/compscidr/network-tools)
 # - darksearch.xyz (https://github.com/compscidr/darksearch.xyz)
 # - orchestrator.sair.run (https://github.com/compscidr/sair)
+# - api.sair.run (sair agent API, same orchestrator container)
 # - goblog.live (https://github.com/goblogplatform/goblog)
 
 # VPC for sfo3 region
@@ -244,6 +245,21 @@ resource "digitalocean_record" "sair-orchestrator-AAAA" {
   domain = digitalocean_domain.sair-run.name
   type   = "AAAA"
   name   = "orchestrator"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+# Agent API (sair-mcp's default SAIR_API_URL); served by the orchestrator container
+resource "digitalocean_record" "sair-api-A" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "A"
+  name   = "api"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "sair-api-AAAA" {
+  domain = digitalocean_domain.sair-run.name
+  type   = "AAAA"
+  name   = "api"
   value  = digitalocean_droplet.projects.ipv6_address
 }
 

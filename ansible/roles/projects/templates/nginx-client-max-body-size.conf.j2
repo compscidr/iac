@@ -4,4 +4,6 @@
 # rustd.xyz's render agents (compscidr/rustd.xyz#530): a finished map is a PNG of about a
 # megabyte, posted back as base64 JSON, and every render was rejected and retried until
 # it failed. http-level, so it applies to all servers unless one overrides it.
-client_max_body_size 64m;
+# Set by projects_nginx_client_max_body_size (the sair agent API takes two APKs of up to
+# 200 MB each in one upload).
+client_max_body_size {{ projects_nginx_client_max_body_size }};
