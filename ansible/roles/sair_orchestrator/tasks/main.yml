@@ -12,8 +12,11 @@
   when: sair_orchestrator_ghcr_token | length > 0
   no_log: true
 
+# The dashboard and agent API hosts share one cert, filed under the first name (TLS_*_PATH).
 - name: Build orchestrator environment
   no_log: true
+  vars:
+    _sair_orchestrator_hosts: "{{ [sair_orchestrator_domain, sair_orchestrator_api_domain] | select | join(',') }}"
   ansible.builtin.set_fact:
     _sair_orchestrator_env: >-
       {{
@@ -21,9 +24,9 @@
           'ORCHESTRATOR_PORT': sair_orchestrator_port | string,
           'DASHBOARD_ENABLED': 'true',
           'SAIR_API_KEY': sair_orchestrator_api_key,
-          'VIRTUAL_HOST': sair_orchestrator_domain,
+          'VIRTUAL_HOST': _sair_orchestrator_hosts,
           'VIRTUAL_PORT': sair_orchestrator_dashboard_port | string,
-          'LETSENCRYPT_HOST': sair_orchestrator_domain,
+          'LETSENCRYPT_HOST': _sair_orchestrator_hosts,
           'LETSENCRYPT_EMAIL': sair_orchestrator_letsencrypt_email,
           'TLS_CERT_PATH': '/certs/' + sair_orchestrator_domain + '/fullchain.pem',
           'TLS_KEY_PATH': '/certs/' + sair_orchestrator_domain + '/key.pem',
@@ -32,6 +35,11 @@
         | combine(
             {'SAIR_TENANT_CONFIG': sair_orchestrator_tenant_config}
             if sair_orchestrator_tenant_config | length > 0
+            else {}
+          )
+        | combine(
+            {'AGENT_API_ENABLED': 'true'}
+            if sair_orchestrator_api_domain | length > 0
             else {}
           )
         | combine(
