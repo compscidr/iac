@@ -10,7 +10,9 @@ sair_orchestrator_port: 9090
 # JVM flags. The heap is pinned (the JVM default is 25% of host RAM) and an
 # OutOfMemoryError ends the process so Docker restarts it instead of leaving a
 # hung JVM behind (2026-10-20 outage). The dump goes to the portal data dir,
-# the container's only writable mount; the next OOM can then be analysed.
+# the container's only writable mount. The JVM never overwrites an existing
+# dump, so only the first OOM of an incident is captured (deliberate: a restart
+# loop can't fill the disk); delete the file once analysed to arm the next one.
 sair_orchestrator_java_opts: "-Xmx1g -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/portal-data/orchestrator-heap.hprof"
 # Container memory limit: a native-memory blowup gets the container killed and
 # restarted rather than the host's OOM killer picking a process.
