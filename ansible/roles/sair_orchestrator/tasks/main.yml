@@ -31,6 +31,7 @@
           'TLS_CERT_PATH': '/certs/' + sair_orchestrator_domain + '/fullchain.pem',
           'TLS_KEY_PATH': '/certs/' + sair_orchestrator_domain + '/key.pem',
           'PORTAL_DB_PATH': '/portal-data/portal.db',
+          'JAVA_TOOL_OPTIONS': sair_orchestrator_java_opts,
         }
         | combine(
             {'SAIR_TENANT_CONFIG': sair_orchestrator_tenant_config}
@@ -59,6 +60,7 @@
     # its config changed, so re-running the play does not restart it.
     pull: true
     restart_policy: unless-stopped
+    memory: "{{ sair_orchestrator_memory }}"
     published_ports:
       - "{{ sair_orchestrator_port }}:{{ sair_orchestrator_port }}"
     networks:
