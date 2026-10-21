@@ -8,6 +8,32 @@
       account_id=onepassword_account_id) }}"
   no_log: true
 
+- name: Create the swap file
+  tags: swap
+  become: true
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ jasonernst_com_swap_size_mb }}M /swapfile"
+    creates: /swapfile
+  register: jasonernst_com_swapfile
+
+- name: Format and enable the swap file
+  tags: swap
+  become: true
+  when: jasonernst_com_swapfile is changed # noqa: no-handler
+  ansible.builtin.shell:
+    cmd: chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  changed_when: true
+
+- name: Enable the swap file at boot
+  tags: swap
+  become: true
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    state: present
+
 - name: Create nginx directory on host
   tags: nginx
   become: true
@@ -356,6 +382,8 @@
   community.docker.docker_container:
     name: goblog-prod
     image: compscidr/goblog:v0.15.0
+    memory: "{{ jasonernst_com_goblog_prod_memory }}"
+    memory_swap: "{{ jasonernst_com_goblog_prod_memory }}" # no swap for the container: hit the limit, get killed, restart
     volumes:
       - /opt/goblog/prod/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/prod/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
@@ -396,6 +424,8 @@
   community.docker.docker_container:
     name: goblog-staging
     image: compscidr/goblog:v0.15.0
+    memory: "{{ jasonernst_com_goblog_staging_memory }}"
+    memory_swap: "{{ jasonernst_com_goblog_staging_memory }}" # no swap for the container: hit the limit, get killed, restart
     volumes:
       - /opt/goblog/staging/uploads:/go/src/github.com/compscidr/goblog/www/uploads
       - /opt/goblog/staging/plugins-wasm:/go/src/github.com/compscidr/goblog/plugins/wasm
