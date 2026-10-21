@@ -185,9 +185,8 @@
                      account_id=onepassword_account_id) }}"
       # discovery (ipfs_indexer#213): the seeds file above, and ENS through Alchemy
       SEEDS_FILE: /etc/ipfs_indexer/seeds.txt
-      ETH_RPC_URL: "{{ (ipfs_indexer_eth_rpc_prefix ~ lookup('community.general.onepassword', ipfs_indexer_eth_rpc_item,
-                     field=ipfs_indexer_eth_rpc_field, vault='Infrastructure', account_id=onepassword_account_id))
-                     if ipfs_indexer_ens else '' }}"
+      ETH_RPC_URL: "{{ lookup('community.general.onepassword', ipfs_indexer_eth_rpc_item, field=ipfs_indexer_eth_rpc_field,
+                     vault='Infrastructure', account_id=onepassword_account_id) if ipfs_indexer_ens else '' }}"
       ETH_LOGS_MAX_BLOCKS: "{{ ipfs_indexer_eth_logs_max_blocks | string }}"
       ETH_REQUEST_SECS: "{{ ipfs_indexer_eth_request_secs | string }}"
     restart_policy: unless-stopped
