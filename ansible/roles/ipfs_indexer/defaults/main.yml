@@ -9,7 +9,7 @@
 ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
 # A release tag (vX.Y.Z): the image to run, and the checkout kubo-init.sh comes from.
 # Publish one by pushing the tag in the indexer repo (see its README).
-ipfs_indexer_version: "v0.4.6"
+ipfs_indexer_version: "v0.5.1"
 ipfs_indexer_image: ghcr.io/compscidr/ipfs_indexer
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
@@ -39,3 +39,35 @@ ipfs_indexer_kubo_webui_origins:
   - "http://{{ ansible_default_ipv4.address }}:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://localhost:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://127.0.0.1:{{ ipfs_indexer_kubo_webui_port }}"
+
+# Discovery (ipfs_indexer#213): sites found beyond the Wikipedia mirror's links.
+# SEEDS_FILE: these entries (CIDs, DNSLink domains, .eth names, IPNS keys), written to
+# {{ ipfs_indexer_config_dir }}/seeds.txt and re-read by the indexer every hour. Started from the
+# indexer's seeds.example.txt.
+ipfs_indexer_seeds:
+  - tr.wikipedia-on-ipfs.org
+  - ar.wikipedia-on-ipfs.org
+  - zh.wikipedia-on-ipfs.org
+  - uk.wikipedia-on-ipfs.org
+  - ru.wikipedia-on-ipfs.org
+  - fa.wikipedia-on-ipfs.org
+  - my.wikipedia-on-ipfs.org
+  - docs.ipfs.tech
+  - specs.ipfs.tech
+  - blog.ipfs.tech
+  - ipfs.tech
+  - libp2p.io
+  - vitalik.eth
+  - ens.eth
+# ENS .eth sites, read from Ethereum mainnet logs through Alchemy. The 1Password item (an API
+# Credential in the Infrastructure vault) holds the API key only; the URL is built here.
+# Set ipfs_indexer_ens to false to turn the ENS scan off.
+ipfs_indexer_ens: true
+ipfs_indexer_eth_rpc_item: Alchemy
+ipfs_indexer_eth_rpc_field: credential
+ipfs_indexer_eth_rpc_prefix: https://eth-mainnet.g.alchemy.com/v2/
+# Alchemy's free plan: 10 blocks per eth_getLogs, and 30M compute units a month at 60 per
+# request, which a request every 6 s stays under. The first scan of ENS's history takes ~4-5
+# months at this pace. On pay-as-you-go, set these to 10000 and 1 (the indexer's defaults).
+ipfs_indexer_eth_logs_max_blocks: 10
+ipfs_indexer_eth_request_secs: 6

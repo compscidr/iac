@@ -133,12 +133,24 @@
       IPFS_PROFILE: server
     restart_policy: unless-stopped
 
+- name: Write the discovery seeds file
+  tags: ipfs-indexer
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ ipfs_indexer_config_dir }}/seeds.txt"
+    content: |
+      # managed by ansible (ipfs_indexer_seeds); the indexer re-reads it every hour
+      {% for seed in ipfs_indexer_seeds %}
+      {{ seed }}
+      {% endfor %}
+    mode: "644"
+
 # Pulls the release image if it isn't on the host yet (built by the indexer's release
 # workflow, not here), and recreates the container when the pinned tag changes
 - name: Deploy ipfs_indexer
   tags: ipfs-indexer
   become: true
-  no_log: true # ADMIN_TOKEN
+  no_log: true # ADMIN_TOKEN, ETH_RPC_URL (carries the Alchemy key)
   community.docker.docker_container:
     name: ipfs-indexer
     image: "{{ ipfs_indexer_image }}:{{ ipfs_indexer_version }}"
@@ -171,4 +183,11 @@
       # darksearch admin area's takedown endpoints (see ipfs_indexer README, ADMIN_TOKEN)
       ADMIN_TOKEN: "{{ lookup('community.general.onepassword', 'DarkSearch Indexer Admin Token', field='password', vault='Infrastructure',
                      account_id=onepassword_account_id) }}"
+      # discovery (ipfs_indexer#213): the seeds file above, and ENS through Alchemy
+      SEEDS_FILE: /etc/ipfs_indexer/seeds.txt
+      ETH_RPC_URL: "{{ (ipfs_indexer_eth_rpc_prefix ~ lookup('community.general.onepassword', ipfs_indexer_eth_rpc_item,
+                     field=ipfs_indexer_eth_rpc_field, vault='Infrastructure', account_id=onepassword_account_id))
+                     if ipfs_indexer_ens else '' }}"
+      ETH_LOGS_MAX_BLOCKS: "{{ ipfs_indexer_eth_logs_max_blocks | string }}"
+      ETH_REQUEST_SECS: "{{ ipfs_indexer_eth_request_secs | string }}"
     restart_policy: unless-stopped
