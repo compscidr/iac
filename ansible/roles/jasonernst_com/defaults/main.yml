@@ -1,5 +1,15 @@
 ---
 # jasonernst_com role defaults
+
+# The droplet has 1.9GB and no swap; on 2026-10-18 the kernel OOM-killed
+# goblog-prod, and dockerd never saw the exit (it kept reporting "Up"), so the
+# restart policy never fired and the site stayed down for three days. A
+# per-container limit keeps an OOM inside the container's cgroup, where docker
+# sees the exit and restarts it; the swap file absorbs spikes before any OOM.
+jasonernst_com_goblog_prod_memory: 600m
+jasonernst_com_goblog_staging_memory: 300m # ~170MB after 11 days idle
+jasonernst_com_swap_size_mb: 2048
+
 #
 # Nightly goblog (posts db + uploads) -> nas backup. Same pipeline shape as
 # rustd_xyz's pg_dump backup: push to the nas' BUILT-IN RSYNC DAEMON (UGOS's
