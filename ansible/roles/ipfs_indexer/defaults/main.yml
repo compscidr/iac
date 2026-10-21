@@ -63,7 +63,7 @@ ipfs_indexer_seeds:
 # Credential in the Infrastructure vault) holds the full endpoint URL, key included.
 # Set ipfs_indexer_ens to false to turn the ENS scan off.
 ipfs_indexer_ens: true
-ipfs_indexer_eth_rpc_item: Alchemy
+ipfs_indexer_eth_rpc_item: ETH_RPC_URL
 ipfs_indexer_eth_rpc_field: credential
 # Alchemy's free plan: 10 blocks per eth_getLogs, and 30M compute units a month at 60 per
 # request, which a request every 6 s stays under. The first scan of ENS's history takes ~4-5
