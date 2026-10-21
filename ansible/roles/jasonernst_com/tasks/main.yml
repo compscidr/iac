@@ -381,7 +381,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: goblog-prod
-    image: compscidr/goblog:v0.15.0
+    image: compscidr/goblog:v0.16.0
     memory: "{{ jasonernst_com_goblog_prod_memory }}"
     memory_swap: "{{ jasonernst_com_goblog_prod_memory }}" # no swap for the container: hit the limit, get killed, restart
     volumes:
@@ -423,7 +423,7 @@
     ansible_python_interpreter: "/usr/bin/python3"
   community.docker.docker_container:
     name: goblog-staging
-    image: compscidr/goblog:v0.15.0
+    image: compscidr/goblog:v0.16.0
     memory: "{{ jasonernst_com_goblog_staging_memory }}"
     memory_swap: "{{ jasonernst_com_goblog_staging_memory }}" # no swap for the container: hit the limit, get killed, restart
     volumes:
