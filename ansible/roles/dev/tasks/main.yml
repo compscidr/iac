@@ -234,6 +234,16 @@
   ansible.builtin.import_role:
     name: geerlingguy.php
 
+# Hosts provisioned before php_packages dropped the php<ver> metapackage still have
+# apache2 + mod_php from it; keep it off (see dev/vars/main.yml).
+- name: Stop and disable apache2 left behind by the php metapackage
+  tags: php
+  become: true
+  ansible.builtin.systemd_service:
+    name: apache2
+    state: stopped
+    enabled: false
+  failed_when: false # not installed on fresh hosts
 - name: Install python development tools
   become: true
   tags: python
