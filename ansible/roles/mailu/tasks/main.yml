@@ -95,6 +95,7 @@
     project_src: "{{ mailu_install_path }}"
     state: present
     pull: always
+    remove_orphans: true # stops services dropped from the compose file, e.g. webmail when set to none
 
 - name: Wait for Mailu to be ready
   become: true

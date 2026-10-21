@@ -14,8 +14,11 @@ php_default_version_debian: "{{ '8.3' if ansible_distribution_release in dev_php
 # every php call. "0" makes the role remove that file; the built-in OPcache then
 # runs with its defaults (enable=1, enable_cli=0), the same values the role set.
 php_opcache_enable: "{{ '0' if php_default_version_debian is version('8.5', '>=') else '1' }}" # noqa: var-naming[no-role-prefix]
+# Dev boxes only need php on the command line. The bare php<ver> metapackage pulls in
+# apache2 + mod_php, which then served port 80 on every dev host (mod_php is the
+# highest-risk setup for PHP2Shell, CVE-2026-109618/109619), so it is left out.
+php_enable_webserver: false # noqa: var-naming[no-role-prefix]
 php_packages: # noqa: var-naming[no-role-prefix]
-  - "php{{ php_default_version_debian }}"
   - "php{{ php_default_version_debian }}-cli"
   - "php{{ php_default_version_debian }}-common"
   - "php{{ php_default_version_debian }}-curl"

@@ -96,7 +96,10 @@ mailu_aliases:
     destination: jason@darksearch.xyz
 
 # Features
-mailu_webmail: roundcube # roundcube, snappymail, or none
+# none until Mailu ships a webmail image on PHP >= 8.3.36: the pinned 2024.06 image runs
+# PHP 8.3.15, open to PHP2Shell (CVE-2026-109618/109619, unauthenticated RCE). Bump the
+# webmail digest below, then set this back to roundcube.
+mailu_webmail: none # roundcube, snappymail, or none
 mailu_antivirus: false # ClamAV uses lots of RAM
 mailu_webdav: false
 mailu_fetchmail: false
