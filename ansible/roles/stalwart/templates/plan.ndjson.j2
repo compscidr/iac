@@ -1,0 +1,103 @@
+{#- stalwart-cli apply plan: one JSON object per line, parents before children.
+    Each line is a dict passed whole through to_json, so no value (passwords included)
+    is ever spliced into JSON text. upsert/update/create only: never reconcile or
+    destroy, so objects made outside the plan are left alone. Object names and fields:
+    README "Verified against v0.16.27". Local ids: d-<domain>, a-<user>-<domain>. -#}
+{% macro id(prefix, s) %}{{ prefix }}-{{ s | replace('.', '-') }}{% endmacro %}
+{% set ns = namespace(v={}) %}
+{% for d in stalwart_domains %}
+{% set ns.v = ns.v | combine({id('d', d.domain): {
+  'name': d.domain,
+  'catchAllAddress': stalwart_catchall_user ~ '@' ~ d.domain,
+  'subAddressing': {'@type': 'Enabled'},
+  'certificateManagement': {'@type': 'Manual'},
+  'dkimManagement': {'@type': 'Manual'},
+  'dnsManagement': {'@type': 'Manual'},
+  'reportAddressUri': 'mailto:postmaster@' ~ d.domain}}) %}
+{% endfor %}
+{{ {'@type': 'upsert', 'object': 'Domain', 'matchOn': ['name'], 'value': ns.v} | to_json }}
+{{ {'@type': 'upsert', 'object': 'Certificate', 'matchOn': ['certificate'], 'value': {'cert-mail': {
+  'certificate': {'@type': 'File', 'filePath': '/certs/' ~ stalwart_hostname ~ '.crt'},
+  'privateKey': {'@type': 'File', 'filePath': '/certs/' ~ stalwart_hostname ~ '.key'}}}} | to_json }}
+{% set ns.v = {} %}
+{% for d in stalwart_domains %}
+{% set ns.v = ns.v | combine({id('dkim', d.domain): {
+  '@type': 'Dkim1RsaSha256',
+  'domainId': '#' ~ id('d', d.domain),
+  'selector': 'dkim',
+  'privateKey': {'@type': 'File', 'filePath': '/dkim/' ~ d.domain ~ '.dkim.key'}}}) %}
+{% endfor %}
+{{ {'@type': 'upsert', 'object': 'DkimSignature', 'matchOn': ['domainId', 'selector'], 'value': ns.v} | to_json }}
+{# Every upsert sends the whole credentials list, which deletes app passwords and API
+    keys on every account (README "Re-applying an Account upsert"); the role only
+    applies when this file changes. -#}
+{% set ns.v = {} %}
+{% for d in stalwart_domains %}
+{% for u in d.users %}
+{% set ns.aliases = {} %}
+{% for a in stalwart_aliases | selectattr('destination', 'equalto', u.user ~ '@' ~ d.domain) %}
+{% set ns.aliases = ns.aliases | combine({loop.index0 | string: {'name': a.local, 'domainId': '#' ~ id('d', a.domain)}}) %}
+{% endfor %}
+{% set ns.v = ns.v | combine({id('a-' ~ u.user, d.domain): {
+  '@type': 'User',
+  'name': u.user,
+  'domainId': '#' ~ id('d', d.domain),
+  'credentials': {'0': {'@type': 'Password', 'secret': u.password}},
+  'aliases': ns.aliases}}) %}
+{% endfor %}
+{% endfor %}
+{{ {'@type': 'upsert', 'object': 'Account', 'matchOn': ['name', 'domainId'], 'value': ns.v} | to_json }}
+{% set ns.v = {} %}
+{% for ip in stalwart_admin_allowed_ips %}
+{% set ns.v = ns.v | combine({ip: true}) %}
+{% endfor %}
+{{ {'@type': 'upsert', 'object': 'Account', 'matchOn': ['name', 'domainId'], 'value': {'a-admin': {
+  '@type': 'User',
+  'name': stalwart_admin_user,
+  'domainId': '#' ~ id('d', stalwart_admin_domain),
+  'roles': {'@type': 'Admin'},
+  'quotas': {'maxAppPasswords': 0, 'maxApiKeys': 0},
+  'credentials': {'0': {'@type': 'Password', 'secret': stalwart_admin_password, 'allowedIps': ns.v}}}}} | to_json }}
+{# Once listeners exist only these are opened. 8080 is the plain-HTTP listener for the
+    docker network (nginx-proxy); 8081 is the admin listener stalwart-cli reaches inside
+    the container's netns, never published here (Task 4 binds it to the tailnet). -#}
+{{ {'@type': 'upsert', 'object': 'NetworkListener', 'matchOn': ['name'], 'value': {
+  'l-smtp': {'name': 'smtp', 'bind': {'[::]:25': true}, 'protocol': 'smtp'},
+  'l-submissions': {'name': 'submissions', 'bind': {'[::]:465': true}, 'protocol': 'smtp', 'useTls': true, 'tlsImplicit': true},
+  'l-imaps': {'name': 'imaps', 'bind': {'[::]:993': true}, 'protocol': 'imap', 'useTls': true, 'tlsImplicit': true},
+  'l-http': {'name': 'http', 'bind': {'[::]:8080': true}, 'protocol': 'http'},
+  'l-http-admin': {'name': 'http-admin', 'bind': {'[::]:8081': true}, 'protocol': 'http'}}} | to_json }}
+{{ {'@type': 'update', 'object': 'SystemSettings', 'value': {
+  'defaultHostname': stalwart_hostname,
+  'defaultDomainId': '#' ~ id('d', stalwart_domain),
+  'defaultCertificateId': '#cert-mail'}} | to_json }}
+{{ {'@type': 'upsert', 'object': 'Tracer', 'matchOn': ['@type'], 'value': {'t-stdout': {
+  '@type': 'Stdout', 'level': 'info', 'ansi': false, 'enable': true}}} | to_json }}
+{{ {'@type': 'update', 'object': 'SpamSettings', 'value': {
+  'scoreSpam': stalwart_spam_score_junk | float,
+  'scoreReject': stalwart_spam_score_reject | float,
+  'scoreDiscard': 0.0,
+  'spamFilterRulesUrl': stalwart_spam_rules_url}} | to_json }}
+{# Must be in the first apply: it only names folders created after it is set. -#}
+{{ {'@type': 'update', 'object': 'Email', 'value': {'defaultFolders': {
+  'junk': {'name': 'Junk'}, 'sent': {'name': 'Sent'}, 'trash': {'name': 'Trash'}, 'drafts': {'name': 'Drafts'}}}} | to_json }}
+{{ {'@type': 'upsert', 'object': 'MtaInboundThrottle', 'matchOn': ['description'], 'value': {'th-submit': {
+  'description': 'Per-account submission limit',
+  'key': {'authenticatedAs': true},
+  'match': {'match': {}, 'else': '!is_empty(authenticated_as)'},
+  'rate': {'count': stalwart_send_limit_per_day | int, 'period': 86400000},
+  'enable': true}}} | to_json }}
+{# Task 4 adds its lines here: the Bulwark Application, Http.allowedEndpoints. -#}
+{% if not (stalwart_plan_bootstrap | default(false)) %}
+{# Left out of the recovery-mode (bootstrap) apply: the stock rules are only downloaded
+    on the first normal start when no SpamRule exists. The acceptance script's spam_junk
+    sends Subject iac-junk-probe (the subject variable is lowercased) and expects Junk. -#}
+{{ {'@type': 'upsert', 'object': 'SpamRule', 'matchOn': ['name'], 'value': {'r-junk-probe': {
+  '@type': 'Any', 'name': 'IAC_JUNK_PROBE', 'priority': 5000,
+  'condition': {'match': {'0': {'if': "contains(subject, 'iac-junk-probe')", 'then': "'IAC_JUNK_PROBE'"}}, 'else': 'false'}}}} | to_json }}
+{{ {'@type': 'upsert', 'object': 'SpamTag', 'matchOn': ['tag'], 'value': {'tag-junk-probe': {
+  '@type': 'Score', 'tag': 'IAC_JUNK_PROBE', 'score': 8.0}}} | to_json }}
+{# Rule, listener and MTA changes are compiled at start; reload so an apply on a
+    running server takes effect. -#}
+{{ {'@type': 'create', 'object': 'Action', 'value': {'reload': {'@type': 'ReloadSettings'}}} | to_json }}
+{% endif %}

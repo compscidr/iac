@@ -1,29 +1,33 @@
 #!/usr/bin/env bash
-# Local smoke test for the Stalwart object model (Task 1 of the Stalwart migration).
+# Local smoke test for the Stalwart role's apply plan.
 #
-#   bash ansible/roles/stalwart/tests/local-smoke.sh <plan.ndjson>
+#   bash ansible/roles/stalwart/tests/local-smoke.sh
 #
-# Starts the pinned Stalwart image in recovery mode, applies <plan.ndjson> with
-# stalwart-cli, restarts it normally (no recovery variables) and checks mail flow,
-# DKIM, TLS, webmail and the admin restrictions. Local Docker only. Every secret is
+# Renders the role's templates/plan.ndjson.j2 (role defaults + test vars, two domains)
+# with `ansible localhost -m template`, then boots the pinned image the way the role
+# does: recovery mode + the bootstrap plan, a normal start that downloads the stock
+# spam rules, then the full plan through stalwart-cli in the container's netns (the
+# `Apply Stalwart plan` handler's path). Checks mail flow, DKIM, TLS, spam, webmail,
+# the admin restrictions and that a re-apply changes nothing. Local Docker only. Every secret is
 # throwaway: passwords are fixture constants, the TLS and DKIM keys are generated
 # per run and never written to the repo. Exit 0 = every assertion passed.
 #
-# Needs: docker, python3, openssl, curl. stalwart-cli is taken from $STALWART_CLI or
+# Needs: docker, python3, openssl, curl, ansible. stalwart-cli is taken from $STALWART_CLI or
 # PATH, else downloaded (pinned + sha256-checked) into ~/.cache/stalwart-smoke.
 # SMOKE_KEEP=1 leaves the container running afterwards for poking at.
 set -uo pipefail
 
-PLAN=${1:?usage: local-smoke.sh <plan.ndjson>}
+ROLE=$(cd "$(dirname "$0")/.." && pwd)
 
 IMAGE="stalwartlabs/stalwart:v0.16.27@sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
 CLI_VERSION="v1.0.13"
 CLI_SHA256="689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
 
 RECOVERY_ADMIN="recovery:recovery-fixture-pw"
-ADMIN_USER="stalwart-admin@rustd.xyz"
+ADMIN_USER="admin@rustd.xyz"
 ADMIN_PASS="admin-fixture-Pw-5519"
 JASON_PASS="jason-fixture-Pw-7731"
+SAIR_PASS="sair-fixture-Pw-2208"
 NOREPLY_PASS='pa"ss\wo%rd{x}'
 
 NAME="stalwart-smoke-$$"
@@ -64,11 +68,44 @@ CERT="$WORK/certs/mail.jasonernst.com.crt"; DKIM_PUB="$WORK/rustd.xyz.dkim.pub"
 openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj '/CN=mail.jasonernst.com' \
   -addext 'subjectAltName=DNS:mail.jasonernst.com,DNS:mail.sair.run,DNS:mail.rustd.xyz,DNS:mail.darksearch.xyz' \
   -keyout "$WORK/certs/mail.jasonernst.com.key" -out "$CERT" 2>/dev/null
-openssl genrsa -traditional -out "$WORK/dkim/rustd.xyz.dkim.key" 2048 2>/dev/null
+for d in rustd.xyz sair.run; do openssl genrsa -traditional -out "$WORK/dkim/$d.dkim.key" 2048 2>/dev/null; done
 openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/null
 chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$WORK"/dkim
 chmod 0644 "$WORK"/etc/* "$WORK"/certs/* "$WORK"/dkim/*
 docker volume create "$NAME-data" >/dev/null
+
+# --- render the role's plan: role defaults, overridden by two test domains --------
+# Both variants: the bootstrap plan (no SpamRule, so the first normal start still
+# downloads the stock rules) and the full plan the handler applies.
+python3 -I - "$WORK/vars.json" "$ADMIN_PASS" "$JASON_PASS" "$NOREPLY_PASS" "$SAIR_PASS" <<'PYEOF'
+import json, sys
+out, admin, jason, noreply, sair = sys.argv[1:6]
+json.dump({
+    "stalwart_domain": "rustd.xyz",
+    "stalwart_domains": [
+        {"domain": "rustd.xyz", "users": [{"user": "jason", "password": jason},
+                                           {"user": "noreply", "password": noreply}]},
+        {"domain": "sair.run", "users": [{"user": "jason", "password": sair}]},
+    ],
+    "stalwart_aliases": [
+        {"local": "contact", "domain": "rustd.xyz", "destination": "jason@rustd.xyz"},
+        {"local": "postmaster", "domain": "rustd.xyz", "destination": "jason@rustd.xyz"},
+        {"local": "postmaster", "domain": "sair.run", "destination": "jason@sair.run"},
+    ],
+    "stalwart_admin_password": admin,
+}, open(out, "w"))
+PYEOF
+render() { # dest extra-vars-json
+  (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+    -a "src=$ROLE/templates/plan.ndjson.j2 dest=$1 mode=0644" \
+    -e "@$ROLE/defaults/main.yml" -e "@$WORK/vars.json" -e "$2" >"$WORK/render.log" 2>&1) \
+    || { echo "cannot render plan.ndjson.j2:"; sed 's/^/  /' "$WORK/render.log"; exit 2; }
+  python3 -I -c 'import json,sys; [json.loads(l) for l in open(sys.argv[1])]' "$1" \
+    || { echo "rendered $1 is not NDJSON"; exit 2; }
+}
+render "$WORK/bootstrap.ndjson" '{"stalwart_plan_bootstrap": true}'
+render "$WORK/plan.ndjson" '{}'
+chmod 0644 "$WORK"/*.ndjson
 MOUNTS=(-v "$NAME-data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
         -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
 
@@ -96,8 +133,8 @@ REC_URL="http://127.0.0.1:$(hostport "$NAME-rec" 8080)"
 if wait_http "$REC_URL/jmap/session" 60; then pass container_start; else fail container_start; fi
 
 STALWART_URL="$REC_URL" STALWART_USER="${RECOVERY_ADMIN%%:*}" STALWART_PASSWORD="${RECOVERY_ADMIN#*:}" \
-  "$CLI" --no-color apply --file "$PLAN" > "$WORK/apply.log" 2>&1 \
-  || { echo "apply failed (assertions will show the effect):"; sed 's/^/  /' "$WORK/apply.log"; }
+  "$CLI" --no-color apply --file "$WORK/bootstrap.ndjson" > "$WORK/apply.log" 2>&1 \
+  && pass bootstrap_apply || fail bootstrap_apply "$(tail -3 "$WORK/apply.log")"
 docker rm -f "$NAME-rec" >/dev/null
 
 # --- phase 2: normal start, no recovery variables ------------------------------
@@ -112,24 +149,36 @@ PUB="http://127.0.0.1:$(hostport "$NAME" 8080)"; ADM="http://127.0.0.1:$(hostpor
 CIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")
 wait_http "$PUB/healthz/live" 30 || true
 
-# The first normal start imports the stock spam rules (only when no SpamRule exists
-# yet, which is why the plan must not carry one). Wait for that, then apply a
-# lab-only overlay: mail from the reserved sender.test domain plays a reputable
-# sender (lab mail scores ~11 on missing rDNS/SPF/DMARC alone, i.e. Junk), so the
-# routing checks can expect INBOX while strangers still get scored normally.
-# New SpamRules only take effect after Action/ReloadSettings.
-for _ in $(seq 1 60); do docker logs "$NAME" 2>&1 | grep -q 'spam.rules-updated' && break; sleep 1; done
+# The first normal start imports the stock spam rules, because the bootstrap plan
+# holds no SpamRule. Then the full plan goes in the way the role's handler sends it:
+# stalwart-cli in the container's netns, as the admin, against 127.0.0.1:8081. It adds
+# the IAC_JUNK_PROBE rule and reloads settings (a new SpamRule only fires after that).
+ns_apply() { # plan-file log-file
+  ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -v "$1:/plan.ndjson:ro" \
+     -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" \
+     --entrypoint stalwart-cli "$IMAGE" --no-color apply --file /plan.ndjson > "$2" 2>&1
+}
+ok=0
+for _ in $(seq 1 60); do docker logs "$NAME" 2>&1 | grep -q 'spam.rules-updated' && { ok=1; break; }; sleep 1; done
+if [ $ok = 1 ]; then pass stock_rules_loaded; else fail stock_rules_loaded "no spam.rules-updated in the log"; fi
+if ns_apply "$WORK/plan.ndjson" "$WORK/plan-apply.log"; then pass admin_cli_netns
+else fail admin_cli_netns "full plan through stalwart-cli in the container namespace: $(tail -3 "$WORK/plan-apply.log")"; fi
+
+# Lab-only overlay: mail from the reserved sender.test domain plays a reputable sender
+# (lab mail scores ~11 on missing rDNS/SPF/DMARC alone, i.e. Junk), so the routing
+# checks can expect INBOX while strangers still get scored normally.
+# TASK4_PENDING: the Bulwark Application and the Http path rule are Task 4's; until it
+# moves them into plan.ndjson.j2 they ride here so the webmail/admin_ui checks still run.
 cat > "$WORK/overlay.ndjson" <<'EOF'
 {"@type":"upsert","object":"SpamRule","matchOn":["name"],"value":{"r-lab":{"@type":"Any","name":"SMOKE_LAB_SENDER","priority":5000,"condition":{"match":{"0":{"if":"from.domain == 'sender.test'","then":"'SMOKE_LAB_SENDER'"}},"else":"false"}}}}
 {"@type":"upsert","object":"SpamTag","matchOn":["tag"],"value":{"t-lab":{"@type":"Score","tag":"SMOKE_LAB_SENDER","score":-50.0}}}
+{"@type":"upsert","object":"Application","matchOn":["description"],"value":{"app-bulwark":{"description":"Bulwark Webmail","resourceUrl":"https://github.com/bulwarkmail/webmail/releases/download/1.17.0/bulwark-lite-stalwart.zip","urlPrefix":{"/webmail":true},"enabled":true}}}
+{"@type":"update","object":"Http","value":{"allowedEndpoints":{"match":{"0":{"if":"listener == 'http' && (starts_with(path, '/admin') || starts_with(path, '/account'))","then":"403"}},"else":"200"}}}
+{"@type":"create","object":"Action","value":{"apps":{"@type":"UpdateApps"}}}
 {"@type":"create","object":"Action","value":{"reload":{"@type":"ReloadSettings"}}}
 EOF
 chmod 0644 "$WORK/overlay.ndjson"
-if ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -v "$WORK/overlay.ndjson:/plan.ndjson:ro" \
-     -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" \
-     --entrypoint stalwart-cli "$IMAGE" --no-color apply --file /plan.ndjson > "$WORK/overlay.log" 2>&1
-then pass admin_cli_netns
-else fail admin_cli_netns "stalwart-cli in the container namespace: $(tail -1 "$WORK/overlay.log")"; fi
+ns_apply "$WORK/overlay.ndjson" "$WORK/overlay.log" || { echo "lab overlay failed:"; sed 's/^/  /' "$WORK/overlay.log"; }
 
 # --- mail-flow assertions (python stdlib + openssl) ----------------------------
 python3 -I - "$P_SMTP" "$P_SUBS" "$P_IMAPS" "$DKIM_PUB" \
@@ -302,6 +351,35 @@ ui_pub=$(sidecar "http://$CIP:8080/admin")
 ui_adm=$(curl -s -o /dev/null -w '%{http_code}' "$ADM/admin")
 if [ "$ui_pub" = 403 ] && [ "$ui_adm" != 403 ] && [ "$ui_adm" != 000 ]; then pass admin_ui_listener
 else fail admin_ui_listener "/admin public=$ui_pub (want 403), admin listener=$ui_adm"; fi
+
+# The plan's IAC_JUNK_PROBE rule fires (on top of the stock rules) for its Subject token
+# and not without it. ClassifySpam reports the tags; the CLI's `create` cannot show them.
+classify() { # subject -> JSON response
+  ns_curl -u "$ADMIN_USER:$ADMIN_PASS" -H 'Content-Type: application/json' -d "$(python3 -I -c '
+import json, sys
+m = "From: <a@other.test>\r\nTo: <jason@rustd.xyz>\r\nSubject: " + sys.argv[1] + "\r\n\r\nhi\r\n"
+print(json.dumps({"using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], "methodCalls": [["x:Action/set", {"create": {"c": {
+    "@type": "ClassifySpam", "message": m, "remoteIp": "203.0.113.9", "ehloDomain": "mx.other.test",
+    "envFrom": "a@other.test", "envRcptTo": {"jason@rustd.xyz": True}, "isTls": False}}}, "0"]]}))' "$1")" http://127.0.0.1:8081/jmap
+}
+probe=$(classify "Weekly iac-junk-probe 1234"); control=$(classify "Weekly report 1234")
+if grep -q '"IAC_JUNK_PROBE":{"score":8.0' <<<"${probe// /}" && grep -q '"MISSING_MID"' <<<"$probe" \
+   && grep -q '"created"' <<<"$control" && ! grep -q IAC_JUNK_PROBE <<<"$control"; then pass junk_probe_rule
+else fail junk_probe_rule "probe=${probe:0:200} control=${control:0:200}"; fi
+
+# Re-applying the unchanged plan creates nothing but its ReloadSettings action and
+# leaves every object it names with the same ids (no duplicates). Ids only: the CLI's
+# column headers vary between runs.
+snap() { for o in Domain Certificate DkimSignature Account NetworkListener Tracer MtaInboundThrottle SpamRule SpamTag; do
+  ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 \
+     -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" --entrypoint stalwart-cli "$IMAGE" --no-color query "$o" | awk -v o="$o" 'NR > 1 && NF { print o, $1 }'
+done; }
+snap > "$WORK/before.txt" 2>&1
+ns_apply "$WORK/plan.ndjson" "$WORK/reapply.log"; rc=$?
+snap > "$WORK/after.txt" 2>&1
+if [ $rc = 0 ] && grep -q ', 1 created (0 failed)' "$WORK/reapply.log" && cmp -s "$WORK/before.txt" "$WORK/after.txt" \
+   && [ "$(grep -c . "$WORK/before.txt")" -gt 9 ]; then pass reapply_idempotent
+else fail reapply_idempotent "rc=$rc $(tail -1 "$WORK/reapply.log"); $(diff "$WORK/before.txt" "$WORK/after.txt" | head -5)"; fi
 
 if [ $FAILED = 0 ]; then echo "ALL PASS"; else echo "SOME FAILED"; docker logs "$NAME" 2>&1 | tail -40; fi
 exit $FAILED

@@ -1,0 +1,198 @@
+---
+# Stalwart mail server (Docker), staged beside Mailu or live. Design:
+# docs/superpowers/specs/2026-10-22-stalwart-mail-design.md; object model: README.
+
+# Read every secret the defaults reference ONCE, up front: one `op` call per item
+# (#542, as in the mailu role). The mailbox items are Mailu's; Mailu's secret key and
+# admin login have no Stalwart counterpart (admin@jasonernst.com becomes an alias).
+- name: Read this role's 1Password items
+  tags: onepassword
+  ansible.builtin.set_fact:
+    stalwart_op_admin_password: "{{ lookup('community.general.onepassword', 'Stalwart Admin', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_recovery_admin_password: "{{ lookup('community.general.onepassword', 'Stalwart Recovery Admin', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_jasonernst_com_jason_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - jason', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    stalwart_op_jasonernst_com_kai_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    stalwart_op_goblog_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_sair_run_jason_password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_sair_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_rustd_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.rustd.xyz - jason', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_rustd_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_darksearch_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.darksearch.xyz - jason', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+  no_log: true
+
+- name: Read the tailnet IP
+  ansible.builtin.command: tailscale ip -4
+  register: stalwart_tailscale_ip
+  changed_when: false
+  when: stalwart_tailnet_ip is not defined
+
+- name: Set the tailnet IP
+  ansible.builtin.set_fact:
+    stalwart_tailnet_ip: "{{ stalwart_tailscale_ip.stdout_lines | first }}"
+  when: stalwart_tailnet_ip is not defined
+
+- name: Create the Stalwart directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_install_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Create the Stalwart data directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_install_path }}/{{ item }}"
+    state: directory
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0700"
+  loop: [etc, data, dkim, backups]
+
+# Loops over domain NAMES, never the stalwart_domains entries: those nest passwords,
+# and Ansible echoes the loop item (see the mailu role's DKIM tasks).
+- name: Copy Mailu's DKIM keys
+  become: true
+  ansible.builtin.copy:
+    src: "{{ stalwart_mailu_dkim_dir }}/{{ item }}.dkim.key"
+    dest: "{{ stalwart_install_path }}/dkim/{{ item }}.dkim.key"
+    remote_src: true
+    force: false
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+  loop: "{{ stalwart_domains | map(attribute='domain') | list }}"
+
+- name: Deploy config.json
+  become: true
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: "{{ stalwart_install_path }}/etc/config.json"
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+
+# stalwart-cli is not in the image: a pinned, checksum-verified release, mounted into a
+# throwaway container in stalwart's network namespace whenever the plan is applied.
+- name: Create the stalwart-cli directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}"
+    state: directory
+    mode: "0755"
+
+- name: Download stalwart-cli
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/stalwartlabs/cli/releases/download/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl.tar.xz"
+    dest: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli.tar.xz"
+    checksum: "sha256:{{ stalwart_cli_sha256 }}"
+    mode: "0644"
+
+- name: Unpack stalwart-cli
+  become: true
+  ansible.builtin.unarchive:
+    src: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli.tar.xz"
+    dest: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}"
+    remote_src: true
+    creates: "{{ stalwart_cli_path }}"
+
+- name: Check whether the store is empty
+  become: true
+  ansible.builtin.find:
+    paths: "{{ stalwart_install_path }}/data"
+    file_type: any
+    hidden: true
+  register: stalwart_data
+
+# A bootstrap that fails part-way leaves data/ non-empty, so the next run skips it:
+# before any mail arrives, empty data/ and re-run (README "Role").
+- name: Bootstrap an empty store
+  ansible.builtin.include_tasks: bootstrap.yml
+  when: stalwart_data.matched == 0
+
+- name: Deploy the apply plan
+  become: true
+  ansible.builtin.template:
+    src: plan.ndjson.j2
+    dest: "{{ stalwart_install_path }}/etc/plan.ndjson"
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+  no_log: true
+  notify: Apply Stalwart plan
+
+# The handler stamps the plan's checksum only after a successful apply, so a plan that
+# changed on a run whose apply failed (or never ran: a failed play skips handlers) is
+# applied on the next run, not silently forgotten. Re-applying an unchanged plan is not
+# free (it deletes every app password; README "Re-applying an Account upsert").
+- name: Check the plan on disk is the one last applied
+  become: true
+  ansible.builtin.command: sha256sum -c plan.applied.sha256
+  args:
+    chdir: "{{ stalwart_install_path }}/etc"
+  register: stalwart_plan_applied
+  changed_when: stalwart_plan_applied.rc != 0
+  failed_when: false
+  notify: Apply Stalwart plan
+
+- name: Create the stalwart network
+  become: true
+  community.docker.docker_network:
+    name: stalwart
+
+- name: Run Stalwart
+  become: true
+  community.docker.docker_container:
+    name: stalwart
+    image: "{{ stalwart_image }}@{{ stalwart_image_digest }}"
+    restart_policy: unless-stopped
+    memory: "{{ stalwart_memory }}"
+    env:
+      STALWART_PUBLIC_URL: "{{ stalwart_public_url }}"
+    volumes:
+      - certs:/certs:ro
+      - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
+      - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
+      - "{{ stalwart_install_path }}/dkim:/dkim:ro"
+    networks:
+      - name: nginx-proxy
+      - name: stalwart
+    # Staged: tailnet only, on ports Mailu does not hold. Live: every address, IPv6
+    # included, as nginx-proxy does (#591).
+    published_ports: >-
+      {{ [stalwart_tailnet_ip ~ ':2525:25', stalwart_tailnet_ip ~ ':4465:465', stalwart_tailnet_ip ~ ':9993:993',
+          stalwart_tailnet_ip ~ ':' ~ stalwart_staged_http_port ~ ':8080']
+         if stalwart_staged else ['25:25', '465:465', '993:993'] }}
+    default_host_ip: ""
+
+- name: Wait for the first start to download the stock spam rules
+  become: true
+  ansible.builtin.command: docker logs stalwart
+  register: stalwart_logs
+  until: "'spam.rules-updated' in stalwart_logs.stdout ~ stalwart_logs.stderr"
+  retries: 60
+  delay: 2
+  changed_when: false
+  when: stalwart_data.matched == 0
+
+- name: Apply the plan before checking the ports
+  ansible.builtin.meta: flush_handlers
+
+# Connect via a routable IP, not localhost: localhost hits docker-proxy, which accepts
+# even when the container has nothing bound. See #557.
+- name: Check mail ports are listening
+  ansible.builtin.wait_for:
+    host: "{{ stalwart_tailnet_ip if stalwart_staged else ansible_default_ipv4.address }}"
+    port: "{{ item }}"
+    timeout: 60
+  loop: "{{ [2525, 4465, 9993] if stalwart_staged else [25, 465, 993] }}"

@@ -4,34 +4,83 @@ Stalwart mail server (Docker, `stalwartlabs/stalwart` v0.16 line) plus Bulwark L
 replacing the `mailu` role on the `www` droplet. Design:
 `docs/superpowers/specs/2026-10-22-stalwart-mail-design.md`.
 
-The role itself is being rebuilt; the old binary-install content (systemd unit, `config.toml`)
-is gone. What exists today is the local harness that pinned the object model below.
+## Role
 
-## Local smoke test
+Not wired into a playbook yet (Task 8 adds it to `jasonernst_com.yml`). One container,
+`stalwart`, on the `nginx-proxy` and `stalwart` networks, mounting `certs:/certs:ro` and
+`{{ stalwart_install_path }}/{etc,data,dkim}` (owned by UID 2000). Everything but the
+DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stalwart-cli`
+(`upsert`/`update`/`create` only, never `reconcile`/`destroy`).
+
+- **First run** (empty `data/`, `tasks/bootstrap.yml`): a `stalwart-bootstrap` container in
+  recovery mode gets the plan without its `SpamRule`/`SpamTag`/`ReloadSettings` lines
+  (`stalwart_plan_bootstrap`), then is removed. The normal container starts, downloads the
+  stock spam rules (only possible while no `SpamRule` exists), and the `Apply Stalwart plan`
+  handler applies the full plan, which adds `IAC_JUNK_PROBE` and reloads settings.
+- **Later runs** apply the plan only when it differs from the last successful apply: the
+  handler writes `etc/plan.applied.sha256` after a successful apply, and a task re-notifies
+  the handler while it does not match, so a failed apply is retried on the next run.
+  Apply output goes to `etc/apply.log` (the task itself is `no_log`).
+- **Consequence of re-applying: every app password and API key on every account is
+  deleted** whenever the plan changes (any password, alias, domain or setting), because
+  each `Account` upsert sends the whole `credentials` list (see "Re-applying an Account
+  upsert"). Mail clients must use the account password, not app passwords. Setting the
+  password only on create was not attempted: the plan format has no create-if-absent.
+- **A bootstrap that fails part-way** leaves `data/` non-empty, so the next run will not
+  bootstrap again. Before any mail has arrived: `docker rm -f stalwart`, empty `data/`,
+  re-run.
+- `stalwart_staged: true` (default) publishes only on `stalwart_tailnet_ip` (from
+  `tailscale ip -4` unless set): 2525, 4465, 9993 and 8080 (`stalwart_staged_http_port`).
+  `false` publishes 25, 465, 993 on every address. 8081 (the admin listener the CLI uses
+  inside the container's netns) is not published; Task 4 binds it to the tailnet.
+- The admin account is `admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`):
+  `admin@jasonernst.com` is an alias to `jason@`, the DMARC report address.
+- `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
+  object table below was verified with; the smoke now runs the role's template.
+
+## Local tests
 
 ```bash
-bash ansible/roles/stalwart/tests/local-smoke.sh ansible/roles/stalwart/tests/fixtures/plan.ndjson
+bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, twice, ~1 min
 ```
 
-Local Docker only, 15 to 40 s. It starts the pinned image in recovery mode, applies the plan with
-`stalwart-cli apply`, recreates the container without the recovery variables, then checks:
-`container_start`, `admin_cli_netns`, `smtp_auth`, `imap_login`, `catchall`, `alias`,
-`dkim_signed`, `junk_probe`, `gtube_reject`, `cert_file`, `webmail`, `no_recovery`,
-`admin_ip_restricted`, `admin_no_extra_credentials`, `admin_ui_listener`. Exit 0 = all pass. `SMOKE_KEEP=1` leaves the container running.
+Local Docker only. **`local-smoke.sh`** renders `templates/plan.ndjson.j2` with
+`ansible localhost -m template` (role defaults plus two test domains, rustd.xyz and
+sair.run, and the fixture password `pa"ss\wo%rd{x}`), then boots the pinned image the way
+the role does: recovery mode + the bootstrap plan, a normal start, the full plan through
+`stalwart-cli` in the container's netns. Then it checks: `container_start`,
+`bootstrap_apply`, `stock_rules_loaded`, `admin_cli_netns`, `smtp_auth`, `imap_login`,
+`catchall`, `alias`, `dkim_signed`, `junk_probe`, `gtube_reject`, `cert_file`, `webmail`,
+`no_recovery`, `admin_ip_restricted`, `admin_no_extra_credentials`, `admin_ui_listener`,
+`junk_probe_rule` (ClassifySpam reports `IAC_JUNK_PROBE` +8 for the Subject token and not
+without it), `reapply_idempotent` (a re-apply creates only its `ReloadSettings` action and
+every object keeps its id). Exit 0 = all pass. `SMOKE_KEEP=1` leaves the container running.
+The Bulwark `Application` and `Http.allowedEndpoints` are Task 4's: until they move into
+the template the smoke applies them in its lab overlay (`TASK4_PENDING`).
+
+**`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
+`docker:cli` container on the host network with the docker socket) against a temp
+`stalwart_install_path`, staged on 127.0.0.2, 1Password skipped (`--skip-tags
+onepassword`). It passes when the second run reports `changed=0`, a run with the
+applied-plan stamp removed re-applies, the stock rules and `IAC_JUNK_PROBE` are loaded, and
+the running container has no recovery variables. It creates and removes a container
+`stalwart` and a volume `certs`, and refuses to start if either exists.
 
 - `stalwart-cli` comes from `$STALWART_CLI`, `PATH`, or is downloaded (pinned, sha256-checked).
-- No private key is in the repo. Each run generates a self-signed SAN cert for the four
-  `mail.*` names and one RSA DKIM key (PKCS#1, like Mailu's) in a temp dir, mounted read-only
-  at `/certs` and `/dkim` as in production. `tests/fixtures/` holds the plan, a small
+- No private key is in the repo. Each run generates a self-signed SAN cert for the
+  `mail.*` names and RSA DKIM keys (PKCS#1, like Mailu's) in a temp dir, mounted read-only
+  at `/certs` and `/dkim` as in production. `tests/fixtures/` holds Task 1's plan, a small
   Maildir++ tree and the `describe` output of the objects used (`tests/fixtures/describe/`).
-  Passwords in the plan and script are throwaway constants.
-- Admin calls after the restart (the lab overlay, the admin checks) run `stalwart-cli`/`curl`
-  inside the container's network namespace (`docker run --network container:<name>`),
-  because the admin credential only accepts `127.0.0.1`.
-- After start the harness applies a lab-only overlay (a `SMOKE_LAB_SENDER` rule, −50 for
-  `from.domain == 'sender.test'`): lab mail scores ~11 on missing rDNS/SPF/DMARC alone, so
-  without it nothing unauthenticated reaches INBOX. Strangers (`other.test`) are scored
-  normally, which is what `junk_probe` and `gtube_reject` use.
+  Passwords in the scripts are throwaway constants.
+- Admin calls after the restart (the plan, the lab overlay, the admin checks) run
+  `stalwart-cli`/`curl` inside the container's network namespace
+  (`docker run --network container:<name>`), because the admin credential only accepts
+  `127.0.0.1`.
+- The lab overlay adds a `SMOKE_LAB_SENDER` rule, −50 for `from.domain == 'sender.test'`:
+  lab mail scores ~11 on missing rDNS/SPF/DMARC alone, so without it nothing
+  unauthenticated reaches INBOX. Strangers (`other.test`) are scored normally, which is
+  what `junk_probe` and `gtube_reject` use.
 
 ## Verified against v0.16.27
 
@@ -69,8 +118,9 @@ stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01b
   a self-signed cert on 993 in the empty-plan run). Once the plan creates listeners, only those
   exist: the plan's five give exactly 25, 465, 993, 8080, 8081 (no 587/143/443/110/995/4190).
 - No `Tracer` object means **no log output at all** in normal mode; the default is a `Log`
-  tracer writing to `/var/log/stalwart` inside the container. The plan reconciles it to one
-  `Stdout` tracer.
+  tracer writing to `/var/log/stalwart` inside the container. The Task 1 fixture reconciles
+  it to one `Stdout` tracer; the role's `upsert` on `@type` gives the same (one `Tracer`,
+  `Stdout`, after bootstrap and a re-apply: `stalwart-cli query Tracer`).
 - `STALWART_PUBLIC_URL` sets the URLs in `/jmap/session` (`apiUrl`, `uploadUrl`, OAuth).
   Without it they are `https://<defaultHostname>/…`. A JMAP client (Vandelay, Bulwark) follows
   them, so a lab container with `defaultHostname = mail.jasonernst.com` sends clients to the
@@ -210,6 +260,7 @@ password and API key also disappeared from `credentials`. The plan's Password ke
 password and API key on every account**. If users are to keep app passwords, Task 3 must not
 send `credentials` on re-runs (for example, set the password only when creating the account,
 or patch just the Password entry with an `update`). Neither alternative was tested here.
+Task 3 keeps the whole-list upsert and applies only when the plan changes (see "Role").
 
 ### Certificate reload (Task 5)
 
@@ -232,7 +283,9 @@ trigger that runs that action (or restarts the container).
   scored 0, GTUBE was accepted). If one is needed, add it after the first start, or run
   `stalwart-cli create Task/SpamFilterMaintenance --field maintenanceType=updateRules`
   (re-downloads the rules and keeps custom ones), then `ReloadSettings`. The default
-  `spamFilterRulesUrl` follows `stalwartlabs/spam-filter` `releases/latest`.
+  `spamFilterRulesUrl` follows `stalwartlabs/spam-filter` `releases/latest`; the role pins
+  `v3.0.2`'s `spam-filter-rules.json.gz` (`stalwart_spam_rules_url`), set in the bootstrap
+  plan so the first-start download already uses it.
 - **Mid-score method for the production acceptance test**: a marker rule plus tag, applied
   after first start, then `ReloadSettings`:
   ```

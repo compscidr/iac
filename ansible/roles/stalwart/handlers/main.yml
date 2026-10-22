@@ -1,0 +1,25 @@
+---
+# stalwart-cli in a throwaway container in stalwart's network namespace, as the admin,
+# against the 8081 listener on 127.0.0.1: the only address the admin's credential
+# accepts (README "Admin restriction"). Retried while a just-(re)created container
+# starts. Output goes to etc/apply.log (no_log hides it here). The checksum stamp is
+# written only on success; tasks/main.yml re-notifies while it does not match.
+- name: Apply Stalwart plan
+  become: true
+  ansible.builtin.shell:
+    cmd: >-
+      docker run --rm --network container:stalwart
+      -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro -v {{ stalwart_install_path }}/etc/plan.ndjson:/plan.ndjson:ro
+      -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER -e STALWART_PASSWORD
+      --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color apply --file /plan.ndjson
+      > apply.log 2>&1 && sha256sum plan.ndjson > plan.applied.sha256
+    chdir: "{{ stalwart_install_path }}/etc"
+  environment:
+    STALWART_USER: "{{ stalwart_admin_user }}@{{ stalwart_admin_domain }}"
+    STALWART_PASSWORD: "{{ stalwart_admin_password }}"
+  register: stalwart_apply
+  until: stalwart_apply.rc == 0
+  retries: 10
+  delay: 3
+  changed_when: true
+  no_log: true

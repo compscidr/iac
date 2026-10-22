@@ -1,0 +1,93 @@
+---
+# Stalwart role defaults. Object names and fields: README "Verified against v0.16.27".
+
+# Renovate (Task 7) matches these two lines as a pair; keep them consecutive.
+stalwart_image: "stalwartlabs/stalwart:v0.16.27"
+stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
+
+# stalwart-cli is not in the image (README "Versions"): the release tarball is fetched to
+# the host, checksum-verified, and mounted into a throwaway container in stalwart's netns.
+stalwart_cli_version: "v1.0.13"
+stalwart_cli_sha256: "689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
+stalwart_cli_path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl/stalwart-cli"
+
+stalwart_install_path: /opt/stalwart
+stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, backups/
+stalwart_memory: "512m" # revisit in Task 8 from observed usage under the spam filter
+
+# Staged: no public ports, everything on the tailnet IP beside a running Mailu (spec
+# "Cutover shape"). stalwart_tailnet_ip is set from `tailscale ip -4` unless given.
+stalwart_staged: true
+stalwart_staged_http_port: 8080 # host side of the plain-HTTP listener while staged
+
+stalwart_domain: jasonernst.com
+stalwart_hostname: mail.jasonernst.com
+stalwart_public_url: "https://{{ stalwart_hostname }}"
+stalwart_mailu_dkim_dir: /opt/mailu/dkim # Mailu's keys, copied once per domain
+
+# Secrets. Every stalwart_op_* below is a fact set by the first task of the role from
+# its 1Password item, one `op` call each, for the same reason as the mailu role (#542).
+#
+# Permanent admin account, created by the plan. Ansible's stalwart-cli authenticates as
+# it on every apply, from inside the container's netns, so its Password credential only
+# accepts 127.0.0.1 (README "Admin restriction"). Task 4 appends the tailnet range.
+# It lives on rustd.xyz, not jasonernst.com, where admin@ is an alias to jason@.
+stalwart_admin_user: admin
+stalwart_admin_domain: rustd.xyz
+stalwart_admin_password: "{{ stalwart_op_admin_password }}"
+stalwart_admin_allowed_ips: ["127.0.0.1"]
+# First-boot only (STALWART_RECOVERY_ADMIN), never left on the running container.
+stalwart_recovery_admin_user: recovery
+stalwart_recovery_admin_password: "{{ stalwart_op_recovery_admin_password }}"
+
+# Same shape as mailu_additional_domains, with the primary domain as an entry.
+stalwart_domains:
+  - domain: jasonernst.com
+    users:
+      - user: jason
+        password: "{{ stalwart_op_jasonernst_com_jason_password }}"
+      - user: kai
+        password: "{{ stalwart_op_jasonernst_com_kai_password }}"
+      # goblog login codes; same item as jasonernst_com_smtp_password.
+      - user: noreply
+        password: "{{ stalwart_op_goblog_smtp_password }}"
+  - domain: sair.run
+    users:
+      - user: jason
+        password: "{{ stalwart_op_sair_run_jason_password }}"
+      - user: noreply # sair.run magic links; same item as the app's SMTP config
+        password: "{{ stalwart_op_sair_smtp_password }}"
+  - domain: rustd.xyz
+    users:
+      - user: jason
+        password: "{{ stalwart_op_rustd_xyz_jason_password }}"
+      - user: noreply # the rustd.xyz panel's only login path
+        password: "{{ stalwart_op_rustd_smtp_password }}"
+  - domain: darksearch.xyz
+    users:
+      - user: jason
+        password: "{{ stalwart_op_darksearch_xyz_jason_password }}"
+
+# Every domain catches all unknown local parts into this user (spec "Catch-all").
+stalwart_catchall_user: jason
+
+# Same shape as mailu_aliases. The destination must be an account in stalwart_domains.
+stalwart_aliases:
+  - { local: contact, domain: rustd.xyz, destination: jason@rustd.xyz }
+  - { local: postmaster, domain: jasonernst.com, destination: jason@jasonernst.com }
+  # Mailu's admin login; DMARC rua/ruf for jasonernst.com point here (spec "Calls I made").
+  - { local: admin, domain: jasonernst.com, destination: jason@jasonernst.com }
+  - { local: postmaster, domain: sair.run, destination: jason@sair.run }
+  - { local: postmaster, domain: rustd.xyz, destination: jason@rustd.xyz }
+  - { local: postmaster, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+  - { local: abuse, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+  - { local: dmca, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+
+# Junk at scoreSpam, SMTP reject only at the high-confidence threshold (spec goal 4).
+stalwart_spam_score_junk: 5.0
+stalwart_spam_score_reject: 15.0
+# Pinned release, not releases/latest, so a rules update is a reviewed change (Task 7).
+stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.2/spam-filter-rules.json.gz"
+
+# Outbound limit per authenticated login, counted per RCPT (README "Per-account send limit").
+stalwart_send_limit_per_day: 200

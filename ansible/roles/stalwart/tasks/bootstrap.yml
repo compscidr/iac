@@ -1,0 +1,84 @@
+---
+# First boot of an empty store (README "Boot sequence"): recovery mode with
+# STALWART_RECOVERY_ADMIN, the plan applied without its SpamRule (the first normal
+# start only downloads the stock rules while none exists), then the recovery container
+# is removed. main.yml starts the normal one, waits for the stock rules and applies the
+# full plan through the handler, because this file removes the applied-plan stamp.
+
+- name: Stop any container still holding the store
+  become: true
+  community.docker.docker_container:
+    name: stalwart
+    state: absent
+
+- name: Forget the last applied plan
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_install_path }}/etc/plan.applied.sha256"
+    state: absent
+
+- name: Bootstrap in recovery mode
+  block:
+    - name: Render the bootstrap plan
+      become: true
+      ansible.builtin.template:
+        src: plan.ndjson.j2
+        dest: "{{ stalwart_install_path }}/etc/bootstrap.ndjson"
+        owner: "{{ stalwart_uid }}"
+        group: "{{ stalwart_uid }}"
+        mode: "0600"
+      vars:
+        stalwart_plan_bootstrap: true
+      no_log: true
+
+    - name: Start Stalwart in recovery mode
+      become: true
+      community.docker.docker_container:
+        name: stalwart-bootstrap
+        image: "{{ stalwart_image }}@{{ stalwart_image_digest }}"
+        memory: "{{ stalwart_memory }}"
+        env:
+          STALWART_RECOVERY_MODE: "1"
+          STALWART_RECOVERY_ADMIN: "{{ stalwart_recovery_admin_user }}:{{ stalwart_recovery_admin_password }}"
+        volumes:
+          - certs:/certs:ro
+          - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
+          - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
+          - "{{ stalwart_install_path }}/dkim:/dkim:ro"
+      no_log: true
+
+    # Retried until the recovery listener answers; an upsert plan is safe to repeat.
+    # Output goes to etc/bootstrap-apply.log (no_log hides it here).
+    - name: Apply the bootstrap plan through the recovery listener
+      become: true
+      ansible.builtin.shell:
+        cmd: >-
+          docker run --rm --network container:stalwart-bootstrap
+          -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro -v {{ stalwart_install_path }}/etc/bootstrap.ndjson:/plan.ndjson:ro
+          -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8080 -e STALWART_USER -e STALWART_PASSWORD
+          --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color apply --file /plan.ndjson
+          > bootstrap-apply.log 2>&1
+        chdir: "{{ stalwart_install_path }}/etc"
+      environment:
+        STALWART_USER: "{{ stalwart_recovery_admin_user }}"
+        STALWART_PASSWORD: "{{ stalwart_recovery_admin_password }}"
+      register: stalwart_bootstrap_apply
+      until: stalwart_bootstrap_apply.rc == 0
+      retries: 30
+      delay: 2
+      changed_when: true
+      no_log: true
+
+  always:
+    # STALWART_RECOVERY_ADMIN is honoured in normal mode too: never leave it running.
+    - name: Remove the recovery container
+      become: true
+      community.docker.docker_container:
+        name: stalwart-bootstrap
+        state: absent
+
+    - name: Remove the bootstrap plan
+      become: true
+      ansible.builtin.file:
+        path: "{{ stalwart_install_path }}/etc/bootstrap.ndjson"
+        state: absent
