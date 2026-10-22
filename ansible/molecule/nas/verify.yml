@@ -28,6 +28,8 @@
         - cleanuparr
         - threadfin
         - homepage
+        - dockerproxy
+        - glances
         - bitmagnet-postgres
         - bitmagnet
         - homeassistant
