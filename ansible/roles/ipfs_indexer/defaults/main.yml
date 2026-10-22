@@ -56,9 +56,7 @@ ipfs_indexer_seeds:
   - specs.ipfs.tech
   - blog.ipfs.tech
   - ipfs.tech
-  - libp2p.io
   - vitalik.eth
-  - ens.eth
 # ENS .eth sites, read from Ethereum mainnet logs through Alchemy. The 1Password item (an API
 # Credential in the Infrastructure vault) holds the full endpoint URL, key included.
 # Set ipfs_indexer_ens to false to turn the ENS scan off.
