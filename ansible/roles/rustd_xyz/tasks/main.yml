@@ -54,6 +54,7 @@
     name: rustd-db
     image: "{{ rustd_xyz_db_image }}"
     restart_policy: unless-stopped
+    memory: "{{ rustd_xyz_db_memory }}"
     networks:
       - name: rustd-db
     volumes:
@@ -72,6 +73,7 @@
     pull: true
     recreate: true
     restart_policy: unless-stopped
+    memory: "{{ rustd_xyz_memory }}"
     networks:
       - name: nginx-proxy
       - name: rustd-db
@@ -88,6 +90,7 @@
     volumes:
       - "rustd-geoip-data:/app/data"
     env:
+      JAVA_TOOL_OPTIONS: "{{ rustd_xyz_java_opts }}"
       QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://rustd-db:5432/{{ rustd_xyz_db_name }}"
       QUARKUS_DATASOURCE_USERNAME: "{{ rustd_xyz_db_user }}"
       QUARKUS_DATASOURCE_PASSWORD: "{{ rustd_xyz_db_password }}"

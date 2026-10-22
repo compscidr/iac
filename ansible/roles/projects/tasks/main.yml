@@ -106,6 +106,7 @@
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped
+    memory: "{{ projects_nginx_proxy_memory }}"
     env:
       ENABLE_IPV6: "true" # nginx must also listen on [::] inside the container
 
@@ -125,6 +126,7 @@
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped
+    memory: "{{ projects_letsencrypt_memory }}"
 
 # Create projects directory
 - name: Create projects base directory
@@ -309,6 +311,7 @@
     networks:
       - name: nginx-proxy
     restart_policy: unless-stopped
+    memory: "{{ projects_goblog_live_memory }}"
     env:
       VIRTUAL_HOST: "www.goblog.live"
       VIRTUAL_PORT: "7000"

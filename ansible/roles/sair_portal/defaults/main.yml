@@ -7,6 +7,14 @@ sair_portal_image: "ghcr.io/compscidr/sair-portal:{{ sair_portal_version | regex
 sair_portal_port: 8080
 sair_portal_domain: "sair.run"
 sair_portal_letsencrypt_email: "ernstjason1@gmail.com"
+# JVM flags, same reasoning as sair_orchestrator_java_opts: the heap is pinned
+# (the JVM default is 25% of whatever RAM it sees) and an OutOfMemoryError ends
+# the process so Docker restarts it. On 2026-10-22 a /dashboard/messages query
+# blew the heap and the portal sat hung at 1.2 GB RSS with no limit (#919).
+# Steady state is ~150 MiB RSS.
+sair_portal_java_opts: "-Xmx256m -XX:+ExitOnOutOfMemoryError"
+# Container memory limit: heap + metaspace/threads/direct buffers, with room.
+sair_portal_memory: "512m"
 sair_portal_ghcr_token: ""
 sair_portal_ghcr_user: "compscidr"
 

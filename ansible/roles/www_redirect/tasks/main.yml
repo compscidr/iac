@@ -39,6 +39,7 @@
     name: "redirect-{{ item.domain }}"
     image: nginx:alpine
     restart_policy: unless-stopped
+    memory: "{{ www_redirect_memory }}"
     networks:
       - name: nginx-proxy
     volumes:

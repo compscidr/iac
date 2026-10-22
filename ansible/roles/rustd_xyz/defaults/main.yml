@@ -9,6 +9,16 @@ rustd_xyz_domain: "rustd.xyz" # apex ONLY - the __Host- auth cookie forbids www
 rustd_xyz_letsencrypt_email: "ernstjason1@gmail.com"
 rustd_xyz_ghcr_token: ""
 rustd_xyz_ghcr_user: "compscidr"
+# JVM flags, same reasoning as sair_orchestrator_java_opts: pin the heap (the
+# JVM default is 25% of whatever RAM it sees, so a container limit alone would
+# have cut it to 256m) and exit on OutOfMemoryError so Docker restarts the
+# panel instead of leaving a hung JVM. Observed 2026-10-22: 526 MiB RSS,
+# 647 MiB high-water mark, unpinned.
+rustd_xyz_java_opts: "-Xmx512m -XX:+ExitOnOutOfMemoryError"
+# Container memory limits (#919): panel = heap + non-heap with room; postgres
+# runs its default 128 MB shared_buffers and sat at ~165 MiB.
+rustd_xyz_memory: "1g"
+rustd_xyz_db_memory: "256m"
 
 # Search domains baked into the panel container's resolver - see the comment on the
 # panel task in tasks/main.yml. The tailnet's MagicDNS suffix, so the bare host names

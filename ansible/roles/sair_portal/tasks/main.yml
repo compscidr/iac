@@ -41,6 +41,7 @@
     # its config changed, so re-running the play does not restart it.
     pull: true
     restart_policy: unless-stopped
+    memory: "{{ sair_portal_memory }}"
     networks:
       - name: nginx-proxy
     mounts:
@@ -48,6 +49,7 @@
         target: /app/data
         type: bind
     env:
+      JAVA_TOOL_OPTIONS: "{{ sair_portal_java_opts }}"
       PORTAL_PORT: "{{ sair_portal_port | string }}"
       PORTAL_BASE_URL: "https://www.{{ sair_portal_domain }}"
       PORTAL_DB_PATH: "/app/data/portal.db"

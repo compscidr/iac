@@ -38,6 +38,7 @@
     name: prometheus
     image: "{{ prometheus_image }}"
     restart_policy: unless-stopped
+    memory: "{{ prometheus_memory }}"
     # Config/key are bind mounts, so a changed file needs a restart to be read
     restart: "{{ prometheus_config is changed or prometheus_key is changed }}"
     command:

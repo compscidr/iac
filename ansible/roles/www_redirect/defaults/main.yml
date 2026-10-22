@@ -2,3 +2,5 @@
 # List of domains to redirect non-www -> www
 # Each entry needs: domain, letsencrypt_email
 www_redirect_domains: []
+# Container memory limit (#919); nginx:alpine serving one redirect sits at ~4 MiB.
+www_redirect_memory: "32m"
