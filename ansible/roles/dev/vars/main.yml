@@ -34,4 +34,4 @@ php_packages: # noqa: var-naming[no-role-prefix]
 # AWS CLI v2, pinned so the install is idempotent (the unversioned "latest"
 # zip changes under you, which broke molecule's idempotence check). Renovate
 # bumps it from aws/aws-cli tags.
-dev_awscli_version: "2.38.4"
+dev_awscli_version: "2.38.5"
