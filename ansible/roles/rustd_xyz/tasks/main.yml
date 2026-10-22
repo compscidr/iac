@@ -55,6 +55,7 @@
     image: "{{ rustd_xyz_db_image }}"
     restart_policy: unless-stopped
     memory: "{{ rustd_xyz_db_memory }}"
+    memory_swap: "{{ rustd_xyz_db_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     networks:
       - name: rustd-db
     volumes:
@@ -74,6 +75,7 @@
     recreate: true
     restart_policy: unless-stopped
     memory: "{{ rustd_xyz_memory }}"
+    memory_swap: "{{ rustd_xyz_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     networks:
       - name: nginx-proxy
       - name: rustd-db

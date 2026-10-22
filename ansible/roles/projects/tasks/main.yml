@@ -107,6 +107,7 @@
       - name: nginx-proxy
     restart_policy: unless-stopped
     memory: "{{ projects_nginx_proxy_memory }}"
+    memory_swap: "{{ projects_nginx_proxy_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     env:
       ENABLE_IPV6: "true" # nginx must also listen on [::] inside the container
 
@@ -127,6 +128,7 @@
       - name: nginx-proxy
     restart_policy: unless-stopped
     memory: "{{ projects_letsencrypt_memory }}"
+    memory_swap: "{{ projects_letsencrypt_memory }}" # no swap: Docker refuses to raise memory alone on a running container
 
 # Create projects directory
 - name: Create projects base directory
@@ -312,6 +314,7 @@
       - name: nginx-proxy
     restart_policy: unless-stopped
     memory: "{{ projects_goblog_live_memory }}"
+    memory_swap: "{{ projects_goblog_live_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     env:
       VIRTUAL_HOST: "www.goblog.live"
       VIRTUAL_PORT: "7000"
