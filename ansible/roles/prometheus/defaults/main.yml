@@ -8,6 +8,8 @@ prometheus_port: 9091
 # tailscale serve HTTPS port: https://projects.<tailnet>.ts.net:8443/
 prometheus_tailscale_https_port: 8443
 prometheus_retention: 30d
+# Container memory limit (#919); one scrape target sits at ~30 MiB.
+prometheus_memory: "256m"
 
 # Orchestrator dashboard port, reached by container name on nginx-proxy
 prometheus_sair_orchestrator_target: "sair-orchestrator:8081"

@@ -8,6 +8,15 @@ projects_git_user: jason # User with SSH keys for cloning private repos
 # (api.sair.run) takes an app and a test APK of up to 200 MB each in one POST.
 projects_nginx_client_max_body_size: "512m"
 
+# Container memory limits (#919). Every container on the 4 GB projects droplet
+# is capped so one runaway process gets killed and restarted by Docker instead
+# of the host OOM killer (no swap) picking a neighbour. Sized at roughly 3x the
+# observed steady state on 2026-10-22: nginx-proxy 34 MiB, letsencrypt 19 MiB,
+# goblog 91 MiB.
+projects_nginx_proxy_memory: "128m"
+projects_letsencrypt_memory: "128m"
+projects_goblog_live_memory: "256m"
+
 # Project repos
 projects_repos:
   - name: network-tools
