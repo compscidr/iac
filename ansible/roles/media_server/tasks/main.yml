@@ -186,6 +186,24 @@
     transmission_folder: /etc/transmission
     transmission_memory: "5g"
     transmission_memory_swap: "5g"
+    transmission_labels:
+      autoheal: "true"
+
+# haugene's image only starts transmission-daemon from openvpn's up script, so
+# a VPN reconnect can kill the daemon with the tunnel still up (Oct 2026: down
+# six days). The healthcheck flags it, but docker never acts on unhealthy;
+# autoheal restarts any container labelled autoheal=true when it goes unhealthy.
+- name: Deploy autoheal
+  tags: transmission
+  become: true
+  community.docker.docker_container:
+    name: autoheal
+    image: willfarrell/autoheal:1.2.0
+    pull: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart_policy: unless-stopped
+    memory: "64m"
 
 - name: Install plex
   tags: plex
