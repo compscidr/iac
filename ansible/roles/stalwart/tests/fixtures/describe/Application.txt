@@ -1,0 +1,18 @@
+Application
+  Defines a web application served by the server.
+
+Fields:
+    autoUpdateFrequency  number<duration>  mutable
+        Frequency to check for application updates
+    description          string<string>  mutable
+        A short description of the web application
+    enabled              boolean  mutable
+        Whether the application is enabled and should be served by the server
+    oauthClientId        string<string>?  mutable
+        The OAuth client identifier that this application uses to start the authorization flow. Only required when the domain is served by an external identity provider, in which case it must match a client registered with that provider.
+    resourceUrl          string<string>  mutable
+        Override the URL to download application updates from.
+    unpackDirectory      string<string>?  mutable
+        The local path to unpack the application bundle to. If left empty, the application will be unpacked to /tmp.
+    urlPrefix            set<string<string>>  mutable
+        The URL prefixes to serve the application on. For example, if set to "/admin", the application will be accessible at http://server/admin.

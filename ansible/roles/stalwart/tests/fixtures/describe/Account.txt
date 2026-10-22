@@ -1,0 +1,77 @@
+Account
+  Defines a user or group account for authentication and email access.
+
+  Variants:
+    User: User account
+      Fields:
+        aliases           list<EmailAlias>  mutable
+            List of email aliases for the account
+        createdAt         datetime  server-set
+            Creation date of the account
+        credentials       list<Credential>  mutable
+            List of credential objects representing authentication methods for the account
+        description       string<string>?  mutable
+            Description of the account
+        domainId          id<Domain>  mutable
+            Identifier for the domain this account belongs to. This is used to determine the email address of the account, which is formed as name@domain.
+        emailAddress      string<emailAddress>  server-set
+            Email address for the user account, formed as name@domain.
+        encryptionAtRest  object<EncryptionAtRest>  mutable
+            Encryption-at-rest settings for the account
+        externalId        string<string>?  mutable
+            Identifier assigned by an external provisioning client such as a SCIM identity provider
+        locale            enum (see Locale)  mutable
+            Preferred locale for the account
+        memberGroupIds    set<id<Account/Group>>  mutable
+            List of groups that this account is a member of
+        memberTenantId    id<Tenant>?  mutable
+            Identifier for the tenant this account belongs to
+        name              string<string>  mutable
+            Name of the account, typically an email address local part.
+        permissions       object<Permissions>  mutable
+            Permissions assigned to this account
+        quotas            map<enum (see StorageQuota), number<unsignedInteger>>  mutable
+            Quotas for different object types within this account
+        roles             object<UserRoles>  mutable
+            Roles assigned to this user account
+        timeZone          enum (see TimeZone)?  mutable
+            Preferred time zone for the account
+        usedDiskQuota     number<size>  server-set
+            Amount of disk space currently used by this account (bytes)
+    Group: Group account
+      Fields:
+        aliases         list<EmailAlias>  mutable
+            List of email aliases for the group
+        createdAt       datetime  server-set
+            Creation date of the account
+        description     string<string>?  mutable
+            Description of the group
+        domainId        id<Domain>  mutable
+            Identifier for the domain this group belongs to. This is used to determine the email address of the group, which is formed as name@domain.
+        emailAddress    string<emailAddress>  server-set
+            Email address of the group, formed as name@domain.
+        externalId      string<string>?  mutable
+            Identifier assigned by an external provisioning client such as a SCIM identity provider
+        locale          enum (see Locale)  mutable
+            Preferred locale for the group
+        memberTenantId  id<Tenant>?  mutable
+            Identifier for the tenant this group belongs to
+        name            string<string>  mutable
+            Name of the group, typically an email address local part.
+        permissions     object<Permissions>  mutable
+            Permissions assigned to this group
+        quotas          map<enum (see StorageQuota), number<unsignedInteger>>  mutable
+            Quotas for different object types within this group
+        roles           object<Roles>  mutable
+            Roles assigned to this group
+        timeZone        enum (see TimeZone)?  mutable
+            Preferred time zone for the account
+        usedDiskQuota   number<size>  server-set
+            Amount of disk space currently used by this account (bytes)
+
+Filters:
+    text            text               Text
+    name            text               Name
+    domainId        id<Domain>         Domain
+    memberGroupIds  id<Account/Group>  Group
+    memberTenantId  id<Tenant>         Tenant

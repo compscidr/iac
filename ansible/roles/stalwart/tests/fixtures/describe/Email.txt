@@ -1,0 +1,32 @@
+Email [singleton]
+  Configures email message limits, encryption, compression, and default folder settings.
+
+Fields:
+    compressionAlgorithm  enum (see CompressionAlgo)  mutable
+        Algorithm to use to compress e-mail data
+    defaultFolders        map<enum (see SpecialUse), object<EmailFolder>>  mutable
+        Default special-use folders to create for new users
+    encryptAtRest         boolean  mutable
+        Allow users to configure encryption at rest for their data
+    encryptOnAppend       boolean  mutable
+        Encrypt messages that are manually appended by the user using JMAP or IMAP
+    maxAttachmentSize     number<size>  mutable
+        Specifies the maximum size for an email attachment
+    maxIdentities         number<unsignedInteger>?  mutable
+        The default maximum number of identities a user can create
+    maxMailboxDepth       number<unsignedInteger>  mutable
+        Restricts the maximum depth of nested mailboxes a user can create
+    maxMailboxNameLength  number<unsignedInteger>  mutable
+        Establishes the maximum length of a mailbox name
+    maxMailboxes          number<unsignedInteger>?  mutable
+        The default maximum number of mailboxes a user can create
+    maxMaskedAddresses    number<unsignedInteger>?  mutable
+        The default maximum number of masked email addresses a user can create
+    maxMessageSize        number<size>  mutable
+        Determines the maximum size for an email message
+    maxMessages           number<unsignedInteger>?  mutable
+        The default maximum number of emails a user can create
+    maxPublicKeys         number<unsignedInteger>?  mutable
+        The default maximum number of encryption-at-rest public keys a user can create
+    maxSubmissions        number<unsignedInteger>?  mutable
+        The default maximum number of email submissions a user can create
