@@ -81,6 +81,20 @@
     group: "{{ stalwart_uid }}"
     mode: "0600"
 
+# The admin login for stalwart-cli (`--env-file` in stalwart_cli_docker). Root-only and
+# outside etc/, which the server mounts and Task 6 backs up.
+- name: Write the stalwart-cli credentials
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_install_path }}/cli.env"
+    content: |
+      STALWART_USER={{ stalwart_admin_user }}@{{ stalwart_admin_domain }}
+      STALWART_PASSWORD={{ stalwart_admin_password }}
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
 # stalwart-cli is not in the image: a pinned, checksum-verified release, mounted into a
 # throwaway container in stalwart's network namespace whenever the plan is applied.
 - name: Create the stalwart-cli directory
@@ -199,23 +213,33 @@
 
 # The plan's Task/SpamFilterMaintenance downloads the stock rules (keeping custom ones);
 # it runs in the background, so poll. More than 5 SpamRules means more than the plan's
-# own. The password reaches docker by name only; the output is a rule list.
+# own. Output discarded; rc 2 = stalwart-cli failed (auth, connection), rc 1 = too few rules.
 - name: Wait for the stock spam rules
   become: true
   ansible.builtin.shell:
     cmd: >-
-      set -o pipefail; for i in $(seq 60); do
-      n=$(docker run --rm --network container:stalwart -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro
-      -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER -e STALWART_PASSWORD
-      --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color query SpamRule | grep -c .);
-      [ "$n" -gt 6 ] && exit 0; sleep 2; done;
-      echo "only $(( ${n:-1} - 1 )) SpamRule(s) after 120 s: stock rules not loaded from {{ stalwart_spam_rules_url }}"; exit 1
+      set -o pipefail; st=2; for i in $(seq 60); do
+      if out=$({{ stalwart_cli_docker }} query SpamRule 2>/dev/null) && [ -n "$out" ]; then
+      [ "$(printf '%s\n' "$out" | grep -c .)" -gt 6 ] && exit 0; st=1; else st=2; fi;
+      sleep 2; done; exit $st
     executable: /bin/bash
-  environment:
-    STALWART_USER: "{{ stalwart_admin_user }}@{{ stalwart_admin_domain }}"
-    STALWART_PASSWORD: "{{ stalwart_admin_password }}"
+  register: stalwart_rules_wait
   changed_when: false
+  failed_when: false
+  no_log: true
   when: stalwart_bootstrapping
+
+- name: Report missing stock spam rules
+  ansible.builtin.fail:
+    msg: >-
+      {% if stalwart_rules_wait.rc == 1 %}Fewer than 6 SpamRules after 120 s: the stock rules were not loaded
+      from {{ stalwart_spam_rules_url }}. Check the URL and the container log, then re-run (the bootstrap is redone).
+      {% else %}stalwart-cli could not query SpamRule as {{ stalwart_admin_user }}@{{ stalwart_admin_domain }}
+      (rc={{ stalwart_rules_wait.rc }}: authentication or connection failure); see it with
+      `sudo {{ stalwart_cli_docker }} query SpamRule`. If the admin no longer authenticates while
+      {{ stalwart_install_path }}/bootstrap.done exists, delete bootstrap.done: the next run redoes the
+      bootstrap, which re-seeds the admin.{% endif %}
+  when: stalwart_bootstrapping and stalwart_rules_wait.rc != 0
 
 - name: Mark the bootstrap finished
   become: true

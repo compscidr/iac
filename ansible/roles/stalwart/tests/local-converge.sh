@@ -67,6 +67,14 @@ json.dump({
     "stalwart_admin_password": "admin-fixture-Pw-5519",
     "stalwart_recovery_admin_password": "recovery-fixture-pw",
 }, open(f"{w}/vars.json", "w"))
+v5 = json.load(open(f"{w}/vars.json"))
+v5["stalwart_admin_password"] = "admin-canary-Pw-4417"
+v5["stalwart_domains"][1]["users"].append({"user": "canary", "password": 'canary"Pw\\9931'})
+json.dump({k: v5[k] for k in ("stalwart_admin_password", "stalwart_domains")}, open(f"{w}/vars5.json", "w"))
+# Every secret of both runs, raw and JSON-escaped, for the leak check.
+pw = [u["password"] for f in (v5, json.load(open(f"{w}/vars.json"))) for d in f["stalwart_domains"] for u in d["users"]]
+pw += [v5["stalwart_admin_password"], "admin-fixture-Pw-5519", "recovery-fixture-pw"]
+open(f"{w}/secrets.txt", "w").write("\n".join(sorted(set(pw + [json.dumps(p)[1:-1] for p in pw]))) + "\n")
 open(f"{w}/site.yml", "w").write(f"""---
 - name: Converge stalwart locally
   hosts: localhost
@@ -84,6 +92,8 @@ PYEOF
 #   run3  with the applied-plan stamp removed: must re-apply
 #   run4  with the main container gone and a recovery container left holding the store
 #         (a play killed mid-bootstrap): must remove it and start stalwart
+#   run5  at -vvv, with a changed admin password the server does not know and a canary
+#         mailbox password: the apply must fail, and no secret may appear in the output
 cat > "$WORK/runs.sh" <<'SHEOF'
 set -u
 play() { ansible-playbook -i localhost, site.yml -e @vars.json --skip-tags onepassword "$@"; }
@@ -100,6 +110,7 @@ docker run -d --name stalwart-bootstrap -e STALWART_RECOVERY_MODE=1 -e STALWART_
   -v "$PWD/opt/etc:/etc/stalwart:ro" -v "$PWD/opt/data:/var/lib/stalwart" "$image" >/dev/null
 sleep 5
 play > run4.log 2>&1 || { tail -40 run4.log; exit 1; }
+play -vvv -e @vars5.json > run5.log 2>&1; echo $? > run5.rc
 SHEOF
 docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
   -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh runs.sh || { echo "FAIL converge"; exit 1; }
@@ -108,7 +119,7 @@ recap() { grep -A1 'PLAY RECAP' "$WORK/$1.log" | tail -1; }
 for run in run0 run1 run2 run3 run4; do echo "$run: $(recap $run)"; done
 FAILED=0
 check() { if eval "$2"; then echo "PASS $1"; else echo "FAIL $1${3:+: $3}"; FAILED=1; fi; }
-check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "stock rules not loaded" "$WORK/run0.log" && [ ! -e "$WORK/run0.marker" ]' \
+check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "Fewer than 6 SpamRules after 120 s: the stock rules were not loaded" "$WORK/run0.log" && [ ! -e "$WORK/run0.marker" ]' \
   "run0 rc=$(cat "$WORK/run0.rc"), marker=$(cat "$WORK/run0.marker" 2>/dev/null)"
 check part_failed_bootstrap_redone 'grep -q "Render the bootstrap plan" "$WORK/run1.log"'
 check idempotent 'recap run2 | grep -q "changed=0 .*failed=0"' "$(grep -B1 '^changed' "$WORK/run2.log" | head -6)"
@@ -122,5 +133,7 @@ rules=$(docker run --rm --network container:stalwart -v "$cli:/usr/local/bin/sta
   "$(docker inspect -f '{{.Config.Image}}' stalwart)" --no-color query SpamRule | awk 'NR > 1 && NF { print $2 }')
 check spam_rules 'grep -qx IAC_JUNK_PROBE <<<"$rules" && [ "$(grep -c STWT_ <<<"$rules")" -gt 10 ] && [ -z "$(sort <<<"$rules" | uniq -d)" ]' \
   "$(grep -c STWT_ <<<"$rules") stock rules"
+check apply_failure_leaks_nothing '[ "$(cat "$WORK/run5.rc")" != 0 ] && grep -q "stalwart-cli apply of .* failed (rc=" "$WORK/run5.log" \
+  && ! grep -qF -f "$WORK/secrets.txt" "$WORK/run5.log"' "rc=$(cat "$WORK/run5.rc"), leaked: $(grep -oF -f "$WORK/secrets.txt" "$WORK/run5.log" | sort -u | head -3 | tr '\n' ' ')"
 check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
 exit $FAILED

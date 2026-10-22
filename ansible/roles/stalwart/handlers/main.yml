@@ -1,24 +1,19 @@
 ---
-# stalwart-cli in a throwaway container in stalwart's network namespace, as the admin,
-# against the 8081 listener on 127.0.0.1: the only address the admin's credential
-# accepts (README "Admin restriction"). Retried in the shell while a just-(re)created
-# container starts. The output stays in memory, never on disk (etc/ holds the plan and is
-# backed up); on failure the second handler shows a scrubbed tail. The checksum stamp is
-# written only on success; tasks/main.yml re-notifies while it does not match.
+# stalwart-cli in stalwart's network namespace, as the admin, against the 8081 listener on
+# 127.0.0.1: the only address the admin's credential accepts (README "Admin
+# restriction"). Retried in the shell while a just-(re)created container starts. Its
+# output is discarded, never shown or stored: stalwart-cli may echo plan values, and no
+# scrub can be trusted to catch every form. On failure the second handler prints the
+# command to run by hand. The checksum stamp is written only on success; tasks/main.yml
+# re-notifies while it does not match.
 - name: Apply Stalwart plan
   become: true
   ansible.builtin.shell:
     cmd: >-
       for i in $(seq 10); do
-      docker run --rm --network container:stalwart
-      -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro -v {{ stalwart_install_path }}/etc/plan.ndjson:/plan.ndjson:ro
-      -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER -e STALWART_PASSWORD
-      --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color apply --file /plan.ndjson 2>&1
+      {{ stalwart_cli_docker }} apply --file /plan.ndjson >/dev/null 2>&1
       && sha256sum plan.ndjson > plan.applied.sha256 && exit 0; sleep 3; done; exit 1
     chdir: "{{ stalwart_install_path }}/etc"
-  environment:
-    STALWART_USER: "{{ stalwart_admin_user }}@{{ stalwart_admin_domain }}"
-    STALWART_PASSWORD: "{{ stalwart_admin_password }}"
   register: stalwart_apply
   changed_when: true
   failed_when: false
@@ -28,6 +23,9 @@
   listen: Apply Stalwart plan
   ansible.builtin.fail:
     msg: >-
-      stalwart-cli apply failed; last lines, secrets redacted:
-      {{ stalwart_apply.stdout_lines[-6:] | join(' | ') | regex_replace(stalwart_scrub_pattern, '<redacted>') }}
+      stalwart-cli apply of {{ stalwart_install_path }}/etc/plan.ndjson failed (rc={{ stalwart_apply.rc }}).
+      Its output is not shown because it can echo secrets; see it with
+      `sudo {{ stalwart_cli_docker }} apply --file /plan.ndjson`.
+      If the admin no longer authenticates while {{ stalwart_install_path }}/bootstrap.done exists,
+      delete bootstrap.done: the next run redoes the bootstrap, which re-seeds the admin.
   when: stalwart_apply.rc != 0

@@ -33,13 +33,24 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - **Later runs** apply the plan only when it differs from the last successful apply: the
   handler writes `etc/plan.applied.sha256` after a successful apply, and a task re-notifies
   the handler while it does not match, so a failed apply is retried on the next run.
-- **No apply output on disk.** The applies are `no_log` and keep stalwart-cli's output in
-  memory; on failure a second task shows its last lines with every plan secret (raw and
-  JSON-escaped, `stalwart_scrub_pattern`) replaced by `<redacted>`.
-- **For Task 6 (backup):** `etc/plan.ndjson` holds every mailbox and admin password in
-  plain text (mode 0600, UID 2000), and `etc/bootstrap.ndjson` does while a bootstrap runs.
-  Exclude both from anything copied off the box (and any `*.log` under `etc/`, should one
-  ever appear); they are regenerated from 1Password on every run.
+- **stalwart-cli output is never shown or stored.** It can echo plan values, and no
+  scrub catches every form (prefixes, truncation, Debug or `\uXXXX` escaping). The
+  applies discard it and fail with a fixed message: the rc and the exact command
+  (`stalwart_cli_docker`, `stalwart_bootstrap_cli_docker`) to run on the host as root to
+  see the error. Those commands hold no secret: credentials reach stalwart-cli through
+  root-only env files (`cli.env`, and `bootstrap-server.env`/`bootstrap-cli.env` while
+  bootstrapping), never through `environment:`, which Ansible prints in its `-vvv` EXEC
+  line even under `no_log`.
+- **If the admin stops authenticating** (its 1Password item changed out of band, the
+  account was edited in the web admin) while `bootstrap.done` exists, every apply fails
+  at auth. Delete `bootstrap.done`: the next run redoes the bootstrap, whose recovery-mode
+  apply re-seeds the admin from 1Password. The failure messages say so too.
+- **For Task 6 (backup):** these hold secrets in plain text and must be excluded from
+  anything copied off the box: `etc/plan.ndjson` (every mailbox and admin password, mode
+  0600, UID 2000), `cli.env` (admin), and, after a failed bootstrap, `etc/bootstrap.ndjson`,
+  `bootstrap-server.env`, `bootstrap-cli.env` (kept so the failure can be reproduced;
+  removed by the next successful bootstrap). All are regenerated from 1Password. No
+  `*.log` is written.
 - **Consequence of re-applying: every app password and API key on every account is
   deleted** whenever the plan changes (any password, alias, domain or setting), because
   each `Account` upsert sends the whole `credentials` list (see "Re-applying an Account
@@ -63,13 +74,12 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
-bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, five runs, ~4 min
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, six runs, ~4 min
 ```
 
 Local Docker only. **`local-smoke.sh`** renders `templates/plan.ndjson.j2` with
 `ansible localhost -m template` (role defaults plus two test domains, rustd.xyz and
-sair.run, and the fixture password `pa"ss\wo%rd{x}`) and checks `scrub_secrets` (the
-failure-output scrub leaves no secret), then boots the pinned image the way
+sair.run, and the fixture password `pa"ss\wo%rd{x}`), then boots the pinned image the way
 the role does: recovery mode + the bootstrap plan, a normal start, the full plan through
 `stalwart-cli` in the container's netns. Then it checks: `container_start`,
 `bootstrap_apply`, `admin_cli_netns`, `stock_rules_loaded` (stock rules and
@@ -85,11 +95,13 @@ the template the smoke applies them in its lab overlay (`TASK4_PENDING`).
 **`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
 `docker:cli` container on the host network with the docker socket) against a temp
 `stalwart_install_path`, staged on 127.0.0.2, 1Password skipped (`--skip-tags
-onepassword`). Five runs: run0 with an unreachable rules URL must fail loudly and leave no
+onepassword`). Six runs: run0 with an unreachable rules URL must fail loudly and leave no
 `bootstrap.done`; run1 must redo that part-failed bootstrap; run2 must report `changed=0`;
 run3, with the applied-plan stamp removed, must re-apply; run4, with `stalwart` removed
-and a recovery container left holding the store, must remove it and start `stalwart`.
-Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, and
+and a recovery container left holding the store, must remove it and start `stalwart`;
+run5, at `-vvv` with an admin password the server does not know and a canary mailbox
+password, must fail the apply with no plan secret (raw or JSON-escaped) anywhere in its
+output (`apply_failure_leaks_nothing`). Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, and
 no recovery variables on the running container. It creates and removes a container
 `stalwart` and a volume `certs`, and refuses to start if either exists.
 

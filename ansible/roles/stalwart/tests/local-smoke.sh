@@ -79,9 +79,9 @@ docker volume create "$NAME-data" >/dev/null
 # --- render the role's plan: role defaults, overridden by two test domains --------
 # Both variants: the bootstrap plan (no SpamRule, so the first normal start still
 # downloads the stock rules) and the full plan the handler applies.
-python3 -I - "$WORK/vars.json" "${RECOVERY_ADMIN#*:}" "$ADMIN_PASS" "$JASON_PASS" "$NOREPLY_PASS" "$SAIR_PASS" <<'PYEOF'
+python3 -I - "$WORK/vars.json" "$ADMIN_PASS" "$JASON_PASS" "$NOREPLY_PASS" "$SAIR_PASS" <<'PYEOF'
 import json, sys
-out, recovery, admin, jason, noreply, sair = sys.argv[1:7]
+out, admin, jason, noreply, sair = sys.argv[1:6]
 json.dump({
     "stalwart_domain": "rustd.xyz",
     "stalwart_domains": [
@@ -95,11 +95,7 @@ json.dump({
         {"local": "postmaster", "domain": "sair.run", "destination": "jason@sair.run"},
     ],
     "stalwart_admin_password": admin,
-    "stalwart_recovery_admin_password": recovery,
 }, open(out, "w"))
-# What a failing stalwart-cli might print: secrets raw and as they sit in the plan JSON.
-json.dump({"probe": f'error at "secret":"{json.dumps(noreply)[1:-1]}" ({noreply}) admin={admin} rec={recovery} ok'},
-          open(out.replace("vars.json", "probe.json"), "w"))
 PYEOF
 render() { # dest extra-vars-json
   (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
@@ -112,15 +108,6 @@ render() { # dest extra-vars-json
 render "$WORK/bootstrap.ndjson" '{"stalwart_plan_bootstrap": true}'
 render "$WORK/plan.ndjson" '{}'
 
-# A failed apply is shown through stalwart_scrub_pattern (handlers/main.yml): no secret
-# may survive it, in raw or JSON-escaped form.
-printf '%s' "{{ probe | regex_replace(stalwart_scrub_pattern, '<redacted>') }}" > "$WORK/scrub.j2"
-(cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
-  -a "src=$WORK/scrub.j2 dest=$WORK/scrubbed.txt" -e "@$ROLE/defaults/main.yml" -e "@$WORK/vars.json" -e "@$WORK/probe.json" >/dev/null 2>&1)
-scrubbed=$(cat "$WORK/scrubbed.txt" 2>/dev/null)
-if [ "$(grep -o '<redacted>' <<<"$scrubbed" | wc -l)" = 4 ] && ! grep -qF -e "$NOREPLY_PASS" -e 'pa\"ss' -e "$ADMIN_PASS" \
-     -e "${RECOVERY_ADMIN#*:}" <<<"$scrubbed"; then pass scrub_secrets
-else fail scrub_secrets "${scrubbed:-render failed}"; fi
 chmod 0644 "$WORK"/*.ndjson
 MOUNTS=(-v "$NAME-data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
         -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
