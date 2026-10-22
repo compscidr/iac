@@ -17,7 +17,12 @@ rustd_xyz_ghcr_user: "compscidr"
 # 768m, not 512m: one WorldFile.parse of a 4500 map alone needs ~420-448 MB of
 # heap (measured 2026-10-22 on a 47 MB prod world, rustd.xyz#924), so 512m plus
 # the live set would OOM - and exit - on every full-size upload or live fetch.
-rustd_xyz_java_opts: "-Xmx768m -XX:+ExitOnOutOfMemoryError"
+# ZGC with a soft heap target: it keeps the heap near 256m and returns memory
+# above that to the OS while the panel is busy. G1 only shrinks when idle, and
+# the panel never is (RCON polling): it sat at ~690 MB after a parse spike.
+# -Xmx stays the hard ceiling for the spike itself. Measured locally under
+# steady allocation: G1 824 -> 848 MB over 150 s, ZGC+SoftMax 702 -> 361 MB.
+rustd_xyz_java_opts: "-Xmx768m -XX:+UseZGC -XX:SoftMaxHeapSize=256m -XX:+ExitOnOutOfMemoryError"
 # Container memory limits (#919): panel = heap + non-heap with room; postgres
 # runs its default 128 MB shared_buffers and sat at ~165 MiB.
 rustd_xyz_memory: "1g"
