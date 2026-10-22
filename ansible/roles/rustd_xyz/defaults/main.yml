@@ -14,7 +14,10 @@ rustd_xyz_ghcr_user: "compscidr"
 # have cut it to 256m) and exit on OutOfMemoryError so Docker restarts the
 # panel instead of leaving a hung JVM. Observed 2026-10-22: 526 MiB RSS,
 # 647 MiB high-water mark, unpinned.
-rustd_xyz_java_opts: "-Xmx512m -XX:+ExitOnOutOfMemoryError"
+# 768m, not 512m: one WorldFile.parse of a 4500 map alone needs ~420-448 MB of
+# heap (measured 2026-10-22 on a 47 MB prod world, rustd.xyz#924), so 512m plus
+# the live set would OOM - and exit - on every full-size upload or live fetch.
+rustd_xyz_java_opts: "-Xmx768m -XX:+ExitOnOutOfMemoryError"
 # Container memory limits (#919): panel = heap + non-heap with room; postgres
 # runs its default 128 MB shared_buffers and sat at ~165 MiB.
 rustd_xyz_memory: "1g"

@@ -40,6 +40,7 @@
     image: nginx:alpine
     restart_policy: unless-stopped
     memory: "{{ www_redirect_memory }}"
+    memory_swap: "{{ www_redirect_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     networks:
       - name: nginx-proxy
     volumes:
