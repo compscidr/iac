@@ -12,29 +12,50 @@ Not wired into a playbook yet (Task 8 adds it to `jasonernst_com.yml`). One cont
 DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stalwart-cli`
 (`upsert`/`update`/`create` only, never `reconcile`/`destroy`).
 
-- **First run** (empty `data/`, `tasks/bootstrap.yml`): a `stalwart-bootstrap` container in
-  recovery mode gets the plan without its `SpamRule`/`SpamTag`/`ReloadSettings` lines
-  (`stalwart_plan_bootstrap`), then is removed. The normal container starts, downloads the
-  stock spam rules (only possible while no `SpamRule` exists), and the `Apply Stalwart plan`
-  handler applies the full plan, which adds `IAC_JUNK_PROBE` and reloads settings.
+- **Bootstrap** (`tasks/bootstrap.yml`) runs while `data/` is empty **or**
+  `{{ stalwart_install_path }}/bootstrap.done` is absent. A `stalwart-bootstrap` container
+  in recovery mode gets the plan without its `SpamRule`/`SpamTag`/`Task`/`Action` lines
+  (`stalwart_plan_bootstrap`), then is removed. The normal container starts, the
+  `Apply Stalwart plan` handler applies the full plan (adds `IAC_JUNK_PROBE`, runs
+  `Task/SpamFilterMaintenance updateRules`, reloads settings), and the role polls until
+  the stock spam rules are loaded, failing the play with "stock rules not loaded" if they
+  are not within 120 s. Only then is `bootstrap.done` written. So a bootstrap that failed
+  anywhere (recovery apply, admin apply, rules download) is redone on the next run instead
+  of being skipped because `data/` is no longer empty.
+- **`updateRules` is in every apply.** Stock rules arrive by themselves only on a first
+  start with no `SpamRule`; the task re-downloads them from `stalwart_spam_rules_url` and
+  keeps custom rules (verified: 66 stock rules restored next to `IAC_JUNK_PROBE` after all
+  stock rules were deleted, no duplicates across repeated applies, GTUBE scoring again
+  without a further reload). A bumped URL is therefore fetched on the next apply.
+- **An interrupted play** (Ctrl-C, ssh drop) skips the bootstrap's `always:` cleanup; the
+  role removes any `stalwart-bootstrap` container unconditionally before starting
+  `stalwart`, since it would hold `STALWART_RECOVERY_ADMIN` and the RocksDB lock.
 - **Later runs** apply the plan only when it differs from the last successful apply: the
   handler writes `etc/plan.applied.sha256` after a successful apply, and a task re-notifies
   the handler while it does not match, so a failed apply is retried on the next run.
-  Apply output goes to `etc/apply.log` (the task itself is `no_log`).
+- **No apply output on disk.** The applies are `no_log` and keep stalwart-cli's output in
+  memory; on failure a second task shows its last lines with every plan secret (raw and
+  JSON-escaped, `stalwart_scrub_pattern`) replaced by `<redacted>`.
+- **For Task 6 (backup):** `etc/plan.ndjson` holds every mailbox and admin password in
+  plain text (mode 0600, UID 2000), and `etc/bootstrap.ndjson` does while a bootstrap runs.
+  Exclude both from anything copied off the box (and any `*.log` under `etc/`, should one
+  ever appear); they are regenerated from 1Password on every run.
 - **Consequence of re-applying: every app password and API key on every account is
   deleted** whenever the plan changes (any password, alias, domain or setting), because
   each `Account` upsert sends the whole `credentials` list (see "Re-applying an Account
   upsert"). Mail clients must use the account password, not app passwords. Setting the
   password only on create was not attempted: the plan format has no create-if-absent.
-- **A bootstrap that fails part-way** leaves `data/` non-empty, so the next run will not
-  bootstrap again. Before any mail has arrived: `docker rm -f stalwart`, empty `data/`,
-  re-run.
+- DKIM keys are copied as they are: Mailu's production keys are PKCS#8
+  (`BEGIN PRIVATE KEY`), which `DkimSignature` accepts (the tests use PKCS#8 keys and
+  `dkim_signed` verifies the signature).
 - `stalwart_staged: true` (default) publishes only on `stalwart_tailnet_ip` (from
   `tailscale ip -4` unless set): 2525, 4465, 9993 and 8080 (`stalwart_staged_http_port`).
   `false` publishes 25, 465, 993 on every address. 8081 (the admin listener the CLI uses
   inside the container's netns) is not published; Task 4 binds it to the tailnet.
-- The admin account is `admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`):
-  `admin@jasonernst.com` is an alias to `jason@`, the DMARC report address.
+- The admin account is `stalwart-admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`).
+  Not `admin@`: that is an RFC 2142 / CA domain-validation role address and must keep
+  reaching jason (`admin@jasonernst.com` is an alias, the DMARC report address; the
+  other domains' `admin@` falls to the catch-all).
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.
 
@@ -42,34 +63,39 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
-bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, twice, ~1 min
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, five runs, ~4 min
 ```
 
 Local Docker only. **`local-smoke.sh`** renders `templates/plan.ndjson.j2` with
 `ansible localhost -m template` (role defaults plus two test domains, rustd.xyz and
-sair.run, and the fixture password `pa"ss\wo%rd{x}`), then boots the pinned image the way
+sair.run, and the fixture password `pa"ss\wo%rd{x}`) and checks `scrub_secrets` (the
+failure-output scrub leaves no secret), then boots the pinned image the way
 the role does: recovery mode + the bootstrap plan, a normal start, the full plan through
 `stalwart-cli` in the container's netns. Then it checks: `container_start`,
-`bootstrap_apply`, `stock_rules_loaded`, `admin_cli_netns`, `smtp_auth`, `imap_login`,
+`bootstrap_apply`, `admin_cli_netns`, `stock_rules_loaded` (stock rules and
+`IAC_JUNK_PROBE`, no duplicate rule names), `smtp_auth`, `imap_login`,
 `catchall`, `alias`, `dkim_signed`, `junk_probe`, `gtube_reject`, `cert_file`, `webmail`,
 `no_recovery`, `admin_ip_restricted`, `admin_no_extra_credentials`, `admin_ui_listener`,
 `junk_probe_rule` (ClassifySpam reports `IAC_JUNK_PROBE` +8 for the Subject token and not
-without it), `reapply_idempotent` (a re-apply creates only its `ReloadSettings` action and
-every object keeps its id). Exit 0 = all pass. `SMOKE_KEEP=1` leaves the container running.
+without it), `reapply_idempotent` (a re-apply creates only its `Task` and `Action` and
+every object, re-downloaded stock rules included, keeps its id). Exit 0 = all pass. `SMOKE_KEEP=1` leaves the container running.
 The Bulwark `Application` and `Http.allowedEndpoints` are Task 4's: until they move into
 the template the smoke applies them in its lab overlay (`TASK4_PENDING`).
 
 **`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
 `docker:cli` container on the host network with the docker socket) against a temp
 `stalwart_install_path`, staged on 127.0.0.2, 1Password skipped (`--skip-tags
-onepassword`). It passes when the second run reports `changed=0`, a run with the
-applied-plan stamp removed re-applies, the stock rules and `IAC_JUNK_PROBE` are loaded, and
-the running container has no recovery variables. It creates and removes a container
+onepassword`). Five runs: run0 with an unreachable rules URL must fail loudly and leave no
+`bootstrap.done`; run1 must redo that part-failed bootstrap; run2 must report `changed=0`;
+run3, with the applied-plan stamp removed, must re-apply; run4, with `stalwart` removed
+and a recovery container left holding the store, must remove it and start `stalwart`.
+Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, and
+no recovery variables on the running container. It creates and removes a container
 `stalwart` and a volume `certs`, and refuses to start if either exists.
 
 - `stalwart-cli` comes from `$STALWART_CLI`, `PATH`, or is downloaded (pinned, sha256-checked).
 - No private key is in the repo. Each run generates a self-signed SAN cert for the
-  `mail.*` names and RSA DKIM keys (PKCS#1, like Mailu's) in a temp dir, mounted read-only
+  `mail.*` names and RSA DKIM keys (PKCS#8, like Mailu's production keys) in a temp dir, mounted read-only
   at `/certs` and `/dkim` as in production. `tests/fixtures/` holds Task 1's plan, a small
   Maildir++ tree and the `describe` output of the objects used (`tests/fixtures/describe/`).
   Passwords in the scripts are throwaway constants.
@@ -147,7 +173,7 @@ milliseconds, multi-variant objects carry `@type`.
 |---|---|---|
 | `Domain` | `name`, `catchAllAddress` (`"jason@rustd.xyz"`), `subAddressing` `{"@type":"Enabled"}`, `certificateManagement` `{"@type":"Manual"}`, `dkimManagement` `{"@type":"Manual"}`, `dnsManagement` `{"@type":"Manual"}` (required), `reportAddressUri` (`"mailto:…"`, default `"mailto:postmaster"`) | `["name"]` |
 | `Certificate` | `certificate` `{"@type":"File","filePath":"/certs/mail.jasonernst.com.crt"}`, `privateKey` `{"@type":"File","filePath":"/certs/mail.jasonernst.com.key"}` (also `Text` / `EnvironmentVariable` variants). SANs are server-set from the file. | `["certificate"]` (the label is the server-set `subjectAlternativeNames`) |
-| `DkimSignature` | `@type: "Dkim1RsaSha256"`, `domainId`, `selector: "dkim"`, `privateKey` `{"@type":"File","filePath":"/dkim/rustd.xyz.dkim.key"}`. PKCS#1 `BEGIN RSA PRIVATE KEY` accepted. Signs `h=Date:Message-ID:Subject:To:From`, `c=relaxed/relaxed`. | `["domainId","selector"]` (the label is `selector` alone, ambiguous across four domains) |
+| `DkimSignature` | `@type: "Dkim1RsaSha256"`, `domainId`, `selector: "dkim"`, `privateKey` `{"@type":"File","filePath":"/dkim/rustd.xyz.dkim.key"}`. PKCS#1 `BEGIN RSA PRIVATE KEY` and PKCS#8 `BEGIN PRIVATE KEY` (Mailu's production form) both accepted. Signs `h=Date:Message-ID:Subject:To:From`, `c=relaxed/relaxed`. | `["domainId","selector"]` (the label is `selector` alone, ambiguous across four domains) |
 | `Account` | `@type: "User"`, `name` (local part), `domainId`, `credentials` `{"0":{"@type":"Password","secret":"…","allowedIps":{…}}}`, `aliases` `{"0":{"name":"contact","domainId":"#d"}}`, `roles` `{"@type":"Admin"}` (default `User`), `quotas` `{"maxAppPasswords":0,"maxApiKeys":0}` | `["name","domainId"]` (the label is `name` alone; `jason` exists in four domains) |
 | `NetworkListener` | `name`, `bind` `{"[::]:465":true}`, `protocol` (`smtp`, `imap`, `http`, `lmtp`, `pop3`, `manageSieve`), `useTls` + `tlsImplicit` for 465/993 | `["name"]` |
 | `Application` | `description`, `resourceUrl`, `urlPrefix` `{"/webmail":true}`, `enabled` | `["description"]` |

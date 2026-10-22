@@ -111,7 +111,7 @@ The spec leaves exact object and field names to the builder. Pin them against th
   - `stalwart_staged: true`; `stalwart_tailnet_ip` (a fact from `tailscale ip -4` on the host).
   - `stalwart_domains`: a list in the same shape as `mailu_additional_domains`, plus the primary domain as an entry. Each entry has `domain` and `users: [{user, password}]`.
   - `stalwart_aliases` (the same shape as `mailu_aliases`, plus `admin@jasonernst.com`); `stalwart_memory: "512m"` (revisit in Task 8).
-  - `stalwart_admin_user: admin`, with its password from 1Password item `Stalwart Admin`; recovery credential from item `Stalwart Recovery Admin`.
+  - `stalwart_admin_user: stalwart-admin` (login `stalwart-admin@rustd.xyz`; ruling in Task 3 fix round 1), with its password from 1Password item `Stalwart Admin`; recovery credential from item `Stalwart Recovery Admin`.
 - Produces the handler `Apply Stalwart plan`, which runs `docker exec stalwart stalwart-cli ... apply --file /etc/stalwart/plan.ndjson` (auth per Task 1). Task 4 adds plan lines through the same template.
 - Produces the container name `stalwart`, on networks `nginx-proxy` plus its own `stalwart` network.
 

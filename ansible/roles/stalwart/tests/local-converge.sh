@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Converge the stalwart role twice against local Docker; the second run must report
-# changed=0 (no re-apply of the plan, no container recreate).
+# changed=0, and that a part-failed or interrupted bootstrap is recovered (see runs.sh).
 #
 #   bash ansible/roles/stalwart/tests/local-converge.sh
 #
@@ -40,7 +40,7 @@ mkdir -p "$WORK/certs" "$WORK/mailu-dkim"
 openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj '/CN=mail.jasonernst.com' \
   -addext 'subjectAltName=DNS:mail.jasonernst.com,DNS:mail.rustd.xyz,DNS:mail.sair.run' \
   -keyout "$WORK/certs/mail.jasonernst.com.key" -out "$WORK/certs/mail.jasonernst.com.crt" 2>/dev/null
-for d in rustd.xyz sair.run; do openssl genrsa -traditional -out "$WORK/mailu-dkim/$d.dkim.key" 2048 2>/dev/null; done
+for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/mailu-dkim/$d.dkim.key" 2>/dev/null; done
 chmod 0644 "$WORK"/certs/* "$WORK"/mailu-dkim/*
 docker volume create certs >/dev/null
 docker run --rm -v certs:/c -v "$WORK/certs:/s:ro" "$RUNNER" sh -c 'cp /s/* /c/'
@@ -77,28 +77,50 @@ open(f"{w}/site.yml", "w").write(f"""---
 """)
 PYEOF
 
+# Runs, in one runner container (ansible needs installing once):
+#   run0  stock-rules URL unreachable: must fail, and leave no bootstrap.done
+#   run1  the real URL: redoes the part-failed bootstrap, must pass
+#   run2  must report changed=0
+#   run3  with the applied-plan stamp removed: must re-apply
+#   run4  with the main container gone and a recovery container left holding the store
+#         (a play killed mid-bootstrap): must remove it and start stalwart
+cat > "$WORK/runs.sh" <<'SHEOF'
+set -u
+play() { ansible-playbook -i localhost, site.yml -e @vars.json --skip-tags onepassword "$@"; }
+apk add -q ansible sudo py3-requests tar xz bash >/dev/null || exit 1
+play -e stalwart_spam_rules_url=http://127.0.0.1:9/none.json.gz > run0.log 2>&1; echo $? > run0.rc
+[ -e opt/bootstrap.done ] && echo yes > run0.marker
+for run in 1 2; do play > run$run.log 2>&1 || { tail -40 run$run.log; exit 1; }; done
+ls -a opt/etc > etc.txt
+rm -f opt/etc/plan.applied.sha256
+play > run3.log 2>&1 || { tail -40 run3.log; exit 1; }
+image=$(docker inspect -f '{{.Config.Image}}' stalwart)
+docker rm -f stalwart >/dev/null
+docker run -d --name stalwart-bootstrap -e STALWART_RECOVERY_MODE=1 -e STALWART_RECOVERY_ADMIN=recovery:leftover \
+  -v "$PWD/opt/etc:/etc/stalwart:ro" -v "$PWD/opt/data:/var/lib/stalwart" "$image" >/dev/null
+sleep 5
+play > run4.log 2>&1 || { tail -40 run4.log; exit 1; }
+SHEOF
 docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
-  -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh -c '
-    apk add -q ansible sudo py3-requests tar xz >/dev/null &&
-    for run in 1 2; do
-      ansible-playbook -i localhost, site.yml -e @vars.json --skip-tags onepassword > run$run.log 2>&1 || { tail -40 run$run.log; exit 1; }
-    done &&
-    rm -f opt/etc/plan.applied.sha256 &&
-    ansible-playbook -i localhost, site.yml -e @vars.json --skip-tags onepassword > run3.log 2>&1 || { tail -40 run3.log; exit 1; }' || { echo "FAIL converge"; exit 1; }
+  -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh runs.sh || { echo "FAIL converge"; exit 1; }
 
-for run in 1 2; do echo "run $run: $(grep -A1 'PLAY RECAP' "$WORK/run$run.log" | tail -1)"; done
-if grep -A1 'PLAY RECAP' "$WORK/run2.log" | tail -1 | grep -q 'changed=0 .*failed=0'; then echo "PASS idempotent"
-else echo "FAIL idempotent: second run changed:"; grep -B1 '^changed' "$WORK/run2.log"; exit 1; fi
-# A plan whose apply never succeeded (no stamp) is applied on the next run.
-if grep -q 'RUNNING HANDLER .*Apply Stalwart plan' "$WORK/run3.log"; then echo "PASS unstamped_plan_reapplied"
-else echo "FAIL unstamped_plan_reapplied: no apply after the stamp was removed"; exit 1; fi
-# The full plan went in after the first normal start: stock rules plus the probe rule.
+recap() { grep -A1 'PLAY RECAP' "$WORK/$1.log" | tail -1; }
+for run in run0 run1 run2 run3 run4; do echo "$run: $(recap $run)"; done
+FAILED=0
+check() { if eval "$2"; then echo "PASS $1"; else echo "FAIL $1${3:+: $3}"; FAILED=1; fi; }
+check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "stock rules not loaded" "$WORK/run0.log" && [ ! -e "$WORK/run0.marker" ]' \
+  "run0 rc=$(cat "$WORK/run0.rc"), marker=$(cat "$WORK/run0.marker" 2>/dev/null)"
+check part_failed_bootstrap_redone 'grep -q "Render the bootstrap plan" "$WORK/run1.log"'
+check idempotent 'recap run2 | grep -q "changed=0 .*failed=0"' "$(grep -B1 '^changed' "$WORK/run2.log" | head -6)"
+check no_logs_on_disk '! grep -q "\.log$" "$WORK/etc.txt"' "$(tr '\n' ' ' < "$WORK/etc.txt")"
+check unstamped_plan_reapplied 'grep -q "RUNNING HANDLER .*Apply Stalwart plan" "$WORK/run3.log"'
+check leftover_recovery_removed '! docker container inspect stalwart-bootstrap >/dev/null 2>&1 && [ "$(docker inspect -f "{{.State.Running}}" stalwart)" = true ]'
+# After the part-failed run0: stock rules plus the probe rule, no duplicates.
 cli=$(ls "$WORK"/opt/bin/*/stalwart-cli-*/stalwart-cli)
 rules=$(docker run --rm --network container:stalwart -v "$cli:/usr/local/bin/stalwart-cli:ro" -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 \
-  -e STALWART_USER=admin@rustd.xyz -e STALWART_PASSWORD=admin-fixture-Pw-5519 --entrypoint stalwart-cli \
-  "$(docker inspect -f '{{.Config.Image}}' stalwart)" --no-color query SpamRule)
-if grep -q IAC_JUNK_PROBE <<<"$rules" && [ "$(grep -c STWT_ <<<"$rules")" -gt 10 ]; then echo "PASS spam_rules"
-else echo "FAIL spam_rules: ${rules:0:300}"; exit 1; fi
-if docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' stalwart | grep -q STALWART_RECOVERY; then
-  echo "FAIL no_recovery: recovery variables on the running container"; exit 1; fi
-echo "PASS no_recovery"
+  -e STALWART_USER=stalwart-admin@rustd.xyz -e STALWART_PASSWORD=admin-fixture-Pw-5519 --entrypoint stalwart-cli \
+  "$(docker inspect -f '{{.Config.Image}}' stalwart)" --no-color query SpamRule | awk 'NR > 1 && NF { print $2 }')
+check spam_rules 'grep -qx IAC_JUNK_PROBE <<<"$rules" && [ "$(grep -c STWT_ <<<"$rules")" -gt 10 ] && [ -z "$(sort <<<"$rules" | uniq -d)" ]' \
+  "$(grep -c STWT_ <<<"$rules") stock rules"
+check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
+exit $FAILED

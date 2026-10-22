@@ -392,7 +392,7 @@ def main():
     p.add_argument("--admin-ip", metavar="IP", help="host of the admin listener (default: --connect)")
     p.add_argument("--http-port", type=int, default=8080, help="staged plain-HTTP listener (default %(default)s)")
     p.add_argument("--admin-port", type=int, default=8081, help="admin listener on --connect (default %(default)s)")
-    p.add_argument("--admin-user", default="admin", help="Stalwart admin login for admin_public_blocked (default %(default)s)")
+    p.add_argument("--admin-user", default="stalwart-admin@rustd.xyz", help="Stalwart admin login for admin_public_blocked (default %(default)s)")
     p.add_argument("--cafile", help="trust this PEM instead of the system CAs (local self-signed fixture)")
     p.add_argument("--issuer", default="Let's Encrypt", help="substring the cert issuer must contain; '' skips (default %(default)s)")
     p.add_argument("--sender", default="acceptance@example.org", help="MAIL FROM for the port-25 spam checks (default %(default)s)")

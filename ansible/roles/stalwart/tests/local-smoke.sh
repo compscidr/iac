@@ -24,7 +24,7 @@ CLI_VERSION="v1.0.13"
 CLI_SHA256="689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
 
 RECOVERY_ADMIN="recovery:recovery-fixture-pw"
-ADMIN_USER="admin@rustd.xyz"
+ADMIN_USER="stalwart-admin@rustd.xyz"
 ADMIN_PASS="admin-fixture-Pw-5519"
 JASON_PASS="jason-fixture-Pw-7731"
 SAIR_PASS="sair-fixture-Pw-2208"
@@ -61,14 +61,16 @@ if [ -z "$CLI" ]; then
 fi
 
 # --- keys generated per run, mounted like production (/certs, /dkim read-only) ---
-# One SAN cert for the four mail.* names; one RSA DKIM key in PKCS#1 form like Mailu's.
+# One SAN cert for the four mail.* names; RSA DKIM keys in PKCS#8 form like Mailu's
+# production keys (BEGIN PRIVATE KEY).
 mkdir -p "$WORK/etc" "$WORK/certs" "$WORK/dkim"
 echo '{"@type":"RocksDb","path":"/var/lib/stalwart/"}' > "$WORK/etc/config.json"
 CERT="$WORK/certs/mail.jasonernst.com.crt"; DKIM_PUB="$WORK/rustd.xyz.dkim.pub"
 openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj '/CN=mail.jasonernst.com' \
   -addext 'subjectAltName=DNS:mail.jasonernst.com,DNS:mail.sair.run,DNS:mail.rustd.xyz,DNS:mail.darksearch.xyz' \
   -keyout "$WORK/certs/mail.jasonernst.com.key" -out "$CERT" 2>/dev/null
-for d in rustd.xyz sair.run; do openssl genrsa -traditional -out "$WORK/dkim/$d.dkim.key" 2048 2>/dev/null; done
+for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/dkim/$d.dkim.key" 2>/dev/null; done
+[ "$(head -1 "$WORK/dkim/rustd.xyz.dkim.key")" = "-----BEGIN PRIVATE KEY-----" ] || { echo "DKIM fixture is not PKCS#8"; exit 2; }
 openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/null
 chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$WORK"/dkim
 chmod 0644 "$WORK"/etc/* "$WORK"/certs/* "$WORK"/dkim/*
@@ -77,9 +79,9 @@ docker volume create "$NAME-data" >/dev/null
 # --- render the role's plan: role defaults, overridden by two test domains --------
 # Both variants: the bootstrap plan (no SpamRule, so the first normal start still
 # downloads the stock rules) and the full plan the handler applies.
-python3 -I - "$WORK/vars.json" "$ADMIN_PASS" "$JASON_PASS" "$NOREPLY_PASS" "$SAIR_PASS" <<'PYEOF'
+python3 -I - "$WORK/vars.json" "${RECOVERY_ADMIN#*:}" "$ADMIN_PASS" "$JASON_PASS" "$NOREPLY_PASS" "$SAIR_PASS" <<'PYEOF'
 import json, sys
-out, admin, jason, noreply, sair = sys.argv[1:6]
+out, recovery, admin, jason, noreply, sair = sys.argv[1:7]
 json.dump({
     "stalwart_domain": "rustd.xyz",
     "stalwart_domains": [
@@ -93,7 +95,11 @@ json.dump({
         {"local": "postmaster", "domain": "sair.run", "destination": "jason@sair.run"},
     ],
     "stalwart_admin_password": admin,
+    "stalwart_recovery_admin_password": recovery,
 }, open(out, "w"))
+# What a failing stalwart-cli might print: secrets raw and as they sit in the plan JSON.
+json.dump({"probe": f'error at "secret":"{json.dumps(noreply)[1:-1]}" ({noreply}) admin={admin} rec={recovery} ok'},
+          open(out.replace("vars.json", "probe.json"), "w"))
 PYEOF
 render() { # dest extra-vars-json
   (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
@@ -105,6 +111,16 @@ render() { # dest extra-vars-json
 }
 render "$WORK/bootstrap.ndjson" '{"stalwart_plan_bootstrap": true}'
 render "$WORK/plan.ndjson" '{}'
+
+# A failed apply is shown through stalwart_scrub_pattern (handlers/main.yml): no secret
+# may survive it, in raw or JSON-escaped form.
+printf '%s' "{{ probe | regex_replace(stalwart_scrub_pattern, '<redacted>') }}" > "$WORK/scrub.j2"
+(cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+  -a "src=$WORK/scrub.j2 dest=$WORK/scrubbed.txt" -e "@$ROLE/defaults/main.yml" -e "@$WORK/vars.json" -e "@$WORK/probe.json" >/dev/null 2>&1)
+scrubbed=$(cat "$WORK/scrubbed.txt" 2>/dev/null)
+if [ "$(grep -o '<redacted>' <<<"$scrubbed" | wc -l)" = 4 ] && ! grep -qF -e "$NOREPLY_PASS" -e 'pa\"ss' -e "$ADMIN_PASS" \
+     -e "${RECOVERY_ADMIN#*:}" <<<"$scrubbed"; then pass scrub_secrets
+else fail scrub_secrets "${scrubbed:-render failed}"; fi
 chmod 0644 "$WORK"/*.ndjson
 MOUNTS=(-v "$NAME-data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
         -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
@@ -149,20 +165,25 @@ PUB="http://127.0.0.1:$(hostport "$NAME" 8080)"; ADM="http://127.0.0.1:$(hostpor
 CIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")
 wait_http "$PUB/healthz/live" 30 || true
 
-# The first normal start imports the stock spam rules, because the bootstrap plan
-# holds no SpamRule. Then the full plan goes in the way the role's handler sends it:
-# stalwart-cli in the container's netns, as the admin, against 127.0.0.1:8081. It adds
-# the IAC_JUNK_PROBE rule and reloads settings (a new SpamRule only fires after that).
+# Straight after the normal start the full plan goes in the way the role's handler sends
+# it: stalwart-cli in the container's netns, as the admin, against 127.0.0.1:8081. It
+# adds IAC_JUNK_PROBE, runs Task/SpamFilterMaintenance updateRules (the stock rules) and
+# reloads settings. Then wait, as the role does, for the stock rules to be there.
 ns_apply() { # plan-file log-file
   ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -v "$1:/plan.ndjson:ro" \
      -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" \
      --entrypoint stalwart-cli "$IMAGE" --no-color apply --file /plan.ndjson > "$2" 2>&1
 }
-ok=0
-for _ in $(seq 1 60); do docker logs "$NAME" 2>&1 | grep -q 'spam.rules-updated' && { ok=1; break; }; sleep 1; done
-if [ $ok = 1 ]; then pass stock_rules_loaded; else fail stock_rules_loaded "no spam.rules-updated in the log"; fi
+cli_q() { ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 \
+  -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" --entrypoint stalwart-cli "$IMAGE" --no-color query "$@"; }
 if ns_apply "$WORK/plan.ndjson" "$WORK/plan-apply.log"; then pass admin_cli_netns
 else fail admin_cli_netns "full plan through stalwart-cli in the container namespace: $(tail -3 "$WORK/plan-apply.log")"; fi
+for _ in $(seq 1 60); do [ "$(cli_q SpamRule | grep -c STWT_)" -gt 10 ] && break; sleep 2; done
+sleep 5 # the first start's own download and the plan's updateRules may both land
+cli_q SpamRule | awk 'NR > 1 && NF { print $2 }' > "$WORK/rules.txt"
+if [ "$(grep -c STWT_ "$WORK/rules.txt")" -gt 10 ] && grep -qx IAC_JUNK_PROBE "$WORK/rules.txt" \
+   && [ -z "$(sort "$WORK/rules.txt" | uniq -d)" ]; then pass stock_rules_loaded
+else fail stock_rules_loaded "$(grep -c STWT_ "$WORK/rules.txt") stock rules, duplicates: $(sort "$WORK/rules.txt" | uniq -d | head -3 | tr '\n' ' ')"; fi
 
 # Lab-only overlay: mail from the reserved sender.test domain plays a reputable sender
 # (lab mail scores ~11 on missing rDNS/SPF/DMARC alone, i.e. Junk), so the routing
@@ -367,17 +388,18 @@ if grep -q '"IAC_JUNK_PROBE":{"score":8.0' <<<"${probe// /}" && grep -q '"MISSIN
    && grep -q '"created"' <<<"$control" && ! grep -q IAC_JUNK_PROBE <<<"$control"; then pass junk_probe_rule
 else fail junk_probe_rule "probe=${probe:0:200} control=${control:0:200}"; fi
 
-# Re-applying the unchanged plan creates nothing but its ReloadSettings action and
+# Re-applying the unchanged plan creates nothing but its updateRules task and ReloadSettings action, and
 # leaves every object it names with the same ids (no duplicates). Ids only: the CLI's
 # column headers vary between runs.
 snap() { for o in Domain Certificate DkimSignature Account NetworkListener Tracer MtaInboundThrottle SpamRule SpamTag; do
-  ns -v "$CLI:/usr/local/bin/stalwart-cli:ro" -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 \
-     -e STALWART_USER="$ADMIN_USER" -e STALWART_PASSWORD="$ADMIN_PASS" --entrypoint stalwart-cli "$IMAGE" --no-color query "$o" | awk -v o="$o" 'NR > 1 && NF { print o, $1 }'
+  cli_q "$o" | awk -v o="$o" 'NR > 1 && NF { print o, $1 }'
 done; }
 snap > "$WORK/before.txt" 2>&1
 ns_apply "$WORK/plan.ndjson" "$WORK/reapply.log"; rc=$?
+sleep 5 # let updateRules finish: re-downloaded stock rules must keep their ids
 snap > "$WORK/after.txt" 2>&1
-if [ $rc = 0 ] && grep -q ', 1 created (0 failed)' "$WORK/reapply.log" && cmp -s "$WORK/before.txt" "$WORK/after.txt" \
+creates=$(grep -c '"@type": "create"' "$WORK/plan.ndjson") # Task + Action, new every apply
+if [ $rc = 0 ] && grep -q ", $creates created (0 failed)" "$WORK/reapply.log" && cmp -s "$WORK/before.txt" "$WORK/after.txt" \
    && [ "$(grep -c . "$WORK/before.txt")" -gt 9 ]; then pass reapply_idempotent
 else fail reapply_idempotent "rc=$rc $(tail -1 "$WORK/reapply.log"); $(diff "$WORK/before.txt" "$WORK/after.txt" | head -5)"; fi
 

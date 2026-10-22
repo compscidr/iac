@@ -31,14 +31,23 @@ stalwart_mailu_dkim_dir: /opt/mailu/dkim # Mailu's keys, copied once per domain
 # Permanent admin account, created by the plan. Ansible's stalwart-cli authenticates as
 # it on every apply, from inside the container's netns, so its Password credential only
 # accepts 127.0.0.1 (README "Admin restriction"). Task 4 appends the tailnet range.
-# It lives on rustd.xyz, not jasonernst.com, where admin@ is an alias to jason@.
-stalwart_admin_user: admin
+# Not admin@: an RFC 2142 / CA-validation role address that must reach jason.
+stalwart_admin_user: stalwart-admin
 stalwart_admin_domain: rustd.xyz
 stalwart_admin_password: "{{ stalwart_op_admin_password }}"
 stalwart_admin_allowed_ips: ["127.0.0.1"]
 # First-boot only (STALWART_RECOVERY_ADMIN), never left on the running container.
 stalwart_recovery_admin_user: recovery
 stalwart_recovery_admin_password: "{{ stalwart_op_recovery_admin_password }}"
+
+# Regex of every secret the plans carry, raw and JSON-escaped, so a failed apply's output
+# can be shown with them replaced (handlers/main.yml, tasks/bootstrap.yml).
+stalwart_secret_values: >-
+  {{ (stalwart_domains | map(attribute='users') | flatten | map(attribute='password') | list
+      + [stalwart_admin_password, stalwart_recovery_admin_password]) | select | list }}
+stalwart_scrub_pattern: >-
+  {{ (stalwart_secret_values + (stalwart_secret_values | map('to_json') | map('regex_replace', '^"|"$', '') | list))
+     | unique | map('regex_escape') | join('|') }}
 
 # Same shape as mailu_additional_domains, with the primary domain as an entry.
 stalwart_domains:

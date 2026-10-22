@@ -114,11 +114,22 @@
     hidden: true
   register: stalwart_data
 
-# A bootstrap that fails part-way leaves data/ non-empty, so the next run skips it:
-# before any mail arrives, empty data/ and re-run (README "Role").
-- name: Bootstrap an empty store
+# bootstrap.done is written only once the admin works and the stock spam rules are
+# loaded (end of this file), so a bootstrap that failed part-way is redone, not skipped
+# because data/ is no longer empty.
+- name: Check whether the bootstrap finished
+  become: true
+  ansible.builtin.stat:
+    path: "{{ stalwart_install_path }}/bootstrap.done"
+  register: stalwart_bootstrap_done
+
+- name: Set whether this run bootstraps
+  ansible.builtin.set_fact:
+    stalwart_bootstrapping: "{{ stalwart_data.matched == 0 or not stalwart_bootstrap_done.stat.exists }}"
+
+- name: Bootstrap the store
   ansible.builtin.include_tasks: bootstrap.yml
-  when: stalwart_data.matched == 0
+  when: stalwart_bootstrapping
 
 - name: Deploy the apply plan
   become: true
@@ -150,6 +161,14 @@
   community.docker.docker_network:
     name: stalwart
 
+# A play killed mid-bootstrap (Ctrl-C, ssh drop) skips bootstrap.yml's `always:`, which
+# would leave the recovery container up with STALWART_RECOVERY_ADMIN and the store lock.
+- name: Remove a leftover recovery container
+  become: true
+  community.docker.docker_container:
+    name: stalwart-bootstrap
+    state: absent
+
 - name: Run Stalwart
   become: true
   community.docker.docker_container:
@@ -175,18 +194,36 @@
          if stalwart_staged else ['25:25', '465:465', '993:993'] }}
     default_host_ip: ""
 
-- name: Wait for the first start to download the stock spam rules
-  become: true
-  ansible.builtin.command: docker logs stalwart
-  register: stalwart_logs
-  until: "'spam.rules-updated' in stalwart_logs.stdout ~ stalwart_logs.stderr"
-  retries: 60
-  delay: 2
-  changed_when: false
-  when: stalwart_data.matched == 0
-
 - name: Apply the plan before checking the ports
   ansible.builtin.meta: flush_handlers
+
+# The plan's Task/SpamFilterMaintenance downloads the stock rules (keeping custom ones);
+# it runs in the background, so poll. More than 5 SpamRules means more than the plan's
+# own. The password reaches docker by name only; the output is a rule list.
+- name: Wait for the stock spam rules
+  become: true
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail; for i in $(seq 60); do
+      n=$(docker run --rm --network container:stalwart -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro
+      -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 -e STALWART_USER -e STALWART_PASSWORD
+      --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color query SpamRule | grep -c .);
+      [ "$n" -gt 6 ] && exit 0; sleep 2; done;
+      echo "only $(( ${n:-1} - 1 )) SpamRule(s) after 120 s: stock rules not loaded from {{ stalwart_spam_rules_url }}"; exit 1
+    executable: /bin/bash
+  environment:
+    STALWART_USER: "{{ stalwart_admin_user }}@{{ stalwart_admin_domain }}"
+    STALWART_PASSWORD: "{{ stalwart_admin_password }}"
+  changed_when: false
+  when: stalwart_bootstrapping
+
+- name: Mark the bootstrap finished
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_install_path }}/bootstrap.done"
+    content: "admin applied the full plan; stock spam rules loaded\n"
+    mode: "0644"
+  when: stalwart_bootstrapping
 
 # Connect via a routable IP, not localhost: localhost hits docker-proxy, which accepts
 # even when the container has nothing bound. See #557.

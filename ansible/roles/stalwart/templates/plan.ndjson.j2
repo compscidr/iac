@@ -97,6 +97,10 @@
   'condition': {'match': {'0': {'if': "contains(subject, 'iac-junk-probe')", 'then': "'IAC_JUNK_PROBE'"}}, 'else': 'false'}}}} | to_json }}
 {{ {'@type': 'upsert', 'object': 'SpamTag', 'matchOn': ['tag'], 'value': {'tag-junk-probe': {
   '@type': 'Score', 'tag': 'IAC_JUNK_PROBE', 'score': 8.0}}} | to_json }}
+{# Re-download the stock rules from stalwart_spam_rules_url, keeping the custom ones: they
+   only arrive by themselves on a first start with no SpamRule, which a part-failed
+   bootstrap can miss, and a bumped URL would otherwise never be fetched. -#}
+{{ {'@type': 'create', 'object': 'Task', 'value': {'rules': {'@type': 'SpamFilterMaintenance', 'maintenanceType': 'updateRules'}}} | to_json }}
 {# Rule, listener and MTA changes are compiled at start; reload so an apply on a
     running server takes effect. -#}
 {{ {'@type': 'create', 'object': 'Action', 'value': {'reload': {'@type': 'ReloadSettings'}}} | to_json }}
