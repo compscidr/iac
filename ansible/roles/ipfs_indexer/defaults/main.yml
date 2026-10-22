@@ -21,7 +21,9 @@ ipfs_indexer_config_dir: /etc/ipfs_indexer
 ipfs_indexer_data_dir: /var/lib/ipfs_indexer
 # pages fetched at once (CRAWL_WORKERS, ipfs_indexer#246). Fetches through the local Kubo
 # take ~2 s, so each worker adds roughly 30 pages a minute; Kubo's limits weren't close at 30.
-ipfs_indexer_crawl_workers: 30
+# 60 since 2026-10-22: Chinese Wikipedia's pages take ~10 s each (its sharded /wiki/ directory
+# is looked up over the network, ipfs_indexer#300), and the workers mostly wait on Kubo.
+ipfs_indexer_crawl_workers: 60
 # started | stopped. Search on darksearch is separately gated by INDEXER_ONLINE
 # in its src/search.php.
 ipfs_indexer_state: started
