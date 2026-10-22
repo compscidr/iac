@@ -63,6 +63,7 @@ common_cli_tools_ubuntu:
   - fish # friendly interactive shell
   - fzf # command line fuzzy finder
   - git # code repos
+  - glances # system monitor TUI (same tool as the nas homepage graphs)
   - htop # better top (uses mouse for example)
   - jq # command line JSON processor
   - lm-sensors # suggested installed with htop
@@ -93,6 +94,7 @@ common_cli_tools_macos:
   - fish # friendly interactive shell
   - fzf # command line fuzzy finder
   - git # code repos
+  - glances # system monitor TUI (same tool as the nas homepage graphs)
   - htop # better top (uses mouse for example)
   - jq # command line JSON processor
   # lm-sensors - Linux-specific, not applicable on macOS
