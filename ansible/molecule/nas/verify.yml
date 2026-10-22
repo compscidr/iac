@@ -14,6 +14,7 @@
         - letsencrypt
         - nas-proxy
         - transmission
+        - autoheal
         - plex
         - sabnzbd
         - sonarr
