@@ -4,7 +4,7 @@
 # sair-orchestrator release to run (a vX.Y.Z git tag; docker.yml pushes the
 # image as X.Y.Z). Pinned so a new release shows up as a Renovate PR here;
 # merging it does not deploy anything, re-run projects.yml to upgrade.
-sair_orchestrator_version: "v0.1.10"
+sair_orchestrator_version: "v0.1.11"
 sair_orchestrator_image: "ghcr.io/compscidr/sair-orchestrator:{{ sair_orchestrator_version | regex_replace('^v', '') }}"
 sair_orchestrator_port: 9090
 # JVM flags. The heap is pinned (the JVM default is 25% of host RAM) and an
