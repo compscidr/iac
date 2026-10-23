@@ -489,9 +489,10 @@ BK_OK=1
 bk_fail() { fail backup_restore "$1"; BK_OK=0; }
 bk_py send "$P_SMTP" "$P_IMAPS" "$bk_tok" "$JASON_PASS" || bk_fail "test message never reached the live server"
 mkdir -p "$WORK/opt/etc" "$WORK/opt/dkim" "$WORK/opt/backups" "$WORK/nas"
-# backups/ is owned by UID 2000 like the role makes it (the tar runs as that user); 0755 here
-# only so this non-root test can read it, where the real script runs as root.
-docker run --rm --user 0 -v "$WORK/opt/backups:/d" --entrypoint sh "$IMAGE" -c 'chown 2000:2000 /d && chmod 0755 /d'
+# backups/ is owned by UID 2000 like the role makes it (the tar runs as that user); 0777 here
+# only so this non-root test can also write it, where the real script runs as root.
+bk_mode() { docker run --rm --user 0 -v "$WORK/opt/backups:/d" --entrypoint chmod "$IMAGE" "$1" /d; }
+docker run --rm --user 0 -v "$WORK/opt/backups:/d" --entrypoint chown "$IMAGE" 2000:2000 /d; bk_mode 0777
 cp "$WORK"/etc/config.json "$WORK/opt/etc/"; cp "$WORK"/dkim/* "$WORK/opt/dkim/"
 # Things that must never reach the NAS: the plans hold every mailbox password, env files and
 # logs may. Decoys sit in etc/ (mirrored); the cli env files sit beside it (not mirrored).
@@ -520,12 +521,41 @@ EOF
 rsync --daemon --config="$WORK/rsyncd.conf" --no-detach >/dev/null 2>&1 &
 RSYNCD_PID=$!
 sleep 1
-(cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
-  -a "src=$ROLE/templates/stalwart-backup.sh.j2 dest=$WORK/stalwart-backup.sh mode=0700" \
-  -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_backup_container=$NAME" \
-  -e "stalwart_backup_nas_keep=30" -e "stalwart_backup_nas_host=127.0.0.1" -e "stalwart_backup_nas_rsync_port=$NAS_PORT" \
-  -e "stalwart_backup_rsync_password_file=$WORK/rsync.pass" >"$WORK/render.log" 2>&1) \
-  || bk_fail "cannot render stalwart-backup.sh.j2: $(tail -3 "$WORK/render.log")"
+bk_render() { # dest [extra ansible -e args]: only paths, names and the NAS coordinates differ from the role's
+  local dest=$1; shift
+  (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+    -a "src=$ROLE/templates/stalwart-backup.sh.j2 dest=$dest mode=0700" \
+    -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_backup_container=$NAME" \
+    -e "stalwart_backup_nas_keep=30" -e "stalwart_backup_nas_host=127.0.0.1" -e "stalwart_backup_nas_rsync_port=$NAS_PORT" \
+    -e "stalwart_backup_rsync_password_file=$WORK/rsync.pass" "$@" >"$WORK/render.log" 2>&1)
+}
+bk_render "$WORK/stalwart-backup.sh" || bk_fail "cannot render stalwart-backup.sh.j2: $(tail -3 "$WORK/render.log")"
+
+# A failed or hung snapshot must never leave stalwart paused (a total mail outage), the
+# throwaway container running, or a .tmp file on disk. Each case: non-zero exit, container
+# running and not paused, no snapshot container, no .tmp. Nothing may have reached the NAS.
+bk_aftermath() { # case-name exit-code
+  local st
+  st=$(docker inspect -f '{{.State.Running}} {{.State.Paused}}' "$NAME")
+  [ "$2" != 0 ] || bk_fail "$1: the script exited 0"
+  [ "$st" = "true false" ] || bk_fail "$1: stalwart is '$st' (want running, not paused)"
+  [ -z "$(docker ps -aq --filter name=stalwart-backup-)" ] || bk_fail "$1: the snapshot container is still there"
+  [ -z "$(ls "$WORK"/opt/backups/*.tmp 2>/dev/null)" ] || bk_fail "$1: left $(ls "$WORK"/opt/backups | tr '\n' ' ')"
+  [ ! -e "$WORK/nas/backups" ] || bk_fail "$1: pushed to the NAS after a failed snapshot"
+}
+if [ $BK_OK = 1 ]; then
+  # tar fails inside the pause: backups/ is not writable for UID 2000
+  bk_mode 0555; bash "$WORK/stalwart-backup.sh" >"$WORK/backup-fail.log" 2>&1; rc=$?; bk_mode 0777
+  bk_aftermath tar_fails $rc
+  # tar hangs past the bound: a 0.05 s timeout cannot even start the container
+  bk_render "$WORK/stalwart-backup-slow.sh" -e stalwart_backup_pause_timeout=0.05 || bk_fail "cannot render the timeout variant"
+  bash "$WORK/stalwart-backup-slow.sh" >"$WORK/backup-slow.log" 2>&1; rc=$?
+  bk_aftermath tar_times_out $rc
+  # gzip dies partway after the thaw (a full disk): a shim leaves a partial .tmp behind
+  mkdir -p "$WORK/shim"; printf '#!/bin/sh\nhead -c 1000 /dev/zero\nexit 1\n' > "$WORK/shim/gzip"; chmod +x "$WORK/shim/gzip"
+  PATH="$WORK/shim:$PATH" bash "$WORK/stalwart-backup.sh" >"$WORK/backup-gzip.log" 2>&1; rc=$?
+  bk_aftermath gzip_fails $rc
+fi
 if [ $BK_OK = 1 ]; then
   bash "$WORK/stalwart-backup.sh" > "$WORK/backup.log" 2>&1 || bk_fail "script exited $?: $(tail -5 "$WORK/backup.log")"
   [ "$(docker inspect -f '{{.State.Paused}}' "$NAME")" = false ] || bk_fail "container left paused"

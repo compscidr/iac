@@ -464,8 +464,10 @@ the same INBOX/Junk messages over IMAP:
 
 `templates/stalwart-backup.sh.j2` (timer 05:00, tag `backup`) uses the pause-and-copy method:
 `docker pause stalwart`, `tar -czf` of `data/` from a throwaway container as UID 2000,
-`docker unpause` (an `EXIT` trap thaws it even if the tar fails), then a rename to
-`stalwart-YYYY-MM-DD.tar.gz`. It then pushes `dkim/`, `etc/` and, last, the snapshot to
+`docker unpause`. Only an uncompressed `tar` runs while paused, bounded by
+`stalwart_backup_pause_timeout` (120 s); an `EXIT` trap thaws the container, removes the
+throwaway container and any `.tmp` however the script ends. gzip runs after the thaw, then a
+rename to `stalwart-YYYY-MM-DD.tar.gz`. It then pushes `dkim/`, `etc/` and, last, the snapshot to
 `<module>/backups/stalwart/db/` (`backup_nas` prunes `db/` after 30 days; freshness glob
 `stalwart-*`). The `etc/` mirror excludes `plan.ndjson`, `bootstrap.ndjson`, `*.env` and
 `*.log` (passwords); `cli.env` and `bootstrap-cli.env` sit outside `etc/`. The plans are

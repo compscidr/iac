@@ -21,23 +21,34 @@ set -euo pipefail
 STAMP="$(date +%F)"
 DIR="{{ stalwart_backup_local_dir }}"
 OUT="${DIR}/stalwart-${STAMP}.tar.gz"
+RAW="${OUT%.gz}.tmp" # the uncompressed tar made while paused
 
-# Sweep leftovers of killed runs so they are never taken for snapshots (runs never overlap).
-rm -f "${DIR}"/stalwart-*.tar.gz.tmp
+# Mail is frozen while the pause lasts, so everything that can hang or fail is bounded
+# and the EXIT trap (armed for the whole run) always thaws it: it also removes the
+# throwaway container (a timeout kills only the docker CLI) and any .tmp file, so a
+# disk-full failure leaves nothing behind.
+SNAP_CTR="stalwart-backup-$$"
+paused() { [ "$(docker inspect -f '{% raw %}{{.State.Paused}}{% endraw %}' {{ stalwart_backup_container }})" = true ]; }
+thaw() { if paused; then docker unpause {{ stalwart_backup_container }} >/dev/null; fi; }
+cleanup() {
+  docker rm -f "${SNAP_CTR}" >/dev/null 2>&1 || true
+  thaw || true
+  rm -f "${DIR}"/stalwart-*.tar.tmp "${DIR}"/stalwart-*.tar.gz.tmp
+}
+trap cleanup EXIT
+cleanup # sweep leftovers of killed runs (runs never overlap)
 
-# Mail is frozen for a few seconds. The trap thaws it however the tar ends, so a failed
-# snapshot can never leave the server paused.
-thaw() { docker unpause {{ stalwart_backup_container }} >/dev/null 2>&1 || true; }
-trap thaw EXIT
-docker pause {{ stalwart_backup_container }} >/dev/null
-# Temp name + rename (in the same container): a run that dies partway never leaves a
+# Only the plain tar happens while paused; gzip comes after the thaw, so the freeze lasts
+# as long as a disk copy. Temp name + rename: a run that dies partway never leaves a
 # truncated file at the final name.
-docker run --rm --user {{ stalwart_uid }}:{{ stalwart_uid }} --network none \
+docker pause {{ stalwart_backup_container }} >/dev/null
+timeout {{ stalwart_backup_pause_timeout }} docker run --rm --name "${SNAP_CTR}" --user {{ stalwart_uid }}:{{ stalwart_uid }} --network none \
   -v "{{ stalwart_install_path }}/data:/data:ro" -v "${DIR}:/out" \
-  --entrypoint sh {{ stalwart_image }}@{{ stalwart_image_digest }} -c \
-  'set -e; tar -czf "/out/$0.tmp" -C /data . && mv "/out/$0.tmp" "/out/$0"' "${OUT##*/}"
-trap - EXIT
-docker unpause {{ stalwart_backup_container }} >/dev/null
+  --entrypoint tar {{ stalwart_image }}@{{ stalwart_image_digest }} -cf "/out/${RAW##*/}" -C /data .
+thaw
+gzip -c "${RAW}" > "${OUT}.tmp"
+rm -f "${RAW}"
+mv "${OUT}.tmp" "${OUT}"
 
 # Keep the newest {{ stalwart_backup_local_keep }} local snapshots (the glob excludes *.tmp).
 ls -1t "${DIR}"/stalwart-*.tar.gz | tail -n +{{ stalwart_backup_local_keep | int + 1 }} | xargs -r rm --

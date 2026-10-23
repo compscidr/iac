@@ -143,6 +143,7 @@ stalwart_send_limit_per_day: 200
 stalwart_backup_container: stalwart
 stalwart_backup_local_dir: "{{ stalwart_install_path }}/backups" # owned by stalwart_uid: tar runs as it
 stalwart_backup_local_keep: 7
+stalwart_backup_pause_timeout: 120 # seconds; the container is paused (mail frozen) for at most this long
 stalwart_backup_nas_host: nas # must match backup_nas_tailnet_hostname
 stalwart_backup_nas_rsync_user: svcbackup
 stalwart_backup_nas_rsync_port: 873
