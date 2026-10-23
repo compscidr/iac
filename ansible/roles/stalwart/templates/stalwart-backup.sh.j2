@@ -28,8 +28,8 @@ RAW="${OUT%.gz}.tmp" # the uncompressed tar made while paused
 # throwaway container (a timeout kills only the docker CLI) and any .tmp file, so a
 # disk-full failure leaves nothing behind.
 SNAP_CTR="stalwart-backup-$$"
-paused() { [ "$(docker inspect -f '{% raw %}{{.State.Paused}}{% endraw %}' {{ stalwart_backup_container }})" = true ]; }
-thaw() { if paused; then docker unpause {{ stalwart_backup_container }} >/dev/null; fi; }
+# On any doubt (inspect failing too) try the unpause; only a positive "not paused" skips it.
+thaw() { [ "$(docker inspect -f '{% raw %}{{.State.Paused}}{% endraw %}' {{ stalwart_backup_container }} 2>/dev/null)" = false ] || docker unpause {{ stalwart_backup_container }} >/dev/null; }
 cleanup() {
   docker rm -f "${SNAP_CTR}" >/dev/null 2>&1 || true
   thaw || true
@@ -42,7 +42,9 @@ cleanup # sweep leftovers of killed runs (runs never overlap)
 # as long as a disk copy. Temp name + rename: a run that dies partway never leaves a
 # truncated file at the final name.
 docker pause {{ stalwart_backup_container }} >/dev/null
-timeout {{ stalwart_backup_pause_timeout }} docker run --rm --name "${SNAP_CTR}" --user {{ stalwart_uid }}:{{ stalwart_uid }} --network none \
+# timeout sends TERM, which docker run proxies to the container; -k KILLs the CLI if the
+# container still ignores it, so the script always reaches the trap (which removes the container).
+timeout -k 5 {{ stalwart_backup_pause_timeout }} docker run --rm --init --name "${SNAP_CTR}" --user {{ stalwart_uid }}:{{ stalwart_uid }} --network none \
   -v "{{ stalwart_install_path }}/data:/data:ro" -v "${DIR}:/out" \
   --entrypoint tar {{ stalwart_image }}@{{ stalwart_image_digest }} -cf "/out/${RAW##*/}" -C /data .
 thaw

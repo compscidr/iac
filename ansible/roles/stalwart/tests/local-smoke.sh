@@ -551,6 +551,22 @@ if [ $BK_OK = 1 ]; then
   bk_render "$WORK/stalwart-backup-slow.sh" -e stalwart_backup_pause_timeout=0.05 || bk_fail "cannot render the timeout variant"
   bash "$WORK/stalwart-backup-slow.sh" >"$WORK/backup-slow.log" 2>&1; rc=$?
   bk_aftermath tar_times_out $rc
+  # tar hangs for real and ignores TERM: a `docker` shim turns the snapshot `docker run` into
+  # `sleep 600` as PID 1 (no init, so TERM is ignored), under a 3 s bound. The script must
+  # still get out (timeout -k), thaw and clean up; the outer timeout makes a regression fail
+  # this check instead of hanging the suite.
+  mkdir -p "$WORK/dshim"
+  printf '#!/bin/sh\nif [ "$1" = run ]; then\n  for a in "$@"; do [ "$p" = --name ] && n=$a; p=$a; done\n  exec %s run --rm --name "$n" --entrypoint sleep "%s" 600\nfi\nexec %s "$@"\n' \
+    "$(command -v docker)" "$IMAGE" "$(command -v docker)" > "$WORK/dshim/docker"
+  chmod +x "$WORK/dshim/docker"
+  bk_render "$WORK/stalwart-backup-hang.sh" -e stalwart_backup_pause_timeout=3 || bk_fail "cannot render the hang variant"
+  t0=$SECONDS
+  PATH="$WORK/dshim:$PATH" timeout -k 5 60 bash "$WORK/stalwart-backup-hang.sh" >"$WORK/backup-hang.log" 2>&1; rc=$?
+  [ $((SECONDS - t0)) -lt 30 ] || bk_fail "tar_hangs: the script took $((SECONDS - t0)) s to give up (want < 30)"
+  bk_aftermath tar_hangs $rc
+  # hygiene only: after a regression the next cases still run
+  docker rm -f $(docker ps -aq --filter name=stalwart-backup-) >/dev/null 2>&1
+  docker unpause "$NAME" >/dev/null 2>&1
   # gzip dies partway after the thaw (a full disk): a shim leaves a partial .tmp behind
   mkdir -p "$WORK/shim"; printf '#!/bin/sh\nhead -c 1000 /dev/zero\nexit 1\n' > "$WORK/shim/gzip"; chmod +x "$WORK/shim/gzip"
   PATH="$WORK/shim:$PATH" bash "$WORK/stalwart-backup.sh" >"$WORK/backup-gzip.log" 2>&1; rc=$?
