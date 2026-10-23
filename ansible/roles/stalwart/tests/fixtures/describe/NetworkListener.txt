@@ -1,0 +1,45 @@
+NetworkListener
+  Defines a network listener for accepting incoming connections.
+
+Fields:
+    bind                          set<string<socketAddress>>  mutable
+        The addresses the listener will bind to
+    maxConnections                number<unsignedInteger>?  mutable
+        The maximum number of concurrent connections the listener will accept
+    name                          string<string>  immutable
+        Unique identifier for the listener
+    overrideProxyTrustedNetworks  set<string<ipNetwork>>  mutable
+        Enable proxy protocol for connections from these networks
+    protocol                      enum (see NetworkListenerProtocol)  mutable
+        The protocol used by the listener
+    socketBacklog                 number<unsignedInteger>?  mutable
+        The maximum number of incoming connections that can be pending in the backlog queue
+    socketNoDelay                 boolean  mutable
+        Whether the Nagle algorithm should be disabled for the socket
+    socketReceiveBufferSize       number<unsignedInteger>?  mutable
+        The size of the buffer used for receiving data
+    socketReuseAddress            boolean  mutable
+        Whether the socket can be bound to an address that is already in use by another socket
+    socketReusePort               boolean  mutable
+        Whether multiple sockets can be bound to the same address and port
+    socketSendBufferSize          number<unsignedInteger>?  mutable
+        The size of the buffer used for sending data
+    socketTosV4                   number<unsignedInteger>?  mutable
+        The type of service (TOS) value for the socket, which determines the priority of the traffic sent through the socket
+    socketTtl                     number<unsignedInteger>?  mutable
+        Time-to-live (TTL) value for the socket, which determines how many hops a packet can make before it is discarded
+    tlsDisableCipherSuites        set<enum (see TlsCipherSuite)>  mutable
+        Which cipher suites to disable
+    tlsDisableProtocols           set<enum (see TlsVersion)>  mutable
+        Which TLS protocols to disable
+    tlsIgnoreClientOrder          boolean  mutable
+        Whether to ignore the client's cipher order
+    tlsImplicit                   boolean  mutable
+        Whether to use implicit TLS
+    tlsTimeout                    number<duration>?  mutable
+        TLS handshake timeout
+    useTls                        boolean  mutable
+        Whether to enable TLS for this listener
+
+Filters:
+    name  text  Name

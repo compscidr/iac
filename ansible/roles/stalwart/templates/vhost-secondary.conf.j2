@@ -1,0 +1,9 @@
+# {{ ansible_managed }}. nginx-proxy server-level include for {{ item }}.
+# The web admin and account UI are tailnet-only (Stalwart's 8081 listener), in any case;
+# Stalwart refuses them here too.
+location ~* ^/(admin|account) { return 403; }
+# Logins, per client address (zone in conf.d/stalwart.conf).
+limit_req zone=stalwart_auth burst={{ stalwart_proxy_auth_burst }} nodelay;
+limit_req_status 429;
+# One webmail origin, so Bulwark and JMAP stay same-origin under STALWART_PUBLIC_URL.
+location /webmail { return 302 https://{{ stalwart_hostname }}/webmail/; }

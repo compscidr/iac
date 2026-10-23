@@ -1,0 +1,20 @@
+SpamSettings [singleton]
+  Configures global spam filter thresholds, greylisting, and trust settings.
+
+Fields:
+    enable              boolean  mutable
+        Whether to enable the spam filter
+    greylistFor         number<duration>?  mutable
+        Time to keep an IP address in the grey list. The grey list is used to delay messages from unknown senders.
+    scoreDiscard        number<float>  mutable
+        Discard messages with a score above this threshold
+    scoreReject         number<float>  mutable
+        Reject messages with a score above this threshold
+    scoreSpam           number<float>  mutable
+        Mark as Spam messages with a score above this threshold
+    spamFilterRulesUrl  string<uri>?  mutable
+        URL to download spam filter rules from
+    trustContacts       boolean  mutable
+        Never classify messages as spam if they are sent from addresses present in the user's address book.
+    trustReplies        boolean  mutable
+        Never classify messages as spam if they are replies to messages sent by the recipient.
