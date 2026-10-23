@@ -58,4 +58,6 @@
     - { role: jasonernst_com, tags: [jasonernst-com] }
     - { role: fail2ban, tags: [fail2ban] }
     - { role: mailu, tags: [mailu] }
+    # Staged beside mailu on spare ports until the cutover (stalwart_staged).
+    - { role: stalwart, tags: [stalwart], stalwart_staged: true }
     - { role: uptime_kuma, tags: [uptime-kuma] }
