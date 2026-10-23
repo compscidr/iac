@@ -29,3 +29,27 @@
       If the admin no longer authenticates while {{ stalwart_install_path }}/bootstrap.done exists,
       delete bootstrap.done: the next run redoes the bootstrap, which re-seeds the admin.
   when: stalwart_apply.rc != 0
+
+# Copied from the jasonernst_com role (which owns nginx-proxy) rather than depending on it.
+# Reloads without dropping the TLS listeners; `nginx -t` first, so a broken vhost.d file
+# fails the play. Skipped only when the proxy is not running.
+- name: Look up the nginx-proxy container
+  listen: Reload nginx-proxy
+  become: true
+  community.docker.docker_container_info:
+    name: nginx-proxy
+  register: stalwart_nginx_proxy
+
+- name: Test and reload nginx-proxy's config
+  listen: Reload nginx-proxy
+  become: true
+  community.docker.docker_container_exec:
+    container: nginx-proxy
+    argv:
+      - sh
+      - -c
+      - nginx -t && nginx -s reload
+  register: stalwart_nginx_reload
+  failed_when: stalwart_nginx_reload.rc != 0
+  changed_when: true
+  when: stalwart_nginx_proxy.exists and stalwart_nginx_proxy.container.State.Running

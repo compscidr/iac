@@ -38,6 +38,7 @@ cleanup() {
   if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left $NAME running (data $NAME-data, files $WORK)"; return; fi
   docker rm -f "$NAME" "$NAME-rec" >/dev/null 2>&1
   docker volume rm "$NAME-data" >/dev/null 2>&1
+  docker network rm "$NAME-tn" >/dev/null 2>&1
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -175,14 +176,9 @@ else fail stock_rules_loaded "$(grep -c STWT_ "$WORK/rules.txt") stock rules, du
 # Lab-only overlay: mail from the reserved sender.test domain plays a reputable sender
 # (lab mail scores ~11 on missing rDNS/SPF/DMARC alone, i.e. Junk), so the routing
 # checks can expect INBOX while strangers still get scored normally.
-# TASK4_PENDING: the Bulwark Application and the Http path rule are Task 4's; until it
-# moves them into plan.ndjson.j2 they ride here so the webmail/admin_ui checks still run.
 cat > "$WORK/overlay.ndjson" <<'EOF'
 {"@type":"upsert","object":"SpamRule","matchOn":["name"],"value":{"r-lab":{"@type":"Any","name":"SMOKE_LAB_SENDER","priority":5000,"condition":{"match":{"0":{"if":"from.domain == 'sender.test'","then":"'SMOKE_LAB_SENDER'"}},"else":"false"}}}}
 {"@type":"upsert","object":"SpamTag","matchOn":["tag"],"value":{"t-lab":{"@type":"Score","tag":"SMOKE_LAB_SENDER","score":-50.0}}}
-{"@type":"upsert","object":"Application","matchOn":["description"],"value":{"app-bulwark":{"description":"Bulwark Webmail","resourceUrl":"https://github.com/bulwarkmail/webmail/releases/download/1.17.0/bulwark-lite-stalwart.zip","urlPrefix":{"/webmail":true},"enabled":true}}}
-{"@type":"update","object":"Http","value":{"allowedEndpoints":{"match":{"0":{"if":"listener == 'http' && (starts_with(path, '/admin') || starts_with(path, '/account'))","then":"403"}},"else":"200"}}}
-{"@type":"create","object":"Action","value":{"apps":{"@type":"UpdateApps"}}}
 {"@type":"create","object":"Action","value":{"reload":{"@type":"ReloadSettings"}}}
 EOF
 chmod 0644 "$WORK/overlay.ndjson"
@@ -355,10 +351,21 @@ extra=$(ns_curl -u "$ADMIN_USER:$ADMIN_PASS" -H 'Content-Type: application/json'
 if [ "$(grep -o '"type":"overQuota"' <<<"$extra" | wc -l)" = 2 ] && ! grep -q '"created"' <<<"$extra"; then pass admin_no_extra_credentials
 else fail admin_no_extra_credentials "${extra:0:300}"; fi
 
+# The web admin loads on the 8081 listener only; the public 8080 listener (nginx-proxy's
+# upstream) refuses it by path, and refuses the admin's login by source IP ($pub above).
 ui_pub=$(sidecar "http://$CIP:8080/admin")
-ui_adm=$(curl -s -o /dev/null -w '%{http_code}' "$ADM/admin")
-if [ "$ui_pub" = 403 ] && [ "$ui_adm" != 403 ] && [ "$ui_adm" != 000 ]; then pass admin_ui_listener
-else fail admin_ui_listener "/admin public=$ui_pub (want 403), admin listener=$ui_adm"; fi
+ui_adm=$(curl -s -o /dev/null -w '%{http_code}' "$ADM/admin/") # /admin 302s here
+if [ "$ui_pub" = 403 ] && [ "$ui_adm" = 200 ] && [ "$pub" = 403 ]; then pass admin_listener
+else fail admin_listener "/admin public=$ui_pub (want 403), admin listener=$ui_adm (want 200), admin login via 8080=$pub (want 403)"; fi
+
+# A human on the tailnet: allowedIps carries 100.64.0.0/10. A sidecar with a 100.64/10
+# address on a bridge shared with the container (L2, no NAT) plays a tailnet client that
+# reached 8081 with its source intact; the same login from the docker gateway is refused.
+docker network create --subnet 100.126.250.0/24 "$NAME-tn" >/dev/null && docker network connect "$NAME-tn" "$NAME"
+TIP=$(docker inspect -f "{{(index .NetworkSettings.Networks \"$NAME-tn\").IPAddress}}" "$NAME")
+tn=$(docker run --rm --network "$NAME-tn" --entrypoint curl "$IMAGE" -s -o /dev/null -w '%{http_code}' -u "$ADMIN_USER:$ADMIN_PASS" "http://$TIP:8081/jmap/session")
+if [ "$tn" = 200 ] && [ "$gw" = 403 ]; then pass admin_tailnet_range
+else fail admin_tailnet_range "admin from 100.126.250.x=$tn (want 200), via docker gateway=$gw (want 403)"; fi
 
 # The plan's IAC_JUNK_PROBE rule fires (on top of the stock rules) for its Subject token
 # and not without it. ClassifySpam reports the tags; the CLI's `create` cannot show them.

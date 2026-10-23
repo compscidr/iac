@@ -61,8 +61,23 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
   `dkim_signed` verifies the signature).
 - `stalwart_staged: true` (default) publishes only on `stalwart_tailnet_ip` (from
   `tailscale ip -4` unless set): 2525, 4465, 9993 and 8080 (`stalwart_staged_http_port`).
-  `false` publishes 25, 465, 993 on every address. 8081 (the admin listener the CLI uses
-  inside the container's netns) is not published; Task 4 binds it to the tailnet.
+  `false` publishes 25, 465, 993 on every address and sets `VIRTUAL_HOST`/`LETSENCRYPT_HOST`
+  (`stalwart_virtual_hosts`, the four `mail.*` names), `VIRTUAL_PORT=8080` and
+  `LETSENCRYPT_EMAIL`, and writes the nginx-proxy vhost.d files (below). Staged, nothing
+  touches nginx-proxy. In both modes the admin listener 8081 is published on
+  `stalwart_tailnet_ip:8081` only (see "Tailnet admin access").
+- **HTTP (Task 4).** Bulwark Lite is an `Application` at `/webmail/`
+  (`stalwart_bulwark_version`, tags without `v`; `Action/UpdateApps` in every apply fetches a
+  changed URL). Two layers keep `/admin` off the public names: Stalwart's `Http` rule (403
+  for `/admin` and `/account` on the `http` listener, which nginx-proxy reaches) and a
+  vhost.d server include per host in nginx-proxy's `vhost` volume
+  (`/var/lib/docker/volumes/vhost/_data/<host>`) with `location /admin { return 403; }`.
+  The three secondaries' files also carry `location /webmail { return 302
+  https://mail.jasonernst.com/webmail/; }`. The handler `Reload nginx-proxy` is copied from
+  `jasonernst_com` (`nginx -t` then reload; skipped if the proxy is not running).
+- **Store growth**: each `UpdateApps` stored the bundles again (~160 MB per apply in the lab,
+  318 to 635 MB over two applies); a container restart compacted it to 239 MB, webmail still
+  200. Applies only happen when the plan changes, so this is bounded, but watch the disk.
 - The admin account is `stalwart-admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`).
   Not `admin@`: that is an RFC 2142 / CA domain-validation role address and must keep
   reaching jason (`admin@jasonernst.com` is an alias, the DMARC report address; the
@@ -88,9 +103,11 @@ the role does: recovery mode + the bootstrap plan, a normal start, the full plan
 `no_recovery`, `admin_ip_restricted`, `admin_no_extra_credentials`, `admin_ui_listener`,
 `junk_probe_rule` (ClassifySpam reports `IAC_JUNK_PROBE` +8 for the Subject token and not
 without it), `reapply_idempotent` (a re-apply creates only its `Task` and `Action` and
-every object, re-downloaded stock rules included, keeps its id). Exit 0 = all pass. `SMOKE_KEEP=1` leaves the container running.
-The Bulwark `Application` and `Http.allowedEndpoints` are Task 4's: until they move into
-the template the smoke applies them in its lab overlay (`TASK4_PENDING`).
+every object, re-downloaded stock rules included, keeps its id). Also `admin_listener`
+(`/admin/` 200 on 8081, `/admin` 403 on 8080, the admin's login refused via 8080) and
+`admin_tailnet_range` (a sidecar with a `100.126.250.0/24` address on a bridge shared with
+the container gets the admin in on 8081: the `100.64.0.0/10` entry works). Exit 0 = all pass.
+`SMOKE_KEEP=1` leaves the container running.
 
 **`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
 `docker:cli` container on the host network with the docker socket) against a temp
@@ -139,7 +156,7 @@ stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01b
   host and talks HTTP to the server.
 - Vandelay: `stalwartlabs/vandelay` `v1.0.12`, asset `vandelay-x86_64-unknown-linux-musl.tar.gz`.
 - Bulwark Lite: `https://github.com/bulwarkmail/webmail/releases/download/1.17.0/bulwark-lite-stalwart.zip`
-  (tags have no `v`; 82 MB, under Stalwart's 100 MB bundle limit).
+  (tags have no `v`: `v1.17.0` is a 404; 82 MB, under Stalwart's 100 MB bundle limit).
 - Image: runs as UID 2000, `--config /etc/stalwart/config.json`, volumes `/etc/stalwart` and
   `/var/lib/stalwart`, healthcheck built in (`/healthz/live`).
 
@@ -227,7 +244,32 @@ restarting is enough; on a running server it needs `Action/UpdateApps`. The stoc
 is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
 so `GET /` on the public listener ends at a 403 under the rule below.
 
-### Admin restriction (Task 4)
+### Tailnet admin access (Task 4)
+
+The admin credential's `allowedIps` is `127.0.0.1` (stalwart-cli in the netns) plus
+`100.64.0.0/10`. 8081 is published on the tailnet IPv4 address, so a remote tailnet client is
+DNATed by Docker's iptables rules (docker-proxy only relays locally originated traffic). DNAT
+keeps the source address. **But on a stock Tailscale host, Tailscale masquerades it.** Read on
+the dev box (Docker 29.1.3, Tailscale): `FORWARD` jumps `ts-forward` before Docker's chains,
+`ts-forward` marks every packet `-i tailscale0` with `0x40000`, and `nat POSTROUTING` jumps
+`ts-postrouting`, which `MASQUERADE`s marked packets. A tailnet client forwarded to the
+container therefore arrives from the bridge gateway, so the admin login fails closed (403),
+not open. Those rules come from `--snat-subnet-routes` (default on; the droplet runs a plain
+`tailscale up --ssh`). Likely fix, **not verified**: `tailscale set --snat-subnet-routes=false`
+on the droplet (harmless if it advertises no subnet routes), then confirm in Task 8 that the
+container sees the 100.x source. Never "fix" it by adding the gateway to `allowedIps`.
+
+Verified locally: the 100.64/10 entry admits a 100.x source (`admin_tailnet_range`), the
+gateway is refused (`admin_ip_restricted`), live/staged env and ports render as intended.
+Verified with a throwaway `jwilder/nginx-proxy` (the production image) and the rendered vhost.d
+files: `/admin`, `/admin/`, `/%61dmin/` and `//admin/` give nginx's 403 on all four hosts, the
+secondaries' `/webmail` and `/webmail/` give 302 to the primary, the primary's `/webmail/` and
+every host's `/jmap/session` and `/.well-known/jmap` are proxied to Stalwart. A server-level
+`location /webmail` or `/admin` does not conflict with the generated `location /` (longest
+prefix wins; `nginx -t` passes). The generated config includes vhost.d only in the 443 server;
+port 80 just redirects to https. Not verified: anything over a real tailnet.
+
+### Admin restriction (Task 1)
 
 Proved by `admin_ip_restricted`, `admin_no_extra_credentials`, `admin_cli_netns` and
 `admin_ui_listener`:
@@ -281,10 +323,7 @@ docker run --rm --network container:stalwart \
 The smoke applies its overlay this way (`admin_cli_netns`), and a re-apply of the full plan
 through it gave `18 updated, 0 created`.
 
-Human access to the admin UI over the tailnet listener needs the operator's tailnet address
-(or `100.64.0.0/10`) in `allowedIps` as well. That only works if the tailnet connection reaches
-the container with its source address intact (iptables DNAT, not docker-proxy); there is no
-tailnet in the lab, so it was not verified. Also not tested: the OAuth sign-in form
+Human access over the tailnet: see "Tailnet admin access". Not tested: the OAuth sign-in form
 (`/api/auth`). The credential check is the same one, but sign-in was only exercised with basic
 auth and IMAP.
 

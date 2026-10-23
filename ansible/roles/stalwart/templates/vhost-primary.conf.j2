@@ -1,0 +1,3 @@
+# {{ ansible_managed }}. nginx-proxy server-level include for {{ item }}.
+# The web admin is tailnet-only (Stalwart's 8081 listener); Stalwart refuses it here too.
+location /admin { return 403; }

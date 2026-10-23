@@ -190,8 +190,13 @@
     image: "{{ stalwart_image }}@{{ stalwart_image_digest }}"
     restart_policy: unless-stopped
     memory: "{{ stalwart_memory }}"
-    env:
-      STALWART_PUBLIC_URL: "{{ stalwart_public_url }}"
+    # Live: nginx-proxy serves the mail.* names from the 8080 listener (none while staged).
+    env: >-
+      {{ {'STALWART_PUBLIC_URL': stalwart_public_url} | combine({} if stalwart_staged else {
+         'VIRTUAL_HOST': stalwart_virtual_hosts | join(','),
+         'VIRTUAL_PORT': '8080',
+         'LETSENCRYPT_HOST': stalwart_virtual_hosts | join(','),
+         'LETSENCRYPT_EMAIL': stalwart_letsencrypt_email}) }}
     volumes:
       - certs:/certs:ro
       - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
@@ -201,12 +206,29 @@
       - name: nginx-proxy
       - name: stalwart
     # Staged: tailnet only, on ports Mailu does not hold. Live: every address, IPv6
-    # included, as nginx-proxy does (#591).
+    # included, as nginx-proxy does (#591). The admin listener (8081) is on the tailnet IP
+    # in both: an IPv4 address, so a tailnet client is DNATed, not relayed by docker-proxy
+    # (README "Tailnet admin access").
     published_ports: >-
-      {{ [stalwart_tailnet_ip ~ ':2525:25', stalwart_tailnet_ip ~ ':4465:465', stalwart_tailnet_ip ~ ':9993:993',
-          stalwart_tailnet_ip ~ ':' ~ stalwart_staged_http_port ~ ':8080']
-         if stalwart_staged else ['25:25', '465:465', '993:993'] }}
+      {{ ([stalwart_tailnet_ip ~ ':2525:25', stalwart_tailnet_ip ~ ':4465:465', stalwart_tailnet_ip ~ ':9993:993',
+           stalwart_tailnet_ip ~ ':' ~ stalwart_staged_http_port ~ ':8080']
+          if stalwart_staged else ['25:25', '465:465', '993:993']) + [stalwart_tailnet_ip ~ ':8081:8081'] }}
     default_host_ip: ""
+
+# Server-level includes in nginx-proxy's `vhost` volume, named after the host: /admin is
+# refused on every name (Stalwart's Http rule refuses it too), and the secondaries send
+# /webmail to the one webmail origin (spec goal 3). Live only: staged, nginx-proxy is untouched.
+- name: Write the nginx-proxy vhost.d files
+  become: true
+  ansible.builtin.template:
+    src: "{{ 'vhost-primary.conf.j2' if item == stalwart_hostname else 'vhost-secondary.conf.j2' }}"
+    dest: "/var/lib/docker/volumes/vhost/_data/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ stalwart_virtual_hosts }}"
+  when: not stalwart_staged
+  notify: Reload nginx-proxy
 
 - name: Apply the plan before checking the ports
   ansible.builtin.meta: flush_handlers

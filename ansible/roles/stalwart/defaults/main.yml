@@ -42,12 +42,15 @@ stalwart_mailu_dkim_dir: /opt/mailu/dkim # Mailu's keys, copied once per domain
 #
 # Permanent admin account, created by the plan. Ansible's stalwart-cli authenticates as
 # it on every apply, from inside the container's netns, so its Password credential only
-# accepts 127.0.0.1 (README "Admin restriction"). Task 4 appends the tailnet range.
+# accepts the addresses below (README "Admin restriction").
 # Not admin@: an RFC 2142 / CA-validation role address that must reach jason.
 stalwart_admin_user: stalwart-admin
 stalwart_admin_domain: rustd.xyz
 stalwart_admin_password: "{{ stalwart_op_admin_password }}"
-stalwart_admin_allowed_ips: ["127.0.0.1"]
+# 127.0.0.1: stalwart-cli in the container's netns. 100.64.0.0/10: a human on the tailnet at
+# http://<tailnet-ip>:8081/admin, which works only while the connection reaches the container
+# with its tailnet source address (README "Tailnet admin access"). Never a docker gateway.
+stalwart_admin_allowed_ips: ["127.0.0.1", "100.64.0.0/10"]
 # First-boot only (STALWART_RECOVERY_ADMIN), never left on the running container.
 stalwart_recovery_admin_user: recovery
 stalwart_recovery_admin_password: "{{ stalwart_op_recovery_admin_password }}"
@@ -94,6 +97,17 @@ stalwart_aliases:
   - { local: postmaster, domain: darksearch.xyz, destination: jason@darksearch.xyz }
   - { local: abuse, domain: darksearch.xyz, destination: jason@darksearch.xyz }
   - { local: dmca, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+
+# Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
+# matches the version line; the release tags have no `v`.
+stalwart_bulwark_version: "1.17.0"
+stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/{{ stalwart_bulwark_version }}/bulwark-lite-stalwart.zip"
+
+# Live only (not stalwart_staged): nginx-proxy serves these names from the 8080 listener,
+# and the acme-companion issues one SAN cert for them, as Mailu's front had.
+stalwart_virtual_hosts: "{{ [stalwart_hostname] + (stalwart_domains | map(attribute='domain') | reject('equalto', stalwart_domain)
+  | map('regex_replace', '^', 'mail.') | list) }}"
+stalwart_letsencrypt_email: "admin@{{ stalwart_domain }}"
 
 # Junk at scoreSpam, SMTP reject only at the high-confidence threshold (spec goal 4).
 stalwart_spam_score_junk: 5.0
