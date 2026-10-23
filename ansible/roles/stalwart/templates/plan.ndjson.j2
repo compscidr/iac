@@ -88,7 +88,8 @@
   'rate': {'count': stalwart_send_limit_per_day | int, 'period': 86400000},
   'enable': true}}} | to_json }}
 {# Bulwark Lite at /webmail/ on every HTTP listener. In the bootstrap plan too, so the first
-    normal start downloads it; a running server needs the Action/UpdateApps below. -#}
+    normal start downloads it. A running server needs Action/UpdateApps, which the
+    `Update Stalwart apps` handler runs only when stalwart_bulwark_url changes. -#}
 {{ {'@type': 'upsert', 'object': 'Application', 'matchOn': ['description'], 'value': {'app-bulwark': {
   'description': 'Bulwark Webmail',
   'resourceUrl': stalwart_bulwark_url,
@@ -96,11 +97,22 @@
   'enabled': true}}} | to_json }}
 {# The web admin UI and account self-service load only on the tailnet listener (8081):
     `listener` is the NetworkListener name, and 'http' (8080) is what nginx-proxy reaches.
-    nginx-proxy also answers 403 for /admin (templates/vhost-*.conf.j2). Admin logins are
-    held to stalwart_admin_allowed_ips by the credential itself (README "Admin restriction"). -#}
+    Lowercased, so /ADMIN is refused too. nginx-proxy also answers 403 for them
+    (templates/vhost-*.conf.j2). Admin logins are held to stalwart_admin_allowed_ips by the
+    credential itself (README "Admin restriction"). -#}
 {{ {'@type': 'update', 'object': 'Http', 'value': {'allowedEndpoints': {
-  'match': {'0': {'if': "listener == 'http' && (starts_with(path, '/admin') || starts_with(path, '/account'))", 'then': '403'}},
+  'match': {'0': {'if': "listener == 'http' && (starts_with(to_lowercase(path), '/admin') || starts_with(to_lowercase(path), '/account'))", 'then': '403'}},
   'else': '200'}}} | to_json }}
+{# Never auto-ban these (README "Auth bans and the proxy"): every public HTTP login arrives
+    from nginx-proxy's address, so 100 bad logins or 30 *.php requests from anyone would ban
+    it permanently and take webmail down. nginx-proxy rate-limits logins per client instead. -#}
+{% set ns.v = {} %}
+{% for net in stalwart_ban_exempt_networks %}
+{% set ns.v = ns.v | combine({'allow-' ~ loop.index0: {'address': net, 'reason': 'nginx-proxy network: logins rate-limited there'}}) %}
+{% endfor %}
+{% if ns.v %}
+{{ {'@type': 'upsert', 'object': 'AllowedIp', 'matchOn': ['address'], 'value': ns.v} | to_json }}
+{% endif %}
 {% if not (stalwart_plan_bootstrap | default(false)) %}
 {# Left out of the recovery-mode (bootstrap) apply: the stock rules are only downloaded
     on the first normal start when no SpamRule exists. The acceptance script's spam_junk
@@ -114,8 +126,6 @@
    only arrive by themselves on a first start with no SpamRule, which a part-failed
    bootstrap can miss, and a bumped URL would otherwise never be fetched. -#}
 {{ {'@type': 'create', 'object': 'Task', 'value': {'rules': {'@type': 'SpamFilterMaintenance', 'maintenanceType': 'updateRules'}}} | to_json }}
-{# Fetch a changed Bulwark resourceUrl on a running server. -#}
-{{ {'@type': 'create', 'object': 'Action', 'value': {'apps': {'@type': 'UpdateApps'}}} | to_json }}
 {# Rule, listener and MTA changes are compiled at start; reload so an apply on a
     running server takes effect. -#}
 {{ {'@type': 'create', 'object': 'Action', 'value': {'reload': {'@type': 'ReloadSettings'}}} | to_json }}

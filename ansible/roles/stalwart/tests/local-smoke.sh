@@ -38,7 +38,7 @@ cleanup() {
   if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left $NAME running (data $NAME-data, files $WORK)"; return; fi
   docker rm -f "$NAME" "$NAME-rec" >/dev/null 2>&1
   docker volume rm "$NAME-data" >/dev/null 2>&1
-  docker network rm "$NAME-tn" >/dev/null 2>&1
+  docker network rm "$NAME-tn" "$NAME-px" "$NAME-nx" >/dev/null 2>&1
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -76,6 +76,9 @@ openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/
 chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$WORK"/dkim
 chmod 0644 "$WORK"/etc/* "$WORK"/certs/* "$WORK"/dkim/*
 docker volume create "$NAME-data" >/dev/null
+# Fixed subnets: -px is exempt from bans in the plan (as nginx-proxy's network is), -nx is not.
+docker network create --subnet 172.30.251.0/24 "$NAME-px" >/dev/null && docker network create --subnet 172.30.252.0/24 "$NAME-nx" >/dev/null \
+  || { echo "cannot create test networks 172.30.251.0/24, 172.30.252.0/24 (in use?)"; exit 2; }
 
 # --- render the role's plan: role defaults, overridden by two test domains --------
 # Both variants: the bootstrap plan (no SpamRule, so the first normal start still
@@ -96,6 +99,7 @@ json.dump({
         {"local": "postmaster", "domain": "sair.run", "destination": "jason@sair.run"},
     ],
     "stalwart_admin_password": admin,
+    "stalwart_ban_exempt_networks": ["172.30.251.0/24"],  # $NAME-px, plays nginx-proxy's network
 }, open(out, "w"))
 PYEOF
 render() { # dest extra-vars-json
@@ -151,6 +155,7 @@ docker run -d --name "$NAME" "${MOUNTS[@]}" -e STALWART_PUBLIC_URL=https://smoke
 P_SMTP=$(hostport "$NAME" 25); P_SUBS=$(hostport "$NAME" 465); P_IMAPS=$(hostport "$NAME" 993)
 PUB="http://127.0.0.1:$(hostport "$NAME" 8080)"; ADM="http://127.0.0.1:$(hostport "$NAME" 8081)"
 CIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")
+docker network connect "$NAME-px" "$NAME"; docker network connect "$NAME-nx" "$NAME"
 wait_http "$PUB/healthz/live" 30 || true
 
 # Straight after the normal start the full plan goes in the way the role's handler sends
@@ -353,10 +358,10 @@ else fail admin_no_extra_credentials "${extra:0:300}"; fi
 
 # The web admin loads on the 8081 listener only; the public 8080 listener (nginx-proxy's
 # upstream) refuses it by path, and refuses the admin's login by source IP ($pub above).
-ui_pub=$(sidecar "http://$CIP:8080/admin")
+ui_pub=$(for u in /admin /ADMIN /Admin/ /account/ /ACCOUNT; do printf '%s=%s ' "$u" "$(sidecar "http://$CIP:8080$u")"; done)
 ui_adm=$(curl -s -o /dev/null -w '%{http_code}' "$ADM/admin/") # /admin 302s here
-if [ "$ui_pub" = 403 ] && [ "$ui_adm" = 200 ] && [ "$pub" = 403 ]; then pass admin_listener
-else fail admin_listener "/admin public=$ui_pub (want 403), admin listener=$ui_adm (want 200), admin login via 8080=$pub (want 403)"; fi
+if [ "$ui_pub" = "/admin=403 /ADMIN=403 /Admin/=403 /account/=403 /ACCOUNT=403 " ] && [ "$ui_adm" = 200 ] && [ "$pub" = 403 ]; then pass admin_listener
+else fail admin_listener "public: ${ui_pub}(want all 403), admin listener=$ui_adm (want 200), admin login via 8080=$pub (want 403)"; fi
 
 # A human on the tailnet: allowedIps carries 100.64.0.0/10. A sidecar with a 100.64/10
 # address on a bridge shared with the container (L2, no NAT) plays a tailnet client that
@@ -396,6 +401,21 @@ creates=$(grep -c '"@type": "create"' "$WORK/plan.ndjson") # Task + Action, new 
 if [ $rc = 0 ] && grep -q ", $creates created (0 failed)" "$WORK/reapply.log" && cmp -s "$WORK/before.txt" "$WORK/after.txt" \
    && [ "$(grep -c . "$WORK/before.txt")" -gt 9 ]; then pass reapply_idempotent
 else fail reapply_idempotent "rc=$rc $(tail -1 "$WORK/reapply.log"); $(diff "$WORK/before.txt" "$WORK/after.txt" | head -5)"; fi
+
+# Last, because it bans an address for good. 105 bad logins (authBanRate 100/day) and 31
+# *.php requests (scanBanRate 30/day), then a good login, from each network: the exempt one
+# (nginx-proxy's) must still get in; the other must be banned (connection refused), so
+# direct clients are still throttled by Stalwart.
+hammer() { # network -> HTTP code of a good login after the burst
+  local ip; ip=$(docker inspect -f "{{(index .NetworkSettings.Networks \"$1\").IPAddress}}" "$NAME")
+  docker run --rm --network "$1" --entrypoint sh "$IMAGE" -c '
+    for i in $(seq 105); do curl -s -o /dev/null -u jason@rustd.xyz:wrong "http://$0:8080/jmap/session"; done
+    for i in $(seq 31); do curl -s -o /dev/null "http://$0:8080/x$i.php"; done
+    curl -s -o /dev/null -w "%{http_code}" -u "jason@rustd.xyz:$1" "http://$0:8080/jmap/session"' "$ip" "$JASON_PASS"
+}
+px=$(hammer "$NAME-px"); nx=$(hammer "$NAME-nx")
+if [ "$px" = 200 ] && [ "$nx" = 000 ]; then pass ban_exempt_proxy
+else fail ban_exempt_proxy "good login after the burst: proxy network=$px (want 200), other network=$nx (want 000, banned)"; fi
 
 if [ $FAILED = 0 ]; then echo "ALL PASS"; else echo "SOME FAILED"; docker logs "$NAME" 2>&1 | tail -40; fi
 exit $FAILED

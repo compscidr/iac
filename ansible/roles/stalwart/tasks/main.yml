@@ -141,6 +141,17 @@
   ansible.builtin.set_fact:
     stalwart_bootstrapping: "{{ stalwart_data.matched == 0 or not stalwart_bootstrap_done.stat.exists }}"
 
+- name: Read the nginx-proxy network
+  become: true
+  community.docker.docker_network_info:
+    name: nginx-proxy
+  register: stalwart_nginx_proxy_net
+
+- name: Set the nginx-proxy subnets
+  ansible.builtin.set_fact:
+    stalwart_nginx_proxy_subnets: "{{ stalwart_nginx_proxy_net.network.IPAM.Config | default([], true) | map(attribute='Subnet') | list
+      if stalwart_nginx_proxy_net.exists else [] }}"
+
 - name: Bootstrap the store
   ansible.builtin.include_tasks: bootstrap.yml
   when: stalwart_bootstrapping
@@ -169,6 +180,18 @@
   changed_when: stalwart_plan_applied.rc != 0
   failed_when: false
   notify: Apply Stalwart plan
+
+# UpdateApps stores the bundles again (~160 MB until a restart compacts), so it runs only
+# when the Bulwark URL differs from the last one fetched; the handler writes the stamp.
+- name: Check the Bulwark bundle is the one last fetched
+  become: true
+  ansible.builtin.command:
+    argv: [grep, -qxF, "{{ stalwart_bulwark_url }}", bulwark.applied]
+    chdir: "{{ stalwart_install_path }}/etc"
+  register: stalwart_bulwark_applied
+  changed_when: stalwart_bulwark_applied.rc != 0
+  failed_when: false
+  notify: Update Stalwart apps
 
 - name: Create the stalwart network
   become: true
@@ -215,8 +238,21 @@
           if stalwart_staged else ['25:25', '465:465', '993:993']) + [stalwart_tailnet_ip ~ ':8081:8081'] }}
     default_host_ip: ""
 
-# Server-level includes in nginx-proxy's `vhost` volume, named after the host: /admin is
-# refused on every name (Stalwart's Http rule refuses it too), and the secondaries send
+# http-level: the rate-limit zone the vhost.d files use. Before them, so a reload never sees
+# a vhost.d file naming a zone that does not exist yet.
+- name: Write the nginx-proxy rate-limit zone
+  become: true
+  ansible.builtin.template:
+    src: nginx-stalwart.conf.j2
+    dest: /etc/nginx/conf.d/stalwart.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: not stalwart_staged
+  notify: Reload nginx-proxy
+
+# Server-level includes in nginx-proxy's `vhost` volume, named after the host: /admin and
+# /account (any case) are refused and logins rate-limited on every name, and the secondaries send
 # /webmail to the one webmail origin (spec goal 3). Live only: staged, nginx-proxy is untouched.
 - name: Write the nginx-proxy vhost.d files
   become: true

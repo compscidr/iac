@@ -30,6 +30,28 @@
       delete bootstrap.done: the next run redoes the bootstrap, which re-seeds the admin.
   when: stalwart_apply.rc != 0
 
+# After the plan (handlers run in file order), so the Application already names the new URL.
+# The command holds no secret; its output is discarded like the apply's.
+- name: Update Stalwart apps
+  become: true
+  ansible.builtin.shell:
+    cmd: >-
+      for i in $(seq 10); do
+      {{ stalwart_cli_docker }} create Action/UpdateApps >/dev/null 2>&1
+      && printf '%s\n' '{{ stalwart_bulwark_url }}' > bulwark.applied && exit 0; sleep 3; done; exit 1
+    chdir: "{{ stalwart_install_path }}/etc"
+  register: stalwart_update_apps
+  changed_when: true
+  failed_when: false
+
+- name: Report a failed app update
+  listen: Update Stalwart apps
+  ansible.builtin.fail:
+    msg: >-
+      Action/UpdateApps failed (rc={{ stalwart_update_apps.rc }}); it is retried on the next run.
+      See the error with `sudo {{ stalwart_cli_docker }} create Action/UpdateApps`.
+  when: stalwart_update_apps.rc != 0
+
 # Copied from the jasonernst_com role (which owns nginx-proxy) rather than depending on it.
 # Reloads without dropping the TLS listeners; `nginx -t` first, so a broken vhost.d file
 # fails the play. Skipped only when the proxy is not running.

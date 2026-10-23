@@ -108,6 +108,12 @@ stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/
 stalwart_virtual_hosts: "{{ [stalwart_hostname] + (stalwart_domains | map(attribute='domain') | reject('equalto', stalwart_domain)
   | map('regex_replace', '^', 'mail.') | list) }}"
 stalwart_letsencrypt_email: "admin@{{ stalwart_domain }}"
+# Per client address, on requests that carry credentials (Basic auth, /auth/, /api/auth).
+# Stalwart's own ban cannot do this: it sees only nginx-proxy (README "Auth bans and the proxy").
+stalwart_proxy_auth_rate: "3r/s"
+stalwart_proxy_auth_burst: 60
+# Exempt from Stalwart's auto-ban (AllowedIp). tasks/main.yml reads nginx-proxy's subnets.
+stalwart_ban_exempt_networks: "{{ stalwart_nginx_proxy_subnets | default([]) }}"
 
 # Junk at scoreSpam, SMTP reject only at the high-confidence threshold (spec goal 4).
 stalwart_spam_score_junk: 5.0

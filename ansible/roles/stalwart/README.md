@@ -67,17 +67,22 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
   touches nginx-proxy. In both modes the admin listener 8081 is published on
   `stalwart_tailnet_ip:8081` only (see "Tailnet admin access").
 - **HTTP (Task 4).** Bulwark Lite is an `Application` at `/webmail/`
-  (`stalwart_bulwark_version`, tags without `v`; `Action/UpdateApps` in every apply fetches a
-  changed URL). Two layers keep `/admin` off the public names: Stalwart's `Http` rule (403
-  for `/admin` and `/account` on the `http` listener, which nginx-proxy reaches) and a
-  vhost.d server include per host in nginx-proxy's `vhost` volume
-  (`/var/lib/docker/volumes/vhost/_data/<host>`) with `location /admin { return 403; }`.
+  (`stalwart_bulwark_version`, tags without `v`). Two layers keep `/admin` and `/account`, in
+  any case, off the public names: Stalwart's `Http` rule (403 when `to_lowercase(path)` starts
+  with either, on the `http` listener that nginx-proxy reaches; `/ACCOUNT` otherwise 302s to
+  `/ACCOUNT/`) and a vhost.d server include per host in nginx-proxy's `vhost` volume
+  (`/var/lib/docker/volumes/vhost/_data/<host>`) with `location ~* ^/(admin|account) { return 403; }`
+  and the login rate limit (see "Auth bans and the proxy").
   The three secondaries' files also carry `location /webmail { return 302
   https://mail.jasonernst.com/webmail/; }`. The handler `Reload nginx-proxy` is copied from
   `jasonernst_com` (`nginx -t` then reload; skipped if the proxy is not running).
-- **Store growth**: each `UpdateApps` stored the bundles again (~160 MB per apply in the lab,
-  318 to 635 MB over two applies); a container restart compacted it to 239 MB, webmail still
-  200. Applies only happen when the plan changes, so this is bounded, but watch the disk.
+- **`Action/UpdateApps` only when the Bulwark URL changes.** Each one stores the bundles
+  again (~160 MB in the lab, 318 to 635 MB over two; a restart compacted it to 239 MB, webmail
+  still 200). So it is not in the plan: the `Update Stalwart apps` handler runs it after the
+  plan apply when `etc/bulwark.applied` does not hold `stalwart_bulwark_url`, then writes it.
+  The bootstrap removes the stamp, so it also runs once after a bootstrap. Converge proves a
+  password change applies the plan without it (run6) and a version change runs it and serves
+  the new build (run7).
 - The admin account is `stalwart-admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`).
   Not `admin@`: that is an RFC 2142 / CA domain-validation role address and must keep
   reaching jason (`admin@jasonernst.com` is an alias, the DMARC report address; the
@@ -89,7 +94,7 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
-bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, six runs, ~4 min
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, eight runs, ~5 min
 ```
 
 Local Docker only. **`local-smoke.sh`** renders `templates/plan.ndjson.j2` with
@@ -104,19 +109,23 @@ the role does: recovery mode + the bootstrap plan, a normal start, the full plan
 `junk_probe_rule` (ClassifySpam reports `IAC_JUNK_PROBE` +8 for the Subject token and not
 without it), `reapply_idempotent` (a re-apply creates only its `Task` and `Action` and
 every object, re-downloaded stock rules included, keeps its id). Also `admin_listener`
-(`/admin/` 200 on 8081, `/admin` 403 on 8080, the admin's login refused via 8080) and
+(`/admin/` 200 on 8081; `/admin`, `/ADMIN`, `/Admin/`, `/account/`, `/ACCOUNT` 403 on 8080; the admin's login refused via 8080) and
 `admin_tailnet_range` (a sidecar with a `100.126.250.0/24` address on a bridge shared with
 the container gets the admin in on 8081: the `100.64.0.0/10` entry works). Exit 0 = all pass.
-`SMOKE_KEEP=1` leaves the container running.
+`ban_exempt_proxy` (last: it bans an address) is described under "Auth bans and the proxy".
+`SMOKE_KEEP=1` leaves the container running. The smoke needs the subnets 172.30.251.0/24 and
+172.30.252.0/24 free.
 
 **`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
 `docker:cli` container on the host network with the docker socket) against a temp
 `stalwart_install_path`, staged on 127.0.0.2, 1Password skipped (`--skip-tags
-onepassword`). Six runs: run0 with an unreachable rules URL must fail loudly and leave no
+onepassword`). Eight runs: run0 with an unreachable rules URL must fail loudly and leave no
 `bootstrap.done`; run1 must redo that part-failed bootstrap; run2 must report `changed=0`;
 run3, with the applied-plan stamp removed, must re-apply; run4, with `stalwart` removed
 and a recovery container left holding the store, must remove it and start `stalwart`;
-run5, at `-vvv` with an admin password the server does not know and a canary mailbox
+run6, with a mailbox password changed, must apply the plan without `Update Stalwart apps`;
+run7, with `stalwart_bulwark_version` 1.16.0, must run it and serve that build;
+run5 (last), at `-vvv` with an admin password the server does not know and a canary mailbox
 password, must fail the apply with no plan secret (raw or JSON-escaped) anywhere in its
 output (`apply_failure_leaks_nothing`). Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, and
 no recovery variables on the running container. It creates and removes a container
@@ -244,6 +253,34 @@ restarting is enough; on a running server it needs `Action/UpdateApps`. The stoc
 is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
 so `GET /` on the public listener ends at a 403 under the rule below.
 
+### Auth bans and the proxy (Task 4)
+
+Defaults on v0.16.27 (`stalwart-cli get Security`): `authBanRate` 100 failed logins per day
+and `scanBanRate` 30 hits per day on `scanBanPaths` (`*.php*`, `*/wp-*`, `*../*`, …), both
+with no `Duration`, i.e. a permanent `BlockedIp` **per source IP** (not per account). Every
+public HTTP login arrives from nginx-proxy's address, so anyone could get the proxy banned
+for good, and webmail and JMAP down for everyone, with 100 bad logins or 30 `/x.php` requests.
+Proved: 105 bad logins from one address, then the right password, got connection refused.
+
+- **The proxy's network is exempt.** The plan upserts an `AllowedIp` per subnet of the
+  `nginx-proxy` network (`stalwart_ban_exempt_networks`, read with `docker_network_info`).
+  An `AllowedIp` takes effect only after `Action/ReloadSettings` (the plan ends with one), and
+  then wins over an existing `BlockedIp`. It does not touch credential `allowedIps`: the admin
+  is still refused from it. Smoke `ban_exempt_proxy`: after 105 bad logins and 31 `*.php`,
+  the exempt network still logs in (200) and another network is banned (000). Other containers
+  on `nginx-proxy` are exempt too, and so is its gateway, which docker-proxy traffic can
+  arrive from (exempting it also stops one client banning everyone behind it).
+- **Brute force is throttled in nginx-proxy instead**, per client address: requests carrying
+  credentials (`Authorization: Basic`, `/auth/…`, `/api/auth…`; Bulwark Lite uses Basic and
+  OAuth `/auth/token`) share `limit_req zone=stalwart_auth` (`conf.d/stalwart.conf`,
+  `stalwart_proxy_auth_rate` 3r/s, `stalwart_proxy_auth_burst` 60, 429 past it). Bearer and
+  anonymous requests are not counted. `X-Forwarded-For` is still not trusted
+  (`useXForwarded` false). IMAP and SMTP see real addresses and keep Stalwart's own bans.
+  Verified with the nginx test: 105 paced bad logins all reached Stalwart (401), 100 parallel
+  ones got 34 × 429, Bearer and anonymous bursts none; then the same client after 3 s and a
+  second client both logged in (200). Webmail usage under the limit was not measured with a
+  real browser session; if Basic-auth JMAP calls trip it, raise the rate.
+
 ### Tailnet admin access (Task 4)
 
 The admin credential's `allowedIps` is `127.0.0.1` (stalwart-cli in the netns) plus
@@ -262,7 +299,8 @@ container sees the 100.x source. Never "fix" it by adding the gateway to `allowe
 Verified locally: the 100.64/10 entry admits a 100.x source (`admin_tailnet_range`), the
 gateway is refused (`admin_ip_restricted`), live/staged env and ports render as intended.
 Verified with a throwaway `jwilder/nginx-proxy` (the production image) and the rendered vhost.d
-files: `/admin`, `/admin/`, `/%61dmin/` and `//admin/` give nginx's 403 on all four hosts, the
+files: `/admin`, `/admin/`, `/ADMIN`, `/Admin/`, `/account/`, `/ACCOUNT`, `/Account`, `/%61dmin/`
+and `//admin/` give nginx's 403 on all four hosts, the
 secondaries' `/webmail` and `/webmail/` give 302 to the primary, the primary's `/webmail/` and
 every host's `/jmap/session` and `/.well-known/jmap` are proxied to Stalwart. A server-level
 `location /webmail` or `/admin` does not conflict with the generated `location /` (longest

@@ -1,3 +1,7 @@
 # {{ ansible_managed }}. nginx-proxy server-level include for {{ item }}.
-# The web admin is tailnet-only (Stalwart's 8081 listener); Stalwart refuses it here too.
-location /admin { return 403; }
+# The web admin and account UI are tailnet-only (Stalwart's 8081 listener), in any case;
+# Stalwart refuses them here too.
+location ~* ^/(admin|account) { return 403; }
+# Logins, per client address (zone in conf.d/stalwart.conf).
+limit_req zone=stalwart_auth burst={{ stalwart_proxy_auth_burst }} nodelay;
+limit_req_status 429;

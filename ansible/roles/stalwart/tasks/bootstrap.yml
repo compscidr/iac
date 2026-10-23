@@ -18,6 +18,7 @@
     state: absent
   loop:
     - "{{ stalwart_install_path }}/etc/plan.applied.sha256"
+    - "{{ stalwart_install_path }}/etc/bulwark.applied"
     - "{{ stalwart_install_path }}/bootstrap.done"
 
 # The bootstrap plan and the two env files stay on disk (root-only, plan UID 2000) when the

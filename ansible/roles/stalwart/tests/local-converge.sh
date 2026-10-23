@@ -71,6 +71,9 @@ v5 = json.load(open(f"{w}/vars.json"))
 v5["stalwart_admin_password"] = "admin-canary-Pw-4417"
 v5["stalwart_domains"][1]["users"].append({"user": "canary", "password": 'canary"Pw\\9931'})
 json.dump({k: v5[k] for k in ("stalwart_admin_password", "stalwart_domains")}, open(f"{w}/vars5.json", "w"))
+v6 = json.load(open(f"{w}/vars.json"))
+v6["stalwart_domains"][0]["users"][0]["password"] = "jason-changed-Pw-6604"
+json.dump({"stalwart_domains": v6["stalwart_domains"]}, open(f"{w}/vars6.json", "w"))
 # Every secret of both runs, raw and JSON-escaped, for the leak check.
 pw = [u["password"] for f in (v5, json.load(open(f"{w}/vars.json"))) for d in f["stalwart_domains"] for u in d["users"]]
 pw += [v5["stalwart_admin_password"], "admin-fixture-Pw-5519", "recovery-fixture-pw"]
@@ -92,6 +95,8 @@ PYEOF
 #   run3  with the applied-plan stamp removed: must re-apply
 #   run4  with the main container gone and a recovery container left holding the store
 #         (a play killed mid-bootstrap): must remove it and start stalwart
+#   run6  a mailbox password changed: must apply the plan and NOT run UpdateApps
+#   run7  stalwart_bulwark_version changed: must run UpdateApps (and re-stamp)
 #   run5  at -vvv, with a changed admin password the server does not know and a canary
 #         mailbox password: the apply must fail, and no secret may appear in the output
 cat > "$WORK/runs.sh" <<'SHEOF'
@@ -110,13 +115,16 @@ docker run -d --name stalwart-bootstrap -e STALWART_RECOVERY_MODE=1 -e STALWART_
   -v "$PWD/opt/etc:/etc/stalwart:ro" -v "$PWD/opt/data:/var/lib/stalwart" "$image" >/dev/null
 sleep 5
 play > run4.log 2>&1 || { tail -40 run4.log; exit 1; }
+play -e @vars6.json > run6.log 2>&1 || { tail -40 run6.log; exit 1; }
+play -e @vars6.json -e stalwart_bulwark_version=1.16.0 > run7.log 2>&1 || { tail -40 run7.log; exit 1; }
+cp opt/etc/bulwark.applied bulwark7.txt
 play -vvv -e @vars5.json > run5.log 2>&1; echo $? > run5.rc
 SHEOF
 docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
   -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh runs.sh || { echo "FAIL converge"; exit 1; }
 
 recap() { grep -A1 'PLAY RECAP' "$WORK/$1.log" | tail -1; }
-for run in run0 run1 run2 run3 run4; do echo "$run: $(recap $run)"; done
+for run in run0 run1 run2 run3 run4 run6 run7; do echo "$run: $(recap $run)"; done
 FAILED=0
 check() { if eval "$2"; then echo "PASS $1"; else echo "FAIL $1${3:+: $3}"; FAILED=1; fi; }
 check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "Fewer than 6 SpamRules after 120 s: the stock rules were not loaded" "$WORK/run0.log" && [ ! -e "$WORK/run0.marker" ]' \
@@ -135,5 +143,12 @@ check spam_rules 'grep -qx IAC_JUNK_PROBE <<<"$rules" && [ "$(grep -c STWT_ <<<"
   "$(grep -c STWT_ <<<"$rules") stock rules"
 check apply_failure_leaks_nothing '[ "$(cat "$WORK/run5.rc")" != 0 ] && grep -q "stalwart-cli apply of .* failed (rc=" "$WORK/run5.log" \
   && ! grep -qF -f "$WORK/secrets.txt" "$WORK/run5.log"' "rc=$(cat "$WORK/run5.rc"), leaked: $(grep -oF -f "$WORK/secrets.txt" "$WORK/run5.log" | sort -u | head -3 | tr '\n' ' ')"
+check bootstrap_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run1.log"'
+check plan_change_no_update_apps 'grep -q "RUNNING HANDLER .*Apply Stalwart plan" "$WORK/run6.log" && ! grep -q "Update Stalwart apps" "$WORK/run6.log" \
+  && ! grep -q "Update Stalwart apps" "$WORK/run3.log"'
+# The new bundle is really served: Bulwark's index names its build.
+for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q 'BUILD_ID = "1.16.0' && break; sleep 2; done
+check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run7.log" && grep -q "/1.16.0/" "$WORK/bulwark7.txt" \
+  && curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"1.16.0"' "stamp $(cat "$WORK/bulwark7.txt" 2>/dev/null)"
 check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
 exit $FAILED
