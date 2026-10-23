@@ -407,6 +407,13 @@ Action/ReloadTlsCertificates` switched both listeners (SNI and no-SNI) to the ne
 within one second. A container restart also re-reads the files. So renewal needs a host-side
 trigger that runs that action (or restarts the container).
 
+**Implemented**: `stalwart-cert-reload.path` watches the acme-companion's real files
+(`stalwart_cert_watch`: `<certs volume>/<host>/fullchain.pem` and `key.pem`, which the volume's
+`mail.<host>.crt`/`.key` symlink to) with `PathChanged=`, and starts `stalwart-cert-reload.service`,
+a oneshot running `stalwart_cli_docker create Action/ReloadTlsCertificates` (output discarded; a
+failure shows as the unit failing). `local-smoke.sh` `cert_renewal` swaps the target files and runs
+that rendered ExecStart; systemd itself is only exercised on the droplet.
+
 ### Spam: Junk and reject (Task 2)
 
 - With `scoreReject` above 0, a message at or above it gets `550 5.7.1 Message rejected due to

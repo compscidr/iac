@@ -46,12 +46,15 @@ docker volume create certs >/dev/null
 docker run --rm -v certs:/c -v "$WORK/certs:/s:ro" "$RUNNER" sh -c 'cp /s/* /c/'
 
 python3 -I - "$WORK" "$ROLE" <<'PYEOF'
-import json, sys
+import json, os, sys
 w, role = sys.argv[1:3]
+os.makedirs(f"{w}/systemd")
 json.dump({
     "stalwart_install_path": f"{w}/opt",
     "stalwart_mailu_dkim_dir": f"{w}/mailu-dkim",
     "stalwart_tailnet_ip": "127.0.0.2",
+    "stalwart_systemd_dir": f"{w}/systemd",  # no systemd here: the units are templated, not enabled
+    "stalwart_systemd_enable": False,
     "stalwart_staged_http_port": 18080,  # a dev server often holds *:8080
     "stalwart_public_url": "https://smoke.invalid",
     "stalwart_domain": "rustd.xyz",

@@ -66,15 +66,23 @@ fi
 # production keys (BEGIN PRIVATE KEY).
 mkdir -p "$WORK/etc" "$WORK/certs" "$WORK/dkim"
 echo '{"@type":"RocksDb","path":"/var/lib/stalwart/"}' > "$WORK/etc/config.json"
-CERT="$WORK/certs/mail.jasonernst.com.crt"; DKIM_PUB="$WORK/rustd.xyz.dkim.pub"
-openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj '/CN=mail.jasonernst.com' \
-  -addext 'subjectAltName=DNS:mail.jasonernst.com,DNS:mail.sair.run,DNS:mail.rustd.xyz,DNS:mail.darksearch.xyz' \
-  -keyout "$WORK/certs/mail.jasonernst.com.key" -out "$CERT" 2>/dev/null
+# Laid out like the certs volume on www: mail.<host>.crt/.key are symlinks to the
+# acme-companion's real files in <host>/ (README "Certificate reload"); renewal rewrites those.
+HOST=mail.jasonernst.com; CERTDIR="$WORK/certs/$HOST"
+CERT="$CERTDIR/fullchain.pem"; DKIM_PUB="$WORK/rustd.xyz.dkim.pub"
+mkdir -p "$CERTDIR"
+newcert() { # cert-file key-file
+  openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj "/CN=$HOST" \
+    -addext "subjectAltName=DNS:$HOST,DNS:mail.sair.run,DNS:mail.rustd.xyz,DNS:mail.darksearch.xyz" \
+    -keyout "$2" -out "$1" 2>/dev/null
+}
+newcert "$CERT" "$CERTDIR/key.pem"
+ln -s "./$HOST/fullchain.pem" "$WORK/certs/$HOST.crt"; ln -s "./$HOST/key.pem" "$WORK/certs/$HOST.key"
 for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/dkim/$d.dkim.key" 2>/dev/null; done
 [ "$(head -1 "$WORK/dkim/rustd.xyz.dkim.key")" = "-----BEGIN PRIVATE KEY-----" ] || { echo "DKIM fixture is not PKCS#8"; exit 2; }
 openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/null
-chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$WORK"/dkim
-chmod 0644 "$WORK"/etc/* "$WORK"/certs/* "$WORK"/dkim/*
+chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$CERTDIR" "$WORK"/dkim
+chmod 0644 "$WORK"/etc/* "$CERTDIR"/* "$WORK"/dkim/*
 docker volume create "$NAME-data" >/dev/null
 # Fixed subnets: -px is exempt from bans in the plan (as nginx-proxy's network is), -nx is not.
 docker network create --subnet 172.30.251.0/24 "$NAME-px" >/dev/null && docker network create --subnet 172.30.252.0/24 "$NAME-nx" >/dev/null \
@@ -323,6 +331,46 @@ want=$(openssl x509 -in "$CERT" -noout -fingerprint -sha256)
 got=$(openssl s_client -connect "127.0.0.1:$P_IMAPS" -servername mail.rustd.xyz </dev/null 2>/dev/null \
       | openssl x509 -noout -fingerprint -sha256 2>/dev/null)
 if [ -n "$got" ] && [ "$got" = "$want" ]; then pass cert_file; else fail cert_file "${got:-no certificate}"; fi
+
+# --- cert_renewal: a renewal (new files swapped in under the symlinks, as acme-companion
+# does) reaches 465 and 993 without a restart. The local smoke cannot run systemd, so this
+# runs the exact ExecStart of the role's rendered stalwart-cert-reload.service (the CLI
+# container in the Stalwart netns, credentials from cli.env) and validates the units.
+mkdir -p "$WORK/opt/etc" "$WORK/systemd"
+cp "$WORK/plan.ndjson" "$WORK/opt/etc/plan.ndjson"
+printf 'STALWART_USER=%s\nSTALWART_PASSWORD=%s\n' "$ADMIN_USER" "$ADMIN_PASS" > "$WORK/opt/cli.env"
+for u in service path; do
+  (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+    -a "src=$ROLE/templates/stalwart-cert-reload.$u.j2 dest=$WORK/systemd/stalwart-cert-reload.$u mode=0644" \
+    -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_cli_path=$CLI" \
+    -e "stalwart_certs_dir=$WORK/certs" >"$WORK/render.log" 2>&1) || { echo "cannot render the $u unit"; exit 2; }
+done
+RELOAD=$(sed -n 's/^ExecStart=//p' "$WORK/systemd/stalwart-cert-reload.service")
+# The Stalwart container here is not named `stalwart`, as it is on the droplet.
+RELOAD=${RELOAD//container:stalwart /container:$NAME }
+fp() { openssl s_client -connect "127.0.0.1:$1" -servername mail.rustd.xyz </dev/null 2>/dev/null \
+       | openssl x509 -noout -fingerprint -sha256 2>/dev/null; }
+before_imaps=$(fp "$P_IMAPS"); before_subs=$(fp "$P_SUBS")
+newcert "$CERTDIR/fullchain.pem.new" "$CERTDIR/key.pem.new"
+chmod 0644 "$CERTDIR"/*.new
+mv "$CERTDIR/fullchain.pem.new" "$CERTDIR/fullchain.pem"; mv "$CERTDIR/key.pem.new" "$CERTDIR/key.pem"
+want=$(openssl x509 -in "$CERT" -noout -fingerprint -sha256)
+$RELOAD >/dev/null 2>&1 || echo "note: the unit's ExecStart exited $?"
+ok=0
+for _ in $(seq 1 120); do
+  [ "$(fp "$P_IMAPS")" = "$want" ] && [ "$(fp "$P_SUBS")" = "$want" ] && { ok=1; break; }
+  sleep 1
+done
+if [ $ok = 1 ] && [ -n "$before_imaps" ] && [ "$before_imaps" = "$before_subs" ] && [ "$before_imaps" != "$want" ]; then pass cert_renewal
+else fail cert_renewal "993=$(fp "$P_IMAPS") 465=$(fp "$P_SUBS") want=$want"; fi
+# The units must be valid and the .path must watch the real files, not the symlinks.
+if [ "$(grep -c '^PathChanged=' "$WORK/systemd/stalwart-cert-reload.path")" = 2 ] \
+   && grep -qx "PathChanged=$CERTDIR/fullchain.pem" "$WORK/systemd/stalwart-cert-reload.path" \
+   && grep -qx "PathChanged=$CERTDIR/key.pem" "$WORK/systemd/stalwart-cert-reload.path" \
+   && { ! command -v systemd-analyze >/dev/null || systemd-analyze verify --man=no \
+        "$WORK/systemd/stalwart-cert-reload.path" "$WORK/systemd/stalwart-cert-reload.service" 2>"$WORK/verify.log" \
+        || ! grep -v 'docker.service\|not-found' "$WORK/verify.log" | grep -q .; }; then pass cert_units
+else fail cert_units "$(cat "$WORK/verify.log" 2>/dev/null)"; fi
 
 # --- webmail: Bulwark's index.html under /webmail/ (Stalwart fetches the zip at start)
 ok=0

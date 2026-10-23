@@ -320,3 +320,25 @@
     port: "{{ item }}"
     timeout: 60
   loop: "{{ [2525, 4465, 9993] if stalwart_staged else [25, 465, 993] }}"
+
+# Replacing the cert files in place is not noticed by Stalwart; Action/ReloadTlsCertificates
+# is (README "Certificate reload"). The unit runs the same stalwart-cli as the handlers.
+- name: Deploy the cert-reload units
+  become: true
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ stalwart_systemd_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [stalwart-cert-reload.service, stalwart-cert-reload.path]
+  register: stalwart_cert_units
+
+- name: Enable the cert-reload watcher
+  become: true
+  ansible.builtin.systemd_service:
+    name: stalwart-cert-reload.path
+    enabled: true
+    state: "{{ 'restarted' if stalwart_cert_units is changed else 'started' }}"
+    daemon_reload: "{{ stalwart_cert_units is changed }}"
+  when: stalwart_systemd_enable

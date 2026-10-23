@@ -24,6 +24,16 @@ stalwart_bootstrap_cli_docker: >-
   -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8080 --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color
 
 stalwart_install_path: /opt/stalwart
+
+# Cert renewal pickup (README "Certificate reload"). The certs volume's mail.<host>.crt/.key are
+# symlinks to the acme-companion's real files in the <host>/ subdirectory; a .path unit
+# watches those real files (a symlink or the directory would miss or over-fire).
+stalwart_certs_dir: /var/lib/docker/volumes/certs/_data
+stalwart_cert_watch:
+  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/fullchain.pem"
+  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/key.pem"
+stalwart_systemd_dir: /etc/systemd/system
+stalwart_systemd_enable: true # false where systemd is not running (the converge test)
 stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, backups/
 stalwart_memory: "512m" # revisit in Task 8 from observed usage under the spam filter
 
