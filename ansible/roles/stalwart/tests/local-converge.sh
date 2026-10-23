@@ -151,4 +151,31 @@ for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q 'BUILD_
 check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run7.log" && grep -q "/1.16.0/" "$WORK/bulwark7.txt" \
   && curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"1.16.0"' "stamp $(cat "$WORK/bulwark7.txt" 2>/dev/null)"
 check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
+# Last: it bans an address for good. Published ports map to the gateway network (stalwart,
+# gw_priority), so 127.0.0.2:9993, relayed by docker-proxy, arrives from the stalwart
+# network's gateway, which must NOT be ban-exempt: 105 bad IMAP logins, then the right
+# password is refused. The nginx-proxy network (exempt) still logs in after its own 105.
+imap() { python3 -I - "$@" <<'PYEOF'
+import imaplib, ssl, sys
+pw, n = sys.argv[1], int(sys.argv[2])
+ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+for _ in range(n):
+    try:
+        m = imaplib.IMAP4_SSL("127.0.0.2", 9993, ssl_context=ctx, timeout=10); m.login("jason@rustd.xyz", pw); m.logout(); print("ok")
+    except Exception as e:
+        print(type(e).__name__)
+PYEOF
+}
+imap wrong 105 > "$WORK/imap-bad.txt"
+gw_after=$(imap jason-changed-Pw-6604 1)
+GW=$(docker network inspect -f '{{range .IPAM.Config}}{{.Gateway}} {{end}}' stalwart)
+SIP=$(docker inspect -f '{{(index .NetworkSettings.Networks "nginx-proxy").IPAddress}}' stalwart)
+px_after=$(docker run --rm --network nginx-proxy --entrypoint sh "$(docker inspect -f '{{.Config.Image}}' stalwart)" -c '
+  for i in $(seq 105); do curl -s -o /dev/null -u jason@rustd.xyz:wrong "http://$0:8080/jmap/session"; done
+  curl -s -o /dev/null -w "%{http_code}" -u jason@rustd.xyz:jason-changed-Pw-6604 "http://$0:8080/jmap/session"' "$SIP")
+blocked=$(docker run --rm --network container:stalwart -v "$cli:/usr/local/bin/stalwart-cli:ro" -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 \
+  -e STALWART_USER=stalwart-admin@rustd.xyz -e STALWART_PASSWORD=admin-fixture-Pw-5519 --entrypoint stalwart-cli \
+  "$(docker inspect -f '{{.Config.Image}}' stalwart)" --no-color query BlockedIp | awk 'NR > 1 && NF { print $2 }' | tr '\n' ' ')
+check gateway_path_banned '[ "$gw_after" != ok ] && grep -qw "$GW" <<<"$blocked" && [ "$px_after" = 200 ]' \
+  "docker-proxy path after 105 bad: $gw_after (want refused), blocked: ${blocked:-none} (want the stalwart gateway $GW), nginx-proxy network after 105 bad: $px_after (want 200)"
 exit $FAILED

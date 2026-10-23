@@ -95,6 +95,7 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
 bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, eight runs, ~5 min
+bash ansible/roles/stalwart/tests/local-nginx.sh      # nginx-proxy side, ~5 min (runs the smoke)
 ```
 
 Local Docker only. **`local-smoke.sh`** renders `templates/plan.ndjson.j2` with
@@ -116,6 +117,13 @@ the container gets the admin in on 8081: the `100.64.0.0/10` entry works). Exit 
 `SMOKE_KEEP=1` leaves the container running. The smoke needs the subnets 172.30.251.0/24 and
 172.30.252.0/24 free.
 
+**`local-nginx.sh`** keeps a smoke container (`SMOKE_KEEP=1`), renders the role's vhost.d and
+conf.d templates, and puts a throwaway `jwilder/nginx-proxy` with per-host self-signed certs
+(plus a relay carrying `VIRTUAL_HOST`) in front of it on the ban-exempt network. It checks the
+any-case `/admin`/`/account` 403s on all four hosts, the secondaries' 302s, proxied webmail and
+JMAP, `proxy_logins_limited_not_banned` and the port-80 redirect. Every request is pinned to
+the local proxy; it stops before any request if the proxy has no port. Removes all it made.
+
 **`local-converge.sh`** runs the role with `ansible-playbook` (as root, in a throwaway
 `docker:cli` container on the host network with the docker socket) against a temp
 `stalwart_install_path`, staged on 127.0.0.2, 1Password skipped (`--skip-tags
@@ -127,8 +135,8 @@ run6, with a mailbox password changed, must apply the plan without `Update Stalw
 run7, with `stalwart_bulwark_version` 1.16.0, must run it and serve that build;
 run5 (last), at `-vvv` with an admin password the server does not know and a canary mailbox
 password, must fail the apply with no plan secret (raw or JSON-escaped) anywhere in its
-output (`apply_failure_leaks_nothing`). Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, and
-no recovery variables on the running container. It creates and removes a container
+output (`apply_failure_leaks_nothing`). Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, no recovery variables on the
+running container, and last `gateway_path_banned` (see "Auth bans and the proxy"). It creates and removes a container
 `stalwart` and a volume `certs`, and refuses to start if either exists.
 
 - `stalwart-cli` comes from `$STALWART_CLI`, `PATH`, or is downloaded (pinned, sha256-checked).
@@ -268,15 +276,29 @@ Proved: 105 bad logins from one address, then the right password, got connection
   then wins over an existing `BlockedIp`. It does not touch credential `allowedIps`: the admin
   is still refused from it. Smoke `ban_exempt_proxy`: after 105 bad logins and 31 `*.php`,
   the exempt network still logs in (200) and another network is banned (000). Other containers
-  on `nginx-proxy` are exempt too, and so is its gateway, which docker-proxy traffic can
-  arrive from (exempting it also stops one client banning everyone behind it).
+  on `nginx-proxy` are exempt too, and so is its gateway, so nothing from the internet may
+  arrive from that gateway:
+- **Published ports map to the `stalwart` network** (`gw_priority: 1` on its attachment; needs
+  Docker API 1.48, Docker 28+). Docker binds a multi-network container's published ports to
+  its gateway network's endpoint, and traffic docker-proxy relays (hairpin, locally originated,
+  IPv6 to a published port without ip6tables NAT) arrives from **that network's gateway**.
+  Seen locally (Docker 29.1.3): without a priority the first-listed network wins, which in
+  this role was `nginx-proxy`, so that traffic came from the exempt gateway and IMAP/SMTP
+  brute force on that path was never banned; with the priority it comes from the `stalwart`
+  gateway. Converge `gateway_path_banned` (last check): 105 bad IMAP logins on the
+  docker-proxy path (127.0.0.2:9993), then the right password is refused and `BlockedIp`
+  holds the `stalwart` gateway, while the `nginx-proxy` network still logs in after its own
+  105; without `gw_priority` it fails (not banned, nothing blocked). Consequence: all
+  docker-proxy-relayed clients share one address, so one of them can get that path banned
+  for all (fail closed, not open). External IPv4 clients are DNATed with their own address.
 - **Brute force is throttled in nginx-proxy instead**, per client address: requests carrying
   credentials (`Authorization: Basic`, `/auth/…`, `/api/auth…`; Bulwark Lite uses Basic and
   OAuth `/auth/token`) share `limit_req zone=stalwart_auth` (`conf.d/stalwart.conf`,
   `stalwart_proxy_auth_rate` 3r/s, `stalwart_proxy_auth_burst` 60, 429 past it). Bearer and
   anonymous requests are not counted. `X-Forwarded-For` is still not trusted
-  (`useXForwarded` false). IMAP and SMTP see real addresses and keep Stalwart's own bans.
-  Verified with the nginx test: 105 paced bad logins all reached Stalwart (401), 100 parallel
+  (`useXForwarded` false). IMAP and SMTP keep Stalwart's own bans: per real address for
+  DNATed IPv4 clients, per the `stalwart` gateway for docker-proxy-relayed ones (above).
+  Verified with `tests/local-nginx.sh`: 105 paced bad logins all reached Stalwart (401), 100 parallel
   ones got 34 × 429, Bearer and anonymous bursts none; then the same client after 3 s and a
   second client both logged in (200). Webmail usage under the limit was not measured with a
   real browser session; if Basic-auth JMAP calls trip it, raise the rate.
@@ -298,7 +320,7 @@ container sees the 100.x source. Never "fix" it by adding the gateway to `allowe
 
 Verified locally: the 100.64/10 entry admits a 100.x source (`admin_tailnet_range`), the
 gateway is refused (`admin_ip_restricted`), live/staged env and ports render as intended.
-Verified with a throwaway `jwilder/nginx-proxy` (the production image) and the rendered vhost.d
+Verified by `tests/local-nginx.sh`: a throwaway `jwilder/nginx-proxy` (the production image) and the rendered vhost.d
 files: `/admin`, `/admin/`, `/ADMIN`, `/Admin/`, `/account/`, `/ACCOUNT`, `/Account`, `/%61dmin/`
 and `//admin/` give nginx's 403 on all four hosts, the
 secondaries' `/webmail` and `/webmail/` give 302 to the primary, the primary's `/webmail/` and

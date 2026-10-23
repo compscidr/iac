@@ -225,9 +225,14 @@
       - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
       - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
       - "{{ stalwart_install_path }}/dkim:/dkim:ro"
+    # The gateway network is the one published ports map to, so traffic relayed by
+    # docker-proxy (hairpin, IPv6 without NAT) arrives from its gateway. Pin it to `stalwart`:
+    # nginx-proxy's subnet, gateway included, is exempt from bans (README "Auth bans and the
+    # proxy"). Without this the first-listed network wins. Needs Docker API 1.48 (Docker 28).
     networks:
       - name: nginx-proxy
       - name: stalwart
+        gw_priority: 1
     # Staged: tailnet only, on ports Mailu does not hold. Live: every address, IPv6
     # included, as nginx-proxy does (#591). The admin listener (8081) is on the tailnet IP
     # in both: an IPv4 address, so a tailnet client is DNATed, not relayed by docker-proxy
