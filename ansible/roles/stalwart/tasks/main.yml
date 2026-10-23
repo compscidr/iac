@@ -342,3 +342,55 @@
     state: "{{ 'restarted' if stalwart_cert_units is changed else 'started' }}"
     daemon_reload: "{{ stalwart_cert_units is changed }}"
   when: stalwart_systemd_enable
+
+# --- Nightly NAS backup (Task 6) ---------------------------------------------
+# Script, units and the rsync password. The nas-side prune lives in backup_nas (nas.yml).
+- name: Ensure rsync is installed
+  tags: backup
+  become: true
+  ansible.builtin.package:
+    name: rsync
+    state: present
+
+- name: Write the nas rsync-daemon password file
+  tags: backup
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_backup_rsync_password_file }}"
+    content: "{{ stalwart_backup_nas_rsync_password }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup script
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: stalwart-backup.sh.j2
+    dest: "{{ stalwart_install_path }}/stalwart-backup.sh"
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deploy the backup units
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ stalwart_systemd_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [stalwart-backup.service, stalwart-backup.timer]
+  register: stalwart_backup_units
+
+- name: Enable and start the backup timer
+  tags: backup
+  become: true
+  ansible.builtin.systemd_service:
+    name: stalwart-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: "{{ stalwart_backup_units is changed }}"
+  when: stalwart_systemd_enable

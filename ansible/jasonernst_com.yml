@@ -37,6 +37,7 @@
       ansible.builtin.set_fact:
         # Same credential for the mailu backup pipeline (one daemon on the nas).
         mailu_backup_nas_rsync_password: "{{ jasonernst_com_backup_nas_rsync_password }}"
+        stalwart_backup_nas_rsync_password: "{{ jasonernst_com_backup_nas_rsync_password }}"
         jasonernst_com_smtp_username: "{{ jasonernst_com_op_item_smtp
           | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
         jasonernst_com_smtp_password: "{{ jasonernst_com_op_item_smtp

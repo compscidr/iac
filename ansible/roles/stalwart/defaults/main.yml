@@ -133,3 +133,23 @@ stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/d
 
 # Outbound limit per authenticated login, counted per RCPT (README "Per-account send limit").
 stalwart_send_limit_per_day: 200
+
+# --- Nightly NAS backup (Task 6) ---------------------------------------------
+#
+# Same pipeline as the mailu role's: additive rsync to the nas' built-in rsync daemon
+# (port 873) over the tailnet. The nas-side path and keep count live in group_vars/all.yml
+# (backup_nas' prune cron reads them too). The snapshot is a tar.gz of data/ taken with the
+# container paused (README "Backup and restore of the RocksDB store").
+stalwart_backup_container: stalwart
+stalwart_backup_local_dir: "{{ stalwart_install_path }}/backups" # owned by stalwart_uid: tar runs as it
+stalwart_backup_local_keep: 7
+stalwart_backup_nas_host: nas # must match backup_nas_tailnet_hostname
+stalwart_backup_nas_rsync_user: svcbackup
+stalwart_backup_nas_rsync_port: 873
+stalwart_backup_nas_rsync_module: storage
+# Full remote path is <module>/<subpath> = /volume1/storage/backups/stalwart
+# (matches stalwart_backup_nas_path in group_vars/all.yml).
+stalwart_backup_nas_rsync_subpath: backups/stalwart
+stalwart_backup_rsync_password_file: "{{ stalwart_install_path }}/.rsync-nas-pass"
+# Filled from jasonernst_com.yml via the same 1Password `nas-rsync` item as mailu's.
+stalwart_backup_nas_rsync_password: ""

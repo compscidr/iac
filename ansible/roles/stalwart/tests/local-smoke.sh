@@ -35,9 +35,11 @@ WORK=$(mktemp -d)
 FAILED=0
 
 cleanup() {
-  if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left $NAME running (data $NAME-data, files $WORK)"; return; fi
-  docker rm -f "$NAME" "$NAME-rec" >/dev/null 2>&1
-  docker volume rm "$NAME-data" >/dev/null 2>&1
+  if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left $NAME running (files $WORK)"; return; fi
+  docker rm -f "$NAME" "$NAME-rec" "$NAME-rst" >/dev/null 2>&1
+  [ -n "${RSYNCD_PID:-}" ] && kill "$RSYNCD_PID" 2>/dev/null
+  # data/ and restore/ hold files owned by UID 2000: remove them as root in a container
+  docker run --rm --user 0 -v "$WORK:/w" --entrypoint rm "$IMAGE" -rf /w/opt/data /w/opt/backups /w/restore >/dev/null 2>&1
   docker network rm "$NAME-tn" "$NAME-px" "$NAME-nx" >/dev/null 2>&1
   rm -rf "$WORK"
 }
@@ -83,7 +85,9 @@ for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keyg
 openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/null
 chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$CERTDIR" "$WORK"/dkim
 chmod 0644 "$WORK"/etc/* "$CERTDIR"/* "$WORK"/dkim/*
-docker volume create "$NAME-data" >/dev/null
+# data/ is a bind mount owned by UID 2000, as on the droplet: the backup reads it by path.
+mkdir -p "$WORK/opt/data"
+docker run --rm --user 0 -v "$WORK/opt/data:/d" --entrypoint sh "$IMAGE" -c 'chown 2000:2000 /d && chmod 0700 /d'
 # Fixed subnets: -px is exempt from bans in the plan (as nginx-proxy's network is), -nx is not.
 docker network create --subnet 172.30.251.0/24 "$NAME-px" >/dev/null && docker network create --subnet 172.30.252.0/24 "$NAME-nx" >/dev/null \
   || { echo "cannot create test networks 172.30.251.0/24, 172.30.252.0/24 (in use?)"; exit 2; }
@@ -122,7 +126,7 @@ render "$WORK/bootstrap.ndjson" '{"stalwart_plan_bootstrap": true}'
 render "$WORK/plan.ndjson" '{}'
 
 chmod 0644 "$WORK"/*.ndjson
-MOUNTS=(-v "$NAME-data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
+MOUNTS=(-v "$WORK/opt/data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
         -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
 
 hostport() { docker port "$1" "$2" | head -1 | sed 's/.*://'; }
@@ -449,6 +453,108 @@ creates=$(grep -c '"@type": "create"' "$WORK/plan.ndjson") # Task + Action, new 
 if [ $rc = 0 ] && grep -q ", $creates created (0 failed)" "$WORK/reapply.log" && cmp -s "$WORK/before.txt" "$WORK/after.txt" \
    && [ "$(grep -c . "$WORK/before.txt")" -gt 9 ]; then pass reapply_idempotent
 else fail reapply_idempotent "rc=$rc $(tail -1 "$WORK/reapply.log"); $(diff "$WORK/before.txt" "$WORK/after.txt" | head -5)"; fi
+
+# --- backup_restore: the role's nightly script, run for real ------------------------
+# The script is rendered from templates/stalwart-backup.sh.j2 with only paths, the container
+# name and the NAS coordinates substituted (a local rsync daemon plays the NAS). A message
+# is delivered first; the script pauses the container, tars data/, pushes etc/ and dkim/
+# and then the snapshot; a second container started from that snapshot must still log
+# jason@rustd.xyz in and hold the message. The etc/ mirror must carry no password-bearing
+# file, and the snapshot must be the last thing uploaded.
+bk_tok="smoke-backup-$RANDOM$RANDOM"
+bk_py() { # mode smtp-port imaps-port token password: log in as jason, wait for the token in INBOX
+  python3 -I - "$@" <<'PYEOF'
+import imaplib, smtplib, ssl, sys, time
+mode, smtp, imaps, tok, pw = sys.argv[1:6]
+ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+if mode == "send":
+    s = smtplib.SMTP("127.0.0.1", int(smtp), local_hostname="client.sender.test", timeout=30)
+    s.sendmail("someone@sender.test", ["jason@rustd.xyz"],
+               f"From: <someone@sender.test>\r\nTo: <jason@rustd.xyz>\r\nSubject: {tok}\r\n\r\nbackup test\r\n".encode())
+    s.quit()
+for _ in range(90):
+    try:
+        m = imaplib.IMAP4_SSL("127.0.0.1", int(imaps), ssl_context=ctx, timeout=30)
+        m.login("jason@rustd.xyz", pw)
+        if m.select("INBOX", readonly=True)[0] == "OK" and m.search(None, "SUBJECT", tok)[1][0]:
+            sys.exit(0)
+        m.logout()
+    except Exception:
+        pass
+    time.sleep(1)
+sys.exit(1)
+PYEOF
+}
+BK_OK=1
+bk_fail() { fail backup_restore "$1"; BK_OK=0; }
+bk_py send "$P_SMTP" "$P_IMAPS" "$bk_tok" "$JASON_PASS" || bk_fail "test message never reached the live server"
+mkdir -p "$WORK/opt/etc" "$WORK/opt/dkim" "$WORK/opt/backups" "$WORK/nas"
+# backups/ is owned by UID 2000 like the role makes it (the tar runs as that user); 0755 here
+# only so this non-root test can read it, where the real script runs as root.
+docker run --rm --user 0 -v "$WORK/opt/backups:/d" --entrypoint sh "$IMAGE" -c 'chown 2000:2000 /d && chmod 0755 /d'
+cp "$WORK"/etc/config.json "$WORK/opt/etc/"; cp "$WORK"/dkim/* "$WORK/opt/dkim/"
+# Things that must never reach the NAS: the plans hold every mailbox password, env files and
+# logs may. Decoys sit in etc/ (mirrored); the cli env files sit beside it (not mirrored).
+cp "$WORK/plan.ndjson" "$WORK/opt/etc/plan.ndjson"; cp "$WORK/bootstrap.ndjson" "$WORK/opt/etc/bootstrap.ndjson"
+echo "STALWART_PASSWORD=$ADMIN_PASS" > "$WORK/opt/etc/decoy.env"; echo "password $ADMIN_PASS" > "$WORK/opt/etc/decoy.log"
+echo "STALWART_PASSWORD=$ADMIN_PASS" > "$WORK/opt/cli.env"; echo "STALWART_PASSWORD=$ADMIN_PASS" > "$WORK/opt/bootstrap-cli.env"
+echo "kept" > "$WORK/opt/etc/plan.applied.sha256"
+# A local rsync daemon as the NAS: module `storage`, user svcbackup, transfers logged in order.
+NAS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+echo "svcbackup:nas-fixture-pw" > "$WORK/rsyncd.secrets"; echo "nas-fixture-pw" > "$WORK/rsync.pass"
+chmod 0600 "$WORK/rsyncd.secrets" "$WORK/rsync.pass"
+cat > "$WORK/rsyncd.conf" <<EOF
+address = 127.0.0.1
+port = $NAS_PORT
+pid file = $WORK/rsyncd.pid
+log file = $WORK/rsyncd.log
+transfer logging = yes
+log format = %f
+use chroot = no
+[storage]
+path = $WORK/nas
+read only = no
+auth users = svcbackup
+secrets file = $WORK/rsyncd.secrets
+EOF
+rsync --daemon --config="$WORK/rsyncd.conf" --no-detach >/dev/null 2>&1 &
+RSYNCD_PID=$!
+sleep 1
+(cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+  -a "src=$ROLE/templates/stalwart-backup.sh.j2 dest=$WORK/stalwart-backup.sh mode=0700" \
+  -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_backup_container=$NAME" \
+  -e "stalwart_backup_nas_keep=30" -e "stalwart_backup_nas_host=127.0.0.1" -e "stalwart_backup_nas_rsync_port=$NAS_PORT" \
+  -e "stalwart_backup_rsync_password_file=$WORK/rsync.pass" >"$WORK/render.log" 2>&1) \
+  || bk_fail "cannot render stalwart-backup.sh.j2: $(tail -3 "$WORK/render.log")"
+if [ $BK_OK = 1 ]; then
+  bash "$WORK/stalwart-backup.sh" > "$WORK/backup.log" 2>&1 || bk_fail "script exited $?: $(tail -5 "$WORK/backup.log")"
+  [ "$(docker inspect -f '{{.State.Paused}}' "$NAME")" = false ] || bk_fail "container left paused"
+fi
+if [ $BK_OK = 1 ]; then
+  SNAP=$(ls "$WORK"/nas/backups/stalwart/db/stalwart-*.tar.gz 2>/dev/null | head -1)
+  [ -n "$SNAP" ] || bk_fail "no stalwart-*.tar.gz under <module>/backups/stalwart/db/"
+fi
+if [ $BK_OK = 1 ]; then
+  # Restore: extract as UID 2000 into a fresh dir, boot a second container on it.
+  mkdir -p "$WORK/restore"
+  docker run --rm --user 0 -v "$WORK/restore:/d" -v "$SNAP:/snap.tar.gz:ro" --entrypoint sh "$IMAGE" -c \
+    'tar xzf /snap.tar.gz -C /d && chown -R 2000:2000 /d' || bk_fail "cannot extract $SNAP"
+  docker run -d --name "$NAME-rst" -v "$WORK/restore:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro" \
+    -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro" -e STALWART_PUBLIC_URL=https://smoke.invalid \
+    -p 127.0.0.1::993 "$IMAGE" >/dev/null
+  bk_py check x "$(hostport "$NAME-rst" 993)" "$bk_tok" "$JASON_PASS" \
+    || bk_fail "restored server: jason@rustd.xyz login or the message ($bk_tok) is missing"
+fi
+if [ $BK_OK = 1 ]; then
+  leaked=$(find "$WORK/nas" \( -name '*.ndjson' -o -name '*.env' -o -name '*.log' \) | head -3 | tr '\n' ' ')
+  if grep -rlF "$ADMIN_PASS" "$WORK/nas" >/dev/null 2>&1; then leaked="$leaked(admin password found) "; fi
+  [ -z "$leaked" ] || bk_fail "password-bearing files reached the NAS: $leaked"
+  [ -f "$WORK/nas/backups/stalwart/etc/config.json" ] && [ -f "$WORK/nas/backups/stalwart/etc/plan.applied.sha256" ] \
+    && [ -f "$WORK/nas/backups/stalwart/dkim/rustd.xyz.dkim.key" ] || bk_fail "etc/ or dkim/ mirror is incomplete"
+  last=$(grep 'backups/stalwart/' "$WORK/rsyncd.log" | tail -1)
+  grep -q 'backups/stalwart/db/stalwart-.*\.tar\.gz$' <<<"$last" || bk_fail "the snapshot was not the last transfer: $last"
+fi
+[ $BK_OK = 1 ] && pass backup_restore
 
 # Last, because it bans an address for good. 105 bad logins (authBanRate 100/day) and 31
 # *.php requests (scanBanRate 30/day), then a good login, from each network: the exempt one

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Managed by ansible (stalwart role) - do not edit by hand.
+#
+# Nightly Stalwart backup, shipped to the nas over its built-in rsync daemon (port 873,
+# over the tailnet - NOT ssh; see roles/backup_nas/README.md):
+#
+#   dkim/   - signing keys (losing them silently breaks outbound mail)
+#   etc/    - config.json and the apply stamps. NOT plan.ndjson / bootstrap.ndjson (they
+#             hold every mailbox password), *.env or *.log: excluded below. The cli env
+#             files live in {{ stalwart_install_path }}, outside etc/, so no mirror sees them.
+#   db/     - a tar.gz of data/ (the RocksDB store: accounts, mail, blobs), taken while
+#             the container is PAUSED. The store has no online snapshot (role README,
+#             "Backup and restore of the RocksDB store"); a paused copy is crash-consistent.
+#
+# Restore: see the README. The extracted files must be owned by UID {{ stalwart_uid }}.
+#
+# Pushes are additive (no --delete); db snapshots are pruned on the nas ({{ stalwart_backup_nas_keep }}
+# days, a root cron in the backup_nas role). This script never deletes anything remote.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+DIR="{{ stalwart_backup_local_dir }}"
+OUT="${DIR}/stalwart-${STAMP}.tar.gz"
+
+# Sweep leftovers of killed runs so they are never taken for snapshots (runs never overlap).
+rm -f "${DIR}"/stalwart-*.tar.gz.tmp
+
+# Mail is frozen for a few seconds. The trap thaws it however the tar ends, so a failed
+# snapshot can never leave the server paused.
+thaw() { docker unpause {{ stalwart_backup_container }} >/dev/null 2>&1 || true; }
+trap thaw EXIT
+docker pause {{ stalwart_backup_container }} >/dev/null
+# Temp name + rename (in the same container): a run that dies partway never leaves a
+# truncated file at the final name.
+docker run --rm --user {{ stalwart_uid }}:{{ stalwart_uid }} --network none \
+  -v "{{ stalwart_install_path }}/data:/data:ro" -v "${DIR}:/out" \
+  --entrypoint sh {{ stalwart_image }}@{{ stalwart_image_digest }} -c \
+  'set -e; tar -czf "/out/$0.tmp" -C /data . && mv "/out/$0.tmp" "/out/$0"' "${OUT##*/}"
+trap - EXIT
+docker unpause {{ stalwart_backup_container }} >/dev/null
+
+# Keep the newest {{ stalwart_backup_local_keep }} local snapshots (the glob excludes *.tmp).
+ls -1t "${DIR}"/stalwart-*.tar.gz | tail -n +{{ stalwart_backup_local_keep | int + 1 }} | xargs -r rm --
+
+RSYNC_OPTS=(-a --mkpath --contimeout=30 --timeout=300
+  --password-file={{ stalwart_backup_rsync_password_file }})
+DEST="rsync://{{ stalwart_backup_nas_rsync_user }}@{{ stalwart_backup_nas_host }}:{{ stalwart_backup_nas_rsync_port }}/{{ stalwart_backup_nas_rsync_module }}/{{ stalwart_backup_nas_rsync_subpath }}"
+
+# Mirrors first, the db snapshot LAST: the nas-side freshness check takes the newest
+# snapshot as the "this run succeeded" marker, so a fresh marker implies every mirror
+# push succeeded too.
+rsync "${RSYNC_OPTS[@]}" {{ stalwart_install_path }}/dkim/ "${DEST}/dkim/"
+rsync "${RSYNC_OPTS[@]}" --exclude='plan.ndjson' --exclude='bootstrap.ndjson' --exclude='*.env' --exclude='*.log' \
+  {{ stalwart_install_path }}/etc/ "${DEST}/etc/"
+rsync "${RSYNC_OPTS[@]}" --exclude='*.tmp' "${DIR}/" "${DEST}/db/"

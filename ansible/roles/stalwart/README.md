@@ -460,6 +460,33 @@ the same INBOX/Junk messages over IMAP:
   container, `docker unpause stalwart`. Crash-consistent; about 3.5 s for 160 MB gzipped. On
   restore the files must be owned by UID 2000.
 
+#### The nightly backup and restoring it
+
+`templates/stalwart-backup.sh.j2` (timer 05:00, tag `backup`) uses the pause-and-copy method:
+`docker pause stalwart`, `tar -czf` of `data/` from a throwaway container as UID 2000,
+`docker unpause` (an `EXIT` trap thaws it even if the tar fails), then a rename to
+`stalwart-YYYY-MM-DD.tar.gz`. It then pushes `dkim/`, `etc/` and, last, the snapshot to
+`<module>/backups/stalwart/db/` (`backup_nas` prunes `db/` after 30 days; freshness glob
+`stalwart-*`). The `etc/` mirror excludes `plan.ndjson`, `bootstrap.ndjson`, `*.env` and
+`*.log` (passwords); `cli.env` and `bootstrap-cli.env` sit outside `etc/`. The plans are
+re-rendered by the role, the env files rewritten by it. `tests/local-smoke.sh`
+(`backup_restore`) runs the rendered script and restores it.
+
+Restore (the host needs only docker): fetch `db/stalwart-<date>.tar.gz` and `dkim/`, `etc/`
+from the NAS, then
+
+```bash
+docker stop stalwart                     # or none yet, on a fresh host
+mv /opt/stalwart/data /opt/stalwart/data.old && mkdir -m 0700 /opt/stalwart/data
+tar -xzf stalwart-<date>.tar.gz -C /opt/stalwart/data
+chown -R 2000:2000 /opt/stalwart/data    # the files MUST be owned by UID 2000
+```
+
+Then run the role (`--tags` unneeded). `bootstrap.done` is absent on a fresh host, so the
+role bootstraps over the restored store and re-applies the plan; on the same host, leave
+`bootstrap.done` and just `docker start stalwart`. The store holds the mail, accounts and
+app passwords; the plan is rebuilt from IaC.
+
 ### Mailbox import with Vandelay (Task 9)
 
 ```bash

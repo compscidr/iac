@@ -55,6 +55,7 @@ json.dump({
     "stalwart_tailnet_ip": "127.0.0.2",
     "stalwart_systemd_dir": f"{w}/systemd",  # no systemd here: the units are templated, not enabled
     "stalwart_systemd_enable": False,
+    "stalwart_backup_nas_keep": 30,  # group_vars/all.yml in a real play
     "stalwart_staged_http_port": 18080,  # a dev server often holds *:8080
     "stalwart_public_url": "https://smoke.invalid",
     "stalwart_domain": "rustd.xyz",
