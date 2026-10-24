@@ -7,4 +7,4 @@ dev_gui_claude_desktop_key_fingerprint: 31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
 
 # Orca (onorca.dev): no apt repo, so the .deb comes from GitHub releases.
 # Bumped by renovate (see renovate.json).
-dev_gui_orca_version: "1.4.237"
+dev_gui_orca_version: "1.4.238"
