@@ -117,6 +117,53 @@
         "image: (?<depName>ghcr\\.io/mailu/[a-z]+):(?<currentValue>[^\\s#]+).*\\n\\s+digest: \"(?<currentDigest>sha256:[a-f0-9]+)\""
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Track the stalwart image (tag + digest) in the stalwart role (stalwart_image: followed by stalwart_image_digest:)",
+      "managerFilePatterns": [
+        "/^ansible/roles/stalwart/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "stalwart_image: \"(?<depName>stalwartlabs/stalwart):(?<currentValue>[^\"]+)\"\\nstalwart_image_digest: \"(?<currentDigest>sha256:[a-f0-9]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Track bulwarkmail/webmail releases for the stalwart_bulwark_version pin in the stalwart role (tags have no v prefix)",
+      "managerFilePatterns": [
+        "/^ansible/roles/stalwart/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "stalwart_bulwark_version:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bulwarkmail/webmail"
+    },
+    {
+      "customType": "regex",
+      "description": "Track stalwartlabs/cli releases for the stalwart_cli_version pin in the stalwart role",
+      "managerFilePatterns": [
+        "/^ansible/roles/stalwart/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "stalwart_cli_version:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "stalwartlabs/cli"
+    },
+    {
+      "customType": "regex",
+      "description": "Track stalwartlabs/spam-filter releases for the tag inside stalwart_spam_rules_url in the stalwart role",
+      "managerFilePatterns": [
+        "/^ansible/roles/stalwart/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "stalwartlabs/spam-filter/releases/download/(?<currentValue>[^/\"]+)/"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "stalwartlabs/spam-filter"
     }
   ],
   "packageRules": [
@@ -147,6 +194,17 @@
         "ghcr.io/mailu/**"
       ],
       "groupName": "mailu images",
+      "automerge": false
+    },
+    {
+      "description": "Merging a Stalwart bump doesn't deploy it and restarts mail when it does. One PR for the image, webmail, cli and spam rules; keep it open until the stalwart play (--tags stalwart) has been run, then merge it by hand. A stalwart_cli_version bump also needs stalwart_cli_sha256 updated by hand (Renovate cannot recompute it), or the deploy fails on checksum.",
+      "matchDepNames": [
+        "stalwartlabs/stalwart",
+        "bulwarkmail/webmail",
+        "stalwartlabs/cli",
+        "stalwartlabs/spam-filter"
+      ],
+      "groupName": "stalwart",
       "automerge": false
     },
     {

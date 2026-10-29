@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Watch the certificate files acme-companion renews
+
+[Path]
+{% for f in stalwart_cert_watch %}
+PathChanged={{ f }}
+{% endfor %}
+Unit=stalwart-cert-reload.service
+
+[Install]
+WantedBy=multi-user.target

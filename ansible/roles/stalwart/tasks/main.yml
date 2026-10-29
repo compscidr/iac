@@ -1,212 +1,396 @@
 ---
-# Stalwart Mail Server installation and configuration
+# Stalwart mail server (Docker), staged beside Mailu or live. Design:
+# docs/superpowers/specs/2026-10-22-stalwart-mail-design.md; object model: README.
 
-- name: Install required packages
-  become: true
-  ansible.builtin.apt:
-    name:
-      - curl
-      - ca-certificates
-      - ufw
-    state: present
-    update_cache: true
+# Read every secret the defaults reference ONCE, up front: one `op` call per item
+# (#542, as in the mailu role). The mailbox items are Mailu's; Mailu's secret key and
+# admin login have no Stalwart counterpart (admin@jasonernst.com becomes an alias).
+- name: Read this role's 1Password items
+  tags: onepassword
+  ansible.builtin.set_fact:
+    stalwart_op_admin_password: "{{ lookup('community.general.onepassword', 'Stalwart Admin', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_recovery_admin_password: "{{ lookup('community.general.onepassword', 'Stalwart Recovery Admin', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_jasonernst_com_jason_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - jason', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    stalwart_op_jasonernst_com_kai_password: "{{ lookup('community.general.onepassword', 'mail.jasonernst.com - kai', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    stalwart_op_goblog_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - goblog', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_sair_run_jason_password: "{{ lookup('community.general.onepassword', 'mail.sair.run - jason', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_sair_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - sair', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_rustd_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.rustd.xyz - jason', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_rustd_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - rustd', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_darksearch_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.darksearch.xyz - jason', field='password',
+      vault=onepassword_vault, account_id=onepassword_account_id) }}"
+  no_log: true
 
-- name: Create stalwart system user
-  become: true
-  ansible.builtin.user:
-    name: stalwart
-    system: true
-    shell: /usr/sbin/nologin
-    home: "{{ stalwart_data_dir }}"
-    create_home: false
+- name: Read the tailnet IP
+  ansible.builtin.command: tailscale ip -4
+  register: stalwart_tailscale_ip
+  changed_when: false
+  when: stalwart_tailnet_ip is not defined
 
-- name: Create stalwart directories
+- name: Set the tailnet IP
+  ansible.builtin.set_fact:
+    stalwart_tailnet_ip: "{{ stalwart_tailscale_ip.stdout_lines | first }}"
+  when: stalwart_tailnet_ip is not defined
+
+- name: Create the Stalwart directory
   become: true
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ stalwart_install_path }}"
     state: directory
     mode: "0755"
-    owner: stalwart
-    group: stalwart
-  loop:
-    - "{{ stalwart_data_dir }}"
-    - "{{ stalwart_data_dir }}/bin"
-    - "{{ stalwart_data_dir }}/etc"
-    - "{{ stalwart_data_dir }}/etc/dkim"
-    - "{{ stalwart_data_dir }}/etc/certs"
-    - "{{ stalwart_data_dir }}/data"
-    - "{{ stalwart_data_dir }}/queue"
-    - "{{ stalwart_data_dir }}/reports"
 
-- name: Check if Stalwart server is already installed
-  ansible.builtin.stat:
-    path: /usr/local/bin/stalwart-mail
-  register: stalwart_binary
-
-- name: Download and install Stalwart (with checksum verification)
-  become: true
-  when: not stalwart_binary.stat.exists
-  block:
-    - name: Download Stalwart server tarball
-      ansible.builtin.get_url:
-        url: "{{ stalwart_server_url }}"
-        dest: /tmp/stalwart-server.tar.gz
-        mode: "0644"
-        checksum: "{{ stalwart_server_checksum }}"
-
-    - name: Download Stalwart CLI tarball
-      ansible.builtin.get_url:
-        url: "{{ stalwart_cli_url }}"
-        dest: /tmp/stalwart-cli.tar.gz
-        mode: "0644"
-        checksum: "{{ stalwart_cli_checksum }}"
-
-    - name: Extract Stalwart server
-      ansible.builtin.unarchive:
-        src: /tmp/stalwart-server.tar.gz
-        dest: "{{ stalwart_data_dir }}/bin"
-        remote_src: true
-
-    - name: Extract Stalwart CLI
-      ansible.builtin.unarchive:
-        src: /tmp/stalwart-cli.tar.gz
-        dest: "{{ stalwart_data_dir }}/bin"
-        remote_src: true
-
-    - name: Make binaries executable
-      ansible.builtin.file:
-        path: "{{ item }}"
-        mode: "0755"
-      loop:
-        - "{{ stalwart_data_dir }}/bin/stalwart"
-        - "{{ stalwart_data_dir }}/bin/stalwart-cli"
-
-    - name: Create symlink for stalwart-mail
-      ansible.builtin.file:
-        src: "{{ stalwart_data_dir }}/bin/stalwart"
-        dest: /usr/local/bin/stalwart-mail
-        state: link
-
-    - name: Create symlink for stalwart-cli
-      ansible.builtin.file:
-        src: "{{ stalwart_data_dir }}/bin/stalwart-cli"
-        dest: /usr/local/bin/stalwart-cli
-        state: link
-
-    - name: Clean up downloaded tarballs
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /tmp/stalwart-server.tar.gz
-        - /tmp/stalwart-cli.tar.gz
-
-    - name: Fix ownership
-      ansible.builtin.file:
-        path: "{{ stalwart_data_dir }}"
-        state: directory
-        recurse: true
-        owner: stalwart
-        group: stalwart
-
-# Always ensure binaries are executable (runs even if install was skipped)
-- name: Ensure Stalwart binaries are executable
+- name: Create the Stalwart data directories
   become: true
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ stalwart_install_path }}/{{ item }}"
+    state: directory
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0700"
+  loop: [etc, data, dkim, backups]
+
+# Loops over domain NAMES, never the stalwart_domains entries: those nest passwords,
+# and Ansible echoes the loop item (see the mailu role's DKIM tasks).
+- name: Copy Mailu's DKIM keys
+  become: true
+  ansible.builtin.copy:
+    src: "{{ stalwart_mailu_dkim_dir }}/{{ item }}.dkim.key"
+    dest: "{{ stalwart_install_path }}/dkim/{{ item }}.dkim.key"
+    remote_src: true
+    force: false
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+  loop: "{{ stalwart_domains | map(attribute='domain') | list }}"
+
+- name: Deploy config.json
+  become: true
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: "{{ stalwart_install_path }}/etc/config.json"
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+
+# The admin login for stalwart-cli (`--env-file` in stalwart_cli_docker). Root-only and
+# outside etc/, which the server mounts and Task 6 backs up.
+- name: Write the stalwart-cli credentials
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_install_path }}/cli.env"
+    content: |
+      STALWART_USER={{ stalwart_admin_user }}@{{ stalwart_admin_domain }}
+      STALWART_PASSWORD={{ stalwart_admin_password }}
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+# stalwart-cli is not in the image: a pinned, checksum-verified release, mounted into a
+# throwaway container in stalwart's network namespace whenever the plan is applied.
+- name: Create the stalwart-cli directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}"
+    state: directory
     mode: "0755"
-  loop:
-    - "{{ stalwart_data_dir }}/bin/stalwart"
-    - "{{ stalwart_data_dir }}/bin/stalwart-cli"
 
-- name: Configure UFW for mail services
+- name: Download stalwart-cli
   become: true
-  community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
-    proto: tcp
-  loop:
-    - "{{ stalwart_smtp_port }}"
-    - "{{ stalwart_submission_port }}"
-    - "{{ stalwart_submissions_port }}"
-    - "{{ stalwart_imap_port }}"
-    - "{{ stalwart_imaps_port }}"
-    - "{{ stalwart_http_port }}"
-    - "80" # HTTP for ACME challenges
-    - "22" # SSH
-
-# Management port (8080) intentionally NOT opened - use SSH tunnel
-
-- name: Enable UFW
-  become: true
-  community.general.ufw:
-    state: enabled
-    policy: deny
-
-- name: Deploy Stalwart configuration
-  become: true
-  ansible.builtin.template:
-    src: config.toml.j2
-    dest: "{{ stalwart_data_dir }}/etc/config.toml"
-    mode: "0640"
-    owner: stalwart
-    group: stalwart
-  notify: Restart stalwart
-
-- name: Create systemd service file
-  become: true
-  ansible.builtin.template:
-    src: stalwart-mail.service.j2
-    dest: /etc/systemd/system/stalwart-mail.service
+  ansible.builtin.get_url:
+    url: "https://github.com/stalwartlabs/cli/releases/download/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl.tar.xz"
+    dest: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli.tar.xz"
+    checksum: "sha256:{{ stalwart_cli_sha256 }}"
     mode: "0644"
-  notify:
-    - Reload systemd
-    - Restart stalwart
 
-- name: Enable and start Stalwart service
+- name: Unpack stalwart-cli
   become: true
-  ansible.builtin.systemd:
-    name: stalwart-mail
+  ansible.builtin.unarchive:
+    src: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli.tar.xz"
+    dest: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}"
+    remote_src: true
+    creates: "{{ stalwart_cli_path }}"
+
+- name: Check whether the store is empty
+  become: true
+  ansible.builtin.find:
+    paths: "{{ stalwart_install_path }}/data"
+    file_type: any
+    hidden: true
+  register: stalwart_data
+
+# bootstrap.done is written only once the admin works and the stock spam rules are
+# loaded (end of this file), so a bootstrap that failed part-way is redone, not skipped
+# because data/ is no longer empty.
+- name: Check whether the bootstrap finished
+  become: true
+  ansible.builtin.stat:
+    path: "{{ stalwart_install_path }}/bootstrap.done"
+  register: stalwart_bootstrap_done
+
+- name: Set whether this run bootstraps
+  ansible.builtin.set_fact:
+    stalwart_bootstrapping: "{{ stalwart_data.matched == 0 or not stalwart_bootstrap_done.stat.exists }}"
+
+- name: Read the nginx-proxy network
+  become: true
+  community.docker.docker_network_info:
+    name: nginx-proxy
+  register: stalwart_nginx_proxy_net
+
+- name: Set the nginx-proxy subnets
+  ansible.builtin.set_fact:
+    stalwart_nginx_proxy_subnets: "{{ stalwart_nginx_proxy_net.network.IPAM.Config | default([], true) | map(attribute='Subnet') | list
+      if stalwart_nginx_proxy_net.exists else [] }}"
+
+- name: Bootstrap the store
+  ansible.builtin.include_tasks: bootstrap.yml
+  when: stalwart_bootstrapping
+
+- name: Deploy the apply plan
+  become: true
+  ansible.builtin.template:
+    src: plan.ndjson.j2
+    dest: "{{ stalwart_install_path }}/etc/plan.ndjson"
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+  no_log: true
+  notify: Apply Stalwart plan
+
+# The handler stamps the plan's checksum only after a successful apply, so a plan that
+# changed on a run whose apply failed (or never ran: a failed play skips handlers) is
+# applied on the next run, not silently forgotten. Re-applying an unchanged plan is not
+# free (it deletes every app password; README "Re-applying an Account upsert").
+- name: Check the plan on disk is the one last applied
+  become: true
+  ansible.builtin.command: sha256sum -c plan.applied.sha256
+  args:
+    chdir: "{{ stalwart_install_path }}/etc"
+  register: stalwart_plan_applied
+  changed_when: stalwart_plan_applied.rc != 0
+  failed_when: false
+  notify: Apply Stalwart plan
+
+# UpdateApps stores the bundles again (~160 MB until a restart compacts), so it runs only
+# when the Bulwark URL differs from the last one fetched; the handler writes the stamp.
+- name: Check the Bulwark bundle is the one last fetched
+  become: true
+  ansible.builtin.command:
+    argv: [grep, -qxF, "{{ stalwart_bulwark_url }}", bulwark.applied]
+    chdir: "{{ stalwart_install_path }}/etc"
+  register: stalwart_bulwark_applied
+  changed_when: stalwart_bulwark_applied.rc != 0
+  failed_when: false
+  notify: Update Stalwart apps
+
+- name: Create the stalwart network
+  become: true
+  community.docker.docker_network:
+    name: stalwart
+
+# A play killed mid-bootstrap (Ctrl-C, ssh drop) skips bootstrap.yml's `always:`, which
+# would leave the recovery container up with STALWART_RECOVERY_ADMIN and the store lock.
+- name: Remove a leftover recovery container
+  become: true
+  community.docker.docker_container:
+    name: stalwart-bootstrap
+    state: absent
+
+- name: Run Stalwart
+  become: true
+  community.docker.docker_container:
+    name: stalwart
+    image: "{{ stalwart_image }}@{{ stalwart_image_digest }}"
+    restart_policy: unless-stopped
+    memory: "{{ stalwart_memory }}"
+    # Live: nginx-proxy serves the mail.* names from the 8080 listener (none while staged).
+    env: >-
+      {{ {'STALWART_PUBLIC_URL': stalwart_public_url} | combine({} if stalwart_staged else {
+         'VIRTUAL_HOST': stalwart_virtual_hosts | join(','),
+         'VIRTUAL_PORT': '8080',
+         'LETSENCRYPT_HOST': stalwart_virtual_hosts | join(','),
+         'LETSENCRYPT_EMAIL': stalwart_letsencrypt_email}) }}
+    volumes:
+      - certs:/certs:ro
+      - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
+      - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
+      - "{{ stalwart_install_path }}/dkim:/dkim:ro"
+    # The gateway network is the one published ports map to, so traffic relayed by
+    # docker-proxy (hairpin, IPv6 without NAT) arrives from its gateway. Pin it to `stalwart`:
+    # nginx-proxy's subnet, gateway included, is exempt from bans (README "Auth bans and the
+    # proxy"). Without this the first-listed network wins. Needs Docker API 1.48 (Docker 28).
+    networks:
+      - name: nginx-proxy
+      - name: stalwart
+        gw_priority: 1
+    # Staged: tailnet only, on ports Mailu does not hold. Live: every address, IPv6
+    # included, as nginx-proxy does (#591). The admin listener (8081) is on the tailnet IP
+    # in both: an IPv4 address, so a tailnet client is DNATed, not relayed by docker-proxy
+    # (README "Tailnet admin access").
+    published_ports: >-
+      {{ ([stalwart_tailnet_ip ~ ':2525:25', stalwart_tailnet_ip ~ ':4465:465', stalwart_tailnet_ip ~ ':9993:993',
+           stalwart_tailnet_ip ~ ':' ~ stalwart_staged_http_port ~ ':8080']
+          if stalwart_staged else ['25:25', '465:465', '993:993']) + [stalwart_tailnet_ip ~ ':8081:8081'] }}
+    default_host_ip: ""
+
+# http-level: the rate-limit zone the vhost.d files use. Before them, so a reload never sees
+# a vhost.d file naming a zone that does not exist yet.
+- name: Write the nginx-proxy rate-limit zone
+  become: true
+  ansible.builtin.template:
+    src: nginx-stalwart.conf.j2
+    dest: /etc/nginx/conf.d/stalwart.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: not stalwart_staged
+  notify: Reload nginx-proxy
+
+# Server-level includes in nginx-proxy's `vhost` volume, named after the host: /admin and
+# /account (any case) are refused and logins rate-limited on every name, and the secondaries send
+# /webmail to the one webmail origin (spec goal 3). Live only: staged, nginx-proxy is untouched.
+- name: Write the nginx-proxy vhost.d files
+  become: true
+  ansible.builtin.template:
+    src: "{{ 'vhost-primary.conf.j2' if item == stalwart_hostname else 'vhost-secondary.conf.j2' }}"
+    dest: "/var/lib/docker/volumes/vhost/_data/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ stalwart_virtual_hosts }}"
+  when: not stalwart_staged
+  notify: Reload nginx-proxy
+
+- name: Apply the plan before checking the ports
+  ansible.builtin.meta: flush_handlers
+
+# The plan's Task/SpamFilterMaintenance downloads the stock rules (keeping custom ones);
+# it runs in the background, so poll. More than 5 SpamRules means more than the plan's
+# own. Output discarded; rc 2 = stalwart-cli failed (auth, connection), rc 1 = too few rules.
+- name: Wait for the stock spam rules
+  become: true
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail; st=2; for i in $(seq 60); do
+      if out=$({{ stalwart_cli_docker }} query SpamRule 2>/dev/null) && [ -n "$out" ]; then
+      [ "$(printf '%s\n' "$out" | grep -c .)" -gt 6 ] && exit 0; st=1; else st=2; fi;
+      sleep 2; done; exit $st
+    executable: /bin/bash
+  register: stalwart_rules_wait
+  changed_when: false
+  failed_when: false
+  no_log: true
+  when: stalwart_bootstrapping
+
+- name: Report missing stock spam rules
+  ansible.builtin.fail:
+    msg: >-
+      {% if stalwart_rules_wait.rc == 1 %}Fewer than 6 SpamRules after 120 s: the stock rules were not loaded
+      from {{ stalwart_spam_rules_url }}. Check the URL and the container log, then re-run (the bootstrap is redone).
+      {% else %}stalwart-cli could not query SpamRule as {{ stalwart_admin_user }}@{{ stalwart_admin_domain }}
+      (rc={{ stalwart_rules_wait.rc }}: authentication or connection failure); see it with
+      `sudo {{ stalwart_cli_docker }} query SpamRule`. If the admin no longer authenticates while
+      {{ stalwart_install_path }}/bootstrap.done exists, delete bootstrap.done: the next run redoes the
+      bootstrap, which re-seeds the admin.{% endif %}
+  when: stalwart_bootstrapping and stalwart_rules_wait.rc != 0
+
+- name: Mark the bootstrap finished
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_install_path }}/bootstrap.done"
+    content: "admin applied the full plan; stock spam rules loaded\n"
+    mode: "0644"
+  when: stalwart_bootstrapping
+
+# Connect via a routable IP, not localhost: localhost hits docker-proxy, which accepts
+# even when the container has nothing bound. See #557.
+- name: Check mail ports are listening
+  ansible.builtin.wait_for:
+    host: "{{ stalwart_tailnet_ip if stalwart_staged else ansible_default_ipv4.address }}"
+    port: "{{ item }}"
+    timeout: 60
+  loop: "{{ [2525, 4465, 9993] if stalwart_staged else [25, 465, 993] }}"
+
+# Replacing the cert files in place is not noticed by Stalwart; Action/ReloadTlsCertificates
+# is (README "Certificate reload"). The unit runs the same stalwart-cli as the handlers.
+- name: Deploy the cert-reload units
+  become: true
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ stalwart_systemd_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [stalwart-cert-reload.service, stalwart-cert-reload.path]
+  register: stalwart_cert_units
+
+- name: Enable the cert-reload watcher
+  become: true
+  ansible.builtin.systemd_service:
+    name: stalwart-cert-reload.path
+    enabled: true
+    state: "{{ 'restarted' if stalwart_cert_units is changed else 'started' }}"
+    daemon_reload: "{{ stalwart_cert_units is changed }}"
+  when: stalwart_systemd_enable
+
+# --- Nightly NAS backup (Task 6) ---------------------------------------------
+# Script, units and the rsync password. The nas-side prune lives in backup_nas (nas.yml).
+- name: Ensure rsync is installed
+  tags: backup
+  become: true
+  ansible.builtin.package:
+    name: rsync
+    state: present
+
+- name: Write the nas rsync-daemon password file
+  tags: backup
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_backup_rsync_password_file }}"
+    content: "{{ stalwart_backup_nas_rsync_password }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup script
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: stalwart-backup.sh.j2
+    dest: "{{ stalwart_install_path }}/stalwart-backup.sh"
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deploy the backup units
+  tags: backup
+  become: true
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ stalwart_systemd_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [stalwart-backup.service, stalwart-backup.timer]
+  register: stalwart_backup_units
+
+- name: Enable and start the backup timer
+  tags: backup
+  become: true
+  ansible.builtin.systemd_service:
+    name: stalwart-backup.timer
     enabled: true
     state: started
-    daemon_reload: true
-
-- name: Wait for Stalwart to be ready
-  ansible.builtin.wait_for:
-    port: "{{ stalwart_smtp_port }}"
-    timeout: 60
-
-- name: Display post-install instructions
-  ansible.builtin.debug:
-    msg: |
-      Stalwart Mail Server v{{ stalwart_version }} installed successfully!
-
-      Binaries verified with SHA256 checksum.
-      Admin account pre-configured from 1Password (user: {{ stalwart_admin_user }})
-
-      Next steps:
-      1. Generate DKIM key:
-         sudo openssl genpkey -algorithm ed25519 -out {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
-         sudo chown stalwart:stalwart {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
-         sudo chmod 600 {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key
-
-      2. Get public key for DNS:
-         sudo openssl pkey -in {{ stalwart_data_dir }}/etc/dkim/{{ stalwart_domain }}.key -pubout 2>/dev/null | \
-           openssl asn1parse -offset 12 -noout -out /dev/stdout | base64
-
-      3. Update Terraform with the public key in mail.tf (ed25519._domainkey.{{ stalwart_domain }})
-         Then run: terraform apply
-
-      4. Restart Stalwart to pick up the key:
-         sudo systemctl restart stalwart-mail
-
-      5. Access admin UI via SSH tunnel:
-         ssh -L 8080:localhost:8080 root@{{ stalwart_hostname }}
-         Then open http://localhost:8080 (login with 1Password credentials)
-
-      6. Create user accounts (e.g., kai@{{ stalwart_domain }}, jason@{{ stalwart_domain }})
-
-      Test commands:
-      - Check SMTP: telnet {{ stalwart_hostname }} 25
-      - Check IMAP: openssl s_client -connect {{ stalwart_hostname }}:993
-      - Test DKIM: dig TXT {{ stalwart_dkim_selector }}._domainkey.{{ stalwart_domain }} +short
+    daemon_reload: "{{ stalwart_backup_units is changed }}"
+  when: stalwart_systemd_enable

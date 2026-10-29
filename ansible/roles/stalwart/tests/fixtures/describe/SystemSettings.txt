@@ -1,0 +1,22 @@
+SystemSettings [singleton]
+  Configures core server settings including hostname, thread pool, and network services.
+
+Fields:
+    defaultCertificateId  id<Certificate>?  mutable
+        Default TLS certificate to use when no SNI is provided by the client
+    defaultDomainId       id<Domain>  mutable
+        Default domain to use for authentication and reports.
+    defaultHostname       string<string>  mutable
+        The default hostname to use in SMTP greetings, MTA reports and other places where a hostname is needed but not specified.
+    mailExchangers        list<MailExchanger>  mutable
+        List of mail exchangers to publish in DNS MX records.
+    maxConnections        number<unsignedInteger>  mutable
+        The maximum number of concurrent connections the server will accept
+    providerInfo          map<enum (see ProviderInfo), string<string>>  mutable
+        Information about the provider to advertise in auto configuration services.
+    proxyTrustedNetworks  set<string<ipNetwork>>  mutable
+        Enable proxy protocol for connections from these networks
+    services              map<enum (see ServiceProtocol), object<Service>>  mutable
+        List of services to advertise in DNS and auto configuration services
+    threadPoolSize        number<unsignedInteger>?  mutable
+        The number of threads in the global thread pool for CPU intensive tasks. Defaults to the number of CPU cores

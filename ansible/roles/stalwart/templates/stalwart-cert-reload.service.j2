@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+# Makes Stalwart serve a renewed certificate. Output is discarded (stalwart-cli may echo
+# secrets); a failure shows as this unit failing: `systemctl status stalwart-cert-reload`.
+[Unit]
+Description=Reload Stalwart's TLS certificates
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+StandardOutput=null
+StandardError=null
+ExecStart={{ stalwart_cli_docker }} create Action/ReloadTlsCertificates

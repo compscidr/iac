@@ -1,43 +1,156 @@
 ---
-# Stalwart Mail Server defaults
+# Stalwart role defaults. Object names and fields: README "Verified against v0.16.27".
 
-# Version pinning for reproducible builds
-stalwart_version: "0.15.4"
-stalwart_server_checksum: "sha256:6e4bd106b36554fa461f831fc477b55888f8b8b30b5a509bcdbd62dcf633a4ba"
-stalwart_cli_checksum: "sha256:6b66782a1862121e94e1956f35d0dae70ca90203c8843eed1945971a7ec45c29"
+# Renovate (Task 7) matches these two lines as a pair; keep them consecutive.
+stalwart_image: "stalwartlabs/stalwart:v0.16.27"
+stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
 
-# Download URLs (GitHub releases)
-stalwart_server_url: "https://github.com/stalwartlabs/stalwart/releases/download/v{{ stalwart_version }}/stalwart-x86_64-unknown-linux-gnu.tar.gz"
-stalwart_cli_url: "https://github.com/stalwartlabs/stalwart/releases/download/v{{ stalwart_version }}/stalwart-cli-x86_64-unknown-linux-gnu.tar.gz"
+# stalwart-cli is not in the image (README "Versions"): the release tarball is fetched to
+# the host, checksum-verified, and mounted into a throwaway container in stalwart's netns.
+stalwart_cli_version: "v1.0.13"
+stalwart_cli_sha256: "689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
+stalwart_cli_path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl/stalwart-cli"
+# stalwart-cli in a throwaway container in a Stalwart container's netns. Credentials come
+# from root-only env files, never `environment:` (at -vvv Ansible prints that in its EXEC
+# line, no_log or not), so these commands carry no secret and are what a failed apply
+# tells the operator to run by hand to see the error.
+stalwart_cli_docker: >-
+  docker run --rm --network container:stalwart --env-file {{ stalwart_install_path }}/cli.env
+  -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro -v {{ stalwart_install_path }}/etc/plan.ndjson:/plan.ndjson:ro
+  -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8081 --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color
+stalwart_bootstrap_cli_docker: >-
+  docker run --rm --network container:stalwart-bootstrap --env-file {{ stalwart_install_path }}/bootstrap-cli.env
+  -v {{ stalwart_cli_path }}:/usr/local/bin/stalwart-cli:ro -v {{ stalwart_install_path }}/etc/bootstrap.ndjson:/plan.ndjson:ro
+  -e HOME=/tmp -e STALWART_URL=http://127.0.0.1:8080 --entrypoint stalwart-cli {{ stalwart_image }}@{{ stalwart_image_digest }} --no-color
 
-stalwart_domain: "jasonernst.com"
-stalwart_hostname: "mail.jasonernst.com"
+stalwart_install_path: /opt/stalwart
 
-# Data directory
-stalwart_data_dir: "/opt/stalwart-mail"
+# Cert renewal pickup (README "Certificate reload"). The certs volume's mail.<host>.crt/.key are
+# symlinks to the acme-companion's real files in the <host>/ subdirectory; a .path unit
+# watches those real files (a symlink or the directory would miss or over-fire).
+stalwart_certs_dir: /var/lib/docker/volumes/certs/_data
+stalwart_cert_watch:
+  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/fullchain.pem"
+  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/key.pem"
+stalwart_systemd_dir: /etc/systemd/system
+stalwart_systemd_enable: true # false where systemd is not running (the converge test)
+stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, backups/
+stalwart_memory: "512m" # revisit in Task 8 from observed usage under the spam filter
 
-# Admin credentials - MUST be set via 1Password lookup in playbook
-# These are configured in [authentication.fallback-admin] section
-stalwart_admin_user: "admin"
-stalwart_admin_password: "" # Required - set in mail.yml from 1Password
+# Staged: no public ports, everything on the tailnet IP beside a running Mailu (spec
+# "Cutover shape"). stalwart_tailnet_ip is set from `tailscale ip -4` unless given.
+stalwart_staged: true
+stalwart_staged_http_port: 8080 # host side of the plain-HTTP listener while staged
 
-# DKIM selector - must match DNS record (ed25519._domainkey.domain.com)
-stalwart_dkim_selector: "ed25519"
+stalwart_domain: jasonernst.com
+stalwart_hostname: mail.jasonernst.com
+stalwart_public_url: "https://{{ stalwart_hostname }}"
+stalwart_mailu_dkim_dir: /opt/mailu/dkim # Mailu's keys, copied once per domain
 
-# TLS - use Let's Encrypt via ACME
-stalwart_acme_enabled: true
-stalwart_acme_contact: "postmaster@{{ stalwart_domain }}"
+# Secrets. Every stalwart_op_* below is a fact set by the first task of the role from
+# its 1Password item, one `op` call each, for the same reason as the mailu role (#542).
+#
+# Permanent admin account, created by the plan. Ansible's stalwart-cli authenticates as
+# it on every apply, from inside the container's netns, so its Password credential only
+# accepts the addresses below (README "Admin restriction").
+# Not admin@: an RFC 2142 / CA-validation role address that must reach jason.
+stalwart_admin_user: stalwart-admin
+stalwart_admin_domain: rustd.xyz
+stalwart_admin_password: "{{ stalwart_op_admin_password }}"
+# 127.0.0.1: stalwart-cli in the container's netns. 100.64.0.0/10: a human on the tailnet at
+# http://<tailnet-ip>:8081/admin, which works only while the connection reaches the container
+# with its tailnet source address (README "Tailnet admin access"). Never a docker gateway.
+stalwart_admin_allowed_ips: ["127.0.0.1", "100.64.0.0/10"]
+# First-boot only (STALWART_RECOVERY_ADMIN), never left on the running container.
+stalwart_recovery_admin_user: recovery
+stalwart_recovery_admin_password: "{{ stalwart_op_recovery_admin_password }}"
 
-# SendGrid SMTP relay (for outbound mail delivery)
-stalwart_sendgrid_enabled: false
-stalwart_sendgrid_username: "apikey"
-stalwart_sendgrid_api_key: ""
+# Same shape as mailu_additional_domains, with the primary domain as an entry.
+stalwart_domains:
+  - domain: jasonernst.com
+    users:
+      - user: jason
+        password: "{{ stalwart_op_jasonernst_com_jason_password }}"
+      - user: kai
+        password: "{{ stalwart_op_jasonernst_com_kai_password }}"
+      # goblog login codes; same item as jasonernst_com_smtp_password.
+      - user: noreply
+        password: "{{ stalwart_op_goblog_smtp_password }}"
+  - domain: sair.run
+    users:
+      - user: jason
+        password: "{{ stalwart_op_sair_run_jason_password }}"
+      - user: noreply # sair.run magic links; same item as the app's SMTP config
+        password: "{{ stalwart_op_sair_smtp_password }}"
+  - domain: rustd.xyz
+    users:
+      - user: jason
+        password: "{{ stalwart_op_rustd_xyz_jason_password }}"
+      - user: noreply # the rustd.xyz panel's only login path
+        password: "{{ stalwart_op_rustd_smtp_password }}"
+  - domain: darksearch.xyz
+    users:
+      - user: jason
+        password: "{{ stalwart_op_darksearch_xyz_jason_password }}"
 
-# Ports
-stalwart_smtp_port: 25
-stalwart_submission_port: 587
-stalwart_submissions_port: 465
-stalwart_imap_port: 143
-stalwart_imaps_port: 993
-stalwart_http_port: 443
-stalwart_http_management_port: 8080
+# Every domain catches all unknown local parts into this user (spec "Catch-all").
+stalwart_catchall_user: jason
+
+# Same shape as mailu_aliases. The destination must be an account in stalwart_domains.
+stalwart_aliases:
+  - { local: contact, domain: rustd.xyz, destination: jason@rustd.xyz }
+  - { local: postmaster, domain: jasonernst.com, destination: jason@jasonernst.com }
+  # Mailu's admin login; DMARC rua/ruf for jasonernst.com point here (spec "Calls I made").
+  - { local: admin, domain: jasonernst.com, destination: jason@jasonernst.com }
+  - { local: postmaster, domain: sair.run, destination: jason@sair.run }
+  - { local: postmaster, domain: rustd.xyz, destination: jason@rustd.xyz }
+  - { local: postmaster, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+  - { local: abuse, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+  - { local: dmca, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+
+# Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
+# matches the version line; the release tags have no `v`.
+stalwart_bulwark_version: "1.17.0"
+stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/{{ stalwart_bulwark_version }}/bulwark-lite-stalwart.zip"
+
+# Live only (not stalwart_staged): nginx-proxy serves these names from the 8080 listener,
+# and the acme-companion issues one SAN cert for them, as Mailu's front had.
+stalwart_virtual_hosts: "{{ [stalwart_hostname] + (stalwart_domains | map(attribute='domain') | reject('equalto', stalwart_domain)
+  | map('regex_replace', '^', 'mail.') | list) }}"
+stalwart_letsencrypt_email: "admin@{{ stalwart_domain }}"
+# Per client address, on requests that carry credentials (Basic auth, /auth/, /api/auth).
+# Stalwart's own ban cannot do this: it sees only nginx-proxy (README "Auth bans and the proxy").
+stalwart_proxy_auth_rate: "3r/s"
+stalwart_proxy_auth_burst: 60
+# Exempt from Stalwart's auto-ban (AllowedIp). tasks/main.yml reads nginx-proxy's subnets.
+stalwart_ban_exempt_networks: "{{ stalwart_nginx_proxy_subnets | default([]) }}"
+
+# Junk at scoreSpam, SMTP reject only at the high-confidence threshold (spec goal 4).
+stalwart_spam_score_junk: 5.0
+stalwart_spam_score_reject: 15.0
+# Pinned release, not releases/latest, so a rules update is a reviewed change (Task 7).
+stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.2/spam-filter-rules.json.gz"
+
+# Outbound limit per authenticated login, counted per RCPT (README "Per-account send limit").
+stalwart_send_limit_per_day: 200
+
+# --- Nightly NAS backup (Task 6) ---------------------------------------------
+#
+# Same pipeline as the mailu role's: additive rsync to the nas' built-in rsync daemon
+# (port 873) over the tailnet. The nas-side path and keep count live in group_vars/all.yml
+# (backup_nas' prune cron reads them too). The snapshot is a tar.gz of data/ taken with the
+# container paused (README "Backup and restore of the RocksDB store").
+stalwart_backup_container: stalwart
+stalwart_backup_local_dir: "{{ stalwart_install_path }}/backups" # owned by stalwart_uid: tar runs as it
+stalwart_backup_local_keep: 7
+stalwart_backup_pause_timeout: 120 # seconds; the container is paused (mail frozen) for at most this long
+stalwart_backup_nas_host: nas # must match backup_nas_tailnet_hostname
+stalwart_backup_nas_rsync_user: svcbackup
+stalwart_backup_nas_rsync_port: 873
+stalwart_backup_nas_rsync_module: storage
+# Full remote path is <module>/<subpath> = /volume1/storage/backups/stalwart
+# (matches stalwart_backup_nas_path in group_vars/all.yml).
+stalwart_backup_nas_rsync_subpath: backups/stalwart
+stalwart_backup_rsync_password_file: "{{ stalwart_install_path }}/.rsync-nas-pass"
+# Filled from jasonernst_com.yml via the same 1Password `nas-rsync` item as mailu's.
+stalwart_backup_nas_rsync_password: ""

@@ -71,6 +71,7 @@ backup_nas_freshness_checks:
   - { name: rustd-db, dir: "{{ rustd_xyz_backup_nas_path }}", glob: "rustd-*.dump" }
   - { name: goblog, dir: "{{ jasonernst_com_backup_nas_path }}/db", glob: "goblog-*.db" }
   - { name: mailu, dir: "{{ mailu_backup_nas_path }}/db", glob: "mailu-*.db" }
+  - { name: stalwart, dir: "{{ stalwart_backup_nas_path }}/db", glob: "stalwart-*" }
   # Not a push from a droplet like the three above - a local snapshot taken on
   # this host by the minecraft_game role (issue #565). It rides this check
   # anyway: the failure being watched for is "backups stopped appearing", which

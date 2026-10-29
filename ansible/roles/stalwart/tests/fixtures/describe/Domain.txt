@@ -1,0 +1,43 @@
+Domain
+  Defines an email domain and its DNS, DKIM, and TLS certificate settings.
+
+Fields:
+    aliases                set<string<string>>  mutable
+        List of additional domain names that are aliases of this domain
+    allowRelaying          boolean  mutable
+        Whether to allow relaying for non-local recipients, useful in split delivery scenarios
+    allowScimProvisioning  boolean  mutable
+        Whether external SCIM clients may provision accounts in this domain. When enabled, SCIM becomes authoritative for accounts in this domain and just-in-time directory provisioning no longer modifies them
+    catchAllAddress        string<emailAddress>?  mutable
+        Catch-all email address that receives messages addressed to unknown local recipients
+    certificateManagement  object<CertificateManagement>  mutable
+        Whether TLS certificates for this domain are managed manually or automatically by an ACME provider
+    createdAt              datetime  server-set
+        Creation date of the domain
+    description            string<string>?  mutable
+        Description of the domain
+    directoryId            id<Directory>?  mutable
+        Identifier for the directory where accounts for this domain are stored, or null to use the internal directory
+    dkimManagement         object<DkimManagement>  mutable
+        Whether DKIM keys for this domain are managed manually or automatically by the server
+    dnsManagement          object<DnsManagement>  mutable
+        Whether DNS records for this domain are managed manually or automatically by a DNS provider
+    dnsZoneFile            string<text>  server-set
+        Current DNS zone data for the domain
+    isEnabled              boolean  mutable
+        Whether this domain is enabled
+    logo                   string<string>?  mutable
+        URL or base64-encoded image representing the domain
+    memberTenantId         id<Tenant>?  mutable
+        Identifier for the tenant this domain belongs to
+    name                   string<string>  mutable
+        Domain name
+    reportAddressUri       string<string>?  mutable
+        Email address to receive DMARC, TLS-RPT and CAA reports for this domain, or null to not receive reports
+    subAddressing          object<SubAddressing>  mutable
+        Whether sub-addressing (plus addressing) is enabled for the domain
+
+Filters:
+    text            text        Text
+    name            text        Name
+    memberTenantId  id<Tenant>  Tenant
