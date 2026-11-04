@@ -610,9 +610,9 @@
     image: postgres:18-alpine
     pull: true
     # The crawler inserts around the clock, and on stock settings that kept the
-    # uncached RAID5 pool writing constantly. Batch writes into fewer, larger
-    # flushes. synchronous_commit=off can lose the last moments of commits in a
-    # crash, without corruption; the crawler finds that data again.
+    # uncached RAID5 pool writing constantly. These trim WAL volume, but most
+    # writes come from random inserts into large indexes, so the crawl rate on
+    # the bitmagnet task below is what really sets the write load.
     command:
       - postgres
       - -c
@@ -621,8 +621,6 @@
       - checkpoint_timeout=30min
       - -c
       - max_wal_size=8GB
-      - -c
-      - synchronous_commit=off
       - -c
       - wal_compression=lz4
     volumes:
@@ -654,6 +652,10 @@
     env:
       POSTGRES_HOST: bitmagnet-postgres
       POSTGRES_PASSWORD: postgres
+      # Slower than the defaults (10 and 100) to reduce constant writes to the
+      # uncached RAID5 pool. Torrents above the threshold get no per-file rows.
+      DHT_CRAWLER_SCALING_FACTOR: "3"
+      DHT_CRAWLER_SAVE_FILES_THRESHOLD: "20"
       TZ: "America/Los_Angeles"
     networks:
       - name: media
