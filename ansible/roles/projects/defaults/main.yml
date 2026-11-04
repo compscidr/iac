@@ -31,7 +31,3 @@ projects_repos:
     repo: git@github.com:compscidr/darksearch.xyz.git
     domains:
       - darksearch.xyz
-  - name: 2dogs1bun
-    repo: git@github.com:compscidr/2dogs1bun.io.git
-    domains:
-      - 2dogs1bun.io
