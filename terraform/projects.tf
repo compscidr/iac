@@ -6,6 +6,7 @@
 # - orchestrator.sair.run (https://github.com/compscidr/sair)
 # - api.sair.run (sair agent API, same orchestrator container)
 # - goblog.live (https://github.com/goblogplatform/goblog)
+# - 2dogs1bun.io (https://github.com/compscidr/2dogs1bun.io)
 
 # VPC for sfo3 region
 resource "digitalocean_vpc" "sfo3-vpc" {
@@ -369,6 +370,37 @@ resource "digitalocean_record" "rustd-CNAME-game" {
   type   = "CNAME"
   name   = each.key
   value  = each.value
+}
+
+# ============================================================================
+# 2dogs1bun.io (https://github.com/compscidr/2dogs1bun.io)
+#
+# Registered at GoDaddy: inert until its nameservers point at
+# ns1/ns2/ns3.digitalocean.com, which Terraform can't do.
+# ============================================================================
+resource "digitalocean_domain" "twodogs1bun-io" {
+  name = "2dogs1bun.io"
+}
+
+resource "digitalocean_record" "twodogs1bun-A" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "twodogs1bun-AAAA" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
+resource "digitalocean_record" "twodogs1bun-CNAME-www" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "CNAME"
+  name   = "www"
+  value  = "@"
 }
 
 # ============================================================================

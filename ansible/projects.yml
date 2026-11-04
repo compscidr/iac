@@ -120,6 +120,7 @@
       - { domain: ping4.network, letsencrypt_email: "ernstjason1@gmail.com" }
       - { domain: ping6.network, letsencrypt_email: "ernstjason1@gmail.com" }
       - { domain: dumpers.xyz, letsencrypt_email: "ernstjason1@gmail.com" }
+      - { domain: 2dogs1bun.io, letsencrypt_email: "ernstjason1@gmail.com" }
   roles:
     # www-redirect must run before projects/sair-portal so redirect containers
     # handle apex domains before app containers stop serving them
