@@ -91,6 +91,102 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.
 
+## Cutover and rollback runbook
+
+Run from the `feat/stalwart-mail` branch (PR #940, merged only after the cutover). Mailu's data
+stays in `/opt/mailu` throughout, so every step before "Follow up" can be undone.
+
+### Running the acceptance script
+
+```bash
+python3 -m venv ~/.cache/mail-acceptance && ~/.cache/mail-acceptance/bin/pip install dkimpy
+OP_ACCOUNT=<account uuid of onepassword_account_id> op run --env-file scripts/mail_acceptance.env -- \
+  ~/.cache/mail-acceptance/bin/python scripts/mail_acceptance.py --mode staged   # or public
+```
+
+- `OP_ACCOUNT` is needed when `op` is signed in to more than one account.
+- `--mode public` runs `spam_junk` and `spam_reject_gtube` over port 25. A residential ISP
+  blocks outbound 25 (both time out from ubuntu-beast), so run those two from a host with
+  port 25 egress. `--mode staged` uses 2525 on the tailnet and has no such limit.
+- Against Mailu the `alias_*`, `plus_address` and `mixed_case` checks FAIL on the
+  `Delivered-To` header even though the mail arrives: Mailu writes the destination mailbox,
+  Stalwart the matched recipient.
+
+### Before the cutover
+
+1. Staged deploy green twice (`ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`,
+   second run `changed=0`), staged acceptance green, `stalwart_memory` sized from
+   `docker stats --no-stream stalwart`, cert reload checked ("Certificate reload").
+2. **1Password is the password source from the cutover on**: every plan apply sets each
+   mailbox password from its item ("Re-applying an Account upsert"), where Mailu only set it
+   on create. Any mailbox whose `smtp_auth_*`/`imap_login_*` check FAILs against Mailu has
+   drifted (`jason@darksearch.xyz` did on 2026-11-04): fix the item or expect to re-enter the
+   password in that mailbox's mail clients.
+3. Tell anyone with a mailbox. Inbound mail queues at senders while both are down; app SMTP
+   (rustd.xyz login, sair magic link, goblog login code) fails for those minutes.
+
+### Cutover
+
+1. **Stop Mailu**: on `www`, `cd /opt/mailu && sudo docker compose down`.
+2. **Flip**: in `ansible/jasonernst_com.yml` remove the `mailu` role line and set
+   `stalwart_staged: false`, then `ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`.
+   The container is recreated on 25/465/993 with `VIRTUAL_HOST`; the nginx-proxy rate-limit
+   zone and vhost.d files are written and the proxy reloaded.
+3. **Remove Mailu's cert symlinks**: `sudo rm /var/lib/docker/volumes/certs/_data/{cert,key}.pem`,
+   then check `docker logs letsencrypt` still lists the four `mail.*` names.
+4. **Import the mailboxes** (after the flip, not before: Vandelay follows the session's
+   `apiUrl`, which is `https://mail.jasonernst.com` and only reaches Stalwart once it is
+   live). For each of the eight mailboxes except `admin@`, with the commands in "Mailbox
+   import with Vandelay":
+
+   ```bash
+   vandelay import maildir /opt/mailu/mail/<address> ./<address>.vandelay
+   VANDELAY_PASSWORD=… vandelay export --url https://mail.jasonernst.com/jmap/session \
+     --auth-basic <address> --account-name <address> ./<address>.vandelay
+   ```
+
+   Expected per mailbox: the imported count equals
+   `find /opt/mailu/mail/<address> \( -path '*/cur/*' -o -path '*/new/*' \) -type f | wc -l`.
+   Re-running is safe (already-imported messages are skipped). New mail is delivered
+   normally while the import runs.
+5. **Accept**: acceptance script with `--mode public`, every check PASS (`autoconfig` may
+   WARN). By hand: the rustd.xyz login email, the sair magic link and the goblog login code
+   all arrive with DKIM and DMARC `pass`.
+6. **uptime-kuma**: the mail port and host monitors are green.
+7. Commit the playbook change and a "retired <date>, kept for rollback until <date>" header
+   in `roles/mailu/defaults/main.yml`, push, mark PR #940 ready. Check first that the PR was
+   not already merged.
+
+### Rollback
+
+Any time before `/opt/mailu` is deleted:
+
+1. `sudo docker stop stalwart` (keep the container and `/opt/stalwart`).
+2. Remove what the live role wrote for nginx-proxy, vhost.d files first, then the zone they
+   name, then reload:
+
+   ```bash
+   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz}
+   sudo rm /etc/nginx/conf.d/stalwart.conf
+   sudo docker exec nginx-proxy sh -c 'nginx -t && nginx -s reload'
+   ```
+
+   Left in place they would 403 Mailu's own `/admin` and redirect its `/webmail`.
+3. Restore `ansible/jasonernst_com.yml` (the `mailu` role line back, `stalwart_staged: true`)
+   and run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags mailu`. It recreates
+   the cert symlinks and starts Mailu; `sudo docker compose -f /opt/mailu/docker-compose.yml up -d`
+   alone is enough only if the symlinks are still there.
+4. Mail that arrived on Stalwart in the meantime: start it staged again
+   (`--tags stalwart`), export each mailbox with Vandelay (JMAP source) and push it to Mailu
+   with imapsync, using each user's 1Password credentials.
+5. Re-run the acceptance script with `--mode public` and compare with the Mailu baseline in
+   PR #940.
+
+### Follow up
+
+After the rollback window, in a separate PR: delete `/opt/mailu`, `roles/mailu`, the Mailu
+Renovate rules and the Mailu backup and prune entries.
+
 ## Local tests
 
 ```bash
