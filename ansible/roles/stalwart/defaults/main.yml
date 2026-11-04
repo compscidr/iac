@@ -55,7 +55,7 @@ stalwart_mailu_dkim_dir: /opt/mailu/dkim # Mailu's keys, copied once per domain
 # accepts the addresses below (README "Admin restriction").
 # Not admin@: an RFC 2142 / CA-validation role address that must reach jason.
 stalwart_admin_user: stalwart-admin
-stalwart_admin_domain: rustd.xyz
+stalwart_admin_domain: "{{ stalwart_domain }}" # must be one of stalwart_domains
 stalwart_admin_password: "{{ stalwart_op_admin_password }}"
 # 127.0.0.1: stalwart-cli in the container's netns. 100.64.0.0/10: a human on the tailnet at
 # http://<tailnet-ip>:8081/admin, which works only while the connection reaches the container

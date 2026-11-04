@@ -83,7 +83,8 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
   The bootstrap removes the stamp, so it also runs once after a bootstrap. Converge proves a
   password change applies the plan without it (run6) and a version change runs it and serves
   the new build (run7).
-- The admin account is `stalwart-admin@rustd.xyz` (`stalwart_admin_user`/`stalwart_admin_domain`).
+- The admin account is `stalwart-admin@jasonernst.com` (`stalwart_admin_user`/`stalwart_admin_domain`,
+  the latter defaulting to `stalwart_domain`; it must be one of `stalwart_domains`).
   Not `admin@`: that is an RFC 2142 / CA domain-validation role address and must keep
   reaching jason (`admin@jasonernst.com` is an alias, the DMARC report address; the
   other domains' `admin@` falls to the catch-all).
@@ -203,7 +204,7 @@ stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01b
 `--url` / `STALWART_URL`, `--user` / `STALWART_USER`, `--password` / `STALWART_PASSWORD`
 (basic auth), or `--api-key` / `STALWART_TOKEN` (bearer). `-k` skips TLS verification. The
 basic-auth username may be the bare account name (`stalwart-admin`) or the address
-(`stalwart-admin@rustd.xyz`). The CLI uses `GET /api/schema`, `GET /jmap/session` and
+(`stalwart-admin@jasonernst.com`). The CLI uses `GET /api/schema`, `GET /jmap/session` and
 `POST /jmap` on the base URL. Management methods (`x:Domain/get`, …) go over the same `/jmap`
 endpoint as mail, so path rules cannot separate "admin API" from JMAP.
 
