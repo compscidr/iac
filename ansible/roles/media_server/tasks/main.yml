@@ -631,6 +631,10 @@
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bitmagnet
     shm_size: "1g"
+    # Shutdown has to flush up to 1GB of dirty buffers to the uncached RAID5
+    # pool, which takes minutes. Docker's default 10s stop would kill it and
+    # force crash recovery.
+    stop_timeout: 300
     networks:
       - name: media
     restart_policy: unless-stopped
