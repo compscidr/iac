@@ -633,8 +633,11 @@
     shm_size: "1g"
     # Shutdown has to flush up to 1GB of dirty buffers to the uncached RAID5
     # pool, which takes minutes. Docker's default 10s stop would kill it and
-    # force crash recovery.
+    # force crash recovery. The module ignores stop_timeout changes on an
+    # existing container unless it compares them strictly.
     stop_timeout: 300
+    comparisons:
+      stop_timeout: strict
     networks:
       - name: media
     restart_policy: unless-stopped
