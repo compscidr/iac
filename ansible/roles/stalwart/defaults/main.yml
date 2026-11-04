@@ -25,16 +25,21 @@ stalwart_bootstrap_cli_docker: >-
 
 stalwart_install_path: /opt/stalwart
 
-# Cert renewal pickup (README "Certificate reload"). The certs volume's mail.<host>.crt/.key are
-# symlinks to the acme-companion's real files in the <host>/ subdirectory; a .path unit
-# watches those real files (a symlink or the directory would miss or over-fire).
+# The certificate (README "Certificate reload"). acme-companion keeps the real files in the
+# certs volume's <host>/ subdirectory, key.pem 0600 root: the image's UID 2000 cannot read it
+# (Stalwart then serves a self-signed cert), so the role copies the pair to certs/, owned by
+# stalwart_uid and mounted at /certs. A .path unit watches the real files (a symlink or the
+# directory would miss or over-fire) and, on renewal, copies them again and reloads.
 stalwart_certs_dir: /var/lib/docker/volumes/certs/_data
-stalwart_cert_watch:
-  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/fullchain.pem"
-  - "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/key.pem"
+stalwart_cert_copies:
+  - src: "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/fullchain.pem"
+    dest: "{{ stalwart_install_path }}/certs/{{ stalwart_hostname }}.crt"
+  - src: "{{ stalwart_certs_dir }}/{{ stalwart_hostname }}/key.pem"
+    dest: "{{ stalwart_install_path }}/certs/{{ stalwart_hostname }}.key"
+stalwart_cert_watch: "{{ stalwart_cert_copies | map(attribute='src') | list }}"
 stalwart_systemd_dir: /etc/systemd/system
 stalwart_systemd_enable: true # false where systemd is not running (the converge test)
-stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, backups/
+stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, certs/, backups/
 stalwart_memory: "512m" # revisit in Task 8 from observed usage under the spam filter
 
 # Staged: no public ports, everything on the tailnet IP beside a running Mailu (spec

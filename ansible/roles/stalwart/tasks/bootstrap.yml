@@ -65,7 +65,7 @@
         memory: "{{ stalwart_memory }}"
         env_file: "{{ stalwart_install_path }}/bootstrap-server.env"
         volumes:
-          - certs:/certs:ro
+          - "{{ stalwart_install_path }}/certs:/certs:ro"
           - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
           - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
           - "{{ stalwart_install_path }}/dkim:/dkim:ro"
@@ -92,7 +92,7 @@
           (rc={{ stalwart_bootstrap_apply.rc }}). Its output is not shown because it can echo secrets. The
           next run redoes the bootstrap; to see the error first, run
           `sudo docker run -d --name stalwart-bootstrap --env-file {{ stalwart_install_path }}/bootstrap-server.env
-          -v certs:/certs:ro -v {{ stalwart_install_path }}/etc:/etc/stalwart:ro
+          -v {{ stalwart_install_path }}/certs:/certs:ro -v {{ stalwart_install_path }}/etc:/etc/stalwart:ro
           -v {{ stalwart_install_path }}/data:/var/lib/stalwart -v {{ stalwart_install_path }}/dkim:/dkim:ro
           {{ stalwart_image }}@{{ stalwart_image_digest }} && sleep 15;
           sudo {{ stalwart_bootstrap_cli_docker }} apply --file /plan.ndjson; sudo docker rm -f stalwart-bootstrap`.

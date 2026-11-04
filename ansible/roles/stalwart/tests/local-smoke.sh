@@ -39,7 +39,7 @@ cleanup() {
   docker rm -f "$NAME" "$NAME-rec" "$NAME-rst" >/dev/null 2>&1
   [ -n "${RSYNCD_PID:-}" ] && kill "$RSYNCD_PID" 2>/dev/null
   # data/ and restore/ hold files owned by UID 2000: remove them as root in a container
-  docker run --rm --user 0 -v "$WORK:/w" --entrypoint rm "$IMAGE" -rf /w/opt/data /w/opt/backups /w/restore >/dev/null 2>&1
+  docker run --rm --user 0 -v "$WORK:/w" --entrypoint rm "$IMAGE" -rf /w/opt/data /w/opt/certs /w/opt/backups /w/restore >/dev/null 2>&1
   docker network rm "$NAME-tn" "$NAME-px" "$NAME-nx" >/dev/null 2>&1
   rm -rf "$WORK"
 }
@@ -85,9 +85,10 @@ for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keyg
 openssl rsa -in "$WORK/dkim/rustd.xyz.dkim.key" -pubout -out "$DKIM_PUB" 2>/dev/null
 chmod 0755 "$WORK" "$WORK"/etc "$WORK"/certs "$CERTDIR" "$WORK"/dkim
 chmod 0644 "$WORK"/etc/* "$CERTDIR"/* "$WORK"/dkim/*
+chmod 0600 "$CERTDIR/key.pem" # as acme-companion leaves it; the image's UID 2000 cannot read it
 # data/ is a bind mount owned by UID 2000, as on the droplet: the backup reads it by path.
-mkdir -p "$WORK/opt/data"
-docker run --rm --user 0 -v "$WORK/opt/data:/d" --entrypoint sh "$IMAGE" -c 'chown 2000:2000 /d && chmod 0700 /d'
+mkdir -p "$WORK/opt/data" "$WORK/opt/certs"
+docker run --rm --user 0 -v "$WORK/opt:/o" --entrypoint sh "$IMAGE" -c 'chown 2000:2000 /o/data /o/certs && chmod 0700 /o/data /o/certs'
 # Fixed subnets: -px is exempt from bans in the plan (as nginx-proxy's network is), -nx is not.
 docker network create --subnet 172.30.251.0/24 "$NAME-px" >/dev/null && docker network create --subnet 172.30.252.0/24 "$NAME-nx" >/dev/null \
   || { echo "cannot create test networks 172.30.251.0/24, 172.30.252.0/24 (in use?)"; exit 2; }
@@ -126,8 +127,26 @@ render "$WORK/bootstrap.ndjson" '{"stalwart_plan_bootstrap": true}'
 render "$WORK/plan.ndjson" '{}'
 
 chmod 0644 "$WORK"/*.ndjson
+
+# The cert pair reaches the container the way the role and a renewal do it: the rendered
+# stalwart-cert-reload.service's ExecStartPre lines copy acme-companion's files (key 0600,
+# unreadable to UID 2000) into opt/certs. Run as root in a container, as systemd would on the host.
+mkdir -p "$WORK/systemd"
+for u in service path; do
+  (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
+    -a "src=$ROLE/templates/stalwart-cert-reload.$u.j2 dest=$WORK/systemd/stalwart-cert-reload.$u mode=0644" \
+    -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_cli_path=$CLI" \
+    -e "stalwart_certs_dir=$WORK/certs" >"$WORK/render.log" 2>&1) || { echo "cannot render the $u unit"; exit 2; }
+done
+copy_certs() {
+  local line
+  sed -n 's/^ExecStartPre=//p' "$WORK/systemd/stalwart-cert-reload.service" | while read -r line; do
+    docker run --rm --user 0 -v "$WORK:$WORK" --entrypoint sh "$IMAGE" -c "$line" || return 1
+  done
+}
+[ "$(grep -c '^ExecStartPre=' "$WORK/systemd/stalwart-cert-reload.service")" = 2 ] && copy_certs || { echo "cannot copy the cert pair"; exit 2; }
 MOUNTS=(-v "$WORK/opt/data:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro"
-        -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
+        -v "$WORK/opt/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro")
 
 hostport() { docker port "$1" "$2" | head -1 | sed 's/.*://'; }
 # Run a command inside the Stalwart container's network namespace: it reaches the
@@ -340,15 +359,9 @@ if [ -n "$got" ] && [ "$got" = "$want" ]; then pass cert_file; else fail cert_fi
 # does) reaches 465 and 993 without a restart. The local smoke cannot run systemd, so this
 # runs the exact ExecStart of the role's rendered stalwart-cert-reload.service (the CLI
 # container in the Stalwart netns, credentials from cli.env) and validates the units.
-mkdir -p "$WORK/opt/etc" "$WORK/systemd"
+mkdir -p "$WORK/opt/etc"
 cp "$WORK/plan.ndjson" "$WORK/opt/etc/plan.ndjson"
 printf 'STALWART_USER=%s\nSTALWART_PASSWORD=%s\n' "$ADMIN_USER" "$ADMIN_PASS" > "$WORK/opt/cli.env"
-for u in service path; do
-  (cd "$WORK" && ANSIBLE_LOCALHOST_WARNING=false ansible localhost -c local -i localhost, -m ansible.builtin.template \
-    -a "src=$ROLE/templates/stalwart-cert-reload.$u.j2 dest=$WORK/systemd/stalwart-cert-reload.$u mode=0644" \
-    -e "@$ROLE/defaults/main.yml" -e "stalwart_install_path=$WORK/opt" -e "stalwart_cli_path=$CLI" \
-    -e "stalwart_certs_dir=$WORK/certs" >"$WORK/render.log" 2>&1) || { echo "cannot render the $u unit"; exit 2; }
-done
 RELOAD=$(sed -n 's/^ExecStart=//p' "$WORK/systemd/stalwart-cert-reload.service")
 # The Stalwart container here is not named `stalwart`, as it is on the droplet.
 RELOAD=${RELOAD//container:stalwart /container:$NAME }
@@ -357,8 +370,10 @@ fp() { openssl s_client -connect "127.0.0.1:$1" -servername mail.rustd.xyz </dev
 before_imaps=$(fp "$P_IMAPS"); before_subs=$(fp "$P_SUBS")
 newcert "$CERTDIR/fullchain.pem.new" "$CERTDIR/key.pem.new"
 chmod 0644 "$CERTDIR"/*.new
+chmod 0600 "$CERTDIR/key.pem.new"
 mv "$CERTDIR/fullchain.pem.new" "$CERTDIR/fullchain.pem"; mv "$CERTDIR/key.pem.new" "$CERTDIR/key.pem"
 want=$(openssl x509 -in "$CERT" -noout -fingerprint -sha256)
+copy_certs || echo "note: the unit's ExecStartPre failed"
 $RELOAD >/dev/null 2>&1 || echo "note: the unit's ExecStart exited $?"
 ok=0
 for _ in $(seq 1 120); do
@@ -586,7 +601,7 @@ if [ $BK_OK = 1 ]; then
   docker run --rm --user 0 -v "$WORK/restore:/d" -v "$SNAP:/snap.tar.gz:ro" --entrypoint sh "$IMAGE" -c \
     'tar xzf /snap.tar.gz -C /d && chown -R 2000:2000 /d' || bk_fail "cannot extract $SNAP"
   docker run -d --name "$NAME-rst" -v "$WORK/restore:/var/lib/stalwart" -v "$WORK/etc:/etc/stalwart:ro" \
-    -v "$WORK/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro" -e STALWART_PUBLIC_URL=https://smoke.invalid \
+    -v "$WORK/opt/certs:/certs:ro" -v "$WORK/dkim:/dkim:ro" -e STALWART_PUBLIC_URL=https://smoke.invalid \
     -p 127.0.0.1::993 "$IMAGE" >/dev/null
   bk_py check x "$(hostport "$NAME-rst" 993)" "$bk_tok" "$JASON_PASS" \
     || bk_fail "restored server: jason@rustd.xyz login or the message ($bk_tok) is missing"

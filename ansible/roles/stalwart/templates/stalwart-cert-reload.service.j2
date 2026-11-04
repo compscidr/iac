@@ -10,4 +10,8 @@ Requires=docker.service
 Type=oneshot
 StandardOutput=null
 StandardError=null
+# The renewed files first: the container cannot read acme-companion's key (0600 root).
+{% for c in stalwart_cert_copies %}
+ExecStartPre=/usr/bin/install -o {{ stalwart_uid }} -g {{ stalwart_uid }} -m 0600 {{ c.src }} {{ c.dest }}
+{% endfor %}
 ExecStart={{ stalwart_cli_docker }} create Action/ReloadTlsCertificates

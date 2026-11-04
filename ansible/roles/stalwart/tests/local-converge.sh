@@ -9,7 +9,7 @@
 # bind-mounted at the same path so the daemon resolves the role's bind mounts. Staged
 # mode on 127.0.0.2. 1Password is skipped (--skip-tags onepassword); every secret is a
 # throwaway constant and every key is generated per run. Creates and removes a
-# container `stalwart`, network `stalwart` and volume `certs` (refuses if they exist),
+# container `stalwart` and network `stalwart` (refuses if the container exists),
 # plus network `nginx-proxy` if absent. SMOKE_KEEP=1 leaves them for poking at.
 set -euo pipefail
 
@@ -21,12 +21,10 @@ MADE_PROXY_NET=
 for c in stalwart stalwart-bootstrap; do
   if docker container inspect "$c" >/dev/null 2>&1; then echo "container $c exists; refusing"; exit 2; fi
 done
-if docker volume inspect certs >/dev/null 2>&1; then echo "volume certs exists; refusing"; exit 2; fi
 
 cleanup() {
   if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left stalwart running (files $WORK)"; return; fi
   docker rm -f stalwart stalwart-bootstrap >/dev/null 2>&1 || true
-  docker volume rm certs >/dev/null 2>&1 || true
   docker network rm stalwart >/dev/null 2>&1 || true
   [ -n "$MADE_PROXY_NET" ] && docker network rm nginx-proxy >/dev/null 2>&1
   docker run --rm -v "$WORK:/w" "$RUNNER" sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
@@ -36,14 +34,16 @@ trap cleanup EXIT
 
 docker network inspect nginx-proxy >/dev/null 2>&1 || { docker network create nginx-proxy >/dev/null; MADE_PROXY_NET=1; }
 
-mkdir -p "$WORK/certs" "$WORK/mailu-dkim"
+# Laid out and permissioned like acme-companion's certs volume: key.pem is 0600, so the
+# image's UID 2000 cannot read it and the role has to copy the pair (README "Certificate reload").
+CERTDIR="$WORK/certs/mail.jasonernst.com"
+mkdir -p "$CERTDIR" "$WORK/mailu-dkim"
 openssl req -x509 -newkey rsa:2048 -nodes -days 7 -subj '/CN=mail.jasonernst.com' \
   -addext 'subjectAltName=DNS:mail.jasonernst.com,DNS:mail.rustd.xyz,DNS:mail.sair.run' \
-  -keyout "$WORK/certs/mail.jasonernst.com.key" -out "$WORK/certs/mail.jasonernst.com.crt" 2>/dev/null
+  -keyout "$CERTDIR/key.pem" -out "$CERTDIR/fullchain.pem" 2>/dev/null
 for d in rustd.xyz sair.run; do openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/mailu-dkim/$d.dkim.key" 2>/dev/null; done
-chmod 0644 "$WORK"/certs/* "$WORK"/mailu-dkim/*
-docker volume create certs >/dev/null
-docker run --rm -v certs:/c -v "$WORK/certs:/s:ro" "$RUNNER" sh -c 'cp /s/* /c/'
+chmod 0644 "$CERTDIR/fullchain.pem" "$WORK"/mailu-dkim/*
+chmod 0600 "$CERTDIR/key.pem"
 
 python3 -I - "$WORK" "$ROLE" <<'PYEOF'
 import json, os, sys
@@ -52,6 +52,7 @@ os.makedirs(f"{w}/systemd")
 json.dump({
     "stalwart_install_path": f"{w}/opt",
     "stalwart_mailu_dkim_dir": f"{w}/mailu-dkim",
+    "stalwart_certs_dir": f"{w}/certs",
     "stalwart_tailnet_ip": "127.0.0.2",
     "stalwart_systemd_dir": f"{w}/systemd",  # no systemd here: the units are templated, not enabled
     "stalwart_systemd_enable": False,
@@ -154,6 +155,9 @@ check plan_change_no_update_apps 'grep -q "RUNNING HANDLER .*Apply Stalwart plan
 for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q 'BUILD_ID = "1.16.0' && break; sleep 2; done
 check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run7.log" && grep -q "/1.16.0/" "$WORK/bulwark7.txt" \
   && curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"1.16.0"' "stamp $(cat "$WORK/bulwark7.txt" 2>/dev/null)"
+fp() { openssl x509 -noout -fingerprint -sha256 2>/dev/null; }
+check serves_fixture_cert '[ -n "$(fp < "$CERTDIR/fullchain.pem")" ] && [ "$(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | fp)" = "$(fp < "$CERTDIR/fullchain.pem")" ]' \
+  "993 serves $(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | openssl x509 -noout -subject 2>/dev/null)"
 check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
 # Last: it bans an address for good. Published ports map to the gateway network (stalwart,
 # gw_priority), so 127.0.0.2:9993, relayed by docker-proxy, arrives from the stalwart

@@ -56,7 +56,7 @@
     owner: "{{ stalwart_uid }}"
     group: "{{ stalwart_uid }}"
     mode: "0700"
-  loop: [etc, data, dkim, backups]
+  loop: [etc, data, dkim, certs, backups]
 
 # Loops over domain NAMES, never the stalwart_domains entries: those nest passwords,
 # and Ansible echoes the loop item (see the mailu role's DKIM tasks).
@@ -71,6 +71,19 @@
     group: "{{ stalwart_uid }}"
     mode: "0600"
   loop: "{{ stalwart_domains | map(attribute='domain') | list }}"
+
+# acme-companion's key is 0600 root, unreadable to the container (defaults, "The certificate").
+# A renewal is copied by stalwart-cert-reload.service, not by this task.
+- name: Copy the certificate and key
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: true
+    owner: "{{ stalwart_uid }}"
+    group: "{{ stalwart_uid }}"
+    mode: "0600"
+  loop: "{{ stalwart_cert_copies }}"
 
 - name: Deploy config.json
   become: true
@@ -221,7 +234,7 @@
          'LETSENCRYPT_HOST': stalwart_virtual_hosts | join(','),
          'LETSENCRYPT_EMAIL': stalwart_letsencrypt_email}) }}
     volumes:
-      - certs:/certs:ro
+      - "{{ stalwart_install_path }}/certs:/certs:ro"
       - "{{ stalwart_install_path }}/etc:/etc/stalwart:ro"
       - "{{ stalwart_install_path }}/data:/var/lib/stalwart"
       - "{{ stalwart_install_path }}/dkim:/dkim:ro"

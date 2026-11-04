@@ -7,8 +7,9 @@ replacing the `mailu` role on the `www` droplet. Design:
 ## Role
 
 Not wired into a playbook yet (Task 8 adds it to `jasonernst_com.yml`). One container,
-`stalwart`, on the `nginx-proxy` and `stalwart` networks, mounting `certs:/certs:ro` and
-`{{ stalwart_install_path }}/{etc,data,dkim}` (owned by UID 2000). Everything but the
+`stalwart`, on the `nginx-proxy` and `stalwart` networks, mounting
+`{{ stalwart_install_path }}/{etc,data,dkim,certs}` (owned by UID 2000; `certs/` is the role's
+copy of the acme-companion pair, see "Certificate reload"). Everything but the
 DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stalwart-cli`
 (`upsert`/`update`/`create` only, never `reconcile`/`destroy`).
 
@@ -234,7 +235,8 @@ run5 (last), at `-vvv` with an admin password the server does not know and a can
 password, must fail the apply with no plan secret (raw or JSON-escaped) anywhere in its
 output (`apply_failure_leaks_nothing`). Then: no `*.log` under `etc/`, stock rules plus `IAC_JUNK_PROBE` without duplicates, no recovery variables on the
 running container, and last `gateway_path_banned` (see "Auth bans and the proxy"). It creates and removes a container
-`stalwart` and a volume `certs`, and refuses to start if either exists.
+`stalwart`, and refuses to start if it exists. `serves_fixture_cert` checks that 993 serves
+the fixture certificate, whose key is 0600 as acme-companion leaves it.
 
 - `stalwart-cli` comes from `$STALWART_CLI`, `PATH`, or is downloaded (pinned, sha256-checked).
 - No private key is in the repo. Each run generates a self-signed SAN cert for the
@@ -510,6 +512,14 @@ trigger that runs that action (or restarts the container).
 a oneshot running `stalwart_cli_docker create Action/ReloadTlsCertificates` (output discarded; a
 failure shows as the unit failing). `local-smoke.sh` `cert_renewal` swaps the target files and runs
 that rendered ExecStart; systemd itself is only exercised on the droplet.
+
+**The container reads a copy, not the certs volume.** acme-companion writes `key.pem` 0600
+root, and the image runs as UID 2000. Mounted straight from the volume the key is unreadable,
+and Stalwart then serves its built-in `rcgen self signed cert` without failing (found on the
+first staged deploy, 2026-11-04; the fixtures had a 0644 key). So `stalwart_cert_copies` is
+copied to `{{ stalwart_install_path }}/certs/` (UID 2000, 0600) by the role, and again by the
+unit's `ExecStartPre=install …` lines before each reload. Check what is served with
+`openssl s_client -connect <ip>:993 -servername mail.rustd.xyz | openssl x509 -noout -issuer`.
 
 ### Spam: Junk and reject (Task 2)
 
