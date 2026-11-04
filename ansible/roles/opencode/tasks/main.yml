@@ -11,7 +11,7 @@
 - name: Install opencode via upstream script
   ansible.builtin.shell: |
     set -euo pipefail
-    curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/install | bash -s -- --version {{ opencode_version | quote }}
+    curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/v2/install | bash -s -- --version {{ opencode_version | quote }}
     touch "{{ ansible_facts['user_dir'] }}/.opencode/.installed-{{ opencode_version }}"
   args:
     creates: "{{ ansible_facts['user_dir'] }}/.opencode/.installed-{{ opencode_version }}"
