@@ -4,9 +4,13 @@
 # Widgets talk to the apps by container name on the media network; the
 # {{HOMEPAGE_VAR_*}} keys are env vars the role reads out of each app's own
 # config file at deploy time (see tasks/main.yml), so nothing lives here.
+# server/container give each nas tile a status badge and CPU/mem/net stats
+# via the docker socket proxy (docker.yaml).
 - Watch:
     - Plex:
         href: http://nas.local:32400/web
+        server: nas
+        container: plex
         description: Movies, TV, music, live TV
         icon: plex.png
         widget:
@@ -16,6 +20,8 @@
           fields: ["streams", "movies", "tv"]
     - Ombi:
         href: https://ombi.jasonernst.com
+        server: nas
+        container: ombi
         description: Request movies and shows
         icon: ombi.png
         widget:
@@ -24,12 +30,16 @@
           key: "{{HOMEPAGE_VAR_OMBI_KEY}}"
     - Threadfin:
         href: http://nas.local:34400/web/
+        server: nas
+        container: threadfin
         description: IPTV -> Plex Live TV tuner
         icon: threadfin.png
 
 - Manage:
     - Sonarr:
         href: https://sonarr.jasonernst.com
+        server: nas
+        container: sonarr
         description: TV
         icon: sonarr.png
         widget:
@@ -38,6 +48,8 @@
           key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
     - Radarr:
         href: https://radarr.jasonernst.com
+        server: nas
+        container: radarr
         description: Movies
         icon: radarr.png
         widget:
@@ -46,6 +58,8 @@
           key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
     - Lidarr:
         href: http://nas.local:8686
+        server: nas
+        container: lidarr
         description: Music
         icon: lidarr.png
         widget:
@@ -54,6 +68,8 @@
           key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
     - Prowlarr:
         href: http://nas.local:9696
+        server: nas
+        container: prowlarr
         description: Indexers
         icon: prowlarr.png
         widget:
@@ -62,12 +78,16 @@
           key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
     - Cleanuparr:
         href: http://nas.local:11011
+        server: nas
+        container: cleanuparr
         description: Stalled / malware download cleanup
         icon: cleanuparr.png
 
 - Download:
     - Transmission:
         href: http://nas.local:9091
+        server: nas
+        container: transmission
         description: Torrents (via NordVPN)
         icon: transmission.png
         widget:
@@ -75,6 +95,8 @@
           url: http://transmission:9091
     - SABnzbd:
         href: http://nas.local:8080
+        server: nas
+        container: sabnzbd
         description: Usenet
         icon: sabnzbd.png
         widget:
@@ -83,6 +105,8 @@
           key: "{{HOMEPAGE_VAR_SABNZBD_KEY}}"
     - slskd:
         href: http://nas.local:5030
+        server: nas
+        container: slskd
         description: Soulseek
         icon: slskd.png
         widget:
@@ -91,6 +115,8 @@
           key: "{{HOMEPAGE_VAR_SLSKD_KEY}}"
     - Bitmagnet:
         href: http://nas.local:3333
+        server: nas
+        container: bitmagnet
         description: Self-hosted DHT indexer
         icon: bitmagnet.png
         # No native widget; one GraphQL count via the custom API widget.
@@ -141,6 +167,8 @@
         icon: mdi-nas
     - Home Assistant:
         href: http://nas.local:8123
+        server: nas
+        container: homeassistant
         description: Home automation
         icon: home-assistant.png
         # Four values is the widget's limit, so each is an HA template that
@@ -215,3 +243,35 @@
                 {{ (v | float | round) if is_number(v) else '–' }}
                 {{ state_attr('sensor.archer_ge800_upload_speed', 'unit_of_measurement') }}
               label: up
+
+# Host stats from Glances, which runs with host networking so it sees eth0
+# and the array; homepage reaches it on the LAN IP like Home Assistant.
+- System:
+    - Network:
+        icon: mdi-lan
+        widget:
+          type: glances
+          url: http://192.168.0.15:61208
+          version: 4
+          metric: network:eth0
+    - CPU:
+        icon: mdi-cpu-64-bit
+        widget:
+          type: glances
+          url: http://192.168.0.15:61208
+          version: 4
+          metric: cpu
+    - Memory:
+        icon: mdi-memory
+        widget:
+          type: glances
+          url: http://192.168.0.15:61208
+          version: 4
+          metric: memory
+    - Array I/O:
+        icon: mdi-harddisk
+        widget:
+          type: glances
+          url: http://192.168.0.15:61208
+          version: 4
+          metric: disk:bcache0

@@ -1,0 +1,6 @@
+---
+# Read-only docker API via the dockerproxy container on the media network,
+# so homepage never holds the socket itself.
+nas:
+  host: dockerproxy
+  port: 2375

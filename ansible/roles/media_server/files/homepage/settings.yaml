@@ -34,3 +34,6 @@ layout:
   Infra:
     style: row
     columns: 4
+  System:
+    style: row
+    columns: 4

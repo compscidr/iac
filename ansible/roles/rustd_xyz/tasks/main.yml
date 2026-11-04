@@ -93,6 +93,10 @@
       - "rustd-geoip-data:/app/data"
     env:
       JAVA_TOOL_OPTIONS: "{{ rustd_xyz_java_opts }}"
+      # glibc gives contending threads their own malloc arena (up to 8 per CPU), and arenas keep
+      # what they touch: 14 of them held 104 MB of the panel's RSS on 2026-10-22. Two is the
+      # usual JVM setting; the Java heap does not go through malloc.
+      MALLOC_ARENA_MAX: "2"
       QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://rustd-db:5432/{{ rustd_xyz_db_name }}"
       QUARKUS_DATASOURCE_USERNAME: "{{ rustd_xyz_db_user }}"
       QUARKUS_DATASOURCE_PASSWORD: "{{ rustd_xyz_db_password }}"

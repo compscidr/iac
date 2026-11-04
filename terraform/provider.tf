@@ -4,15 +4,15 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.106.0"
+      version = "2.107.0"
     }
     onepassword = {
       source  = "1Password/onepassword"
-      version = "3.4.0"
+      version = "3.4.1"
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "0.29.2"
+      version = "0.29.3"
     }
   }
 

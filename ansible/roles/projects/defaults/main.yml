@@ -16,6 +16,8 @@ projects_nginx_client_max_body_size: "512m"
 projects_nginx_proxy_memory: "128m"
 projects_letsencrypt_memory: "128m"
 projects_goblog_live_memory: "256m"
+# nginx:alpine serving one static page, same as a www_redirect container.
+projects_2dogs1bun_memory: "32m"
 
 # Project repos
 projects_repos:

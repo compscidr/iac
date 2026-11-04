@@ -14,3 +14,5 @@
 - resources:
     label: Storage
     disk: /mnt/storage
+    # The bar is used %; expanded puts the total beside the free figure.
+    expanded: true

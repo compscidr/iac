@@ -3,6 +3,7 @@
 # - ping4.network, ping6.network, dumpers.xyz (network-tools repo)
 # - darksearch.xyz (darksearch repo)
 # - goblog.live (goblog project site)
+# - 2dogs1bun.io (2dogs1bun.io repo, static page)
 
 # Nginx reverse proxy + LetsEncrypt for SSL
 - name: Create nginx config directory
@@ -321,3 +322,58 @@
       LETSENCRYPT_HOST: "www.goblog.live"
       LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
       TRUSTED_PROXIES: "172.16.0.0/12"
+
+# ============================================================================
+# 2dogs1bun.io - static page from its own repo
+# ============================================================================
+- name: Clone 2dogs1bun.io repo
+  tags: [projects, 2dogs1bun]
+  become: true
+  become_user: "{{ projects_git_user }}"
+  ansible.builtin.git:
+    repo: git@github.com:compscidr/2dogs1bun.io.git
+    dest: "{{ projects_base_path }}/2dogs1bun"
+    version: main
+    accept_hostkey: true
+
+- name: Create 2dogs1bun.io web root
+  tags: [projects, 2dogs1bun]
+  become: true
+  ansible.builtin.file:
+    path: /opt/2dogs1bun
+    state: directory
+    mode: "755"
+    owner: root
+    group: root
+
+# Only the page is copied: mounting the clone would publish its .git directory. The web root
+# directory (not the file) is mounted, so a page update shows up without a restart.
+- name: Copy 2dogs1bun.io page into the web root
+  tags: [projects, 2dogs1bun]
+  become: true
+  ansible.builtin.copy:
+    src: "{{ projects_base_path }}/2dogs1bun/index.html"
+    remote_src: true
+    dest: /opt/2dogs1bun/index.html
+    mode: "644"
+    owner: root
+    group: root
+
+- name: Deploy 2dogs1bun.io
+  tags: [projects, 2dogs1bun]
+  become: true
+  community.docker.docker_container:
+    name: 2dogs1bun.io
+    image: nginx:alpine
+    volumes:
+      - /opt/2dogs1bun:/usr/share/nginx/html:ro
+    networks:
+      - name: nginx-proxy
+    restart_policy: unless-stopped
+    memory: "{{ projects_2dogs1bun_memory }}"
+    memory_swap: "{{ projects_2dogs1bun_memory }}" # no swap: Docker refuses to raise memory alone on a running container
+    env:
+      VIRTUAL_HOST: "www.2dogs1bun.io"
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: "www.2dogs1bun.io"
+      LETSENCRYPT_EMAIL: "{{ projects_letsencrypt_email }}"
