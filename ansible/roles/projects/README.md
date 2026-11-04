@@ -26,6 +26,7 @@ This allows multiple services to coexist without port conflicts.
 |---------|---------|------|
 | network-tools | ping4.network, ping6.network, dumpers.xyz | [compscidr/network-tools](https://github.com/compscidr/network-tools) |
 | darksearch | darksearch.xyz | [compscidr/darksearch.xyz](https://github.com/compscidr/darksearch.xyz) |
+| 2dogs1bun | 2dogs1bun.io | [compscidr/2dogs1bun.io](https://github.com/compscidr/2dogs1bun.io) |
 
 ## SSL Certificates
 
