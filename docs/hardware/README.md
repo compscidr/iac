@@ -71,8 +71,7 @@ sits there.
 
 ### `ubuntu-beast` power
 
-PSU: Corsair **HX1000** (2017, CP-9020139-NA), 1000 W 80+ Platinum, fully modular Type-4,
-bought 2021-05-11 (warranty to May 2031). Dual-GPU budget:
+PSU: be quiet! **Straight Power 12 1500W**, ATX 3.1 / PCIe 5.0, 80+ Platinum. Dual-GPU budget:
 
 | Part | Sustained W | Transient W |
 |---|---|---|
@@ -84,11 +83,9 @@ bought 2021-05-11 (warranty to May 2031). Dual-GPU budget:
 | Fans, USB (phones, webcam) | 40 | |
 | **Total** | **~965** | **~1400** |
 
-Decision: keep the HX1000. Realistic loads (LLM inference ~600–700 W, gaming ~600 W) leave
-~300 W headroom; only sustained dual-GPU saturation approaches the rating. Checklist: rear
-switch on **single rail**; Corsair 600 W 12VHPWR cable (CP-8920284) for the 5080, two
-separate PCIe cables for the 3080, no pigtails. Hard resets to black under dual-GPU load =
-OPP trip → HX1200i. 1500 W buys nothing here.
+The ~965 W sustained estimate is well under the PSU's 1500 W continuous rating, so the GPU
+power caps were retired (#991) and both cards run at their default limits. The transient
+column is only a rough estimate of short spikes, not a figure to compare against that rating.
 
 ### Cloud (terraform-managed)
 
@@ -102,11 +99,8 @@ All DigitalOcean; sizes are authoritative in `terraform/*.tf`.
 
 ## Power & remote management
 
-- CyberPower **CP1500PFCLCD** UPS (**1000 W output**) powering `nas`, `ubuntu-beast`, and the
-  router. USB to `nas`, which broadcasts shutdown over the network so beast shuts down safely.
-  Beast at full dual-GPU load is ~1050–1100 W at the wall on its own, plus nas (~120 W with six
-  spinning drives) — a sustained heavy run overloads the UPS regardless of PSU. Either split
-  nas+router onto a second UPS or accept that heavy runs on beast aren't protected.
+- CyberPower **CP1500PFCLCD** UPS (**1000 W output**) powering `nas` and the router, with USB
+  to `nas`. `ubuntu-beast` is not on the UPS, so it has no battery protection in a power cut.
 - 2× **JetKVM**, attached to `ubuntu-cube` and `ubuntu-silverstone` for remote power-button presses.
 
 ## Network
