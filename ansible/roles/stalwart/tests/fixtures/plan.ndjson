@@ -7,7 +7,7 @@
 {"@type":"upsert","object":"Application","matchOn":["description"],"value":{"app-bulwark":{"description":"Bulwark Webmail","resourceUrl":"https://github.com/bulwarkmail/webmail/releases/download/1.17.0/bulwark-lite-stalwart.zip","urlPrefix":{"/webmail":true},"enabled":true}}}
 {"@type":"update","object":"SystemSettings","value":{"defaultHostname":"mail.jasonernst.com","defaultDomainId":"#d-rustd","defaultCertificateId":"#cert-mail"}}
 {"@type":"update","object":"Http","value":{"allowedEndpoints":{"match":{"0":{"if":"listener == 'http' && (starts_with(path, '/admin') || starts_with(path, '/account'))","then":"403"}},"else":"200"}}}
-{"@type":"reconcile","object":"Tracer","matchOn":["@type"],"value":{"t-stdout":{"@type":"Stdout","level":"info","ansi":false,"enable":true}}}
+{"@type":"upsert","object":"Tracer","matchOn":["@type"],"value":{"t-stdout":{"@type":"Stdout","level":"info","ansi":false,"enable":true}}}
 {"@type":"update","object":"SpamSettings","value":{"scoreSpam":5.0,"scoreReject":15.0,"scoreDiscard":0.0}}
 {"@type":"update","object":"Email","value":{"defaultFolders":{"junk":{"name":"Junk"},"sent":{"name":"Sent"},"trash":{"name":"Trash"},"drafts":{"name":"Drafts"}}}}
 {"@type":"upsert","object":"MtaInboundThrottle","matchOn":["description"],"value":{"th-submit":{"description":"Per-account submission limit","key":{"authenticatedAs":true},"match":{"match":{},"else":"!is_empty(authenticated_as)"},"rate":{"count":200,"period":86400000},"enable":true}}}

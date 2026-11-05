@@ -290,9 +290,10 @@ stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01b
   a self-signed cert on 993 in the empty-plan run). Once the plan creates listeners, only those
   exist: the plan's five give exactly 25, 465, 993, 8080, 8081 (no 587/143/443/110/995/4190).
 - No `Tracer` object means **no log output at all** in normal mode; the default is a `Log`
-  tracer writing to `/var/log/stalwart` inside the container. The Task 1 fixture reconciles
-  it to one `Stdout` tracer; the role's `upsert` on `@type` gives the same (one `Tracer`,
-  `Stdout`, after bootstrap and a re-apply: `stalwart-cli query Tracer`).
+  tracer writing to `/var/log/stalwart` inside the container. An `upsert` on `@type` leaves
+  one `Stdout` tracer (one `Tracer`, `Stdout`, after bootstrap and a re-apply:
+  `stalwart-cli query Tracer`). Task 1 first did this with `reconcile`; the fixture now uses
+  `upsert` like the role, so nothing here shows a destructive operation.
 - `STALWART_PUBLIC_URL` sets the URLs in `/jmap/session` (`apiUrl`, `uploadUrl`, OAuth).
   Without it they are `https://<defaultHostname>/…`. A JMAP client (Vandelay, Bulwark) follows
   them, so a lab container with `defaultHostname = mail.jasonernst.com` sends clients to the
@@ -325,7 +326,7 @@ milliseconds, multi-variant objects carry `@type`.
 | `Application` | `description`, `resourceUrl`, `urlPrefix` `{"/webmail":true}`, `enabled` | `["description"]` |
 | `SystemSettings` (singleton, `update`) | `defaultHostname`, `defaultDomainId`, `defaultCertificateId` | n/a |
 | `Http` (singleton) | `allowedEndpoints` expression (see admin restriction) | n/a |
-| `Tracer` | `reconcile`, `@type: "Stdout"`, `level: "info"`, `ansi: false` | `["@type"]` |
+| `Tracer` | `upsert`, `@type: "Stdout"`, `level: "info"`, `ansi: false` | `["@type"]` |
 | `SpamSettings` (singleton) | `scoreSpam` (default 5), `scoreReject` (default 0 = off), `scoreDiscard` (0 = off), `spamFilterRulesUrl` | n/a |
 | `Email` (singleton) | `defaultFolders` `{"junk":{"name":"Junk"},"sent":{"name":"Sent"},"trash":{"name":"Trash"},"drafts":{"name":"Drafts"}}` | n/a |
 | `MtaInboundThrottle` | `description` (immutable), `key` `{"authenticatedAs":true}`, `match` `{"match":{},"else":"!is_empty(authenticated_as)"}`, `rate` `{"count":200,"period":86400000}` | `["description"]` |
