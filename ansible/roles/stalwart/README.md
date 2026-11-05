@@ -561,6 +561,16 @@ at 0.00. Mailu ran `mailu-resolver` for the same reason.
 - Check on the host: `sudo docker run --rm --network container:stalwart --entrypoint getent
   stalwartlabs/stalwart@<digest> ahostsv4 2.0.0.127.zen.spamhaus.org` must list `127.0.0.2`,
   not `127.255.255.254`. `local-converge.sh` asserts the same (`blocklists_answer`).
+- **On `www` (2026-11-05)**: the test record answers `127.0.0.2 127.0.0.4 127.0.0.10` from
+  the `stalwart` netns, a delivered message carries no `*_BLOCKED*` tag, and the staged
+  acceptance run is unchanged (47 PASS). The resolver uses 14 MiB.
+- **Side effect over the tailnet**: the forged `example.org` probe now scores 13.70, not
+  11.70, because it gains `RDNS_NONE` (2.00). The droplet's resolver chain answered a PTR for
+  the sender's tailnet address (MagicDNS); real recursion finds none for 100.64.0.0/10. A
+  public sender has a PTR, so this is a staged-only artifact, but it leaves `spam_junk` 1.3
+  under `scoreReject` there. With the blocklists working, a listed sending host can also add
+  to the score: if `spam_junk` is refused with 550 in `--mode public`, read the sending
+  host's listing before suspecting Stalwart.
 - The image only publishes `latest`, so Renovate tracks its digest (grouped with the other
   Stalwart pins).
 
