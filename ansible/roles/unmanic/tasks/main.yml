@@ -84,10 +84,14 @@
       PGID: "{{ ansible_user_gid | string }}"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
+    # CDI, not the nvidia runtime hook: under cgroup v2 + the systemd cgroup
+    # driver, any `systemctl daemon-reload` (apt does them) drops the hook's
+    # device access from running containers, and NVENC fails until a restart
+    # ("Failed to initialize NVML: Unknown Error"). CDI lists the devices in
+    # the container spec, so systemd keeps them.
     device_requests:
-      - driver: nvidia
-        count: -1
-        capabilities: [["gpu"]]
+      - driver: cdi
+        device_ids: ["nvidia.com/gpu=all"]
     restart_policy: unless-stopped
     memory: "{{ unmanic_memory }}"
     memory_swap: "{{ unmanic_memory_swap }}"
