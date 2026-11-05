@@ -9,7 +9,8 @@ replacing the `mailu` role on the `www` droplet. Design:
 Not wired into a playbook yet (Task 8 adds it to `jasonernst_com.yml`). One container,
 `stalwart`, on the `nginx-proxy` and `stalwart` networks, mounting
 `{{ stalwart_install_path }}/{etc,data,dkim,certs}` (owned by UID 2000; `certs/` is the role's
-copy of the acme-companion pair, see "Certificate reload"). Everything but the
+copy of the acme-companion pair, see "Certificate reload"). A second container,
+`stalwart-resolver` (unbound), answers its DNS lookups (see "DNS resolver"). Everything but the
 DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stalwart-cli`
 (`upsert`/`update`/`create` only, never `reconcile`/`destroy`).
 
@@ -521,6 +522,48 @@ copied to `{{ stalwart_install_path }}/certs/` (UID 2000, 0600) by the role, and
 unit's `ExecStartPre=install …` lines before each reload. Check what is served with
 `openssl s_client -connect <ip>:993 -servername mail.rustd.xyz | openssl x509 -noout -issuer`.
 
+### DNS resolver
+
+Spamhaus and the other blocklists identify a user by the resolver a query arrives from and
+refuse shared ones: through DigitalOcean's resolvers (67.207.67.2/3, what a container on
+`www` inherits) or any public one, the test record `2.0.0.127.zen.spamhaus.org` answers
+`127.255.255.254` ("public resolver"), and Stalwart tags the message `*_BLOCKED_OPENRESOLVER`
+at 0.00. Mailu ran `mailu-resolver` for the same reason.
+
+- Stalwart's `DnsResolver` singleton defaults to `System` (the container's `resolv.conf`), so
+  nothing in the plan changes: the `stalwart` container gets `dns_servers`
+  (`stalwart_dns_servers`), which docker's embedded DNS (127.0.0.11) forwards to, in order.
+- `stalwart-resolver` is `alpinelinux/unbound` with `templates/unbound.conf.j2`: recursive,
+  DNSSEC-validating, answering only its own network. Lab: the test record answers
+  `127.0.0.2 127.0.0.4 127.0.0.10` through it; 9 MiB idle.
+- **Root trust anchor.** The image's entrypoint runs `unbound-anchor -a /etc/unbound/root.key`
+  at every start, then unbound. That is the fix Mailu's resolver needed after the 2026-10-11
+  root KSK rollover (#801): an anchor baked into an image goes stale, and RFC 5011's 30-day
+  hold-down never completes in a container that gets recreated.
+- **Its own network, `stalwart-dns`** (`stalwart_resolver_network`), because a static IP needs
+  a configured subnet and the `stalwart` network has none. `iprange` limits the addresses
+  docker hands out to the low half, so no other container can be given the resolver's address
+  (`stalwart_resolver_ip`) when it starts first after a reboot. `stalwart` keeps its gateway
+  on the `stalwart` network (`gw_priority`).
+- **The play makes that network, not this role**: a `pre_task` tagged `always` in
+  `jasonernst_com.yml`, using this role's default. Two roles join it (`stalwart`, and
+  `uptime_kuma` to monitor the resolver), so neither owns it and both work alone under
+  `--tags`. Like `nginx-proxy`, this role expects it to exist; `local-converge.sh` creates it.
+- **Fallback.** The second entry of `stalwart_dns_servers` (1.1.1.1) answers when the resolver
+  is stopped or returns SERVFAIL (lab: resolver stopped, lookups still answered at once; with
+  no fallback, none did). Mail keeps flowing, but the blocklists are back to "blocked" until
+  the resolver returns. That is silent on the mail side, hence the monitor.
+- **Monitor (set up by hand in uptime-kuma, which is on `stalwart-dns`).** Type DNS,
+  hostname `2.0.0.127.zen.spamhaus.org`, resolver server `{{ stalwart_resolver_ip }}`
+  (192.168.204.14), port 53, record type A, condition: record contains `127.0.0.2`. It asks
+  the resolver directly, so the fallback cannot mask a failure, and it also goes down if the
+  list starts answering "blocked". It cannot report the droplet itself being down.
+- Check on the host: `sudo docker run --rm --network container:stalwart --entrypoint getent
+  stalwartlabs/stalwart@<digest> ahostsv4 2.0.0.127.zen.spamhaus.org` must list `127.0.0.2`,
+  not `127.255.255.254`. `local-converge.sh` asserts the same (`blocklists_answer`).
+- The image only publishes `latest`, so Renovate tracks its digest (grouped with the other
+  Stalwart pins).
+
 ### Spam: Junk and reject (Task 2)
 
 - With `scoreReject` above 0, a message at or above it gets `550 5.7.1 Message rejected due to
@@ -554,11 +597,10 @@ unit's `ExecStartPre=install …` lines before each reload. Check what is served
   `MID_RHS_MATCH_FROM` 1.0): Junk on its own, and 19.7 with the marker, which is refused with
   550 (staged run, 2026-11-04). `.invalid`/`.test` senders score 9.2. So `spam_junk` sends the
   unmarked forged message and expects Junk; the marker stays for a sender that scores clean.
-- **The DNS blocklists do not answer on `www`**: the same headers carry
-  `RBL_SPAMHAUS_BLOCKED_OPENRESOLVER`, `DBL_BLOCKED_OPENRESOLVER`, `URIBL_BLOCKED` and
-  `RBL_SENDERSCORE_REPUT_BLOCKED` (all 0.00). The lists refuse queries arriving through the
-  droplet's shared resolver, so no blocklist contributes to the score. Mailu ran its own
-  recursive resolver (`mailu-resolver`) for this. Not fixed here.
+- **The DNS blocklists did not answer through the droplet's resolver**: the same headers
+  carried `RBL_SPAMHAUS_BLOCKED_OPENRESOLVER`, `DBL_BLOCKED_OPENRESOLVER`, `URIBL_BLOCKED` and
+  `RBL_SENDERSCORE_REPUT_BLOCKED` (all 0.00), so no blocklist contributed to the score. Hence
+  the role's own resolver ("DNS resolver").
 - Trusted contacts (`trustContacts`) did **not** rescue unauthenticated lab mail from a sender
   in the recipient's address book; it still went to Junk at 11.2.
 

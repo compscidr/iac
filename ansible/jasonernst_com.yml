@@ -10,6 +10,17 @@
     - name: Check Tailscale connectivity
       tags: always
       ansible.builtin.include_tasks: tasks/tailscale_check.yml
+    # stalwart-resolver's network (stalwart role, README "DNS resolver"). Made here, not by a
+    # role, and tagged 'always': the two roles that join it (stalwart, and uptime_kuma to
+    # monitor the resolver) then work in either order and under --tags. The subnet is the
+    # stalwart role's default; role defaults are play-wide.
+    - name: Create the resolver network
+      tags: always
+      become: true
+      community.docker.docker_network:
+        name: stalwart-dns
+        ipam_config:
+          - "{{ stalwart_resolver_network }}"
     # Secrets are fetched ONCE into facts (see projects.yml / #542 for why
     # play vars holding lookups are the wrong place): one `op` call for the
     # nas-rsync password and one for the whole SMTP item.

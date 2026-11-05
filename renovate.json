@@ -131,6 +131,17 @@
     },
     {
       "customType": "regex",
+      "description": "Track the unbound image digest for Stalwart's resolver in the stalwart role (stalwart_resolver_image: followed by stalwart_resolver_image_digest:)",
+      "managerFilePatterns": [
+        "/^ansible/roles/stalwart/defaults/main\\.yml$/"
+      ],
+      "matchStrings": [
+        "stalwart_resolver_image: \"(?<depName>alpinelinux/unbound):(?<currentValue>[^\"]+)\"\\nstalwart_resolver_image_digest: \"(?<currentDigest>sha256:[a-f0-9]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
       "description": "Track bulwarkmail/webmail releases for the stalwart_bulwark_version pin in the stalwart role (tags have no v prefix)",
       "managerFilePatterns": [
         "/^ansible/roles/stalwart/defaults/main\\.yml$/"
@@ -202,7 +213,8 @@
         "stalwartlabs/stalwart",
         "bulwarkmail/webmail",
         "stalwartlabs/cli",
-        "stalwartlabs/spam-filter"
+        "stalwartlabs/spam-filter",
+        "alpinelinux/unbound"
       ],
       "groupName": "stalwart",
       "automerge": false

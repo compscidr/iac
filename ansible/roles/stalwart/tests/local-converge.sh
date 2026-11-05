@@ -9,7 +9,8 @@
 # bind-mounted at the same path so the daemon resolves the role's bind mounts. Staged
 # mode on 127.0.0.2. 1Password is skipped (--skip-tags onepassword); every secret is a
 # throwaway constant and every key is generated per run. Creates and removes a
-# container `stalwart` and network `stalwart` (refuses if the container exists),
+# containers `stalwart` and `stalwart-resolver` and networks `stalwart` and `stalwart-dns`
+# (192.168.204.0/28; refuses if a container or stalwart-dns exists),
 # plus network `nginx-proxy` if absent. SMOKE_KEEP=1 leaves them for poking at.
 set -euo pipefail
 
@@ -18,14 +19,15 @@ RUNNER=docker:29.1.3-cli # ansible from apk; any docker CLI that speaks the host
 WORK=$(mktemp -d)
 MADE_PROXY_NET=
 
-for c in stalwart stalwart-bootstrap; do
+for c in stalwart stalwart-bootstrap stalwart-resolver; do
   if docker container inspect "$c" >/dev/null 2>&1; then echo "container $c exists; refusing"; exit 2; fi
 done
+if docker network inspect stalwart-dns >/dev/null 2>&1; then echo "network stalwart-dns exists; refusing"; exit 2; fi
 
 cleanup() {
   if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left stalwart running (files $WORK)"; return; fi
-  docker rm -f stalwart stalwart-bootstrap >/dev/null 2>&1 || true
-  docker network rm stalwart >/dev/null 2>&1 || true
+  docker rm -f stalwart stalwart-bootstrap stalwart-resolver >/dev/null 2>&1 || true
+  docker network rm stalwart stalwart-dns >/dev/null 2>&1 || true
   [ -n "$MADE_PROXY_NET" ] && docker network rm nginx-proxy >/dev/null 2>&1
   docker run --rm -v "$WORK:/w" "$RUNNER" sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
   rmdir "$WORK" 2>/dev/null || true
@@ -33,6 +35,9 @@ cleanup() {
 trap cleanup EXIT
 
 docker network inspect nginx-proxy >/dev/null 2>&1 || { docker network create nginx-proxy >/dev/null; MADE_PROXY_NET=1; }
+# The play's pre_task, not the role, makes the resolver network (jasonernst_com.yml): the
+# role's default subnet and iprange.
+docker network create --subnet 192.168.204.0/28 --ip-range 192.168.204.0/29 stalwart-dns >/dev/null
 
 # Laid out and permissioned like acme-companion's certs volume: key.pem is 0600, so the
 # image's UID 2000 cannot read it and the role has to copy the pair (README "Certificate reload").
@@ -158,6 +163,10 @@ check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart ap
 fp() { openssl x509 -noout -fingerprint -sha256 2>/dev/null; }
 check serves_fixture_cert '[ -n "$(fp < "$CERTDIR/fullchain.pem")" ] && [ "$(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | fp)" = "$(fp < "$CERTDIR/fullchain.pem")" ]' \
   "993 serves $(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | openssl x509 -noout -subject 2>/dev/null)"
+# Spamhaus's test record through the stalwart container's own resolv.conf: real listing codes
+# (127.0.0.x) through the role's unbound, 127.255.255.254 through any public resolver.
+rbl=$(docker run --rm --network container:stalwart --entrypoint getent "$(docker inspect -f '{{.Config.Image}}' stalwart)" ahostsv4 2.0.0.127.zen.spamhaus.org | awk '{print $1}' | sort -u | tr '\n' ' ')
+check blocklists_answer 'grep -qw 127.0.0.2 <<<"$rbl" && ! grep -q 127.255.255 <<<"$rbl"' "2.0.0.127.zen.spamhaus.org => ${rbl:-no answer}"
 check no_recovery '! docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" stalwart | grep -q STALWART_RECOVERY'
 # Last: it bans an address for good. Published ports map to the gateway network (stalwart,
 # gw_priority), so 127.0.0.2:9993, relayed by docker-proxy, arrives from the stalwart

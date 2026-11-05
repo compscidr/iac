@@ -211,6 +211,32 @@
   community.docker.docker_network:
     name: stalwart
 
+# --- DNS resolver (defaults, "The DNS blocklists") ---------------------------
+# Its network, stalwart-dns, is the play's: jasonernst_com.yml pre_tasks.
+- name: Deploy unbound.conf
+  become: true
+  ansible.builtin.template:
+    src: unbound.conf.j2
+    dest: "{{ stalwart_install_path }}/unbound.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  register: stalwart_unbound_conf
+
+- name: Run the resolver
+  become: true
+  community.docker.docker_container:
+    name: stalwart-resolver
+    image: "{{ stalwart_resolver_image }}@{{ stalwart_resolver_image_digest }}"
+    restart_policy: unless-stopped
+    restart: "{{ stalwart_unbound_conf is changed }}"
+    memory: "{{ stalwart_resolver_memory }}"
+    volumes:
+      - "{{ stalwart_install_path }}/unbound.conf:/etc/unbound/unbound.conf:ro"
+    networks:
+      - name: stalwart-dns
+        ipv4_address: "{{ stalwart_resolver_ip }}"
+
 # A play killed mid-bootstrap (Ctrl-C, ssh drop) skips bootstrap.yml's `always:`, which
 # would leave the recovery container up with STALWART_RECOVERY_ADMIN and the store lock.
 - name: Remove a leftover recovery container
@@ -246,6 +272,8 @@
       - name: nginx-proxy
       - name: stalwart
         gw_priority: 1
+      - name: stalwart-dns
+    dns_servers: "{{ stalwart_dns_servers }}"
     # Staged: tailnet only, on ports Mailu does not hold. Live: every address, IPv6
     # included, as nginx-proxy does (#591). The admin listener (8081) is on the tailnet IP
     # in both: an IPv4 address, so a tailnet client is DNATed, not relayed by docker-proxy
