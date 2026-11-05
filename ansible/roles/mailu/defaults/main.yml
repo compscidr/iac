@@ -1,5 +1,7 @@
 ---
 # Mailu role defaults
+# RETIRED 2026-11-05: Stalwart replaced Mailu on www (stalwart role README "Cutover and
+# rollback runbook"). The role and /opt/mailu are kept for rollback and deleted in a later PR.
 # Configured to run behind nginx-proxy (consolidated on www droplet)
 
 # Domain configuration

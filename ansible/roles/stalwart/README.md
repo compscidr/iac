@@ -6,7 +6,7 @@ replacing the `mailu` role on the `www` droplet. Design:
 
 ## Role
 
-Not wired into a playbook yet (Task 8 adds it to `jasonernst_com.yml`). One container,
+Wired into `jasonernst_com.yml`; live on `www` since the 2026-11-05 cutover. One container,
 `stalwart`, on the `nginx-proxy` and `stalwart` networks, mounting
 `{{ stalwart_install_path }}/{etc,data,dkim,certs}` (owned by UID 2000; `certs/` is the role's
 copy of the acme-companion pair, see "Certificate reload"). A second container,
@@ -95,8 +95,13 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 
 ## Cutover and rollback runbook
 
-Run from the `feat/stalwart-mail` branch (PR #940, merged only after the cutover). Mailu's data
-stays in `/opt/mailu` throughout, so every step before "Follow up" can be undone.
+**Done on 2026-11-05** (PR #940): about four minutes without a mail server, 333 messages in
+eight mailboxes imported with matching counts, public acceptance 53 PASS with the two spam
+checks run over the tailnet address (port 25 is blocked outbound from ubuntu-beast and from
+the projects and hermes droplets: `--mode public --connect 100.98.223.44 --only spam_junk
+spam_reject_gtube`). Mailu's cert symlinks were left in place for the rollback window. Kept
+below as the record and for the rollback. Mailu's data stays in `/opt/mailu`, so every step
+before "Follow up" can be undone.
 
 ### Running the acceptance script
 

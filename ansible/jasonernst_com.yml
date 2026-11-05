@@ -68,7 +68,7 @@
     - { role: www_redirect, tags: [www-redirect] }
     - { role: jasonernst_com, tags: [jasonernst-com] }
     - { role: fail2ban, tags: [fail2ban] }
-    - { role: mailu, tags: [mailu] }
-    # Staged beside mailu on spare ports until the cutover (stalwart_staged).
-    - { role: stalwart, tags: [stalwart], stalwart_staged: true }
+    # Replaced mailu at the cutover (2026-11-05); roles/mailu and /opt/mailu stay for the
+    # rollback window (stalwart role README "Rollback").
+    - { role: stalwart, tags: [stalwart], stalwart_staged: false }
     - { role: uptime_kuma, tags: [uptime-kuma] }
