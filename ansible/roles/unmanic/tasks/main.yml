@@ -94,3 +94,41 @@
   loop: "{{ unmanic_instances }}"
   loop_control:
     label: "{{ item.name }}"
+
+# dockerd tries a GPU container once at boot and never again if that fails, so
+# booting a kernel whose nvidia module has not landed yet (they are packaged
+# separately, Oct 2026 took four days) leaves these down even after the module
+# loads. This waits for the driver and starts them. exited=128 is that failed
+# start; a deliberate `docker stop` exits 0/137/143 and stays stopped.
+# Not a .path unit on /dev/nvidiactl: that node exists without the module.
+- name: Install unmanic-recover.service
+  tags: unmanic
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/unmanic-recover.service
+    mode: "0644"
+    content: |
+      # Managed by ansible (roles/unmanic) - do not edit.
+      [Unit]
+      Description=Start Unmanic containers that failed because the NVIDIA driver was missing
+      Wants=docker.service
+      After=docker.service
+      StartLimitIntervalSec=0
+
+      [Service]
+      Type=oneshot
+      ExecStartPre=/usr/bin/nvidia-smi -L
+      ExecStart=/bin/sh -c 'docker ps -aq --filter exited=128 --filter name=^/unmanic | xargs -r docker start'
+      Restart=on-failure
+      RestartSec=5min
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable unmanic-recover.service
+  tags: unmanic
+  become: true
+  ansible.builtin.systemd:
+    name: unmanic-recover
+    enabled: true
+    daemon_reload: true
