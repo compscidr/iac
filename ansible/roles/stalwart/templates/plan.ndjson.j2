@@ -115,8 +115,9 @@
 {% endif %}
 {% if not (stalwart_plan_bootstrap | default(false)) %}
 {# Left out of the recovery-mode (bootstrap) apply: the stock rules are only downloaded
-    on the first normal start when no SpamRule exists. The acceptance script's spam_junk
-    sends Subject iac-junk-probe (the subject variable is lowercased) and expects Junk. -#}
+    on the first normal start when no SpamRule exists. A probe for a sender that scores clean:
+    Subject iac-junk-probe (the subject variable is lowercased) adds 8 and so lands in Junk.
+    The acceptance script's spam_junk does not use it (README "Spam: Junk and reject"). -#}
 {{ {'@type': 'upsert', 'object': 'SpamRule', 'matchOn': ['name'], 'value': {'r-junk-probe': {
   '@type': 'Any', 'name': 'IAC_JUNK_PROBE', 'priority': 5000,
   'condition': {'match': {'0': {'if': "contains(subject, 'iac-junk-probe')", 'then': "'IAC_JUNK_PROBE'"}}, 'else': 'false'}}}} | to_json }}

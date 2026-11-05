@@ -40,7 +40,10 @@ stalwart_cert_watch: "{{ stalwart_cert_copies | map(attribute='src') | list }}"
 stalwart_systemd_dir: /etc/systemd/system
 stalwart_systemd_enable: true # false where systemd is not running (the converge test)
 stalwart_uid: 2000 # the image's user; owns etc/, data/, dkim/, certs/, backups/
-stalwart_memory: "512m" # revisit in Task 8 from observed usage under the spam filter
+# Measured on www, 2026-11-04: 222 MiB after the staged acceptance run, 366 MiB after the first
+# boot (UpdateApps fetching the webmail bundle). 512m is about twice the steady figure and
+# clears the first-boot peak.
+stalwart_memory: "512m"
 
 # Staged: no public ports, everything on the tailnet IP beside a running Mailu (spec
 # "Cutover shape"). stalwart_tailnet_ip is set from `tailscale ip -4` unless given.

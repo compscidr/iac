@@ -46,7 +46,6 @@ ALIASES = {  # alias -> destination (spec "Current state" table, plus admin@ per
     "admin@jasonernst.com": "jason@jasonernst.com",
 }
 GTUBE = "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
-JUNK_SUBJECT = "iac-junk-probe"
 
 
 class Fail(Exception):
@@ -313,7 +312,11 @@ def webmail_login(addr):
 
 
 def spam_junk():
-    t = tok(f"{JUNK_SUBJECT}")
+    # No marker Subject. The default --sender forges example.org (SPF -all, DMARC p=reject), which
+    # the stock rules score ~11.7 from any address: between scoreSpam (5) and scoreReject (15).
+    # The plan's IAC_JUNK_PROBE (+8 for `iac-junk-probe` in the Subject) is for a sender that
+    # scores clean; on top of this one it crosses scoreReject and is refused (staged, 2026-11-04).
+    t = tok("junk")
     inbound(A.spam_rcpt, t)  # an SMTP error here (bounce/reject) is a failure
     raw = fetch(A.spam_rcpt, t, "JUNK")
     if raw is None:
@@ -395,7 +398,7 @@ def main():
     p.add_argument("--admin-user", default="stalwart-admin@jasonernst.com", help="Stalwart admin login for admin_public_blocked (default %(default)s)")
     p.add_argument("--cafile", help="trust this PEM instead of the system CAs (local self-signed fixture)")
     p.add_argument("--issuer", default="Let's Encrypt", help="substring the cert issuer must contain; '' skips (default %(default)s)")
-    p.add_argument("--sender", default="acceptance@example.org", help="MAIL FROM for the port-25 spam checks (default %(default)s)")
+    p.add_argument("--sender", default="acceptance@example.org", help="MAIL FROM for the port-25 spam checks; spam_junk relies on its SPF/DMARC failure (default %(default)s)")
     p.add_argument("--spam-rcpt", default="jason@jasonernst.com", help="mailbox the spam checks target (default %(default)s)")
     p.add_argument("--wait", type=int, default=90, help="seconds to poll IMAP for each delivery (default %(default)s)")
     A = p.parse_args()

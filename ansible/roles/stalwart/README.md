@@ -548,6 +548,17 @@ unit's `ExecStartPre=install …` lines before each reload. Check what is served
   cannot show its result): the tag added 8.0. A clean outside sender (~0 to 2) plus 8 lands
   between 5 and 15. In the lab the baseline is already ~11, so the harness uses an
   unmodified stranger message for `junk_probe` instead.
+- **`mail_acceptance.py` `spam_junk` does not use the marker.** Its sender forges
+  `example.org` (SPF `-all`, DMARC `p=reject`), which on `www` scores 11.70 unmarked
+  (`DMARC_POLICY_REJECT` 4.0, `VIOLATED_DIRECT_SPF` 3.5, `HELO_NOT_FQDN` 2.0, `SPF_FAIL` 1.0,
+  `MID_RHS_MATCH_FROM` 1.0): Junk on its own, and 19.7 with the marker, which is refused with
+  550 (staged run, 2026-11-04). `.invalid`/`.test` senders score 9.2. So `spam_junk` sends the
+  unmarked forged message and expects Junk; the marker stays for a sender that scores clean.
+- **The DNS blocklists do not answer on `www`**: the same headers carry
+  `RBL_SPAMHAUS_BLOCKED_OPENRESOLVER`, `DBL_BLOCKED_OPENRESOLVER`, `URIBL_BLOCKED` and
+  `RBL_SENDERSCORE_REPUT_BLOCKED` (all 0.00). The lists refuse queries arriving through the
+  droplet's shared resolver, so no blocklist contributes to the score. Mailu ran its own
+  recursive resolver (`mailu-resolver`) for this. Not fixed here.
 - Trusted contacts (`trustContacts`) did **not** rescue unauthenticated lab mail from a sender
   in the recipient's address book; it still went to Junk at 11.2.
 
