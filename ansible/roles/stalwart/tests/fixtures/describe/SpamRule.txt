@@ -1,0 +1,91 @@
+SpamRule
+  Defines a spam filter rule for message classification.
+
+  Variants:
+    Any: Any
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Url: URL
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Domain: Domain
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Email: E-mail
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Ip: IP
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Header: Header
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+    Body: Body
+      Fields:
+        condition    object<Expression>  mutable
+            Expression that returns the tag to assign to the message.
+        description  string<string>?  mutable
+            Description for the rule
+        enable       boolean  mutable
+            Whether to enable this rule
+        name         string<string>  immutable
+            Short name for the rule
+        priority     number<integer>  mutable
+            The priority of the rule
+
+Filters:
+    name  text  Name

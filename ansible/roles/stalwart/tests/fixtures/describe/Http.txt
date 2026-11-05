@@ -1,0 +1,20 @@
+Http [singleton]
+  Configures HTTP server settings including rate limiting, CORS, and security headers.
+
+Fields:
+    allowedEndpoints        object<Expression>  mutable
+        An expression that determines whether access to an endpoint is allowed. The expression should an HTTP status code (200, 403, etc.)
+    enableHsts              boolean  mutable
+        Specifies whether to enable HTTP Strict Transport Security for the HTTP server.
+    rateLimitAnonymous      object<Rate>?  mutable
+        Specifies the request rate limit for unauthenticated users
+    rateLimitAuthenticated  object<Rate>?  mutable
+        Specifies the request rate limit for authenticated users
+    redirectRoot            string<string>?  mutable
+        The URL to redirect users to when they access the root path of the HTTP server. If not set, the server will return a 404 Not Found response.
+    responseHeaders         map<string<string>, string<string>>  mutable
+        Additional headers to include in HTTP responses
+    usePermissiveCors       boolean  mutable
+        Specifies whether to allow all origins in the CORS policy for the HTTP server
+    useXForwarded           boolean  mutable
+        Specifies whether to use the Forwarded or X-Forwarded-For header to determine the client's IP address

@@ -1,0 +1,112 @@
+DkimSignature
+  Defines a DKIM signature used to sign outgoing email messages.
+
+  Variants:
+    Dkim1Ed25519Sha256: DKIM1 (Ed25519 SHA-256)
+      Fields:
+        auid              string<string>?  mutable
+            Agent or user identifier included in the DKIM signature header
+        canonicalization  enum (see DkimCanonicalization)  mutable
+            Canonicalization algorithm applied to the headers and body before signing
+        createdAt         datetime  server-set
+            Creation date of the DKIM signature
+        domainId          id<Domain>  mutable
+            Identifier for the domain this DKIM signature is associated with
+        expire            number<duration>?  mutable
+            Time after which this DKIM signature expires and should no longer be considered valid
+        headers           set<string<string>>  mutable
+            List of message headers to include in the DKIM signature
+        memberTenantId    id<Tenant>?  mutable
+            Identifier for the tenant this DKIM signature belongs to
+        nextTransitionAt  datetime?  mutable
+            Date when this key will transition to the next rotation stage, or null if no transition is scheduled
+        privateKey        object<SecretText>  mutable
+            PEM-encoded private key used to sign outgoing messages
+        publicKey         string<text>  server-set
+            PEM-encoded public key used to verify signatures, derived from the private key
+        report            boolean  mutable
+            Whether to request failure reports when signature verification fails on the recipient side
+        selector          string<string>  mutable
+            Selector used to locate the DKIM public key in DNS
+        stage             enum (see DkimRotationStage)  mutable
+            Current stage of the DKIM key in its rotation lifecycle
+        thirdParty        string<string>?  mutable
+            Authorized third-party signature value, used when signing on behalf of another domain
+        thirdPartyHash    enum (see DkimHash)?  mutable
+            Hashing algorithm used to verify the authorized third-party signature DNS record
+    Dkim1RsaSha256: DKIM1 (RSA SHA-256)
+      Fields:
+        auid              string<string>?  mutable
+            Agent or user identifier included in the DKIM signature header
+        canonicalization  enum (see DkimCanonicalization)  mutable
+            Canonicalization algorithm applied to the headers and body before signing
+        createdAt         datetime  server-set
+            Creation date of the DKIM signature
+        domainId          id<Domain>  mutable
+            Identifier for the domain this DKIM signature is associated with
+        expire            number<duration>?  mutable
+            Time after which this DKIM signature expires and should no longer be considered valid
+        headers           set<string<string>>  mutable
+            List of message headers to include in the DKIM signature
+        memberTenantId    id<Tenant>?  mutable
+            Identifier for the tenant this DKIM signature belongs to
+        nextTransitionAt  datetime?  mutable
+            Date when this key will transition to the next rotation stage, or null if no transition is scheduled
+        privateKey        object<SecretText>  mutable
+            PEM-encoded private key used to sign outgoing messages
+        publicKey         string<text>  server-set
+            PEM-encoded public key used to verify signatures, derived from the private key
+        report            boolean  mutable
+            Whether to request failure reports when signature verification fails on the recipient side
+        selector          string<string>  mutable
+            Selector used to locate the DKIM public key in DNS
+        stage             enum (see DkimRotationStage)  mutable
+            Current stage of the DKIM key in its rotation lifecycle
+        thirdParty        string<string>?  mutable
+            Authorized third-party signature value, used when signing on behalf of another domain
+        thirdPartyHash    enum (see DkimHash)?  mutable
+            Hashing algorithm used to verify the authorized third-party signature DNS record
+    Dkim2Ed25519Sha256: DKIM2 (Ed25519 SHA-256)
+      Fields:
+        createdAt         datetime  server-set
+            Creation date of the DKIM signature
+        domainId          id<Domain>  mutable
+            Identifier for the domain this DKIM signature is associated with
+        flags             set<enum (see Dkim2Flag)>  mutable
+            Policy flags added to the signature, requesting downstream handlers to honor delivery constraints or provide feedback
+        memberTenantId    id<Tenant>?  mutable
+            Identifier for the tenant this DKIM signature belongs to
+        nextTransitionAt  datetime?  mutable
+            Date when this key will transition to the next rotation stage, or null if no transition is scheduled
+        privateKey        object<SecretText>  mutable
+            PEM-encoded private key used to sign outgoing messages
+        publicKey         string<text>  server-set
+            PEM-encoded public key used to verify signatures, derived from the private key
+        selector          string<string>  mutable
+            Selector used to locate the DKIM public key in DNS
+        stage             enum (see DkimRotationStage)  mutable
+            Current stage of the DKIM key in its rotation lifecycle
+    Dkim2RsaSha256: DKIM2 (RSA SHA-256)
+      Fields:
+        createdAt         datetime  server-set
+            Creation date of the DKIM signature
+        domainId          id<Domain>  mutable
+            Identifier for the domain this DKIM signature is associated with
+        flags             set<enum (see Dkim2Flag)>  mutable
+            Policy flags added to the signature, requesting downstream handlers to honor delivery constraints or provide feedback
+        memberTenantId    id<Tenant>?  mutable
+            Identifier for the tenant this DKIM signature belongs to
+        nextTransitionAt  datetime?  mutable
+            Date when this key will transition to the next rotation stage, or null if no transition is scheduled
+        privateKey        object<SecretText>  mutable
+            PEM-encoded private key used to sign outgoing messages
+        publicKey         string<text>  server-set
+            PEM-encoded public key used to verify signatures, derived from the private key
+        selector          string<string>  mutable
+            Selector used to locate the DKIM public key in DNS
+        stage             enum (see DkimRotationStage)  mutable
+            Current stage of the DKIM key in its rotation lifecycle
+
+Filters:
+    domainId        id<Domain>  Domain
+    memberTenantId  id<Tenant>  Tenant

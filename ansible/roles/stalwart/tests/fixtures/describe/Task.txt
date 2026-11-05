@@ -1,0 +1,215 @@
+Task
+  Represents a background task scheduled for execution.
+
+  Variants:
+    IndexDocument: Index document
+      Fields:
+        accountId     id<Account>  immutable
+            Identifier of the account associated with this task
+        documentId    string<string>  immutable
+            Identifier of the document associated with this task
+        documentType  enum (see IndexDocumentType)  immutable
+            Type of document associated with the task
+        due           datetime?  server-set
+            Due date and time for the task
+        status        object<TaskStatus>  mutable
+            Current status of the task
+    UnindexDocument: Unindex document
+      Fields:
+        accountId     id<Account>  immutable
+            Identifier of the account associated with this task
+        documentId    string<string>  immutable
+            Identifier of the document associated with this task
+        documentType  enum (see IndexDocumentType)  immutable
+            Type of document associated with the task
+        due           datetime?  server-set
+            Due date and time for the task
+        status        object<TaskStatus>  mutable
+            Current status of the task
+    IndexTrace: Index telemetry trace
+      Fields:
+        due      datetime?  server-set
+            Due date and time for the task
+        status   object<TaskStatus>  mutable
+            Current status of the task
+        traceId  id<Trace>  immutable
+            Identifier of the trace associated with this task
+    CalendarAlarmEmail: Calendar alarm e-mail
+      Fields:
+        accountId     id<Account>  immutable
+            Identifier of the account associated with this task
+        alarmId       number<unsignedInteger>  server-set
+            Identifier of the calendar alarm associated with this task
+        documentId    string<string>  immutable
+            Identifier of the document associated with this task
+        due           datetime?  server-set
+            Due date and time for the task
+        eventEnd      datetime  server-set
+            End date and time of the calendar event
+        eventEndTz    number<unsignedInteger>  server-set
+            Timezone identifier for the end date and time
+        eventId       number<unsignedInteger>  server-set
+            Identifier of the calendar event associated with this task
+        eventStart    datetime  server-set
+            Start date and time of the calendar event
+        eventStartTz  number<unsignedInteger>  server-set
+            Timezone identifier for the start date and time
+        status        object<TaskStatus>  mutable
+            Current status of the task
+    CalendarAlarmNotification: Calendar alarm notification
+      Fields:
+        accountId     id<Account>  immutable
+            Identifier of the account associated with this task
+        alarmId       number<unsignedInteger>  server-set
+            Identifier of the calendar alarm associated with this task
+        documentId    string<string>  immutable
+            Identifier of the document associated with this task
+        due           datetime?  server-set
+            Due date and time for the task
+        eventId       number<unsignedInteger>  server-set
+            Identifier of the calendar event associated with this task
+        recurrenceId  number<integer>?  server-set
+            Recurrence identifier for the alarm, if applicable
+        status        object<TaskStatus>  mutable
+            Current status of the task
+    CalendarItipMessage: Calendar iTIP message
+      Fields:
+        accountId   id<Account>  immutable
+            Identifier of the account associated with this task
+        documentId  string<string>  immutable
+            Identifier of the document associated with this task
+        due         datetime?  server-set
+            Due date and time for the task
+        messages    list<TaskCalendarItipContents>  server-set
+            List of iTIP messages associated with this task
+        status      object<TaskStatus>  mutable
+            Current status of the task
+    MergeThreads: Merge email threads
+      Fields:
+        accountId   id<Account>  server-set
+            Identifier of the account associated with this task
+        due         datetime?  server-set
+            Due date and time for the task
+        messageIds  set<string<string>>  server-set
+            Message-IDs of the email messages to be merged into the thread
+        status      object<TaskStatus>  mutable
+            Current status of the task
+        threadName  string<string>  server-set
+            Name of the thread to be merged
+    DmarcReport: Send DMARC report to remote server
+      Fields:
+        due       datetime?  server-set
+            Due date and time for the task
+        reportId  id<DmarcInternalReport>  server-set
+            Identifier for the DMARC aggregate report associated with this task
+        status    object<TaskStatus>  mutable
+            Current status of the task
+    TlsReport: Send TLS report to remote server
+      Fields:
+        due       datetime?  server-set
+            Due date and time for the task
+        reportId  id<TlsInternalReport>  server-set
+            Identifier for the TLS aggregate report associated with this task
+        status    object<TaskStatus>  mutable
+            Current status of the task
+    RestoreArchivedItem: Restore archived item
+      Fields:
+        accountId         id<Account>  server-set
+            Identifier of the account to which the archived item belongs
+        archivedItemType  enum (see ArchivedItemType)  server-set
+            Type of the archived item associated with the blob
+        archivedUntil     datetime  server-set
+            Timestamp until which the archived item will be deleted permanently if not restored
+        blobId            blob  server-set
+            Identifier of the archived blob to be restored
+        createdAt         datetime  server-set
+            Timestamp when the item was originally created
+        due               datetime?  server-set
+            Due date and time for the task
+        status            object<TaskStatus>  mutable
+            Current status of the task
+    DestroyAccount: Destroy account and all associated data
+      Fields:
+        accountDomainId  id<Domain>  mutable
+            Domain identifier of the account to be destroyed, if applicable
+        accountId        id<Account>  server-set
+            Identifier of the account to be destroyed
+        accountName      string<string>  mutable
+            Name of the account to be destroyed
+        accountType      enum (see AccountType)  server-set
+            Type of the deleted account (user or group)
+        due              datetime?  server-set
+            Due date and time for the task
+        status           object<TaskStatus>  mutable
+            Current status of the task
+    AccountMaintenance: Perform account maintenance operations
+      Fields:
+        accountId        id<Account>  immutable
+            Identifier of the account to be maintained
+        due              datetime?  server-set
+            Due date and time for the task
+        maintenanceType  enum (see TaskAccountMaintenanceType)  immutable
+            Type of maintenance operation to perform on the account
+        status           object<TaskStatus>  mutable
+            Current status of the task
+    TenantMaintenance: Perform tenant maintenance operations
+      Fields:
+        due              datetime?  server-set
+            Due date and time for the task
+        maintenanceType  enum (see TaskTenantMaintenanceType)  immutable
+            Type of maintenance operation to perform on the tenant
+        status           object<TaskStatus>  mutable
+            Current status of the task
+        tenantId         id<Tenant>  immutable
+            Identifier of the tenant to be maintained
+    StoreMaintenance: Perform store maintenance operations
+      Fields:
+        due              datetime?  server-set
+            Due date and time for the task
+        maintenanceType  enum (see TaskStoreMaintenanceType)  immutable
+            Type of maintenance operation to perform on the store
+        shardIndex       number<unsignedInteger>?  mutable
+            Index of the shard to perform maintenance on, if applicable for the maintenance type
+        status           object<TaskStatus>  mutable
+            Current status of the task
+    SpamFilterMaintenance: Perform spam filter maintenance operations
+      Fields:
+        due              datetime?  server-set
+            Due date and time for the task
+        maintenanceType  enum (see TaskSpamFilterMaintenanceType)  immutable
+            Type of maintenance operation to perform on the spam filter
+        status           object<TaskStatus>  mutable
+            Current status of the task
+    AcmeRenewal: Perform ACME certificate renewal for a domain
+      Fields:
+        domainId  id<Domain>  immutable
+            Identifier of the domain associated with this task
+        due       datetime?  server-set
+            Due date and time for the task
+        status    object<TaskStatus>  mutable
+            Current status of the task
+    DkimManagement: Perform DKIM key rotation for a domain
+      Fields:
+        domainId  id<Domain>  immutable
+            Identifier of the domain associated with this task
+        due       datetime?  server-set
+            Due date and time for the task
+        status    object<TaskStatus>  mutable
+            Current status of the task
+    DnsManagement: Perform DNS management for a domain
+      Fields:
+        domainId                   id<Domain>  immutable
+            Identifier of the domain associated with this task
+        due                        datetime?  server-set
+            Due date and time for the task
+        onSuccessRenewCertificate  boolean  mutable
+            Whether to automatically renew the domain's TLS certificate using ACME after successfully updating DNS records
+        status                     object<TaskStatus>  mutable
+            Current status of the task
+        updateRecords              set<enum (see DnsRecordType)>  mutable
+            Which DNS records should be updated for the domain as part of this task
+
+Filters:
+    @type   enum (see TaskType)        Task type
+    status  enum (see TaskStatusType)  Status
+    due     date                       Due

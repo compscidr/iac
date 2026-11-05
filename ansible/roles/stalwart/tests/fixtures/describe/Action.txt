@@ -1,0 +1,79 @@
+Action
+  Defines server management actions such as reloads, troubleshooting and cache operations.
+
+  Variants:
+    ReloadSettings: Reload: Server settings
+    ReloadTlsCertificates: Reload: TLS certificates
+    ReloadLookupStores: Reload: Lookup stores
+    ReloadBlockedIps: Reload: Blocked IPs list
+    UpdateApps: Application Management: Update applications
+    TroubleshootDmarc: DMARC: Troubleshooting
+      Fields:
+        arcResult          object<DmarcTroubleshootAuthResult>  server-set
+            Result of the ARC validation check
+        dkim2Pass          boolean  server-set
+            Whether the DKIM2 checks passed
+        dkim2Result        object<DmarcTroubleshootAuthResult>  server-set
+            Result of the DKIM2 signature chain verification
+        dkimPass           boolean  server-set
+            Whether the DKIM checks passed
+        dkimResults        list<DmarcTroubleshootAuthResult>  server-set
+            Results of the DKIM signature verification checks
+        dmarcPass          boolean  server-set
+            Whether the DMARC check passed
+        dmarcPolicy        enum (see DmarcDisposition)  server-set
+            DMARC policy applied to the email message
+        dmarcResult        object<DmarcTroubleshootAuthResult>  server-set
+            Result of the DMARC check
+        ehloDomain         string<string>  mutable
+            EHLO domain provided by the SMTP client
+        elapsed            number<duration>  server-set
+            Time taken to perform the DMARC troubleshooting
+        ipRevPtr           set<string<string>>  server-set
+            PTR records returned by the reverse DNS lookup for the remote IP address
+        ipRevResult        object<DmarcTroubleshootAuthResult>  server-set
+            Result of the reverse DNS check for the remote IP address
+        mailFrom           string<emailAddress>  mutable
+            MAIL FROM address provided by the SMTP client
+        message            string<text>?  mutable
+            Body of the email message used for DMARC troubleshooting, if applicable
+        remoteIp           string<ipAddress>  mutable
+            Remote IP address of the SMTP client
+        spfEhloDomain      string<string>  mutable
+            Domain used for SPF check based on EHLO domain
+        spfEhloResult      object<DmarcTroubleshootAuthResult>  server-set
+            Result of the SPF check based on EHLO domain
+        spfMailFromDomain  string<string>  mutable
+            Domain used for SPF check based on MAIL FROM address
+        spfMailFromResult  object<DmarcTroubleshootAuthResult>  server-set
+            Result of the SPF check based on MAIL FROM address
+        to                 set<string<emailAddress>>  mutable
+            RCPT TO addresses provided by the SMTP client, used for DKIM2 envelope verification
+    ClassifySpam: Spam Filter: Classify a message
+      Fields:
+        authenticatedAs    string<string>?  mutable
+            Authentication identity of the SMTP client, if authenticated
+        ehloDomain         string<string>  mutable
+            EHLO domain provided by the SMTP client
+        envFrom            string<emailAddress>  mutable
+            MAIL FROM address provided by the SMTP client
+        envFromParameters  enum (see SpamClassifyParameters)?  mutable
+            Parameters related to the MAIL FROM address
+        envRcptTo          set<string<emailAddress>>  mutable
+            List of RCPT TO addresses provided by the SMTP client
+        isTls              boolean  mutable
+            Whether the SMTP connection is secured with TLS
+        message            string<text>  mutable
+            Raw email message to classify for spam
+        remoteIp           string<ipAddress>  mutable
+            Remote IP address of the SMTP client
+        result             enum (see SpamClassifyResult)  server-set
+            Overall spam classification result for the message
+        score              number<float>  server-set
+            Spam score for the classified message
+        tags               map<string<string>, object<SpamClassifyTag>>  server-set
+            List of tags contributing to the spam classification of the message
+    InvalidateCaches: Cache: Invalidate all caches
+    InvalidateNegativeCaches: Cache: Invalidate negative caches
+    PauseMtaQueue: MTA: Pause queue processing
+    ResumeMtaQueue: MTA: Resume queue processing

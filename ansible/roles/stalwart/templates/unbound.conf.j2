@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+# Recursive, validating, for the stalwart container only (README "DNS resolver").
+server:
+  interface: 0.0.0.0
+  access-control: {{ stalwart_resolver_network.subnet }} allow
+  do-ip6: no
+  chroot: ""
+  auto-trust-anchor-file: /etc/unbound/root.key
+  hide-identity: yes
+  hide-version: yes

@@ -181,6 +181,18 @@
       find {{ mailu_backup_nas_path }}/db -maxdepth 1 -type f -name 'mailu-*.db'
       -mtime +{{ mailu_backup_nas_keep }} -delete
 
+# Same again for stalwart; only db/ ages out (dkim/ and etc/ are additive mirrors).
+- name: Prune stalwart backups older than the retention window
+  become: true
+  ansible.builtin.cron:
+    name: "prune stalwart db backups"
+    minute: "45"
+    hour: "5"
+    job: >-
+      [ -d {{ stalwart_backup_nas_path }}/db ] &&
+      find {{ stalwart_backup_nas_path }}/db -maxdepth 1 -type f -name 'stalwart-*.tar.gz'
+      -mtime +{{ stalwart_backup_nas_keep }} -delete
+
 # --- Backup freshness alerting (issue #479) --------------------------------
 #
 # See backup-freshness-check.py.j2's header for the design: a nas-side

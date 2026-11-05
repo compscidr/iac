@@ -1,0 +1,108 @@
+Tracer
+  Defines a logging and tracing output method.
+
+  Variants:
+    Log: Log file
+      Fields:
+        ansi          boolean  mutable
+            Whether to use ANSI colors in logs
+        enable        boolean  mutable
+            Enable or disable the tracer
+        events        set<enum (see EventType)>  mutable
+            List of events to include or exclude based on filter mode
+        eventsPolicy  enum (see EventPolicy)  mutable
+            How to interpret the events list
+        level         enum (see TracingLevel)  mutable
+            The logging level for this tracer
+        lossy         boolean  mutable
+            Whether to drop log entries if there is backlog
+        multiline     boolean  mutable
+            Whether to write log entries as a single line or multiline
+        path          string<string>  mutable
+            The path to the log file
+        prefix        string<string>  mutable
+            The prefix for the log file
+        rotate        enum (see LogRotateFrequency)  mutable
+            The frequency to rotate the log file
+    Stdout: Console
+      Fields:
+        ansi          boolean  mutable
+            Whether to use ANSI colors in logs
+        buffered      boolean  mutable
+            Whether to buffer log entries before writing to console
+        enable        boolean  mutable
+            Enable or disable the tracer
+        events        set<enum (see EventType)>  mutable
+            List of events to include or exclude based on filter mode
+        eventsPolicy  enum (see EventPolicy)  mutable
+            How to interpret the events list
+        level         enum (see TracingLevel)  mutable
+            The logging level for this tracer
+        lossy         boolean  mutable
+            Whether to drop log entries if there is backlog
+        multiline     boolean  mutable
+            Whether to write log entries as a single line or multiline
+    Journal: Systemd Journal
+      Fields:
+        enable        boolean  mutable
+            Enable or disable the tracer
+        events        set<enum (see EventType)>  mutable
+            List of events to include or exclude based on filter mode
+        eventsPolicy  enum (see EventPolicy)  mutable
+            How to interpret the events list
+        level         enum (see TracingLevel)  mutable
+            The logging level for this tracer
+        lossy         boolean  mutable
+            Whether to drop log entries if there is backlog
+    OtelHttp: Open Telemetry (HTTP)
+      Fields:
+        enable              boolean  mutable
+            Enable or disable the tracer
+        enableLogExporter   boolean  mutable
+            Whether to export logs to OpenTelemetry
+        enableSpanExporter  boolean  mutable
+            Whether to export spans to OpenTelemetry
+        endpoint            string<uri>  mutable
+            The endpoint for Open Telemetry
+        events              set<enum (see EventType)>  mutable
+            List of events to include or exclude based on filter mode
+        eventsPolicy        enum (see EventPolicy)  mutable
+            How to interpret the events list
+        httpAuth            object<HttpAuth>  mutable
+            The type of HTTP authentication to use
+        httpHeaders         map<string<string>, string<string>>  mutable
+            Additional headers to include in HTTP requests
+        level               enum (see TracingLevel)  mutable
+            The logging level for this tracer
+        lossy               boolean  mutable
+            Whether to drop log entries if there is backlog
+        throttle            number<duration>  mutable
+            The minimum amount of time that must pass between each request to the OpenTelemetry endpoint
+        timeout             number<duration>  mutable
+            Maximum amount of time that Stalwart will wait for a response from the OpenTelemetry endpoint
+    OtelGrpc: Open Telemetry (gRPC)
+      Fields:
+        enable              boolean  mutable
+            Enable or disable the tracer
+        enableLogExporter   boolean  mutable
+            Whether to export logs to OpenTelemetry
+        enableSpanExporter  boolean  mutable
+            Whether to export spans to OpenTelemetry
+        endpoint            string<uri>?  mutable
+            The endpoint for Open Telemetry
+        events              set<enum (see EventType)>  mutable
+            List of events to include or exclude based on filter mode
+        eventsPolicy        enum (see EventPolicy)  mutable
+            How to interpret the events list
+        httpAuth            object<HttpAuth>  mutable
+            The type of HTTP authentication to use
+        httpHeaders         map<string<string>, string<string>>  mutable
+            Additional headers to include in HTTP requests
+        level               enum (see TracingLevel)  mutable
+            The logging level for this tracer
+        lossy               boolean  mutable
+            Whether to drop log entries if there is backlog
+        throttle            number<duration>  mutable
+            The minimum amount of time that must pass between each request to the OpenTelemetry endpoint
+        timeout             number<duration>  mutable
+            Maximum amount of time that Stalwart will wait for a response from the OpenTelemetry endpoint

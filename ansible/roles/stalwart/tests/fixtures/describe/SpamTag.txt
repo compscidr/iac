@@ -1,0 +1,21 @@
+SpamTag
+  Defines a score or action assigned to a spam classification tag.
+
+  Variants:
+    Score: Assign Score
+      Fields:
+        score  number<float>  mutable
+            The score for the tag
+        tag    string<string>  mutable
+            The spam tag name
+    Discard: Discard
+      Fields:
+        tag  string<string>  mutable
+            The spam tag name
+    Reject: Reject
+      Fields:
+        tag  string<string>  mutable
+            The spam tag name
+
+Filters:
+    tag  text  Tag name

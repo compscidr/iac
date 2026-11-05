@@ -32,6 +32,9 @@
       - /opt/uptime-kuma:/app/data
     networks:
       - name: nginx-proxy
+      # To monitor Stalwart's resolver with a DNS monitor (stalwart role README "DNS
+      # resolver"). The play creates this network (jasonernst_com.yml pre_tasks).
+      - name: stalwart-dns
     # Don't inherit the droplet's Tailscale search domain. With it, glibc
     # first asks Docker's embedded DNS for "<name>.tail21090.ts.net", and
     # Docker answered that with a local container's address, so the

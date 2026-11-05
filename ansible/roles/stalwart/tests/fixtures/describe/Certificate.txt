@@ -1,0 +1,19 @@
+Certificate
+  Defines a TLS certificate and its associated private key.
+
+Fields:
+    certificate              object<PublicText>  mutable
+        TLS certificate in PEM format
+    issuer                   string<string>  server-set
+        Certificate issuer
+    notValidAfter            datetime  server-set
+        Expiration date of the certificate
+    notValidBefore           datetime  server-set
+        Issuance date of the certificate
+    privateKey               object<SecretText>  mutable
+        Private key in PEM format
+    subjectAlternativeNames  set<string<string>>  server-set
+        Subject Alternative Names (SAN) for the certificate
+
+Filters:
+    subjectAlternativeNames  text  Subject Alternative Names

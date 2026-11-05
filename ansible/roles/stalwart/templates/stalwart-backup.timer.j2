@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly stalwart mail store and config backup, shipped to the nas
+
+[Timer]
+# 05:00 keeps clear of goblog-backup (04:00 + 15m jitter) and mailu-backup (04:45 + 15m),
+# so the pushes do not contend for the nas daemon or the uplink.
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

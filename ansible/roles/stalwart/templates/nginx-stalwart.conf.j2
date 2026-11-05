@@ -1,0 +1,13 @@
+# {{ ansible_managed }}. http-level part of the stalwart role's nginx-proxy config.
+# Requests that carry credentials (HTTP Basic, OAuth /auth/ and /api/auth) are limited per
+# client address, in place of Stalwart's IP ban, which only sees nginx-proxy. Other requests
+# map to an empty key, which limit_req does not count. Used by vhost.d/mail.*.
+map $http_authorization $stalwart_auth_basic {
+    "~*^basic " $binary_remote_addr;
+    default "";
+}
+map $uri $stalwart_auth_key {
+    "~^/(auth|api/auth)(/|$)" $binary_remote_addr;
+    default $stalwart_auth_basic;
+}
+limit_req_zone $stalwart_auth_key zone=stalwart_auth:10m rate={{ stalwart_proxy_auth_rate }};

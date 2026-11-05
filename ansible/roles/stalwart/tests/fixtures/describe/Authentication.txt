@@ -1,0 +1,28 @@
+Authentication [singleton]
+  Configures authentication settings including password policies and default roles.
+
+Fields:
+    defaultAdminRoleIds    set<id<Role>>  mutable
+        Default roles to assign for administrators.
+    defaultGroupRoleIds    set<id<Role>>  mutable
+        Default roles to assign for groups.
+    defaultTenantRoleIds   set<id<Role>>  mutable
+        Default roles to assign for tenants in multi-tenant environments.
+    defaultUserRoleIds     set<id<Role>>  mutable
+        Default roles to assign for accounts.
+    directoryId            id<Directory>?  mutable
+        External directory used for authentication, or null to use the internal directory
+    maxApiKeys             number<unsignedInteger>?  mutable
+        The default maximum number of API keys a user can create
+    maxAppPasswords        number<unsignedInteger>?  mutable
+        The default maximum number of app passwords a user can create
+    passwordDefaultExpiry  number<duration>?  mutable
+        Default expiration time for user passwords in the internal directory, after which the user will be required to change their password.
+    passwordHashAlgorithm  enum (see PasswordHashAlgorithm)  mutable
+        Password hashing algorithm to use for storing user passwords in the internal directory.
+    passwordMaxLength      number<unsignedInteger>  mutable
+        Maximum length for user passwords in the internal directory.
+    passwordMinLength      number<unsignedInteger>  mutable
+        Minimum length for user passwords in the internal directory.
+    passwordMinStrength    enum (see PasswordStrength)  mutable
+        Minimum strength for user passwords in the internal directory, calculated using the zxcvbn algorithm.
