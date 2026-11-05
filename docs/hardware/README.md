@@ -83,8 +83,9 @@ PSU: be quiet! **Straight Power 12 1500W**, ATX 3.1 / PCIe 5.0, 80+ Platinum. Du
 | Fans, USB (phones, webcam) | 40 | |
 | **Total** | **~965** | **~1400** |
 
-The estimated sustained and transient totals both fit within the 1500 W rating, so the GPU
-power caps were retired (#991) and both cards run at their default limits.
+The ~965 W sustained estimate is well under the PSU's 1500 W continuous rating, so the GPU
+power caps were retired (#991) and both cards run at their default limits. The transient
+column is only a rough estimate of short spikes, not a figure to compare against that rating.
 
 ### Cloud (terraform-managed)
 
