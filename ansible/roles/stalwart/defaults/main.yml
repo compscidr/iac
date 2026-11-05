@@ -2,8 +2,8 @@
 # Stalwart role defaults. Object names and fields: README "Verified against v0.16.27".
 
 # Renovate (Task 7) matches these two lines as a pair; keep them consecutive.
-stalwart_image: "stalwartlabs/stalwart:v0.16.27"
-stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
+stalwart_image: "stalwartlabs/stalwart:v1.0.3"
+stalwart_image_digest: "sha256:73c684a84c24f5b4206ec266a8deb8986fe44a9f623997e07f084388d943c8bd"
 
 # The DNS blocklists refuse queries that arrive through a shared resolver (the droplet's, or
 # any public one), so Stalwart resolves through its own recursive unbound (README "DNS
