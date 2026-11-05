@@ -1,0 +1,168 @@
+---
+# Deploy listmonk + postgres on the projects droplet
+
+- name: Create listmonk base directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ listmonk_base_path }}"
+    state: directory
+    mode: "0755"
+
+# 0700: the dumps hold every subscriber's email address.
+- name: Create listmonk backup directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ listmonk_backup_local_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Create listmonk-db network
+  become: true
+  community.docker.docker_network:
+    name: listmonk-db
+    state: present
+
+- name: Create listmonk volumes
+  become: true
+  community.docker.docker_volume:
+    name: "{{ item }}"
+  loop:
+    - listmonk-db-data
+    - listmonk-uploads
+
+- name: Deploy listmonk postgres
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: listmonk-db
+    image: "{{ listmonk_db_image }}"
+    restart_policy: unless-stopped
+    memory: "{{ listmonk_db_memory }}"
+    memory_swap: "{{ listmonk_db_memory }}" # no swap: Docker refuses to raise memory alone on a running container
+    networks:
+      - name: listmonk-db
+    volumes:
+      - "listmonk-db-data:/var/lib/postgresql/data"
+    env:
+      POSTGRES_DB: "{{ listmonk_db_name }}"
+      POSTGRES_USER: "{{ listmonk_db_user }}"
+      POSTGRES_PASSWORD: "{{ listmonk_db_password }}"
+
+# nginx-proxy includes vhost.d/<host> in the server block. Written before the container
+# exists so the first generated config already has it: the public host never serves the
+# admin UI or the private API, only the signup, confirm and unsubscribe pages.
+- name: Keep the admin UI off the public vhost
+  become: true
+  ansible.builtin.copy:
+    src: nginx-vhost.conf
+    dest: "/var/lib/docker/volumes/nginx-vhost/_data/{{ listmonk_domain }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx-proxy
+
+- name: Deploy listmonk
+  become: true
+  no_log: true
+  community.docker.docker_container:
+    name: listmonk
+    image: "{{ listmonk_image }}"
+    restart_policy: unless-stopped
+    memory: "{{ listmonk_memory }}"
+    memory_swap: "{{ listmonk_memory }}" # no swap: Docker refuses to raise memory alone on a running container
+    # --install is a no-op on a populated database (--idempotent); --upgrade runs the
+    # migrations a new image brings. --config '' means env vars only, no config.toml.
+    command:
+      - sh
+      - -c
+      - ./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && exec ./listmonk --config ''
+    networks:
+      - name: nginx-proxy
+      - name: listmonk-db
+    published_ports:
+      - "127.0.0.1:{{ listmonk_port }}:9000"
+    volumes:
+      - "listmonk-uploads:/listmonk/uploads"
+    env:
+      LISTMONK_app__address: "0.0.0.0:9000"
+      LISTMONK_db__host: listmonk-db
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__user: "{{ listmonk_db_user }}"
+      LISTMONK_db__password: "{{ listmonk_db_password }}"
+      LISTMONK_db__database: "{{ listmonk_db_name }}"
+      LISTMONK_db__ssl_mode: disable
+      # Only read when --install creates the first admin user
+      LISTMONK_ADMIN_USER: "{{ listmonk_admin_user }}"
+      LISTMONK_ADMIN_PASSWORD: "{{ listmonk_admin_password }}"
+      VIRTUAL_HOST: "{{ listmonk_domain }}"
+      VIRTUAL_PORT: "9000"
+      LETSENCRYPT_HOST: "{{ listmonk_domain }}"
+      LETSENCRYPT_EMAIL: "{{ listmonk_letsencrypt_email }}"
+
+# Retried because on a first deploy the schema only exists once the container above has
+# finished --install. Prints how many rows changed; listmonk reads settings at startup.
+- name: Apply listmonk settings and the waitlist
+  become: true
+  no_log: true
+  community.docker.docker_container_exec:
+    container: listmonk-db
+    argv:
+      - psql
+      - -U
+      - "{{ listmonk_db_user }}"
+      - -d
+      - "{{ listmonk_db_name }}"
+      - -tA
+      - -v
+      - ON_ERROR_STOP=1
+    stdin: "{{ lookup('ansible.builtin.template', 'bootstrap.sql.j2') }}"
+  register: listmonk_bootstrap
+  until: listmonk_bootstrap.rc == 0
+  retries: 30
+  delay: 2
+  changed_when: listmonk_bootstrap.stdout | trim | int > 0
+  notify: Restart listmonk
+
+# Same pattern as the darksearch admin in the projects role. Persistent, so re-runs are no-ops.
+- name: Serve the listmonk admin on the tailnet
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https={{ listmonk_tailscale_https_port }} http://127.0.0.1:{{ listmonk_port }}
+  register: listmonk_tailscale_serve
+  changed_when: "'Available within your tailnet' in (listmonk_tailscale_serve.stdout | default(''))"
+
+# --- Nightly pg_dump -> nas backup ---------------------------------------
+- name: Write the nas rsync-daemon password file
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ listmonk_backup_rsync_password_file }}"
+    content: "{{ listmonk_backup_nas_rsync_password }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy the backup script
+  become: true
+  ansible.builtin.template:
+    src: listmonk-db-backup.sh.j2
+    dest: "{{ listmonk_base_path }}/listmonk-db-backup.sh"
+    mode: "0700"
+
+- name: Deploy the backup systemd units
+  become: true
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+  loop:
+    - listmonk-db-backup.service
+    - listmonk-db-backup.timer
+
+- name: Enable and start the backup timer
+  become: true
+  ansible.builtin.systemd_service:
+    name: listmonk-db-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

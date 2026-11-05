@@ -1,0 +1,75 @@
+---
+# listmonk + postgres for the 2dogs1bun.io waitlist, on the projects droplet.
+listmonk_domain: "lists.2dogs1bun.io"
+listmonk_letsencrypt_email: "ernstjason1@gmail.com"
+listmonk_image: "listmonk/listmonk:v6.2.0"
+listmonk_db_image: "postgres:17-alpine"
+listmonk_base_path: /opt/listmonk
+# Container memory limits (#919)
+listmonk_memory: "128m"
+listmonk_db_memory: "256m"
+
+listmonk_db_name: listmonk
+listmonk_db_user: listmonk
+# Set from 1Password in projects.yml
+listmonk_db_password: ""
+listmonk_admin_user: admin
+listmonk_admin_password: ""
+listmonk_smtp_username: ""
+listmonk_smtp_password: ""
+
+# The admin UI is tailnet only: https://projects.<tailnet>.ts.net:9444/
+# (8443 is Prometheus, 9443 is the darksearch admin). The public vhost 404s it.
+listmonk_port: 9000
+listmonk_tailscale_https_port: 9444
+
+# The signup form on 2dogs1bun.io posts this id. It is public, and fixed here so
+# the page does not depend on what a fresh database happens to generate.
+listmonk_waitlist_uuid: "51212200-66bd-4138-9b2b-d308f47bb955"
+
+# Written to listmonk's settings table on every run: listmonk has no config file or
+# env var for these. A change made in the admin UI to one of these keys is overwritten
+# on the next deploy; every other setting stays the UI's to manage.
+listmonk_settings:
+  app.root_url: "https://{{ listmonk_domain }}"
+  app.site_name: "2 Dogs 1 Bun"
+  app.from_email: "2 Dogs 1 Bun <{{ listmonk_smtp_username }}>"
+  # Campaigns pause and resume to stay under Mailu's mailu_message_ratelimit (200/day
+  # per sender), leaving room for signup confirmations sent from the same account.
+  # ponytail: one sender at 150/day, raise the Mailu limit for this account once the list outgrows it
+  app.message_sliding_window: true
+  app.message_sliding_window_duration: "24h"
+  app.message_sliding_window_rate: 150
+  smtp:
+    - enabled: true
+      host: "mail.2dogs1bun.io"
+      port: 465 # Mailu's implicit-TLS submissions port
+      tls_type: "TLS"
+      tls_skip_verify: false
+      auth_protocol: "login"
+      username: "{{ listmonk_smtp_username }}"
+      password: "{{ listmonk_smtp_password }}"
+      hello_hostname: "{{ listmonk_domain }}"
+      max_conns: 2
+      idle_timeout: "15s"
+      wait_timeout: "5s"
+      max_msg_retries: 2
+      msg_retry_delay: "10ms"
+      email_headers: []
+      from_addresses: []
+
+# Nightly pg_dump -> nas backup, same pipeline as rustd_xyz (see that role's
+# rustd-db-backup.sh.j2 for the transport's history). The nas-side coordinates
+# are in group_vars/all.yml because backup_nas reads them too.
+listmonk_backup_local_dir: "{{ listmonk_base_path }}/backups"
+listmonk_backup_local_keep: 7
+listmonk_backup_nas_host: nas # must match backup_nas_tailnet_hostname
+listmonk_backup_nas_rsync_user: svcbackup
+listmonk_backup_nas_rsync_port: 873
+listmonk_backup_nas_rsync_module: storage
+# Full remote path is /volume1/storage/backups/listmonk-db
+# (matches listmonk_backup_nas_path in group_vars/all.yml).
+listmonk_backup_nas_rsync_subpath: backups/listmonk-db
+listmonk_backup_rsync_password_file: "{{ listmonk_base_path }}/.rsync-nas-pass"
+# Set from 1Password in projects.yml (the `nas-rsync` item)
+listmonk_backup_nas_rsync_password: ""

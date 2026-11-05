@@ -1,0 +1,6 @@
+---
+- name: Restart listmonk
+  become: true
+  ansible.builtin.command:
+    cmd: docker restart listmonk
+  changed_when: true
