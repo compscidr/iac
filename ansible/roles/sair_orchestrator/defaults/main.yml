@@ -26,10 +26,6 @@ sair_orchestrator_domain: "orchestrator.sair.run"
 sair_orchestrator_api_domain: "api.sair.run"
 sair_orchestrator_letsencrypt_email: "ernstjason1@gmail.com"
 
-# DeviceSource address (reachable from the orchestrator container)
-# Default assumes Tailscale MagicDNS resolution to ubuntu-cube
-sair_orchestrator_device_source_addr: "ubuntu-cube:8080"
-
 # Portal database path (for API key validation)
 sair_orchestrator_portal_db_dir: "/opt/sair-portal/data"
 

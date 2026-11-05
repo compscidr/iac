@@ -17,7 +17,8 @@ sair_orchestrator_tls: true
 
 # Ports
 sair_adb_server_port: 5038
-sair_device_source_port: 8080
+# Not 8080: ubuntu-cube's IPFS gateway is there.
+sair_device_source_port: 8552
 sair_proxy_adb_port: 5037
 sair_proxy_http_port: 8550
 

@@ -34,6 +34,12 @@
         name: nvidia-persistenced
         state: restarted
         daemon_reload: true
+    - name: Restart IPFS gateway forward
+      become: true
+      ansible.builtin.systemd:
+        name: ipfs-gateway-forward
+        state: restarted
+        daemon_reload: true
   roles:
     # Ollama with GPU support for local LLM inference. Prerequisites: Docker,
     # NVIDIA drivers, Tailscale. CPU only: -e ollama_gpu_enabled=false.
@@ -47,3 +53,37 @@
     # movies/ in place. Two instances (free tier = two libraries each): SDR on
     # http://ubuntu-beast.local:8888, HDR on :8889.
     - { role: unmanic, tags: [unmanic] }
+  tasks:
+    # IPFS clients expect a gateway on 127.0.0.1:8080; beast has no node of its
+    # own, so use ubuntu-cube's. Loopback only: anything that can reach a gateway
+    # can make the node fetch content. socat comes from common_cli.
+    - name: Install IPFS gateway forward unit
+      become: true
+      tags: [ipfs-forward]
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/ipfs-gateway-forward.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Forward 127.0.0.1:8080 to the IPFS gateway on ubuntu-cube
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          ExecStart=/usr/bin/socat TCP-LISTEN:8080,bind=127.0.0.1,fork,reuseaddr TCP:ubuntu-cube.local:8080
+          DynamicUser=true
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart IPFS gateway forward
+
+    - name: Enable IPFS gateway forward
+      become: true
+      tags: [ipfs-forward]
+      ansible.builtin.systemd:
+        name: ipfs-gateway-forward
+        enabled: true
+        state: started
+        daemon_reload: true
