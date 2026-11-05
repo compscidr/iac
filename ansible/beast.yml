@@ -6,20 +6,35 @@
 #   ansible-playbook -i inventory.yml beast.yml --ask-become-pass
 #   ansible-playbook -i inventory.yml beast.yml --ask-become-pass --tags ollama
 #
-# These used to be three `hosts: all` playbooks (ollama.yml, unmanic.yml,
-# nvidia_power_limit.yml) that were only safe with --limit ubuntu-beast.local.
+# These used to be `hosts: all` playbooks (ollama.yml, unmanic.yml) that were
+# only safe with --limit ubuntu-beast.local.
 - name: Services for ubuntu-beast
   hosts: ubuntu-beast.local
   vars_files:
     - vars/user.yml
+  # The GPU power caps are retired (bigger PSU), but their enabled unit would
+  # keep re-applying them at boot. Removing the files is a no-op once done.
+  # ponytail: delete these and the handler after the next deploy to beast.
+  pre_tasks:
+    - name: Remove retired GPU power cap units
+      become: true
+      tags: [always]
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/multi-user.target.wants/nvidia-power-limit.service
+        - /etc/systemd/system/nvidia-power-limit.service
+        - /etc/systemd/system/nvidia-persistenced.service.d/persistence-mode.conf
+      notify: Reload systemd and restart nvidia-persistenced
+  handlers:
+    - name: Reload systemd and restart nvidia-persistenced
+      become: true
+      ansible.builtin.systemd:
+        name: nvidia-persistenced
+        state: restarted
+        daemon_reload: true
   roles:
-    # Caps each GPU's board power via a systemd oneshot that re-applies at
-    # boot. See roles/nvidia_power_limit/defaults/main.yml for the values and
-    # why they were picked. Safe to re-run; it verifies against the hardware.
-    # Try different caps without editing the role:
-    #   --tags nvidia-power-limit \
-    #   -e '{"nvidia_power_limit_gpus": [{"bus_id": "00000000:05:00.0", "watts": 220}]}'
-    - { role: nvidia_power_limit, tags: [nvidia-power-limit] }
     # Ollama with GPU support for local LLM inference. Prerequisites: Docker,
     # NVIDIA drivers, Tailscale. CPU only: -e ollama_gpu_enabled=false.
     # Custom models: -e '{"ollama_models": ["qwen2.5:14b", "codestral:latest"]}'
