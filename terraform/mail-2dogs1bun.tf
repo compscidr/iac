@@ -1,12 +1,12 @@
 # Mail DNS records for 2dogs1bun.io
-# Mail is handled by the existing Mailu instance on mail.jasonernst.com
+# Mail is handled by the Stalwart instance on mail.jasonernst.com
 #
 # Note the split: the apex/www records in projects.tf point at the projects
 # droplet (where the site runs), while everything below points at the www
-# droplet (where Mailu runs). Addresses: jason@ (mailbox), noreply@ (listmonk), and
-# the hello@ and postmaster@ aliases into jason@ (ansible/roles/mailu/defaults).
+# droplet (where Stalwart runs). Addresses: jason@ (mailbox), noreply@ (listmonk), and
+# the hello@ and postmaster@ aliases into jason@ (ansible/roles/stalwart/defaults).
 
-# A/AAAA records for mail.2dogs1bun.io -> www droplet (where Mailu runs)
+# A/AAAA records for mail.2dogs1bun.io -> www droplet (where Stalwart runs)
 resource "digitalocean_record" "twodogs1bun-A-mail" {
   domain = digitalocean_domain.twodogs1bun-io.name
   type   = "A"
@@ -71,7 +71,7 @@ resource "digitalocean_record" "twodogs1bun-CNAME-autodiscover" {
   value  = "mail.2dogs1bun.io."
 }
 
-# SRV records for mail client auto-discovery
+# SRV records for mail client auto-discovery. No _pop3s: Stalwart serves only 25, 465 and 993.
 resource "digitalocean_record" "twodogs1bun-SRV-autodiscover" {
   domain   = digitalocean_domain.twodogs1bun-io.name
   type     = "SRV"
@@ -100,16 +100,6 @@ resource "digitalocean_record" "twodogs1bun-SRV-imaps" {
   priority = 10
   weight   = 1
   port     = 993
-}
-
-resource "digitalocean_record" "twodogs1bun-SRV-pop3s" {
-  domain   = digitalocean_domain.twodogs1bun-io.name
-  type     = "SRV"
-  name     = "_pop3s._tcp"
-  value    = "mail.2dogs1bun.io."
-  priority = 10
-  weight   = 1
-  port     = 995
 }
 
 # Disable plaintext protocols (SRV with target "." means not available)
