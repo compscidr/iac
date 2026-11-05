@@ -66,10 +66,10 @@
     mode: "644"
 
 # Our own Kubo node, so crawling isn't held to a public gateway's rate limit. The indexer
-# reaches its gateway over a private network (8080 isn't published); the RPC API/WebUI on 5001
-# is published to LAN + tailnet with no auth (see Deploy Kubo). darksearch result links still
-# use the public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what
-# it crawls, and caps its cache at 2GB.
+# reaches its gateway over a private network; the gateway and the RPC API/WebUI on 5001 are also
+# published to LAN + tailnet with no auth (see Deploy Kubo). darksearch result links still use
+# the public gateway. kubo-init.sh (from the indexer repo) stops it announcing or serving what it
+# crawls to the IPFS network, and caps its cache at 2GB.
 - name: Create ipfs_indexer network
   tags: ipfs-indexer
   become: true
@@ -121,9 +121,11 @@
     networks:
       - name: ipfs-indexer
     # RPC API + WebUI, LAN and tailnet like the indexer's port (no router forward). It's admin
-    # access to the node with no auth, so don't forward it.
+    # access to the node with no auth, so don't forward it. The gateway too: anything that can
+    # reach it can make the node fetch content.
     published_ports:
       - "{{ ipfs_indexer_kubo_webui_port }}:5001"
+      - "{{ ipfs_indexer_kubo_gateway_port }}:8080"
     volumes:
       - "{{ ipfs_indexer_src }}/docker/kubo-init.sh:/container-init.d/indexer.sh:ro"
       - "{{ ipfs_indexer_config_dir }}/kubo-webui.sh:/container-init.d/webui.sh:ro"

@@ -2,8 +2,8 @@
 # Stalwart role defaults. Object names and fields: README "Verified against v0.16.27".
 
 # Renovate (Task 7) matches these two lines as a pair; keep them consecutive.
-stalwart_image: "stalwartlabs/stalwart:v0.16.27"
-stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
+stalwart_image: "stalwartlabs/stalwart:v1.0.3"
+stalwart_image_digest: "sha256:73c684a84c24f5b4206ec266a8deb8986fe44a9f623997e07f084388d943c8bd"
 
 # The DNS blocklists refuse queries that arrive through a shared resolver (the droplet's, or
 # any public one), so Stalwart resolves through its own recursive unbound (README "DNS
@@ -24,7 +24,7 @@ stalwart_dns_servers: ["{{ stalwart_resolver_ip }}", "1.1.1.1"]
 
 # stalwart-cli is not in the image (README "Versions"): the release tarball is fetched to
 # the host, checksum-verified, and mounted into a throwaway container in stalwart's netns.
-stalwart_cli_version: "v1.0.13"
+stalwart_cli_version: "v1.0.14"
 stalwart_cli_sha256: "689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
 stalwart_cli_path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl/stalwart-cli"
 # stalwart-cli in a throwaway container in a Stalwart container's netns. Credentials come
@@ -135,7 +135,7 @@ stalwart_aliases:
 
 # Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
 # matches the version line; the release tags have no `v`.
-stalwart_bulwark_version: "1.17.0"
+stalwart_bulwark_version: "1.20.0"
 stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/{{ stalwart_bulwark_version }}/bulwark-lite-stalwart.zip"
 
 # Live only (not stalwart_staged): nginx-proxy serves these names from the 8080 listener,
@@ -154,7 +154,7 @@ stalwart_ban_exempt_networks: "{{ stalwart_nginx_proxy_subnets | default([]) }}"
 stalwart_spam_score_junk: 5.0
 stalwart_spam_score_reject: 15.0
 # Pinned release, not releases/latest, so a rules update is a reviewed change (Task 7).
-stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.2/spam-filter-rules.json.gz"
+stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.4/spam-filter-rules.json.gz"
 
 # Outbound limit per authenticated login, counted per RCPT (README "Per-account send limit").
 stalwart_send_limit_per_day: 200

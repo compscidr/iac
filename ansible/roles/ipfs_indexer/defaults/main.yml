@@ -41,6 +41,9 @@ ipfs_indexer_kubo_webui_origins:
   - "http://{{ ansible_default_ipv4.address }}:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://localhost:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://127.0.0.1:{{ ipfs_indexer_kubo_webui_port }}"
+# Kubo's HTTP gateway for LAN devices, at http://ubuntu-cube.local:8088/ipfs/<cid>. Not 8080: on
+# ubuntu-cube the host's 8080 is sair-device-source.
+ipfs_indexer_kubo_gateway_port: 8088
 
 # Discovery (ipfs_indexer#213): sites found beyond the Wikipedia mirror's links.
 # SEEDS_FILE: these entries (CIDs, DNSLink domains, .eth names, IPNS keys), written to
