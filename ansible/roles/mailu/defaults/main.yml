@@ -68,14 +68,6 @@ mailu_additional_domains:
     users:
       - user: jason
         password: "{{ mailu_op_darksearch_xyz_jason_password }}"
-  # 2dogs1bun.io: jason@ mailbox with hello@ and postmaster@ aliased into it (below), and
-  # noreply@, the account listmonk sends the waitlist from. Same ordering note as above.
-  - domain: 2dogs1bun.io
-    users:
-      - user: jason
-        password: "{{ mailu_op_2dogs1bun_io_jason_password }}"
-      - user: noreply
-        password: "{{ mailu_op_2dogs1bun_smtp_password }}"
 
 # Mail aliases (local@domain -> destination). Created idempotently at deploy;
 # Mailu's CLI errors on existing aliases, tolerated the same way user creation is.
@@ -96,12 +88,6 @@ mailu_aliases:
   - local: postmaster
     domain: darksearch.xyz
     destination: jason@darksearch.xyz
-  - local: postmaster
-    domain: 2dogs1bun.io
-    destination: jason@2dogs1bun.io
-  - local: hello
-    domain: 2dogs1bun.io
-    destination: jason@2dogs1bun.io
   # Published on darksearch.xyz for abuse reports/takedowns and DMCA notices
   # (the DMCA designated agent registration uses dmca@).
   - local: abuse

@@ -1,7 +1,7 @@
 # listmonk Role
 
 The 2dogs1bun.io waitlist: [listmonk](https://listmonk.app) and postgres on the projects
-droplet, sending through Mailu as `noreply@2dogs1bun.io`.
+droplet, sending through Stalwart as `noreply@2dogs1bun.io`.
 
 - **Public:** `https://lists.2dogs1bun.io` serves only the signup, confirm and unsubscribe
   pages. `files/nginx-vhost.conf` returns 404 for `/admin` and the private `/api`.
@@ -17,8 +17,8 @@ droplet, sending through Mailu as `noreply@2dogs1bun.io`.
 
 ## Limits
 
-Mailu caps each sender at `mailu_message_ratelimit` (200/day). Campaigns are held to 150/day
-so confirmations still get through. A signup while Mailu is unreachable or over the limit
+Stalwart caps each login at `stalwart_send_limit_per_day` (200 recipients/day). Campaigns are
+held to 150/day so confirmations still get through. A signup while Stalwart is unreachable or over the limit
 shows the visitor an error page, though their address is saved as unconfirmed.
 
 ## Restore

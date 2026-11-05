@@ -93,6 +93,25 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.
 
+## Adding a domain
+
+1. Generate the DKIM key on `www`, before anything else, and print its public half. The file is
+   inert until the plan names the domain:
+
+   ```bash
+   sudo sh -c 'umask 077; K=/opt/stalwart/dkim/<domain>.dkim.key; test -e $K || { openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out $K 2>/dev/null && chown 2000:2000 $K; }; openssl pkey -in $K -pubout -outform DER | base64 -w0'
+   ```
+
+2. Add `terraform/mail-<domain>.tf` with that key under selector `dkim`, apply, and wait for
+   `mail.<domain>` to resolve to `www`. Before then its ACME challenge would fail the one SAN
+   cert for every mail hostname.
+3. Create the 1Password items, then add the domain to `stalwart_domains` and `stalwart_aliases`
+   and its lookups to `tasks/main.yml`. Also add it to `scripts/mail_acceptance.py` and
+   `scripts/mail_acceptance.env`, and to the `rm` list under "Rollback".
+4. Run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`. The plan changes,
+   so every app password and API key is deleted ("Consequence of re-applying"). Then run the
+   acceptance script with `--mode public`.
+
 ## Cutover and rollback runbook
 
 **Done on 2026-11-05** (PR #940): about four minutes without a mail server, 333 messages in
@@ -173,7 +192,7 @@ Any time before `/opt/mailu` is deleted:
    name, then reload:
 
    ```bash
-   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz}
+   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz,2dogs1bun.io}
    sudo rm /etc/nginx/conf.d/stalwart.conf
    sudo docker exec nginx-proxy sh -c 'nginx -t && nginx -s reload'
    ```

@@ -34,16 +34,16 @@ listmonk_settings:
   app.root_url: "https://{{ listmonk_domain }}"
   app.site_name: "2 Dogs 1 Bun"
   app.from_email: "2 Dogs 1 Bun <{{ listmonk_smtp_username }}>"
-  # Campaigns pause and resume to stay under Mailu's mailu_message_ratelimit (200/day
-  # per sender), leaving room for signup confirmations sent from the same account.
-  # ponytail: one sender at 150/day, raise the Mailu limit for this account once the list outgrows it
+  # Campaigns pause and resume to stay under Stalwart's stalwart_send_limit_per_day (200
+  # recipients/day per login), leaving room for signup confirmations from the same account.
+  # ponytail: one sender at 150/day, needs a per-account exception to that limit once the list outgrows it
   app.message_sliding_window: true
   app.message_sliding_window_duration: "24h"
   app.message_sliding_window_rate: 150
   smtp:
     - enabled: true
       host: "mail.2dogs1bun.io"
-      port: 465 # Mailu's implicit-TLS submissions port
+      port: 465 # Stalwart's implicit-TLS submissions port
       tls_type: "TLS"
       tls_skip_verify: false
       auth_protocol: "login"

@@ -25,10 +25,6 @@
       account_id=onepassword_account_id) }}"
     mailu_op_darksearch_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.darksearch.xyz - jason', field='password', vault='Infrastructure',
       account_id=onepassword_account_id) }}"
-    mailu_op_2dogs1bun_io_jason_password: "{{ lookup('community.general.onepassword', 'mail.2dogs1bun.io - jason', field='password', vault='Infrastructure',
-      account_id=onepassword_account_id) }}"
-    mailu_op_2dogs1bun_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - 2dogs1bun', field='password', vault='Infrastructure',
-      account_id=onepassword_account_id) }}"
   no_log: true
 
 - name: Create Mailu directory
