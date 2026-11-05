@@ -56,6 +56,15 @@ resource "digitalocean_record" "twodogs1bun-TXT-DMARC-report" {
   value  = "v=DMARC1;"
 }
 
+# DKIM record. Generated on www first (stalwart role README "Adding a domain"), so this
+# record is correct from the start.
+resource "digitalocean_record" "twodogs1bun-TXT-DKIM" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "TXT"
+  name   = "dkim._domainkey"
+  value  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVZ4KNmjsnKOpfze//0HpPP8WPUaW5S7ueXl/R+lbgUveKqbmyXsEnsFa1OJqD+Rr3dBahAYlfu4Br4lz8ngRoMcPzA0V1DHNjusP9sTjrPNRb640f0er7RDs0xB1fk5lJ512dJlnpNLg/LN0quYEcnFiDHhJVnIFHJCVTC+mw0dK3uzNSuRzgcfOm0e8n2ShdTtMYEEWAmWclnqwZof/sL/TQ47KQfUMrcJWfDu0KdSfoPw2pkZqL5wyCA7nuwMX+r0ktIeV4IjMelaiy90oJonIUk8cA9wsRvFEfAgtHZQFFLjGuWyWhV5FAvGkjktKmW9UbRHYWqEUOp8bSJ5ZwIDAQAB"
+}
+
 # Mail client auto-configuration
 resource "digitalocean_record" "twodogs1bun-CNAME-autoconfig" {
   domain = digitalocean_domain.twodogs1bun-io.name
