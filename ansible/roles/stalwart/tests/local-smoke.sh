@@ -19,9 +19,9 @@ set -uo pipefail
 
 ROLE=$(cd "$(dirname "$0")/.." && pwd)
 
-IMAGE="stalwartlabs/stalwart:v0.16.27@sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
-CLI_VERSION="v1.0.13"
-CLI_SHA256="689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13"
+IMAGE="stalwartlabs/stalwart:v1.0.3@sha256:73c684a84c24f5b4206ec266a8deb8986fe44a9f623997e07f084388d943c8bd"
+CLI_VERSION="v1.0.14"
+CLI_SHA256="c90824fe60b29d56c5a590baf321a30d422153f7aa64ac5f840d16f30895e59c"
 
 RECOVERY_ADMIN="recovery:recovery-fixture-pw"
 ADMIN_USER="stalwart-admin@rustd.xyz"
@@ -447,7 +447,7 @@ import json, sys
 m = "From: <a@other.test>\r\nTo: <jason@rustd.xyz>\r\nSubject: " + sys.argv[1] + "\r\n\r\nhi\r\n"
 print(json.dumps({"using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], "methodCalls": [["x:Action/set", {"create": {"c": {
     "@type": "ClassifySpam", "message": m, "remoteIp": "203.0.113.9", "ehloDomain": "mx.other.test",
-    "envFrom": "a@other.test", "envRcptTo": {"jason@rustd.xyz": True}, "isTls": False}}}, "0"]]}))' "$1")" http://127.0.0.1:8081/jmap
+    "mailFrom": "a@other.test", "rcptTo": {"jason@rustd.xyz": True}, "isTls": False}}}, "0"]]}))' "$1")" http://127.0.0.1:8081/jmap
 }
 probe=$(classify "Weekly iac-junk-probe 1234"); control=$(classify "Weekly report 1234")
 if grep -q '"IAC_JUNK_PROBE":{"score":8.0' <<<"${probe// /}" && grep -q '"MISSING_MID"' <<<"$probe" \
