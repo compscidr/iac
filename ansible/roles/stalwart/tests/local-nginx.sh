@@ -77,7 +77,9 @@ for h in $HOSTS; do
   t "$h" /jmap/session 200 "" '"capabilities"'
   t "$h" /jmap/session 200 "-u jason@rustd.xyz:$JASON_PASS" '"apiUrl"'
   t "$h" /.well-known/jmap 307
-  if [ "$h" = mail.jasonernst.com ]; then t "$h" /webmail/ 200 "" bulwark
+  t "$h" / 302 "" '^location: https://mail.jasonernst.com/webmail/'
+  if [ "$h" = mail.jasonernst.com ]; then
+    t "$h" /webmail/ 200 "" bulwark
   else
     t "$h" /webmail/ 302 "" '^location: https://mail.jasonernst.com/webmail/'
     t "$h" /webmail 302 "" '^location: https://mail.jasonernst.com/webmail/'

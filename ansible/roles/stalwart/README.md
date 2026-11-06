@@ -495,8 +495,9 @@ The `Application` above serves Bulwark at `/webmail/` on any HTTP listener (200 
 8081). Stalwart downloads the zip a few seconds after start and keeps it in its store, which
 grows the RocksDB directory by ~80 MB. Creating the Application in recovery mode and
 restarting is enough; on a running server it needs `Action/UpdateApps`. The stock web admin
-is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
-so `GET /` on the public listener ends at a 403 under the rule below.
+is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`, which
+the public listener refuses, so nginx-proxy's vhost.d files send `/` to the webmail instead.
+Every other path stays on its own host, for mail clients and certificate renewal.
 
 v1 refuses a bundle without a `manifest.json`, which 1.16.0 lacks and 1.17.2 onward have. A
 refused bundle leaves the previous one serving, but after a restart v1 logs "no bundle is
@@ -815,6 +816,6 @@ folders, so no duplicates, because the `defaultFolders` override names them like
 is safe to re-run. Two things to know:
 
 - Pass the session URL (`…/jmap/session`). A bare base URL makes Vandelay `GET /`, which
-  redirects to `/account`, which is 403 on the public listener.
+  redirects to the webmail, not to JMAP.
 - Vandelay follows the session's `apiUrl`, so the server's `STALWART_PUBLIC_URL` must be
   right for where Vandelay runs.
