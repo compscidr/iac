@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Converge the stalwart role twice against local Docker; the second run must report
 # changed=0, and that a part-failed or interrupted bootstrap is recovered (see runs.sh).
+# Then migrates a v0.16 store as README "Upgrading from v0.16" says and deploys on it.
 #
 #   bash ansible/roles/stalwart/tests/local-converge.sh
+#   MIGRATE_ONLY=1 bash ansible/roles/stalwart/tests/local-converge.sh   # just the migration
 #
 # ansible-playbook runs as root in a throwaway docker:cli container with the host's
 # docker socket (the role chowns to UID 2000 and drives docker), against a temp dir
@@ -19,14 +21,14 @@ RUNNER=docker:29.1.3-cli # ansible from apk; any docker CLI that speaks the host
 WORK=$(mktemp -d)
 MADE_PROXY_NET=
 
-for c in stalwart stalwart-bootstrap stalwart-resolver; do
+for c in stalwart stalwart-v016 stalwart-bootstrap stalwart-resolver; do
   if docker container inspect "$c" >/dev/null 2>&1; then echo "container $c exists; refusing"; exit 2; fi
 done
 if docker network inspect stalwart-dns >/dev/null 2>&1; then echo "network stalwart-dns exists; refusing"; exit 2; fi
 
 cleanup() {
   if [ -n "${SMOKE_KEEP:-}" ]; then echo "SMOKE_KEEP: left stalwart running (files $WORK)"; return; fi
-  docker rm -f stalwart stalwart-bootstrap stalwart-resolver >/dev/null 2>&1 || true
+  docker rm -f stalwart stalwart-v016 stalwart-bootstrap stalwart-resolver >/dev/null 2>&1 || true
   docker network rm stalwart stalwart-dns >/dev/null 2>&1 || true
   [ -n "$MADE_PROXY_NET" ] && docker network rm nginx-proxy >/dev/null 2>&1
   docker run --rm -v "$WORK:/w" "$RUNNER" sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
@@ -136,13 +138,14 @@ docker inspect -f '{{.Id}}' stalwart > run8.after
 mv store-format-v1.saved opt/etc/store-format-v1
 play -vvv -e @vars5.json > run5.log 2>&1; echo $? > run5.rc
 SHEOF
-docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
+[ -n "${MIGRATE_ONLY:-}" ] || docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
   -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh runs.sh || { echo "FAIL converge"; exit 1; }
 
 recap() { grep -A1 'PLAY RECAP' "$WORK/$1.log" | tail -1; }
-for run in run0 run1 run2 run3 run4 run6 run7; do echo "$run: $(recap $run)"; done
 FAILED=0
 check() { if eval "$2"; then echo "PASS $1"; else echo "FAIL $1${3:+: $3}"; FAILED=1; fi; }
+if [ -z "${MIGRATE_ONLY:-}" ]; then
+for run in run0 run1 run2 run3 run4 run6 run7; do echo "$run: $(recap $run)"; done
 check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "Fewer than 6 SpamRules after 120 s: the stock rules were not loaded" "$WORK/run0.log" && [ ! -e "$WORK/run0.marker" ]' \
   "run0 rc=$(cat "$WORK/run0.rc"), marker=$(cat "$WORK/run0.marker" 2>/dev/null)"
 check part_failed_bootstrap_redone 'grep -q "Render the bootstrap plan" "$WORK/run1.log"'
@@ -203,4 +206,123 @@ blocked=$(docker run --rm --network container:stalwart -v "$cli:/usr/local/bin/s
   "$(docker inspect -f '{{.Config.Image}}' stalwart)" --no-color query BlockedIp | awk 'NR > 1 && NF { print $2 }' | tr '\n' ' ')
 check gateway_path_banned '[ "$gw_after" != ok ] && grep -qw "$GW" <<<"$blocked" && [ "$px_after" = 200 ]' \
   "docker-proxy path after 105 bad: $gw_after (want refused), blocked: ${blocked:-none} (want the stalwart gateway $GW), nginx-proxy network after 105 bad: $px_after (want 200)"
+fi
+
+# --- README "Upgrading from v0.16": the role, not stalwart-cli, on a migrated store. --------
+# The v0.16 store is built by this role with its old pins and field names, then migrated
+# with the runbook's commands. Runs here: m0 builds it, m1 must refuse it, m2 deploys v1 on
+# the migrated store, m3 must report changed=0.
+docker rm -f stalwart stalwart-resolver >/dev/null 2>&1 || true
+root() { docker run --rm -v "$WORK:$WORK" -w "$WORK" "$RUNNER" sh -ec "$1"; }
+root 'rm -rf opt'
+cp -r "$ROLE" "$WORK/role-v016"
+sed -i -e 's/implicitTls/tlsImplicit/g' -e "/'urlPrefix': {'\/webmail': true},/{n;s/'enable'/'enabled'/}" "$WORK/role-v016/templates/plan.ndjson.j2"
+sed "s#role: .*#role: $WORK/role-v016#" "$WORK/site.yml" > "$WORK/site-v016.yml"
+cat > "$WORK/vars-v016.json" <<'JSON'
+{"stalwart_image": "stalwartlabs/stalwart:v0.16.27",
+ "stalwart_image_digest": "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c",
+ "stalwart_cli_version": "v1.0.13",
+ "stalwart_cli_sha256": "689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13",
+ "stalwart_bulwark_version": "1.19.1"}
+JSON
+mplay() { # log playbook extra-args...
+  local log=$1; shift
+  docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
+    -e ANSIBLE_LOCALHOST_WARNING=false -e ANSIBLE_PYTHON_INTERPRETER=auto_silent "$RUNNER" sh -c \
+    'apk add -q ansible sudo py3-requests tar xz bash rsync >/dev/null && ansible-playbook -i localhost, "$@"' -- "$@" -e @vars.json --skip-tags onepassword \
+    > "$WORK/$log.log" 2>&1 && echo 0 > "$WORK/$log.rc" || echo $? > "$WORK/$log.rc"
+}
+migmail() { python3 -I - "$@" <<'PYEOF'
+import email, hashlib, imaplib, json, re, smtplib, ssl, sys, time
+ACCOUNTS = {"jason@rustd.xyz": "jason-fixture-Pw-7731", "jason@sair.run": "sair-fixture-Pw-2208"}
+ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+def conn(user):
+    m = imaplib.IMAP4_SSL("127.0.0.2", 9993, ssl_context=ctx, timeout=30); m.login(user, ACCOUNTS[user]); return m
+cmd = sys.argv[1]
+if cmd == "seed":
+    for user in ACCOUNTS:
+        m = conn(user)
+        for box in ("INBOX", "Sent", "Migration/Nested"):
+            m.create(box)
+            for i in range(int(sys.argv[3])):
+                body = f"{sys.argv[2]} {i}\r\n" + "x" * 76 + "\r\n"
+                raw = f"From: <a@other.test>\r\nSubject: {sys.argv[2]} {i}\r\nMessage-ID: <{sys.argv[2]}-{i}@other.test>\r\n\r\n{body}"
+                assert m.append(box, r"(\Seen)" if i % 2 else "", None, raw.encode())[0] == "OK"
+        m.logout()
+elif cmd == "snap":
+    out = {}
+    for user in ACCOUNTS:
+        m = conn(user)
+        for line in m.list()[1]:
+            name = (lambda b: (b.group(1) or b.group(2)).decode())(re.search(rb'"([^"]+)"$|(\S+)$', line))
+            if m.select(f'"{name}"', readonly=True)[0] != "OK":
+                continue
+            rows = {}
+            for uid in m.uid("SEARCH", None, "ALL")[1][0].split():
+                meta, raw = m.uid("FETCH", uid, "(FLAGS BODY.PEEK[])")[1][0]
+                flags = sorted(f.decode() for f in re.findall(rb"\\?\$?\w+", re.search(rb"FLAGS \(([^)]*)\)", meta).group(1)) if f != b"$hasnoattachment")
+                rows[uid.decode()] = [flags, hashlib.sha256(raw).hexdigest()]
+            out[f"{user}/{name}"] = [m.response("UIDVALIDITY")[1][0].decode(), rows]
+        m.logout()
+    json.dump(out, open(sys.argv[2], "w"), indent=0, sort_keys=True)
+elif cmd == "send":
+    s = smtplib.SMTP_SSL("127.0.0.2", 4465, context=ctx, timeout=30); s.login("noreply@rustd.xyz", 'pa"ss\\wo%rd{x}')
+    s.sendmail("noreply@rustd.xyz", ["jason@rustd.xyz"], b"From: <noreply@rustd.xyz>\r\nTo: <jason@rustd.xyz>\r\nSubject: after-migration\r\nMessage-ID: <am@rustd.xyz>\r\n\r\nhello\r\n")
+    s.quit(); m = conn("jason@rustd.xyz"); m.select("INBOX")
+    for _ in range(15):
+        ids = m.search(None, "SUBJECT", '"after-migration"')[1][0].split()
+        if ids:
+            print("s=dkim" in (email.message_from_bytes(m.fetch(ids[-1], "(RFC822)")[1][0][1])["DKIM-Signature"] or "") and "signed" or "unsigned"); break
+        time.sleep(2); m.noop()
+    else:
+        print("undelivered")
+PYEOF
+}
+webmail_is() { for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"$1" && return 0; sleep 2; done; return 1; }
+
+mplay m0 site-v016.yml -e @vars-v016.json
+check migrate_v016_built '[ "$(cat "$WORK/m0.rc")" = 0 ]' "$(grep -E -B3 -A8 '^fatal|^failed' "$WORK/m0.log" | cut -c1-400 | head -30)"
+[ "$(cat "$WORK/m0.rc")" = 0 ] || exit 1
+migmail seed before 5
+root 'rm opt/etc/store-format-v1; mkdir -p opt/migrate/etc-v1 opt/migrate/data-v1 opt/migrate/state
+  echo "{\"@type\":\"RocksDb\",\"path\":\"/var/lib/stalwart/\"}" > opt/migrate/etc-v1/config.json; chown -R 2000:2000 opt/migrate'
+mplay m1 site.yml
+check migrate_v016_refused '[ "$(cat "$WORK/m1.rc")" != 0 ] && grep -q "etc/store-format-v1 is missing" "$WORK/m1.log" \
+  && docker inspect -f "{{.Config.Image}}" stalwart | grep -q "^stalwartlabs/stalwart:v0.16.27@"' "rc=$(cat "$WORK/m1.rc")"
+
+IMG='stalwartlabs/stalwart-migrate:1.0.6@sha256:16711fd919b36a54d121f1d974027bfa068409c454d98ab2f5ac5d747ce401a3'
+O=$WORK/opt; M=$O/migrate
+MIG=(-v "$O/data:/var/lib/stalwart" -v "$O/etc:/etc/stalwart:ro" -v "$M/etc-v1:/etc/stalwart-v1"
+     -v "$M/data-v1:/var/lib/stalwart-v1" -v "$M/state:/var/lib/stalwart-migrate" -v "$O/dkim:/dkim:ro" -v "$O/certs:/certs:ro")
+ARGS=(--source /etc/stalwart/config.json --target /etc/stalwart-v1/config.json
+      --state /var/lib/stalwart-migrate --target-path-map /var/lib/stalwart=/var/lib/stalwart-v1)
+# prepare wants a terminal. Finite input, never `yes`: script queues stdin it cannot deliver
+# in memory, without limit, for as long as the child is not reading.
+printf '\n%.0s' $(seq 200) | timeout 120 script -qec "docker run --rm -it $(printf '%q ' "${MIG[@]}") $IMG prepare --source /etc/stalwart/config.json --state /var/lib/stalwart-migrate" "$WORK/prepare.log" >/dev/null 2>&1 || true
+docker run --rm "${MIG[@]}" "$IMG" prepare --non-interactive --source /etc/stalwart/config.json --state /var/lib/stalwart-migrate > "$WORK/prepare2.log" 2>&1 && pr=0 || pr=$?
+docker run --rm "${MIG[@]}" "$IMG" run "${ARGS[@]}" > "$WORK/copy.log" 2>&1 && cr=0 || cr=$?
+migmail seed during 2
+migmail snap "$WORK/snap-final.json"
+docker stop stalwart >/dev/null
+docker run --rm "${MIG[@]}" "$IMG" run --final --yes --verify-full "${ARGS[@]}" > "$WORK/final.log" 2>&1 && fr=0 || fr=$?
+check migrate_copied '[ "$pr$cr$fr" = 000 ]' "prepare=$pr copy=$cr final=$fr: $(tail -5 "$WORK/final.log" | cut -c1-200)"
+docker rename stalwart stalwart-v016
+root 'mv opt/data opt/data-v016; mv opt/migrate/data-v1 opt/data; touch opt/etc/store-format-v1'
+
+mplay m2 site.yml
+check migrate_role_deploys '[ "$(cat "$WORK/m2.rc")" = 0 ] && ! grep -q "Bootstrap in recovery mode" "$WORK/m2.log" \
+  && grep -q "RUNNING HANDLER .*Apply Stalwart plan" "$WORK/m2.log" \
+  && docker inspect -f "{{.Config.Image}}" stalwart | grep -qF "$(sed -n "s/^stalwart_image: \"\(.*\)\"/\1/p" "$ROLE/defaults/main.yml")@"' \
+  "rc=$(cat "$WORK/m2.rc"): $(grep -E "fatal|FAILED" "$WORK/m2.log" | head -3 | cut -c1-300)"
+[ "$(cat "$WORK/m2.rc")" = 0 ] || exit 1
+migmail snap "$WORK/snap-v1.json"
+check migrate_mail_kept 'cmp -s "$WORK/snap-final.json" "$WORK/snap-v1.json"' "$(diff "$WORK/snap-final.json" "$WORK/snap-v1.json" | head -6 | cut -c1-160)"
+BULWARK=$(sed -n 's/^stalwart_bulwark_version: "\(.*\)"/\1/p' "$ROLE/defaults/main.yml")
+check migrate_webmail_updated 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/m2.log" && webmail_is "$BULWARK"'
+mailed=$(migmail send)
+check migrate_sends_signed '[ "$mailed" = signed ]' "$mailed"
+mplay m3 site.yml
+check migrate_idempotent 'recap m3 | grep -q "changed=0 .*failed=0"' "$(recap m3); $(grep -E -B2 '^changed' "$WORK/m3.log" | cut -c1-220 | head -12)"
+docker restart stalwart >/dev/null
+check migrate_webmail_after_restart 'webmail_is "$BULWARK"'
 exit $FAILED

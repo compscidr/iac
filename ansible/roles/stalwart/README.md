@@ -100,8 +100,9 @@ with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate). The
 non-empty store until `etc/store-format-v1` exists, so **a play against `www` fails until step 4 creates it**.
 
 Rehearsed on 2026-11-06 with Docker and test data only (117 messages in 14 mailboxes, 4
-accounts), as the commands below show, with these differences: the plan was applied with
-`stalwart-cli` rather than the role, and the rehearsal's v1 container was started by hand.
+accounts), as the commands below show. `tests/local-converge.sh` runs the same steps and then
+the role on the migrated store (staged, so without the public ports or nginx-proxy): the
+deploy passes, a second run reports `changed=0`, and webmail survives a restart.
 
 - Mail: UIDs, UIDVALIDITY, flags and bytes all matched, before and after applying the plan
   twice. v1 adds a `$hasnoattachment` flag to messages; it is harmless.
@@ -325,7 +326,7 @@ Renovate rules and the Mailu backup and prune entries.
 
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
-bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, nine runs, ~5 min
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks and a v0.16 migration, ~10 min
 bash ansible/roles/stalwart/tests/local-nginx.sh      # nginx-proxy side, ~5 min (runs the smoke)
 ```
 
@@ -391,7 +392,7 @@ the fixture certificate, whose key is 0600 as acme-companion leaves it.
 Everything below was seen working on a local container on 2026-10-22, not copied from docs. It
 has not been redone for v1, whose changes to this role are: `tlsImplicit` is now `implicitTls`,
 `Application.enabled` is now `enable`, and `ClassifySpam` takes `mailFrom` and `rcptTo`. The
-smoke, converge and nginx tests run on v1.0.3 (24, 16 and 58 checks).
+smoke, converge and nginx tests run on v1.0.3 (24, 25 and 58 checks).
 
 ### Versions
 
