@@ -157,6 +157,33 @@
     hidden: true
   register: stalwart_data
 
+# v1 cannot open a v0.16 store, so nothing else stops this role starting one on it. Migrating
+# creates the marker by hand; an empty store gets it here. It lives in etc/ so the nightly
+# backup's mirror restores it along with the data.
+- name: Check the store is marked as v1
+  become: true
+  ansible.builtin.stat:
+    path: "{{ stalwart_install_path }}/etc/store-format-v1"
+  register: stalwart_store_v1
+
+- name: Refuse a store that has not been migrated to v1
+  ansible.builtin.fail:
+    msg: >-
+      {{ stalwart_install_path }}/data has data but etc/store-format-v1 is missing, so it may be
+      a v0.16 store, which {{ stalwart_image }} cannot open. Follow the README, "Upgrading from
+      v0.16". If this store is already v1 (say, restored from a backup), create the marker.
+  when: stalwart_data.matched > 0 and not stalwart_store_v1.stat.exists
+
+- name: Mark an empty store as v1
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ stalwart_install_path }}/etc/store-format-v1"
+    content: ""
+    owner: root
+    group: root
+    mode: "0644"
+  when: stalwart_data.matched == 0
+
 # bootstrap.done is written only once the admin works and the stock spam rules are
 # loaded (end of this file), so a bootstrap that failed part-way is redone, not skipped
 # because data/ is no longer empty.

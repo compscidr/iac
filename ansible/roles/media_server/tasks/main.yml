@@ -610,13 +610,15 @@
     image: postgres:18-alpine
     pull: true
     # The crawler inserts around the clock, and on stock settings that kept the
-    # uncached RAID5 pool writing constantly. These trim WAL volume, but most
-    # writes come from random inserts into large indexes, so the crawl rate on
-    # the bitmagnet task below is what really sets the write load.
+    # RAID5 pool writing constantly. These trim WAL volume, but most writes come
+    # from random inserts into large indexes, so the crawl rate on the bitmagnet
+    # task below is what really sets the write load. Its random lookups in the
+    # torrents tables are the main source of pool reads, so shared_buffers holds
+    # those tables and their indexes (about 4GB) in RAM.
     command:
       - postgres
       - -c
-      - shared_buffers=1GB
+      - shared_buffers=8GB
       - -c
       - checkpoint_timeout=30min
       - -c
@@ -631,18 +633,18 @@
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bitmagnet
     shm_size: "1g"
-    # Shutdown has to flush up to 1GB of dirty buffers to the uncached RAID5
-    # pool, which takes minutes. Docker's default 10s stop would kill it and
-    # force crash recovery. The module ignores stop_timeout changes on an
-    # existing container unless it compares them strictly.
+    # Shutdown has to flush up to 8GB of dirty buffers to the pool, which can
+    # take minutes. Docker's default 10s stop would kill it and force crash
+    # recovery. The module ignores stop_timeout changes on an existing container
+    # unless it compares them strictly.
     stop_timeout: 300
     comparisons:
       stop_timeout: strict
     networks:
       - name: media
     restart_policy: unless-stopped
-    memory: "2g"
-    memory_swap: "2g"
+    memory: "12g"
+    memory_swap: "12g"
 
 - name: Deploy bitmagnet
   tags: bitmagnet

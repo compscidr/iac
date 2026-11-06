@@ -9,7 +9,7 @@
 ipfs_indexer_repo: https://github.com/compscidr/ipfs_indexer.git
 # A release tag (vX.Y.Z): the image to run, and the checkout kubo-init.sh comes from.
 # Publish one by pushing the tag in the indexer repo (see its README).
-ipfs_indexer_version: "v0.5.6"
+ipfs_indexer_version: "v0.6.0"
 ipfs_indexer_image: ghcr.io/compscidr/ipfs_indexer
 ipfs_indexer_src: /opt/ipfs_indexer
 ipfs_indexer_port: 9090
@@ -41,9 +41,9 @@ ipfs_indexer_kubo_webui_origins:
   - "http://{{ ansible_default_ipv4.address }}:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://localhost:{{ ipfs_indexer_kubo_webui_port }}"
   - "http://127.0.0.1:{{ ipfs_indexer_kubo_webui_port }}"
-# Kubo's HTTP gateway for LAN devices, at http://ubuntu-cube.local:8088/ipfs/<cid>. Not 8080: on
-# ubuntu-cube the host's 8080 is sair-device-source.
-ipfs_indexer_kubo_gateway_port: 8088
+# Kubo's HTTP gateway for LAN devices, at http://ubuntu-cube.local:8080/ipfs/<cid>. ubuntu-beast
+# forwards its own 127.0.0.1:8080 here (see beast.yml).
+ipfs_indexer_kubo_gateway_port: 8080
 
 # Discovery (ipfs_indexer#213): sites found beyond the Wikipedia mirror's links.
 # SEEDS_FILE: these entries (CIDs, DNSLink domains, .eth names, IPNS keys), written to

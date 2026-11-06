@@ -403,6 +403,21 @@ resource "digitalocean_record" "twodogs1bun-CNAME-www" {
   value  = "@"
 }
 
+# Waitlist signup, confirm and unsubscribe pages (ansible/roles/listmonk)
+resource "digitalocean_record" "twodogs1bun-lists-A" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "A"
+  name   = "lists"
+  value  = digitalocean_droplet.projects.ipv4_address
+}
+
+resource "digitalocean_record" "twodogs1bun-lists-AAAA" {
+  domain = digitalocean_domain.twodogs1bun-io.name
+  type   = "AAAA"
+  name   = "lists"
+  value  = digitalocean_droplet.projects.ipv6_address
+}
+
 # ============================================================================
 # Firewall - minimal exposure
 # ============================================================================

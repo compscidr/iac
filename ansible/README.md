@@ -29,7 +29,7 @@
 | `home_assistant` | Home automation | NAS |
 | `dyndns` | Dynamic DNS updater | NAS, workstations |
 | `unmanic` | GPU re-encoding of the NAS media library over NFS | ubuntu-beast |
-| `ipfs_indexer` | darksearch.xyz search backend, built from source, port 9090, index on /data; Kubo gateway for the LAN on port 8088 | ubuntu-cube |
+| `ipfs_indexer` | darksearch.xyz search backend, built from source, port 9090, index on /data; Kubo gateway for the LAN on port 8080 (ubuntu-beast forwards its 127.0.0.1:8080 to it) | ubuntu-cube |
 
 ### Game Server Roles
 | Role | Purpose | Used By |
