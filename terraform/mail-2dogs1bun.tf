@@ -3,8 +3,8 @@
 #
 # Note the split: the apex/www records in projects.tf point at the projects
 # droplet (where the site runs), while everything below points at the www
-# droplet (where Stalwart runs). Addresses: jason@ (mailbox), noreply@ (listmonk), and
-# the hello@ and postmaster@ aliases into jason@ (ansible/roles/stalwart/defaults).
+# droplet (where Stalwart runs). Mailboxes and aliases for this domain are set up
+# by the stalwart role, not here.
 
 # A/AAAA records for mail.2dogs1bun.io -> www droplet (where Stalwart runs)
 resource "digitalocean_record" "twodogs1bun-A-mail" {
