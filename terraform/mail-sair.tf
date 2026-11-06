@@ -38,12 +38,12 @@ resource "digitalocean_record" "sair-TXT-DMARC" {
   domain = digitalocean_domain.sair-run.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=reject; rua=mailto:jason@sair.run; ruf=mailto:jason@sair.run; adkim=s; aspf=s"
+  value  = "v=DMARC1; p=reject; rua=mailto:dmarc@jasonernst.com; ruf=mailto:dmarc@jasonernst.com; adkim=s; aspf=s"
 }
 
 # DMARC report record - allows receiving DMARC reports for this domain
 resource "digitalocean_record" "sair-TXT-DMARC-report" {
-  domain = digitalocean_domain.sair-run.name
+  domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "sair.run._report._dmarc"
   value  = "v=DMARC1;"

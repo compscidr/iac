@@ -44,12 +44,12 @@ resource "digitalocean_record" "rustd-TXT-DMARC" {
   domain = digitalocean_domain.rustd-xyz.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=reject; rua=mailto:jason@rustd.xyz; ruf=mailto:jason@rustd.xyz; adkim=s; aspf=s"
+  value  = "v=DMARC1; p=reject; rua=mailto:dmarc@jasonernst.com; ruf=mailto:dmarc@jasonernst.com; adkim=s; aspf=s"
 }
 
 # DMARC report record - allows receiving DMARC reports for this domain
 resource "digitalocean_record" "rustd-TXT-DMARC-report" {
-  domain = digitalocean_domain.rustd-xyz.name
+  domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "rustd.xyz._report._dmarc"
   value  = "v=DMARC1;"

@@ -45,12 +45,12 @@ resource "digitalocean_record" "darksearch-TXT-DMARC" {
   domain = digitalocean_domain.darksearch-xyz.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=reject; rua=mailto:jason@darksearch.xyz; ruf=mailto:jason@darksearch.xyz; adkim=s; aspf=s"
+  value  = "v=DMARC1; p=reject; rua=mailto:dmarc@jasonernst.com; ruf=mailto:dmarc@jasonernst.com; adkim=s; aspf=s"
 }
 
 # DMARC report record - allows receiving DMARC reports for this domain
 resource "digitalocean_record" "darksearch-TXT-DMARC-report" {
-  domain = digitalocean_domain.darksearch-xyz.name
+  domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "darksearch.xyz._report._dmarc"
   value  = "v=DMARC1;"

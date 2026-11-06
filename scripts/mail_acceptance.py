@@ -35,9 +35,9 @@ from email.utils import formatdate, make_msgid
 DOMAINS = ["jasonernst.com", "sair.run", "rustd.xyz", "darksearch.xyz"]
 HOSTS = [f"mail.{d}" for d in DOMAINS]
 PRIMARY = "mail.jasonernst.com"
-MAILBOXES = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com"] + [
+MAILBOXES = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com", "dmarc@jasonernst.com"] + [
     f"noreply@{d}" for d in ("jasonernst.com", "sair.run", "rustd.xyz")]
-IMAP_ACCOUNTS = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com"]
+IMAP_ACCOUNTS = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com", "dmarc@jasonernst.com"]
 ALIASES = {  # alias -> destination (spec "Current state" table, plus admin@ per "Calls I made")
     **{f"postmaster@{d}": f"jason@{d}" for d in DOMAINS},
     "contact@rustd.xyz": "jason@rustd.xyz",

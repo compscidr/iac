@@ -88,7 +88,7 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - The admin account is `stalwart-admin@jasonernst.com` (`stalwart_admin_user`/`stalwart_admin_domain`,
   the latter defaulting to `stalwart_domain`; it must be one of `stalwart_domains`).
   Not `admin@`: that is an RFC 2142 / CA domain-validation role address and must keep
-  reaching jason (`admin@jasonernst.com` is an alias, the DMARC report address; the
+  reaching jason (`admin@jasonernst.com` is an alias; DMARC reports go to the `dmarc@` mailbox; the
   other domains' `admin@` falls to the catch-all).
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.

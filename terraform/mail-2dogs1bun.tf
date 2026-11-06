@@ -45,12 +45,12 @@ resource "digitalocean_record" "twodogs1bun-TXT-DMARC" {
   domain = digitalocean_domain.twodogs1bun-io.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=reject; rua=mailto:jason@2dogs1bun.io; ruf=mailto:jason@2dogs1bun.io; adkim=s; aspf=s"
+  value  = "v=DMARC1; p=reject; rua=mailto:dmarc@jasonernst.com; ruf=mailto:dmarc@jasonernst.com; adkim=s; aspf=s"
 }
 
 # DMARC report record - allows receiving DMARC reports for this domain
 resource "digitalocean_record" "twodogs1bun-TXT-DMARC-report" {
-  domain = digitalocean_domain.twodogs1bun-io.name
+  domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "2dogs1bun.io._report._dmarc"
   value  = "v=DMARC1;"
