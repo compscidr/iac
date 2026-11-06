@@ -520,7 +520,7 @@ restarting is enough; on a running server it needs `Action/UpdateApps`. The stoc
 is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
 so `GET /` on the public listener ends at a 403 under the rule below.
 
-v1 refuses a bundle without a `manifest.json`, which 1.16.0 lacks and 1.17.2 onward have. A
+v1 refuses a bundle without a `manifest.json`, which 1.16.0 and 1.17.0 lack and 1.17.2 onward have. A
 refused bundle leaves the previous one serving, but after a restart v1 logs "no bundle is
 available to serve", so check the version before changing `stalwart_bulwark_version`.
 
