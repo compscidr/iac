@@ -107,6 +107,7 @@ PYEOF
 #         (a play killed mid-bootstrap): must remove it and start stalwart
 #   run6  a mailbox password changed: must apply the plan and NOT run UpdateApps
 #   run7  stalwart_bulwark_version changed: must run UpdateApps (and re-stamp)
+#   run8  a non-empty store without the v1 marker: must fail and leave the container alone
 #   run5  at -vvv, with a changed admin password the server does not know and a canary
 #         mailbox password: the apply must fail, and no secret may appear in the output
 cat > "$WORK/runs.sh" <<'SHEOF'
@@ -128,6 +129,11 @@ play > run4.log 2>&1 || { tail -40 run4.log; exit 1; }
 play -e @vars6.json > run6.log 2>&1 || { tail -40 run6.log; exit 1; }
 play -e @vars6.json -e stalwart_bulwark_version=1.16.0 > run7.log 2>&1 || { tail -40 run7.log; exit 1; }
 cp opt/etc/bulwark.applied bulwark7.txt
+docker inspect -f '{{.Id}}' stalwart > run8.before
+mv opt/etc/store-format-v1 store-format-v1.saved
+play > run8.log 2>&1; echo $? > run8.rc
+docker inspect -f '{{.Id}}' stalwart > run8.after
+mv store-format-v1.saved opt/etc/store-format-v1
 play -vvv -e @vars5.json > run5.log 2>&1; echo $? > run5.rc
 SHEOF
 docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" -v "$ROLE:$ROLE:ro" -w "$WORK" \
@@ -141,6 +147,8 @@ check bootstrap_failure_loud '[ "$(cat "$WORK/run0.rc")" != 0 ] && grep -q "Fewe
   "run0 rc=$(cat "$WORK/run0.rc"), marker=$(cat "$WORK/run0.marker" 2>/dev/null)"
 check part_failed_bootstrap_redone 'grep -q "Render the bootstrap plan" "$WORK/run1.log"'
 check idempotent 'recap run2 | grep -q "changed=0 .*failed=0"' "$(grep -B1 '^changed' "$WORK/run2.log" | head -6)"
+check unmigrated_store_refused '[ "$(cat "$WORK/run8.rc")" != 0 ] && grep -q "etc/store-format-v1 is missing" "$WORK/run8.log" \
+  && cmp -s "$WORK/run8.before" "$WORK/run8.after"' "rc=$(cat "$WORK/run8.rc")"
 check no_logs_on_disk '! grep -q "\.log$" "$WORK/etc.txt"' "$(tr '\n' ' ' < "$WORK/etc.txt")"
 check unstamped_plan_reapplied 'grep -q "RUNNING HANDLER .*Apply Stalwart plan" "$WORK/run3.log"'
 check leftover_recovery_removed '! docker container inspect stalwart-bootstrap >/dev/null 2>&1 && [ "$(docker inspect -f "{{.State.Running}}" stalwart)" = true ]'
