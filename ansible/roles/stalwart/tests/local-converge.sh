@@ -127,7 +127,7 @@ docker run -d --name stalwart-bootstrap -e STALWART_RECOVERY_MODE=1 -e STALWART_
 sleep 5
 play > run4.log 2>&1 || { tail -40 run4.log; exit 1; }
 play -e @vars6.json > run6.log 2>&1 || { tail -40 run6.log; exit 1; }
-play -e @vars6.json -e stalwart_bulwark_version=1.16.0 > run7.log 2>&1 || { tail -40 run7.log; exit 1; }
+play -e @vars6.json -e stalwart_bulwark_version=1.19.1 > run7.log 2>&1 || { tail -40 run7.log; exit 1; }
 cp opt/etc/bulwark.applied bulwark7.txt
 docker inspect -f '{{.Id}}' stalwart > run8.before
 mv opt/etc/store-format-v1 store-format-v1.saved
@@ -165,9 +165,9 @@ check bootstrap_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "
 check plan_change_no_update_apps 'grep -q "RUNNING HANDLER .*Apply Stalwart plan" "$WORK/run6.log" && ! grep -q "Update Stalwart apps" "$WORK/run6.log" \
   && ! grep -q "Update Stalwart apps" "$WORK/run3.log"'
 # The new bundle is really served: Bulwark's index names its build.
-for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q 'BUILD_ID = "1.16.0' && break; sleep 2; done
-check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run7.log" && grep -q "/1.16.0/" "$WORK/bulwark7.txt" \
-  && curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"1.16.0"' "stamp $(cat "$WORK/bulwark7.txt" 2>/dev/null)"
+for _ in $(seq 60); do curl -s http://127.0.0.2:18080/webmail/ | grep -q 'BUILD_ID = "1.19.1' && break; sleep 2; done
+check bulwark_change_updates_apps 'grep -q "RUNNING HANDLER .*Update Stalwart apps" "$WORK/run7.log" && grep -q "/1.19.1/" "$WORK/bulwark7.txt" \
+  && curl -s http://127.0.0.2:18080/webmail/ | grep -q "BUILD_ID = \"1.19.1"' "stamp $(cat "$WORK/bulwark7.txt" 2>/dev/null)"
 fp() { openssl x509 -noout -fingerprint -sha256 2>/dev/null; }
 check serves_fixture_cert '[ -n "$(fp < "$CERTDIR/fullchain.pem")" ] && [ "$(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | fp)" = "$(fp < "$CERTDIR/fullchain.pem")" ]' \
   "993 serves $(openssl s_client -connect 127.0.0.2:9993 -servername mail.rustd.xyz </dev/null 2>/dev/null | openssl x509 -noout -subject 2>/dev/null)"
