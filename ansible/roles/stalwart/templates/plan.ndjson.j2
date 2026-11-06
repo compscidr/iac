@@ -63,8 +63,8 @@
     the container's netns, humans on stalwart_tailnet_ip:8081 (the only place it is published). -#}
 {{ {'@type': 'upsert', 'object': 'NetworkListener', 'matchOn': ['name'], 'value': {
   'l-smtp': {'name': 'smtp', 'bind': {'[::]:25': true}, 'protocol': 'smtp'},
-  'l-submissions': {'name': 'submissions', 'bind': {'[::]:465': true}, 'protocol': 'smtp', 'useTls': true, 'tlsImplicit': true},
-  'l-imaps': {'name': 'imaps', 'bind': {'[::]:993': true}, 'protocol': 'imap', 'useTls': true, 'tlsImplicit': true},
+  'l-submissions': {'name': 'submissions', 'bind': {'[::]:465': true}, 'protocol': 'smtp', 'useTls': true, 'implicitTls': true},
+  'l-imaps': {'name': 'imaps', 'bind': {'[::]:993': true}, 'protocol': 'imap', 'useTls': true, 'implicitTls': true},
   'l-http': {'name': 'http', 'bind': {'[::]:8080': true}, 'protocol': 'http'},
   'l-http-admin': {'name': 'http-admin', 'bind': {'[::]:8081': true}, 'protocol': 'http'}}} | to_json }}
 {{ {'@type': 'update', 'object': 'SystemSettings', 'value': {
@@ -94,7 +94,7 @@
   'description': 'Bulwark Webmail',
   'resourceUrl': stalwart_bulwark_url,
   'urlPrefix': {'/webmail': true},
-  'enabled': true}}} | to_json }}
+  'enable': true}}} | to_json }}
 {# The web admin UI and account self-service load only on the tailnet listener (8081):
     `listener` is the NetworkListener name, and 'http' (8080) is what nginx-proxy reaches.
     Lowercased, so /ADMIN is refused too. nginx-proxy also answers 403 for them

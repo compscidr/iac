@@ -93,6 +93,134 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.
 
+## Upgrading from v0.16
+
+**Not yet done on `www`.** v1 cannot open a v0.16 store, so the data is copied to a new store
+with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate). The role refuses a
+non-empty store until `etc/store-format-v1` exists, so **a play against `www` fails until step 4 creates it**.
+
+Rehearsed on 2026-11-06 with Docker and test data only (117 messages in 14 mailboxes, 4
+accounts), as the commands below show. `tests/local-converge.sh` runs the same steps and then
+the role on the migrated store (staged, so without the public ports or nginx-proxy): the
+deploy passes, a second run reports `changed=0`, and webmail survives a restart.
+
+- Mail: UIDs, UIDVALIDITY, flags and bytes all matched, before and after applying the plan
+  twice. v1 adds a `$hasnoattachment` flag to messages; it is harmless.
+- SMTP login, sender restriction, delivery, DKIM signing, the public `/admin` and `/account`
+  403s and webmail all worked on the migrated server.
+- IMAP answered 38 s after v0.16 stopped, of which 30 s is the tool checking v0.16 is really
+  stopped. The final copy grows with the mail changed since the last incremental run.
+
+What to expect:
+- **Applying the plan deletes every app password and API key on every account** (see
+  "Re-applying an Account upsert"). OAuth clients sign in again, and CalDAV, CardDAV and WebDAV
+  clients fetch their data once more.
+- Every copied object is queued for search indexing. `stalwart_memory` is 512m and the
+  rehearsal's v1 sat at 360 MiB with almost no mail, so watch `docker stats` during the first hour.
+- The "Rollback" to Mailu above still needs step 4 of it, exporting mail with Vandelay, and has
+  not been tried against v1.
+
+### Before the window
+
+Check there is room for a second copy of the store (`df -h /opt`, `sudo du -sh /opt/stalwart/data`).
+
+```bash
+IMG='stalwartlabs/stalwart-migrate:1.0.6@sha256:16711fd919b36a54d121f1d974027bfa068409c454d98ab2f5ac5d747ce401a3'
+O=/opt/stalwart; M=$O/migrate
+MIG=(-v "$O/data:/var/lib/stalwart" -v "$O/etc:/etc/stalwart:ro" -v "$M/etc-v1:/etc/stalwart-v1"
+     -v "$M/data-v1:/var/lib/stalwart-v1" -v "$M/state:/var/lib/stalwart-migrate" -v "$O/dkim:/dkim:ro" -v "$O/certs:/certs:ro")
+ARGS=(--source /etc/stalwart/config.json --target /etc/stalwart-v1/config.json
+      --state /var/lib/stalwart-migrate --target-path-map /var/lib/stalwart=/var/lib/stalwart-v1)
+
+sudo systemctl start stalwart-backup.service   # a fresh snapshot on the nas first
+sudo mkdir -p $M/etc-v1 $M/data-v1 $M/state
+echo '{"@type":"RocksDb","path":"/var/lib/stalwart/"}' | sudo tee $M/etc-v1/config.json
+sudo chown -R 2000:2000 $M
+```
+
+1. **Answer the questions.** This needs a terminal. Read `$M/state/prepare-report.txt`, and
+   confirm the check exits 0:
+
+   ```bash
+   sudo docker run --rm -it "${MIG[@]}" "$IMG" prepare --source /etc/stalwart/config.json --state /var/lib/stalwart-migrate
+   sudo docker run --rm "${MIG[@]}" "$IMG" prepare --non-interactive --source /etc/stalwart/config.json --state /var/lib/stalwart-migrate
+   ```
+
+2. **First copy, with v0.16 still serving.** It only reads the store. Repeat it close to the window.
+
+   ```bash
+   sudo docker run --rm "${MIG[@]}" "$IMG" run "${ARGS[@]}"
+   ```
+
+### The window
+
+Mail is down from step 3 until step 5 finishes. Sending servers retry.
+
+3. **Stop v0.16 and copy the rest.** Stop on any error. `final-report.txt` lists what was dropped.
+
+   ```bash
+   sudo systemctl stop stalwart-backup.timer stalwart-cert-reload.path
+   sudo docker stop stalwart
+   sudo docker run --rm "${MIG[@]}" "$IMG" run --final --yes --verify-full "${ARGS[@]}"
+   sudo cat $M/state/final-report.txt
+   ```
+
+4. **Swap the stores.** The old container and store stay for the rollback.
+
+   ```bash
+   sudo docker rename stalwart stalwart-v016
+   sudo mv $O/data $O/data-v016 && sudo mv $M/data-v1 $O/data
+   sudo touch $O/etc/store-format-v1
+   ```
+
+5. **Deploy.** The role starts v1.0.3, applies the plan, fetches the webmail bundle and restarts
+   the timers: `ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`.
+
+6. **Accept.** Run the acceptance script with `--mode public` (see "Running the acceptance
+   script") and check `sudo docker logs stalwart` for errors. Keep `$O/data-v016` and `$M/state`
+   until v1 has run for a while, then remove them with the `stalwart-v016` container.
+
+### Rolling back
+
+Either way, pin `stalwart_image`, its digest and the CLI back to v0.16.27 and v1.0.13, and restore
+the v0.16 plan field names, before the role next runs against this host.
+
+**Before v1 has accepted real mail**, nothing has changed in the v0.16 store (rehearsed):
+
+```bash
+sudo docker rm -f stalwart
+sudo mv $O/data $O/data-v1.failed && sudo mv $O/data-v016 $O/data
+sudo rm $O/etc/store-format-v1
+sudo docker rename stalwart-v016 stalwart && sudo docker start stalwart
+```
+
+**After v1 has accepted mail**, copy it back into a new v0.16 store. Queued messages stay with v1,
+so let the queue drain first. The rehearsal restored every message, including one received on v1,
+and v0.16 served them from the new store.
+
+```bash
+sudo mkdir -p $M/etc-rbsrc $M/etc-rb $M/data-rb $M/state-rb
+echo '{"@type":"RocksDb","path":"/var/lib/stalwart-v1/"}' | sudo tee $M/etc-rbsrc/config.json
+echo '{"@type":"RocksDb","path":"/var/lib/stalwart-rb/"}' | sudo tee $M/etc-rb/config.json
+sudo chown -R 2000:2000 $M
+sudo docker stop stalwart
+sudo docker run --rm -v "$O/data:/var/lib/stalwart-v1" -v "$M/etc-rbsrc:/etc/stalwart-v1:ro" \
+  -v "$M/etc-rb:/etc/stalwart-rb" -v "$M/data-rb:/var/lib/stalwart-rb" -v "$M/state-rb:/var/lib/stalwart-rb-state" \
+  -v "$M/state:/var/lib/stalwart-migrate:ro" -v "$O/dkim:/dkim:ro" -v "$O/certs:/certs:ro" "$IMG" \
+  rollback --source /etc/stalwart-v1/config.json --target /etc/stalwart-rb/config.json \
+  --state /var/lib/stalwart-rb-state --forward-state /var/lib/stalwart-migrate --yes
+sudo docker run --rm -v "$M/state-rb:/var/lib/stalwart-rb-state" "$IMG" report --state /var/lib/stalwart-rb-state --severity verify
+```
+
+- The v1 store must have its own config at its own path. Pointing `--source` at the role's
+  config is refused as "the v0.16 store the migration read from", and `--path-map` does not help.
+- In the rehearsal this **exits 1**, reporting one mismatch on the `FileStorage` settings object
+  and leaving the rollback "not marked done". Mail was unaffected. Any other row in the report
+  needs looking at before going further. The settings themselves were not compared.
+- **Not rehearsed:** the rehearsal served the new store from `/var/lib/stalwart-rb`, using
+  `etc-rb/config.json`. Moving it into `$O/data` for the old `stalwart-v016` container, whose
+  config says `/var/lib/stalwart/`, has not been tried, so test that on a copy first.
+
 ## Cutover and rollback runbook
 
 **Done on 2026-11-05** (PR #940): about four minutes without a mail server, 333 messages in
@@ -198,7 +326,7 @@ Renovate rules and the Mailu backup and prune entries.
 
 ```bash
 bash ansible/roles/stalwart/tests/local-smoke.sh      # the plan, 15 to 60 s
-bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks, eight runs, ~5 min
+bash ansible/roles/stalwart/tests/local-converge.sh   # the role's tasks and a v0.16 migration, ~10 min
 bash ansible/roles/stalwart/tests/local-nginx.sh      # nginx-proxy side, ~5 min (runs the smoke)
 ```
 
@@ -261,20 +389,23 @@ the fixture certificate, whose key is 0600 as acme-companion leaves it.
 
 ## Verified against v0.16.27
 
-Everything below was seen working on a local container on 2026-10-22, not copied from docs.
+Everything below was seen working on a local container on 2026-10-22, not copied from docs. It
+has not been redone for v1, whose changes to this role are: `tlsImplicit` is now `implicitTls`,
+`Application.enabled` is now `enable`, and `ClassifySpam` takes `mailFrom` and `rcptTo`. The
+smoke, converge and nginx tests run on v1.0.3 (24, 25 and 58 checks).
 
 ### Versions
 
 ```yaml
-stalwart_image: "stalwartlabs/stalwart:v0.16.27"
-stalwart_image_digest: "sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c"
+stalwart_image: "stalwartlabs/stalwart:v1.0.3"
+stalwart_image_digest: "sha256:73c684a84c24f5b4206ec266a8deb8986fe44a9f623997e07f084388d943c8bd"
 ```
 
-- Digest is the multi-arch index (`docker buildx imagetools inspect stalwartlabs/stalwart:v0.16.27`).
+- Digest is the multi-arch index (`docker buildx imagetools inspect stalwartlabs/stalwart:v1.0.3`).
 - **`stalwart-cli` is not in the image** (it holds only `/usr/local/bin/stalwart`) and not
   attached to `stalwartlabs/stalwart` releases. It is its own repo, `stalwartlabs/cli`;
-  tested `v1.0.13`, asset `stalwart-cli-x86_64-unknown-linux-musl.tar.xz`
-  (sha256 `689644a491c298b4916714a93a2a249ee2ea70f2f2c054991658c3e8f0f27c13`). It runs on the
+  tested `v1.0.14`, asset `stalwart-cli-x86_64-unknown-linux-musl.tar.xz`
+  (sha256 `c90824fe60b29d56c5a590baf321a30d422153f7aa64ac5f840d16f30895e59c`). It runs on the
   host and talks HTTP to the server.
 - Vandelay: `stalwartlabs/vandelay` `v1.0.12`, asset `vandelay-x86_64-unknown-linux-musl.tar.gz`.
 - Bulwark Lite: `https://github.com/bulwarkmail/webmail/releases/download/1.17.0/bulwark-lite-stalwart.zip`
@@ -366,6 +497,10 @@ grows the RocksDB directory by ~80 MB. Creating the Application in recovery mode
 restarting is enough; on a running server it needs `Action/UpdateApps`. The stock web admin
 is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
 so `GET /` on the public listener ends at a 403 under the rule below.
+
+v1 refuses a bundle without a `manifest.json`, which 1.16.0 lacks and 1.17.2 onward have. A
+refused bundle leaves the previous one serving, but after a restart v1 logs "no bundle is
+available to serve", so check the version before changing `stalwart_bulwark_version`.
 
 ### Auth bans and the proxy (Task 4)
 
