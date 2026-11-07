@@ -117,6 +117,15 @@ stalwart_domains:
     users:
       - user: jason
         password: "{{ stalwart_op_darksearch_xyz_jason_password }}"
+  # Do not add a domain until mail.<domain> resolves to this host: stalwart_virtual_hosts is
+  # one SAN cert, so its failed ACME challenge would fail issuance for every mail hostname.
+  # A domain Mailu never had needs its key in place first (README "Adding a domain").
+  - domain: 2dogs1bun.io
+    users:
+      - user: jason
+        password: "{{ stalwart_op_2dogs1bun_io_jason_password }}"
+      - user: noreply # listmonk (2dogs1bun.io waitlist); same item as the listmonk role
+        password: "{{ stalwart_op_2dogs1bun_smtp_password }}"
 
 # Every domain catches all unknown local parts into this user (spec "Catch-all").
 stalwart_catchall_user: jason
@@ -132,6 +141,8 @@ stalwart_aliases:
   - { local: postmaster, domain: darksearch.xyz, destination: jason@darksearch.xyz }
   - { local: abuse, domain: darksearch.xyz, destination: jason@darksearch.xyz }
   - { local: dmca, domain: darksearch.xyz, destination: jason@darksearch.xyz }
+  - { local: postmaster, domain: 2dogs1bun.io, destination: jason@2dogs1bun.io }
+  - { local: hello, domain: 2dogs1bun.io, destination: jason@2dogs1bun.io }
 
 # Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
 # matches the version line; the release tags have no `v`.

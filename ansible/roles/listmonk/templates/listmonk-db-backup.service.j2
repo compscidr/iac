@@ -1,0 +1,14 @@
+[Unit]
+Description=listmonk nightly postgres dump, shipped to the nas
+After=docker.service
+Requires=docker.service
+
+# Retries outlast the nas' 15-minute ugacl reset window; see rustd-db-backup.service.j2.
+StartLimitIntervalSec=3h
+StartLimitBurst=4
+
+[Service]
+Type=oneshot
+ExecStart={{ listmonk_base_path }}/listmonk-db-backup.sh
+Restart=on-failure
+RestartSec=20min

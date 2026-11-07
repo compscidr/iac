@@ -1,0 +1,17 @@
+WITH desired(key, value) AS (
+  VALUES
+{% for key, value in listmonk_settings.items() %}
+    ('{{ key }}', $json${{ value | to_json }}$json$::jsonb){{ ',' if not loop.last else '' }}
+{% endfor %}
+), updated AS (
+  UPDATE settings s SET value = d.value, updated_at = NOW()
+  FROM desired d
+  WHERE s.key = d.key AND s.value IS DISTINCT FROM d.value
+  RETURNING 1
+), waitlist AS (
+  INSERT INTO lists (uuid, name, type, optin)
+  VALUES ('{{ listmonk_waitlist_uuid }}', 'Waitlist', 'public', 'double')
+  ON CONFLICT (uuid) DO NOTHING
+  RETURNING 1
+)
+SELECT (SELECT COUNT(*) FROM updated) + (SELECT COUNT(*) FROM waitlist);
