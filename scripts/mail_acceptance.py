@@ -258,8 +258,8 @@ def webmail_primary():
 
 def webmail_redirect(host):
     def check():
-        if A.mode == "staged":
-            raise Skip("redirect is nginx-proxy's, not present in staged")
+        if PLAIN:
+            raise Skip("redirect is nginx-proxy's, not present in staged or --plain-http")
         want = f"https://{PRIMARY}/webmail/"
         for path in ("/", "/webmail/"):
             status, h, _ = get(f"{base(host)}{path}")
@@ -269,8 +269,8 @@ def webmail_redirect(host):
 
 
 def webmail_root_primary():
-    if A.mode == "staged":
-        raise Skip("redirect is nginx-proxy's, not present in staged")
+    if PLAIN:
+        raise Skip("redirect is nginx-proxy's, not present in staged or --plain-http")
     status, h, _ = get(f"{base(PRIMARY)}/")
     want = f"https://{PRIMARY}/webmail/"
     if status not in (301, 302) or h.get("Location") != want:
