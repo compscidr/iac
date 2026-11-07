@@ -569,7 +569,7 @@
   become: true
   community.docker.docker_container:
     name: glances
-    image: nicolargo/glances:4.5.8
+    image: nicolargo/glances:4.5.9
     pull: true
     network_mode: host
     pid_mode: host
