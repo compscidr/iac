@@ -63,6 +63,12 @@
         # so a compromised droplet can't reach the rest of the nas (#502).
         rustd_xyz_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
+        # listmonk (2dogs1bun.io waitlist). Like every lookup here, a missing item is a hard
+        # failure for the whole play: create these before merging the role.
+        listmonk_db_password: "{{ lookup('community.general.onepassword', 'listmonk-db', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        listmonk_admin_password: "{{ lookup('community.general.onepassword', 'listmonk-admin', field='password', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
       no_log: true
       tags: [always]
 
@@ -71,6 +77,8 @@
         projects_op_item_sair_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - sair', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
         projects_op_item_rustd_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - rustd', vault=onepassword_vault,
+          account_id=onepassword_account_id) }}"
+        projects_op_item_2dogs1bun_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - 2dogs1bun', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
         # Discord /verify account linking (compscidr/rustd.xyz#463 slice 2, PR #603): the ONE
         # Discord application the panel owns. Operators never see these; they invite the bot
@@ -103,6 +111,11 @@
           | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
         rustd_xyz_smtp_password: "{{ projects_op_item_rustd_smtp
           | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
+        listmonk_smtp_username: "{{ projects_op_item_2dogs1bun_smtp
+          | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
+        listmonk_smtp_password: "{{ projects_op_item_2dogs1bun_smtp
+          | community.general.json_query(\"fields[?label=='password' || id=='password'].value | [0]\") }}"
+        listmonk_backup_nas_rsync_password: "{{ rustd_xyz_backup_nas_rsync_password }}"
         rustd_xyz_discord_application_id: "{{ projects_op_item_rustd_discord
           | community.general.json_query(\"fields[?label=='application ID'].value | [0]\") }}"
         rustd_xyz_discord_public_key: "{{ projects_op_item_rustd_discord | community.general.json_query(\"fields[?label=='public key'].value | [0]\") }}"
@@ -130,4 +143,5 @@
     - { role: sair_portal, tags: [sair-portal, sair] }
     - { role: prometheus, tags: [prometheus] }
     - { role: rustd_xyz, tags: [rustd, rustd-xyz] }
+    - { role: listmonk, tags: [listmonk] }
     - { role: fail2ban, tags: [fail2ban] }

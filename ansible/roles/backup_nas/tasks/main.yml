@@ -193,6 +193,19 @@
       find {{ stalwart_backup_nas_path }}/db -maxdepth 1 -type f -name 'stalwart-*.tar.gz'
       -mtime +{{ stalwart_backup_nas_keep }} -delete
 
+# Same-shaped prune for the listmonk pipeline (push side: listmonk role, projects.yml).
+# Directory-exists guard for the same first-push reason as above.
+- name: Prune listmonk backups older than the retention window
+  become: true
+  ansible.builtin.cron:
+    name: "prune listmonk db backups"
+    minute: "45"
+    hour: "5"
+    job: >-
+      [ -d {{ listmonk_backup_nas_path }} ] &&
+      find {{ listmonk_backup_nas_path }} -maxdepth 1 -type f -name 'listmonk-*.dump'
+      -mtime +{{ listmonk_backup_nas_keep }} -delete
+
 # --- Backup freshness alerting (issue #479) --------------------------------
 #
 # See backup-freshness-check.py.j2's header for the design: a nas-side

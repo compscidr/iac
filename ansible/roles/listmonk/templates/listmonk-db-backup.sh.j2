@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Managed by ansible (listmonk role) - do not edit by hand.
+#
+# Nightly listmonk postgres dump, pushed to the nas' rsync daemon. Same pipeline
+# as rustd-db-backup.sh.j2 (rustd_xyz role), which explains the transport. The
+# push is additive: the nas keeps {{ listmonk_backup_nas_keep }} days, pruned by
+# the backup_nas role.
+set -euo pipefail
+
+STAMP="$(date +%F)"
+OUT="{{ listmonk_backup_local_dir }}/listmonk-${STAMP}.dump"
+TMP="${OUT}.tmp"
+
+rm -f "${TMP}"
+
+# Rename only after pg_dump succeeds, so a failed dump is never shipped as good.
+docker exec listmonk-db pg_dump -Fc -U {{ listmonk_db_user }} {{ listmonk_db_name }} > "${TMP}"
+mv "${TMP}" "${OUT}"
+
+ls -1t {{ listmonk_backup_local_dir }}/listmonk-*.dump | tail -n +{{ listmonk_backup_local_keep | int + 1 }} | xargs -r rm --
+
+rsync -a --mkpath --contimeout=30 --timeout=300 \
+  --password-file={{ listmonk_backup_rsync_password_file }} \
+  {{ listmonk_backup_local_dir }}/ \
+  rsync://{{ listmonk_backup_nas_rsync_user }}@{{ listmonk_backup_nas_host }}:{{ listmonk_backup_nas_rsync_port }}/{{ listmonk_backup_nas_rsync_module }}/{{ listmonk_backup_nas_rsync_subpath }}/

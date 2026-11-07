@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly listmonk postgres dump, shipped to the nas
+
+[Timer]
+OnCalendar=*-*-* 04:45:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

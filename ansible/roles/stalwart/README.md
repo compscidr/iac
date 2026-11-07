@@ -93,11 +93,33 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
 - `tests/fixtures/plan.ndjson` is Task 1's hand-written plan, kept as the record the
   object table below was verified with; the smoke now runs the role's template.
 
+## Adding a domain
+
+1. Generate the DKIM key on `www`, before anything else, and print its public half. The file is
+   inert until the plan names the domain:
+
+   ```bash
+   sudo sh -c 'umask 077; K=/opt/stalwart/dkim/<domain>.dkim.key; test -e $K || { openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out $K 2>/dev/null && chown 2000:2000 $K; }; openssl pkey -in $K -pubout -outform DER | base64 -w0'
+   ```
+
+2. Add `terraform/mail-<domain>.tf` with that key under selector `dkim`, apply, and wait for
+   `mail.<domain>` to resolve to `www`. Before then its ACME challenge would fail the one SAN
+   cert for every mail hostname.
+3. Create the 1Password items, then add the domain to `stalwart_domains` and `stalwart_aliases`
+   and its lookups to `tasks/main.yml`. Also add it to `scripts/mail_acceptance.py` and
+   `scripts/mail_acceptance.env`, and to the `rm` list under "Rollback".
+4. Run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`. The plan changes,
+   so every app password and API key is deleted ("Consequence of re-applying"). Then run the
+   acceptance script with `--mode public`.
+
 ## Upgrading from v0.16
 
-**Not yet done on `www`.** v1 cannot open a v0.16 store, so the data is copied to a new store
-with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate). The role refuses a
-non-empty store until `etc/store-format-v1` exists, so **a play against `www` fails until step 4 creates it**.
+**Done on `www` on 2026-11-06**: 251 messages in 9 accounts copied with 0 errors and 0 mismatches,
+public acceptance 55 PASS with the two spam checks run over the tailnet address, as in the
+cutover. Kept below as the record and for the rollback. v1 cannot open a v0.16 store, so the data
+is copied to a new store with
+[`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate). The role refuses a
+non-empty store until `etc/store-format-v1` exists.
 
 Rehearsed on 2026-11-06 with Docker and test data only (117 messages in 14 mailboxes, 4
 accounts), as the commands below show. `tests/local-converge.sh` runs the same steps and then
@@ -301,7 +323,7 @@ Any time before `/opt/mailu` is deleted:
    name, then reload:
 
    ```bash
-   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz}
+   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz,2dogs1bun.io}
    sudo rm /etc/nginx/conf.d/stalwart.conf
    sudo docker exec nginx-proxy sh -c 'nginx -t && nginx -s reload'
    ```
@@ -498,7 +520,7 @@ restarting is enough; on a running server it needs `Action/UpdateApps`. The stoc
 is a second Application (`/admin`, `/account`). `Http.redirectRoot` defaults to `/account`,
 so `GET /` on the public listener ends at a 403 under the rule below.
 
-v1 refuses a bundle without a `manifest.json`, which 1.16.0 lacks and 1.17.2 onward have. A
+v1 refuses a bundle without a `manifest.json`, which 1.16.0 and 1.17.0 lack and 1.17.2 onward have. A
 refused bundle leaves the previous one serving, but after a restart v1 logs "no bundle is
 available to serve", so check the version before changing `stalwart_bulwark_version`.
 

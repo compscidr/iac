@@ -30,6 +30,10 @@
       account_id=onepassword_account_id) }}"
     stalwart_op_darksearch_xyz_jason_password: "{{ lookup('community.general.onepassword', 'mail.darksearch.xyz - jason', field='password',
       vault=onepassword_vault, account_id=onepassword_account_id) }}"
+    stalwart_op_2dogs1bun_io_jason_password: "{{ lookup('community.general.onepassword', 'mail.2dogs1bun.io - jason', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
+    stalwart_op_2dogs1bun_smtp_password: "{{ lookup('community.general.onepassword', 'SMTP_USER - 2dogs1bun', field='password', vault=onepassword_vault,
+      account_id=onepassword_account_id) }}"
   no_log: true
 
 - name: Read the tailnet IP
@@ -62,17 +66,29 @@
 
 # Loops over domain NAMES, never the stalwart_domains entries: those nest passwords,
 # and Ansible echoes the loop item (see the mailu role's DKIM tasks).
+- name: Check for existing DKIM keys
+  become: true
+  ansible.builtin.stat:
+    path: "{{ stalwart_install_path }}/dkim/{{ item }}.dkim.key"
+  loop: "{{ stalwart_domains | map(attribute='domain') | list }}"
+  register: stalwart_dkim_keys
+
+# Only for a key not already here, so a domain Mailu never had (README "Adding a domain") and
+# the removal of /opt/mailu both work. A key missing from both places still fails the play.
 - name: Copy Mailu's DKIM keys
   become: true
   ansible.builtin.copy:
-    src: "{{ stalwart_mailu_dkim_dir }}/{{ item }}.dkim.key"
-    dest: "{{ stalwart_install_path }}/dkim/{{ item }}.dkim.key"
+    src: "{{ stalwart_mailu_dkim_dir }}/{{ item.item }}.dkim.key"
+    dest: "{{ stalwart_install_path }}/dkim/{{ item.item }}.dkim.key"
     remote_src: true
     force: false
     owner: "{{ stalwart_uid }}"
     group: "{{ stalwart_uid }}"
     mode: "0600"
-  loop: "{{ stalwart_domains | map(attribute='domain') | list }}"
+  loop: "{{ stalwart_dkim_keys.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
 
 # acme-companion's key is 0600 root, unreadable to the container (defaults, "The certificate").
 # A renewal is copied by stalwart-cert-reload.service, not by this task.

@@ -87,6 +87,11 @@ goblog_admin_github_id: 23049896
 mailu_backup_nas_path: /volume1/storage/backups/mailu
 mailu_backup_nas_keep: 30
 
+# listmonk nightly pg_dump -> nas (2dogs1bun.io waitlist). Same pipeline and daemon as
+# rustd.xyz above; here for the same split-playbook reason.
+listmonk_backup_nas_path: /volume1/storage/backups/listmonk-db
+listmonk_backup_nas_keep: 30
+
 # stalwart nightly backup -> nas (replaces mailu's at cutover): dkim keys, etc/
 # (config, no plans/env/logs), and a tar.gz snapshot of the RocksDB store in db/.
 # Only db/ is pruned; dkim/ and etc/ are additive mirrors.

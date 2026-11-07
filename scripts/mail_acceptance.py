@@ -32,11 +32,11 @@ import urllib.error
 import urllib.request
 from email.utils import formatdate, make_msgid
 
-DOMAINS = ["jasonernst.com", "sair.run", "rustd.xyz", "darksearch.xyz"]
+DOMAINS = ["jasonernst.com", "sair.run", "rustd.xyz", "darksearch.xyz", "2dogs1bun.io"]
 HOSTS = [f"mail.{d}" for d in DOMAINS]
 PRIMARY = "mail.jasonernst.com"
 MAILBOXES = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com", "dmarc@jasonernst.com"] + [
-    f"noreply@{d}" for d in ("jasonernst.com", "sair.run", "rustd.xyz")]
+    f"noreply@{d}" for d in ("jasonernst.com", "sair.run", "rustd.xyz", "2dogs1bun.io")]
 IMAP_ACCOUNTS = [f"jason@{d}" for d in DOMAINS] + ["kai@jasonernst.com", "dmarc@jasonernst.com"]
 ALIASES = {  # alias -> destination (spec "Current state" table, plus admin@ per "Calls I made")
     **{f"postmaster@{d}": f"jason@{d}" for d in DOMAINS},
@@ -44,6 +44,7 @@ ALIASES = {  # alias -> destination (spec "Current state" table, plus admin@ per
     "abuse@darksearch.xyz": "jason@darksearch.xyz",
     "dmca@darksearch.xyz": "jason@darksearch.xyz",
     "admin@jasonernst.com": "jason@jasonernst.com",
+    "hello@2dogs1bun.io": "jason@2dogs1bun.io",
 }
 GTUBE = "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
 
