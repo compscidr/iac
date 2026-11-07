@@ -259,13 +259,23 @@ def webmail_primary():
 
 def webmail_redirect(host):
     def check():
-        if A.mode == "staged":
-            raise Skip("redirect is nginx-proxy's, not present in staged")
-        status, h, _ = get(f"{base(host)}/webmail/")
+        if PLAIN:
+            raise Skip("redirect is nginx-proxy's, not present in staged or --plain-http")
         want = f"https://{PRIMARY}/webmail/"
-        if status not in (301, 302) or not (h.get("Location") or "").startswith(want):
-            raise Fail(f"status {status}, Location {h.get('Location')!r}, want redirect to {want}")
+        for path in ("/", "/webmail/"):
+            status, h, _ = get(f"{base(host)}{path}")
+            if status not in (301, 302) or not (h.get("Location") or "").startswith(want):
+                raise Fail(f"{path}: status {status}, Location {h.get('Location')!r}, want redirect to {want}")
     return check
+
+
+def webmail_root_primary():
+    if PLAIN:
+        raise Skip("redirect is nginx-proxy's, not present in staged or --plain-http")
+    status, h, _ = get(f"{base(PRIMARY)}/")
+    want = f"https://{PRIMARY}/webmail/"
+    if status not in (301, 302) or h.get("Location") != want:
+        raise Fail(f"status {status}, Location {h.get('Location')!r}, want redirect to {want}")
 
 
 JMAP_ADMIN_CALL = (b'{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],'
@@ -377,6 +387,7 @@ def checks():
     out += [(f"dkim_{d}", dkim_check(d)) for d in DOMAINS]
     out += [("webmail_primary", webmail_primary)]
     out += [(f"webmail_login_jason@{d}", webmail_login(f"jason@{d}")) for d in DOMAINS]
+    out += [("webmail_root_primary", webmail_root_primary)]
     out += [(f"webmail_redirect_{h}", webmail_redirect(h)) for h in HOSTS[1:]]
     out += [("admin_public_blocked", admin_public_blocked), ("admin_tailnet_ok", admin_tailnet_ok),
             ("spam_junk", spam_junk), ("spam_reject_gtube", spam_reject_gtube), ("autoconfig", autoconfig)]
