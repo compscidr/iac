@@ -98,6 +98,8 @@ stalwart_domains:
         password: "{{ stalwart_op_jasonernst_com_jason_password }}"
       - user: kai
         password: "{{ stalwart_op_jasonernst_com_kai_password }}"
+      - user: dmarc # every domain's DMARC reports (terraform/mail*.tf)
+        password: "{{ stalwart_op_jasonernst_com_dmarc_password }}"
       # goblog login codes; same item as jasonernst_com_smtp_password.
       - user: noreply
         password: "{{ stalwart_op_goblog_smtp_password }}"

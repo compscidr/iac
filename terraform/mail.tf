@@ -39,7 +39,7 @@ resource "digitalocean_record" "TXT-DMARC" {
   domain = digitalocean_domain.default.name
   type   = "TXT"
   name   = "_dmarc"
-  value  = "v=DMARC1; p=reject; rua=mailto:admin@jasonernst.com; ruf=mailto:admin@jasonernst.com; adkim=s; aspf=s"
+  value  = "v=DMARC1; p=reject; rua=mailto:dmarc@jasonernst.com; ruf=mailto:dmarc@jasonernst.com; adkim=s; aspf=s"
 }
 
 # DMARC report record - allows receiving DMARC reports for this domain
