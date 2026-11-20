@@ -607,7 +607,7 @@
   become: true
   community.docker.docker_container:
     name: bitmagnet-postgres
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     pull: true
     # The crawler inserts around the clock, and on stock settings that kept the
     # RAID5 pool writing constantly. These trim WAL volume, but most writes come
