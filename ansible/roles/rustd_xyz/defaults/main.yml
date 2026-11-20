@@ -22,7 +22,8 @@ rustd_xyz_ghcr_user: "compscidr"
 # the panel never is (RCON polling): it sat at ~690 MB after a parse spike.
 # -Xmx stays the hard ceiling for the spike itself. Measured locally under
 # steady allocation: G1 824 -> 848 MB over 150 s, ZGC+SoftMax 702 -> 361 MB.
-rustd_xyz_java_opts: "-Xmx768m -XX:+UseZGC -XX:SoftMaxHeapSize=256m -XX:+ExitOnOutOfMemoryError"
+# -XX:-UseBASE64Intrinsics: Java4Shell (CVE-2026-114938) mitigation; drop once the image's JDK is >= 21.0.13.1 / 25.0.5.1.
+rustd_xyz_java_opts: "-Xmx768m -XX:-UseBASE64Intrinsics -XX:+UseZGC -XX:SoftMaxHeapSize=256m -XX:+ExitOnOutOfMemoryError"
 # Container memory limits (#919): panel = heap + non-heap with room; postgres
 # runs its default 128 MB shared_buffers and sat at ~165 MiB.
 rustd_xyz_memory: "1g"
