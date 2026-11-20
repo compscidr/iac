@@ -12,7 +12,8 @@ sair_portal_letsencrypt_email: "ernstjason1@gmail.com"
 # the process so Docker restarts it. On 2026-10-22 a /dashboard/messages query
 # blew the heap and the portal sat hung at 1.2 GB RSS with no limit (#919).
 # Steady state is ~150 MiB RSS.
-sair_portal_java_opts: "-Xmx256m -XX:+ExitOnOutOfMemoryError"
+# -XX:-UseBASE64Intrinsics: Java4Shell (CVE-2026-114938) mitigation; drop once the image's JDK is >= 21.0.13.1 / 25.0.5.1.
+sair_portal_java_opts: "-Xmx256m -XX:-UseBASE64Intrinsics -XX:+ExitOnOutOfMemoryError"
 # Container memory limit: heap + metaspace/threads/direct buffers, with room.
 sair_portal_memory: "512m"
 sair_portal_ghcr_token: ""

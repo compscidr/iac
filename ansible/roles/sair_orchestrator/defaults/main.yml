@@ -13,7 +13,10 @@ sair_orchestrator_port: 9090
 # the container's only writable mount. The JVM never overwrites an existing
 # dump, so only the first OOM of an incident is captured (deliberate: a restart
 # loop can't fill the disk); delete the file once analysed to arm the next one.
-sair_orchestrator_java_opts: "-Xmx1g -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/portal-data/orchestrator-heap.hprof"
+# -XX:-UseBASE64Intrinsics: Java4Shell (CVE-2026-114938) mitigation; drop once the image's JDK is >= 21.0.13.1 / 25.0.5.1.
+sair_orchestrator_java_opts: >-
+  -Xmx1g -XX:-UseBASE64Intrinsics -XX:+ExitOnOutOfMemoryError
+  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/portal-data/orchestrator-heap.hprof
 # Container memory limit: a native-memory blowup gets the container killed and
 # restarted rather than the host's OOM killer picking a process.
 sair_orchestrator_memory: "2g"
