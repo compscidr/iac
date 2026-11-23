@@ -63,6 +63,8 @@
       UID: "{{ minecraft_game_uid }}"
       GID: "{{ minecraft_game_gid }}"
       MEMORY: "{{ minecraft_game_memory }}"
+      # Java4Shell (CVE-2026-114938) mitigation; drop once the image ships >= 25.0.5.1.
+      JVM_XX_OPTS: "-XX:-UseBASE64Intrinsics"
       GAMEMODE: "survival"
       DIFFICULTY: "normal"
       MAX_PLAYERS: "20"
