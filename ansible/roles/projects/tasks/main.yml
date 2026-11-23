@@ -111,6 +111,12 @@
     memory_swap: "{{ projects_nginx_proxy_memory }}" # no swap: Docker refuses to raise memory alone on a running container
     env:
       ENABLE_IPV6: "true" # nginx must also listen on [::] inside the container
+      # nginx-proxy image still ships nginx 1.31.6 (CVE-2026-123633/-123007 fixed in
+      # 1.30.7/1.31.9, both need HTTP/2). Re-enable once the image has a patched nginx.
+      ENABLE_HTTP2: "false"
+      # A DEFAULT_HOST keeps nginx-proxy from rendering its catch-all server, which
+      # hardcodes `http2 on` and (nginx 1.31.x) leaks h2 to every vhost on :443.
+      DEFAULT_HOST: "www.goblog.live"
 
 - name: Deploy LetsEncrypt companion
   tags: letsencrypt

@@ -2,15 +2,15 @@
 # Stalwart role defaults. Object names and fields: README "Verified against v0.16.27".
 
 # Renovate (Task 7) matches these two lines as a pair; keep them consecutive.
-stalwart_image: "stalwartlabs/stalwart:v1.0.3"
-stalwart_image_digest: "sha256:73c684a84c24f5b4206ec266a8deb8986fe44a9f623997e07f084388d943c8bd"
+stalwart_image: "stalwartlabs/stalwart:v1.1.1"
+stalwart_image_digest: "sha256:5ebdf474b237161742fe4309396af4ae8797c938e8e6eb7e2d4837332c4f9851"
 
 # The DNS blocklists refuse queries that arrive through a shared resolver (the droplet's, or
 # any public one), so Stalwart resolves through its own recursive unbound (README "DNS
 # resolver"). The image runs unbound-anchor at every start, which a recreated container needs
 # after a root KSK rollover (mailu, #801). Renovate matches these two lines as a pair too.
 stalwart_resolver_image: "alpinelinux/unbound:latest"
-stalwart_resolver_image_digest: "sha256:cd8dcbcaa7b6f223fe154be07f17c13006149be7f56d50c5664f46181e8d5e1b"
+stalwart_resolver_image_digest: "sha256:b6d8bfac6a327304175454c32e689ee66e699ec32caa44376202e13eac6b06c8"
 stalwart_resolver_memory: "64m" # 9 MiB idle in the lab
 # Its own network, `stalwart-dns`: a static IP needs a configured subnet. The play creates it
 # (jasonernst_com.yml pre_tasks), not this role, because uptime_kuma joins it too, to monitor
@@ -24,7 +24,7 @@ stalwart_dns_servers: ["{{ stalwart_resolver_ip }}", "1.1.1.1"]
 
 # stalwart-cli is not in the image (README "Versions"): the release tarball is fetched to
 # the host, checksum-verified, and mounted into a throwaway container in stalwart's netns.
-stalwart_cli_version: "v1.0.14"
+stalwart_cli_version: "v2.0.0"
 stalwart_cli_sha256: "c90824fe60b29d56c5a590baf321a30d422153f7aa64ac5f840d16f30895e59c"
 stalwart_cli_path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl/stalwart-cli"
 # stalwart-cli in a throwaway container in a Stalwart container's netns. Credentials come
@@ -148,7 +148,7 @@ stalwart_aliases:
 
 # Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
 # matches the version line; the release tags have no `v`.
-stalwart_bulwark_version: "1.20.0"
+stalwart_bulwark_version: "1.21.3"
 stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/{{ stalwart_bulwark_version }}/bulwark-lite-stalwart.zip"
 
 # Live only (not stalwart_staged): nginx-proxy serves these names from the 8080 listener,
