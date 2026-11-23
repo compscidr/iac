@@ -24,7 +24,7 @@ stalwart_dns_servers: ["{{ stalwart_resolver_ip }}", "1.1.1.1"]
 
 # stalwart-cli is not in the image (README "Versions"): the release tarball is fetched to
 # the host, checksum-verified, and mounted into a throwaway container in stalwart's netns.
-stalwart_cli_version: "v1.0.14"
+stalwart_cli_version: "v2.0.0"
 stalwart_cli_sha256: "c90824fe60b29d56c5a590baf321a30d422153f7aa64ac5f840d16f30895e59c"
 stalwart_cli_path: "{{ stalwart_install_path }}/bin/{{ stalwart_cli_version }}/stalwart-cli-x86_64-unknown-linux-musl/stalwart-cli"
 # stalwart-cli in a throwaway container in a Stalwart container's netns. Credentials come
