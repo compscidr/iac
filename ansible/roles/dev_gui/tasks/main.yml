@@ -267,3 +267,55 @@
   when: >-
     'orca-ide' not in ansible_facts.packages
     or ansible_facts.packages['orca-ide'][0].version is version(dev_gui_orca_version, '<')
+
+# Headless Orca server, reachable over Tailscale only. Tagged apart from `orca`
+# and free of become, so `--tags orca-serve` runs without a sudo password.
+# The unit starts at boot only if the user lingers (loginctl enable-linger).
+- name: Create the systemd user unit directory
+  tags: orca-serve
+  ansible.builtin.file:
+    path: ~/.config/systemd/user
+    state: directory
+    mode: "0755"
+  when: dev_gui_orca_serve
+
+# - A login shell, so agents launched by the server get the PATH from ~/.profile.
+# - The Tailscale address is read at start, and waited for, because a lingering
+#   user manager can start before tailscaled is up.
+# - A fixed --port: paired clients saved this endpoint, so fail loudly instead
+#   of moving to another port.
+# - --supervise: Orca restarts itself, waits out in-app updates and the desktop
+#   app holding the profile, and exits 0 when it gives up.
+# - $$ is a literal $ to systemd.
+- name: Install the orca-serve user unit
+  tags: orca-serve
+  ansible.builtin.copy:
+    dest: ~/.config/systemd/user/orca-serve.service
+    mode: "0644"
+    content: |
+      # Managed by Ansible (roles/dev_gui).
+      [Unit]
+      Description=Orca headless runtime server (Tailscale only)
+
+      [Service]
+      ExecStart=/bin/bash -lc '\
+        until ip=$$(tailscale ip -4) && [ -n "$$ip" ]; do sleep 5; done; \
+        exec /opt/Orca/resources/bin/orca-ide serve --supervise \
+        --port {{ dev_gui_orca_serve_port }} --bind "$$ip" --pairing-address "$$ip"'
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=default.target
+  when: dev_gui_orca_serve
+  notify: Restart orca-serve
+
+- name: Enable and start orca-serve.service (user)
+  tags: orca-serve
+  ansible.builtin.systemd_service:
+    name: orca-serve.service
+    scope: user
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: dev_gui_orca_serve

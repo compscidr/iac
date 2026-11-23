@@ -1,0 +1,3 @@
+---
+# Serves Orca to other machines over Tailscale (roles/dev_gui).
+dev_gui_orca_serve: true

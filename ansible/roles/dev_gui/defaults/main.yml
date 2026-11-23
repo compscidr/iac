@@ -8,3 +8,8 @@ dev_gui_claude_desktop_key_fingerprint: 31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
 # Orca (onorca.dev): no apt repo, so the .deb comes from GitHub releases.
 # Bumped by renovate (see renovate.json).
 dev_gui_orca_version: "1.4.272"
+
+# Headless Orca server (`orca-ide serve`) as a user unit, so another Orca can
+# add this host under Settings -> Remote Orca Servers. Opt in per host.
+dev_gui_orca_serve: false
+dev_gui_orca_serve_port: 6768
