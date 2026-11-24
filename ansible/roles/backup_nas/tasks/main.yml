@@ -32,6 +32,41 @@
     creates: /usr/bin/tailscale
     executable: /bin/bash
 
+# UGOS exports GODEBUG=tlskyber=0 to every service (DefaultEnvironment in
+# /etc/systemd/system.conf). Go removed that setting, and a Go >= 1.27 binary
+# refuses to start with it: "fatal error: removed GODEBUG "tlskyber" set to old
+# value". Tailscale 1.104 is built with Go 1.27, so without this drop-in
+# tailscaled crash-loops after the update below and the nas falls off the
+# tailnet. Same fix the sair units on this host carry. Must come before the
+# daemon is started.
+- name: Create the tailscaled drop-in directory
+  become: true
+  tags: [tailscale]
+  ansible.builtin.file:
+    path: /etc/systemd/system/tailscaled.service.d
+    state: directory
+    mode: "0755"
+
+- name: Unset the vendor GODEBUG for tailscaled
+  become: true
+  tags: [tailscale]
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/tailscaled.service.d/godebug.conf
+    mode: "0644"
+    content: |
+      # Managed by ansible (backup_nas). UGOS sets the removed GODEBUG tlskyber=0.
+      [Service]
+      UnsetEnvironment=GODEBUG
+  register: backup_nas_tailscaled_godebug
+
+# Not a handler: the reload has to land before the daemon is started just below.
+- name: Reload systemd for the tailscaled drop-in # noqa: no-handler
+  become: true
+  tags: [tailscale]
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: backup_nas_tailscaled_godebug is changed
+
 # common_cli's install.sh normally starts and enables tailscaled itself;
 # this appliance's install.sh run (whenever the package first landed) never
 # went through that, so the daemon has to be brought up explicitly here.
