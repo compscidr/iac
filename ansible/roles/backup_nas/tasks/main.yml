@@ -98,8 +98,8 @@
 #
 # `apt-get download` + `dpkg -i` does not involve the resolver: it fetches the
 # one .deb (still verified against the signed repo metadata) and installs it.
-# The package's only dependency is iptables. The postinst restarts tailscaled,
-# so the tailnet drops for a few seconds when there is an update.
+# The package's only dependency is iptables. tailscaled is restarted after an
+# update, so the tailnet drops for a few seconds.
 - name: Keep Tailscale auto-update off (it cannot work on UGOS)
   become: true
   tags: [tailscale]
@@ -112,23 +112,32 @@
   tags: [tailscale]
   ansible.builtin.shell: |
     set -euo pipefail
-    # Refresh only Tailscale's source, not the vendor's.
+    # Refresh only the Tailscale source, not the vendor ones.
     apt-get update -qq \
       -o Dir::Etc::sourcelist=sources.list.d/tailscale.list \
       -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
     installed=$(dpkg-query -W -f='${Version}' tailscale)
     candidate=$(apt-cache policy tailscale | awk '/Candidate:/ {print $2}')
-    [ "$installed" = "$candidate" ] && exit 0
-    tmp=$(mktemp -d)
-    trap 'rm -rf "$tmp"' EXIT
-    cd "$tmp"
-    apt-get download -qq tailscale
-    DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i tailscale_*.deb
-    echo "updated $installed -> $candidate"
+    if [ "$installed" != "$candidate" ]; then
+      tmp=$(mktemp -d)
+      trap 'rm -rf "$tmp"' EXIT
+      cd "$tmp"
+      apt-get download -qq tailscale
+      DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i tailscale_*.deb
+      echo "updated $installed -> $candidate"
+    fi
+    # The package postinst does not restart the daemon on this appliance
+    # (1.104.7 installed, tailscaled kept running 1.102.2), so compare what is
+    # actually running and restart it here.
+    running=$(tailscale version --daemon 2>/dev/null | awk '/Daemon:/ {print $2}')
+    if [[ "$running" != "$candidate"* ]]; then
+      systemctl restart tailscaled
+      echo "restarted tailscaled, was running $running"
+    fi
   args:
     executable: /bin/bash
   register: backup_nas_tailscale_update
-  changed_when: "'updated' in backup_nas_tailscale_update.stdout"
+  changed_when: backup_nas_tailscale_update.stdout | length > 0
 
 # No user, target-directory, or key task here. The nas' built-in rsync
 # daemon (UGOS UI, port 873) is what actually receives the backups - it
