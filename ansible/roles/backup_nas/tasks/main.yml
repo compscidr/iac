@@ -88,6 +88,27 @@
     ((backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
     != 'Running'
 
+# The appliance never refreshes third-party apt sources, so the package sat at
+# whatever version first landed. Let tailscaled keep itself current, and bring
+# it current on this run instead of waiting for its next staged rollout.
+# Both restart tailscaled for a few seconds when there is an update.
+- name: Enable Tailscale auto-updates
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: tailscale set --auto-update
+  changed_when: false
+
+- name: Update Tailscale now
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: tailscale update --yes
+  register: backup_nas_tailscale_update
+  changed_when: >-
+    'no update needed' not in
+    backup_nas_tailscale_update.stdout ~ backup_nas_tailscale_update.stderr
+
 # No user, target-directory, or key task here. The nas' built-in rsync
 # daemon (UGOS UI, port 873) is what actually receives the backups - it
 # manages its own module root (/volume1/storage), its own directory
