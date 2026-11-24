@@ -96,15 +96,35 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-# tailscaled needs root, so this is a system LaunchDaemon (starts at boot), as
-# the formula's caveats say. `brew services` is the one brew command that is
-# meant to be run with sudo.
+# tailscaled needs root, so it runs as a system LaunchDaemon (starts at boot).
+# Installed with tailscaled's own installer, not `sudo brew services start`:
+# under Ansible's sudo brew has root's HOME, finds no formula API cache there,
+# and refuses to download one as root.
+# The installer COPIES the binary to /usr/local/bin/tailscaled, so after a
+# `brew upgrade tailscale` remove the plist and re-run this to pick it up.
+- name: Create /usr/local/bin for tailscaled (macOS)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: "0755"
+  when: ansible_os_family == "Darwin"
+
 - name: Start tailscaled at boot (macOS)
   become: true
   tags: [tailscale]
   ansible.builtin.command:
-    cmd: /opt/homebrew/bin/brew services start tailscale
-    creates: /Library/LaunchDaemons/homebrew.mxcl.tailscale.plist
+    cmd: /opt/homebrew/opt/tailscale/bin/tailscaled install-system-daemon
+    creates: /Library/LaunchDaemons/com.tailscale.tailscaled.plist
+  when: ansible_os_family == "Darwin"
+
+# `tailscale up` below ignores failure, so don't race the daemon's startup.
+- name: Wait for tailscaled (macOS)
+  tags: [tailscale]
+  ansible.builtin.wait_for:
+    path: /var/run/tailscaled.socket
+    timeout: 30
   when: ansible_os_family == "Darwin"
 
 # The install above only runs when tailscale is missing. After
