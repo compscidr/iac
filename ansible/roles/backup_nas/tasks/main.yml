@@ -88,26 +88,47 @@
     ((backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
     != 'Running'
 
-# The appliance never refreshes third-party apt sources, so the package sat at
-# whatever version first landed. Let tailscaled keep itself current, and bring
-# it current on this run instead of waiting for its next staged rollout.
-# Both restart tailscaled for a few seconds when there is an update.
-- name: Enable Tailscale auto-updates
+# Keeping Tailscale current. The appliance never refreshes third-party apt
+# sources, so the package sat at whatever version first landed - and nothing
+# that goes through apt's resolver can fix that: UGOS ships packages with
+# unmet dependencies (ctdb, exiv2, libopengl0), so `apt-get install`, and with
+# it `tailscale update` and Tailscale's auto-update, all stop at "Unmet
+# dependencies". NEVER run `apt --fix-broken install` here: it would "repair"
+# the vendor's own packages.
+#
+# `apt-get download` + `dpkg -i` does not involve the resolver: it fetches the
+# one .deb (still verified against the signed repo metadata) and installs it.
+# The package's only dependency is iptables. The postinst restarts tailscaled,
+# so the tailnet drops for a few seconds when there is an update.
+- name: Keep Tailscale auto-update off (it cannot work on UGOS)
   become: true
   tags: [tailscale]
   ansible.builtin.command:
-    cmd: tailscale set --auto-update
+    cmd: tailscale set --auto-update=false
   changed_when: false
 
-- name: Update Tailscale now
+- name: Update Tailscale
   become: true
   tags: [tailscale]
-  ansible.builtin.command:
-    cmd: tailscale update --yes
+  ansible.builtin.shell: |
+    set -euo pipefail
+    # Refresh only Tailscale's source, not the vendor's.
+    apt-get update -qq \
+      -o Dir::Etc::sourcelist=sources.list.d/tailscale.list \
+      -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+    installed=$(dpkg-query -W -f='${Version}' tailscale)
+    candidate=$(apt-cache policy tailscale | awk '/Candidate:/ {print $2}')
+    [ "$installed" = "$candidate" ] && exit 0
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    cd "$tmp"
+    apt-get download -qq tailscale
+    DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i tailscale_*.deb
+    echo "updated $installed -> $candidate"
+  args:
+    executable: /bin/bash
   register: backup_nas_tailscale_update
-  changed_when: >-
-    'no update needed' not in
-    backup_nas_tailscale_update.stdout ~ backup_nas_tailscale_update.stderr
+  changed_when: "'updated' in backup_nas_tailscale_update.stdout"
 
 # No user, target-directory, or key task here. The nas' built-in rsync
 # daemon (UGOS UI, port 873) is what actually receives the backups - it
