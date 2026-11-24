@@ -96,6 +96,11 @@
     # latest: there is no apt-style unattended upgrade on the Mac, so this
     # play is what keeps it current.
     state: latest
+    # The module disables brew's auto-update, so Homebrew itself goes stale;
+    # a months-old brew cannot parse today's cask definitions and exits
+    # non-zero ("Unexpected method ... called on Cask ...") even though the
+    # tailscale upgrade went through.
+    update_homebrew: true
   when: ansible_os_family == "Darwin"
 
 # tailscaled needs root, so it runs as a system LaunchDaemon (starts at boot).
