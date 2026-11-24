@@ -81,6 +81,31 @@
   args:
     creates: /usr/bin/tailscale
     executable: /bin/bash
+  # On macOS the script only opens the App Store page - see the tasks below.
+  when: ansible_os_family != "Darwin"
+
+# macOS runs the open-source tailscaled from Homebrew, not the App Store /
+# standalone GUI app: it installs headlessly, and it is the only macOS variant
+# that can act as a Tailscale SSH server (`--ssh` below).
+- name: Install Tailscale (macOS)
+  # brew refuses to run as root, and common.yml sets `become: true` play-wide
+  become: false
+  tags: [tailscale]
+  community.general.homebrew:
+    name: tailscale
+    state: present
+  when: ansible_os_family == "Darwin"
+
+# tailscaled needs root, so this is a system LaunchDaemon (starts at boot), as
+# the formula's caveats say. `brew services` is the one brew command that is
+# meant to be run with sudo.
+- name: Start tailscaled at boot (macOS)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: /opt/homebrew/bin/brew services start tailscale
+    creates: /Library/LaunchDaemons/homebrew.mxcl.tailscale.plist
+  when: ansible_os_family == "Darwin"
 
 # The install above only runs when tailscale is missing. After
 # do-release-upgrade the Tailscale apt source is left behind: it couldn't be
@@ -119,9 +144,11 @@
   become: true
   tags: [tailscale]
   ansible.builtin.command:
-    cmd: "tailscale up --authkey={{ tailscale_authkey }} --ssh"
+    cmd: "{{ tailscale_bin }} up --authkey={{ tailscale_authkey }} --ssh"
   vars:
     tailscale_authkey: "{{ common_cli_op_tailscale_authkey }}"
+    # sudo's PATH on macOS does not include Homebrew
+    tailscale_bin: "{{ '/opt/homebrew/bin/tailscale' if ansible_os_family == 'Darwin' else 'tailscale' }}"
   register: common_cli_tailscale_up
   changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
