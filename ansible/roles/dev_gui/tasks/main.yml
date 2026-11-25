@@ -306,7 +306,7 @@
       LogLevelMax=notice
       {% endif %}
   when: dev_gui_orca_auto_update
-  notify: Restart orca-update timer
+  register: dev_gui_orca_update_service
 
 - name: Install the orca-update timer
   tags: orca
@@ -333,21 +333,23 @@
       [Install]
       WantedBy=timers.target
   when: dev_gui_orca_auto_update
-  notify: Restart orca-update timer
+  register: dev_gui_orca_update_timer
 
+# Restarted when a unit changed, so a new schedule takes effect. Not a handler:
+# handlers ignore --skip-tags, and systemd isn't PID 1 in the molecule container.
 - name: Enable and start orca-update.timer
-  tags: orca
+  tags: [orca, molecule-notest]
   become: true
   ansible.builtin.systemd_service:
     name: orca-update.timer
     enabled: true
-    state: started
+    state: "{{ 'restarted' if dev_gui_orca_update_service is changed or dev_gui_orca_update_timer is changed else 'started' }}"
     daemon_reload: true
   when: dev_gui_orca_auto_update
 
 # Opting out removes everything again. The timer may never have existed.
 - name: Stop and disable orca-update.timer
-  tags: orca
+  tags: [orca, molecule-notest]
   become: true
   ansible.builtin.systemd_service:
     name: orca-update.timer
@@ -370,7 +372,15 @@
     - /etc/systemd/system/orca-update.service
     - /usr/local/sbin/orca-update
   when: not dev_gui_orca_auto_update
-  notify: Reload systemd
+  register: dev_gui_orca_update_removed
+
+# A task for the same reason as the timer above: handlers ignore --skip-tags.
+- name: Reload systemd after removing the orca-update units # noqa: no-handler
+  tags: [orca, molecule-notest]
+  become: true
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: dev_gui_orca_update_removed is changed
 
 # Headless Orca server, reachable over Tailscale only. Tagged apart from `orca`
 # and free of become, so `--tags orca-serve` runs without a sudo password.
