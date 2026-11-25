@@ -250,8 +250,9 @@
     update_cache: true
 
 # Orca (https://www.onorca.dev/): no apt repo, so install the release .deb from
-# GitHub. Only install when the package is missing or older than the pin: Orca
-# updates itself in-app, and reinstalling the pinned .deb would downgrade it.
+# GitHub. Only install when the package is missing or older than the pin: this
+# bootstraps a host, orca-update (below) keeps it current, and reinstalling the
+# pinned .deb would downgrade it.
 - name: Gather installed packages
   tags: orca
   ansible.builtin.package_facts:
@@ -267,6 +268,119 @@
   when: >-
     'orca-ide' not in ansible_facts.packages
     or ansible_facts.packages['orca-ide'][0].version is version(dev_gui_orca_version, '<')
+
+# Orca downloads updates but will not install them on .deb hosts, so a root
+# timer does (see defaults and files/orca-update).
+- name: Install the orca-update script
+  tags: orca
+  become: true
+  ansible.builtin.copy:
+    src: orca-update
+    dest: /usr/local/sbin/orca-update
+    owner: root
+    group: root
+    mode: "0755"
+  when: dev_gui_orca_auto_update
+
+# Desktop runs are every minute and mostly skips: LogLevelMax keeps those (and
+# systemd's own start/finish lines) out of the journal.
+- name: Install the orca-update service
+  tags: orca
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/orca-update.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible (roles/dev_gui).
+      [Unit]
+      Description=Install Orca updates
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/orca-update {{ 'serve' if dev_gui_orca_serve else 'desktop' }} {{ ansible_user_id }}
+      {% if not dev_gui_orca_serve %}
+      LogLevelMax=notice
+      {% endif %}
+  when: dev_gui_orca_auto_update
+  register: dev_gui_orca_update_service
+
+- name: Install the orca-update timer
+  tags: orca
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/orca-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible (roles/dev_gui).
+      [Unit]
+      Description=Install Orca updates
+
+      [Timer]
+      {% if dev_gui_orca_serve %}
+      OnCalendar=*-*-* {{ dev_gui_orca_auto_update_serve_time }}:00
+      Persistent=true
+      {% else %}
+      OnBootSec=2min
+      OnUnitInactiveSec=1min
+      {% endif %}
+
+      [Install]
+      WantedBy=timers.target
+  when: dev_gui_orca_auto_update
+  register: dev_gui_orca_update_timer
+
+# Restarted when a unit changed, so a new schedule takes effect. Not a handler:
+# handlers ignore --skip-tags, and systemd isn't PID 1 in the molecule container.
+- name: Enable and start orca-update.timer
+  tags: [orca, molecule-notest]
+  become: true
+  ansible.builtin.systemd_service:
+    name: orca-update.timer
+    enabled: true
+    state: "{{ 'restarted' if dev_gui_orca_update_service is changed or dev_gui_orca_update_timer is changed else 'started' }}"
+    daemon_reload: true
+  when: dev_gui_orca_auto_update
+
+# Opting out removes everything again. The timer may never have existed.
+- name: Stop and disable orca-update.timer
+  tags: [orca, molecule-notest]
+  become: true
+  ansible.builtin.systemd_service:
+    name: orca-update.timer
+    enabled: false
+    state: stopped
+  register: dev_gui_orca_update_timer_off
+  failed_when: >-
+    dev_gui_orca_update_timer_off is failed
+    and 'Could not find the requested service' not in (dev_gui_orca_update_timer_off.msg | default(''))
+  when: not dev_gui_orca_auto_update
+
+- name: Remove the orca-update files
+  tags: orca
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/orca-update.timer
+    - /etc/systemd/system/orca-update.service
+    - /usr/local/sbin/orca-update
+  when: not dev_gui_orca_auto_update
+  register: dev_gui_orca_update_removed
+
+# A task for the same reason as the timer above: handlers ignore --skip-tags.
+- name: Reload systemd after removing the orca-update units # noqa: no-handler
+  tags: [orca, molecule-notest]
+  become: true
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: dev_gui_orca_update_removed is changed
 
 # Headless Orca server, reachable over Tailscale only. Tagged apart from `orca`
 # and free of become, so `--tags orca-serve` runs without a sudo password.

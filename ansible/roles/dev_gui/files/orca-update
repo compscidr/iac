@@ -1,0 +1,253 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/dev_gui). Installs Orca updates as root.
+#
+# Orca downloads updates on .deb installs but will not install them
+# (stablyai/orca#15744), and has no apt repo yet (stablyai/orca#18086).
+#
+#   orca-update desktop <user> [--dry-run]
+#     Installs the update the Orca app left in <user>'s updater cache, once the
+#     app is closed.
+#   orca-update serve <user> [--dry-run]
+#     Fetches the latest release, stops <user>'s orca-serve.service, installs,
+#     and starts it again. The headless server never downloads updates itself.
+#
+# Nothing is installed unless its sha512 matches the one GitHub publishes for
+# that release. Files under the user's home are untrusted: they are copied to a
+# root-only directory before they are checked and installed.
+#
+# Output lines carry sd-daemon level prefixes (<5> notice, <7> debug, ...), so
+# the unit can keep routine skips out of the journal with LogLevelMax.
+set -euo pipefail
+
+readonly package=orca-ide
+readonly app=/opt/Orca/orca-ide
+readonly serve_unit=orca-serve.service
+releases_url=${ORCA_UPDATE_RELEASES_URL:-https://github.com/stablyai/orca/releases}
+proc=${ORCA_UPDATE_PROC:-/proc}
+# Names the pending update that last failed, so the every-minute desktop timer
+# does not repeat the failure. /run empties at boot, which allows one retry.
+failed_stamp=${ORCA_UPDATE_STATE_DIR:-/run}/orca-update.failed
+
+log() { echo "<$1>orca-update: $2"; }
+
+usage() {
+  echo "usage: orca-update <desktop|serve> <user> [--dry-run]" >&2
+  exit 1
+}
+
+installed_version() { dpkg-query -W -f='${Version}' "$package" 2>/dev/null || true; }
+
+# True while the Orca desktop app is open. Chromium child processes
+# (--type=...) exist only while an Orca app is up; the background terminal
+# daemon has none, so it does not count. Neither do the serve unit's own
+# processes, which are told apart by their cgroup. A process that cannot be
+# inspected counts as the app.
+app_running() {
+  local pid
+  for pid in $(pgrep -f "^$app .*--type=" || true); do
+    grep -qsF "/$serve_unit" "$proc/$pid/cgroup" || return 0
+  done
+  return 1
+}
+
+fetch() { curl -fsSL --connect-timeout 20 --max-time 900 --retry 2 -o "$2" "$1"; }
+
+# Prints the sha512 that the release file $1 lists for the package named $2.
+expected_sha512() {
+  awk -v name="$2" '
+    $1 == "-" && $2 == "url:" { hit = ($3 == name) }
+    hit && $1 == "sha512:" { print $2; exit }
+  ' "$1"
+}
+
+# Upstream publishes base64 of the binary digest, as electron-updater does.
+actual_sha512() { openssl dgst -sha512 -binary "$1" | base64 -w0; }
+
+release_file() {
+  if [ "$arch" = arm64 ]; then echo latest-linux-arm64.yml; else echo latest-linux.yml; fi
+}
+
+# Fetches $1 to $2. Exits 0 when GitHub cannot be reached: the next run tries
+# again. That is a warning for the nightly serve run, and debug for the desktop
+# run, which would otherwise warn every minute while offline.
+fetch_or_exit() {
+  if ! fetch "$1" "$2"; then
+    if [ "$mode" = serve ]; then log 4 "cannot fetch $1"; else log 7 "cannot fetch $1"; fi
+    exit 0
+  fi
+}
+
+# Checks the package $1 against the release file in $tmp/release.yml.
+verify_deb() {
+  local want
+  want=$(expected_sha512 "$tmp/release.yml" "${1##*/}")
+  if [ -z "$want" ] || [ "$want" != "$(actual_sha512 "$1")" ]; then
+    log 3 "checksum mismatch for ${1##*/}"
+    return 1
+  fi
+}
+
+# Fails the run and remembers the pending update, so later runs skip it until
+# Orca downloads again (which rewrites update-info.json).
+give_up() {
+  if [ "$dry_run" = 0 ] && echo "$pending_id" >"$failed_stamp"; then
+    log 3 "not retrying until Orca downloads the update again; remove $failed_stamp to retry sooner"
+  fi
+  exit 1
+}
+
+install_deb() {
+  local output
+  if ! output=$(DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    -o DPkg::Lock::Timeout=120 "$1" 2>&1); then
+    log 3 "install failed"
+    echo "<3>${output//$'\n'/$'\n'<3>}"
+    return 1
+  fi
+}
+
+run_desktop() {
+  local info name new deb
+  info=$pending_dir/update-info.json
+  if [ ! -f "$info" ]; then
+    log 7 "skip: no pending update"
+    exit 0
+  fi
+  pending_id=$(stat -c '%s %Y' -- "$info")
+  if [ "$(cat "$failed_stamp" 2>/dev/null)" = "$pending_id" ]; then
+    log 7 "skip: this update failed before"
+    exit 0
+  fi
+  name=$(sed -n 's/.*"fileName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$info" | head -n1)
+  if [[ ! $name =~ ^orca-ide_([0-9]+(\.[0-9]+)*)_(amd64|arm64)\.deb$ ]] ||
+    [ "${BASH_REMATCH[3]}" != "$arch" ]; then
+    log 3 "rejected pending file name: $name"
+    give_up
+  fi
+  new=${BASH_REMATCH[1]}
+  if [ ! -f "$pending_dir/$name" ]; then
+    log 7 "skip: no pending update"
+    exit 0
+  fi
+  if ! dpkg --compare-versions "$new" gt "$installed"; then
+    log 7 "up to date ($installed)"
+    exit 0
+  fi
+  if app_running; then
+    log 7 "skip: Orca is running"
+    exit 0
+  fi
+
+  # Fetch first: offline, this run then costs one request, not a large copy.
+  fetch_or_exit "$releases_url/download/v$new/$(release_file)" "$tmp/release.yml"
+  deb=$tmp/$name
+  cp -- "$pending_dir/$name" "$deb"
+  verify_deb "$deb" || give_up
+  if [ "$dry_run" = 1 ]; then
+    log 5 "would install $package $new (installed $installed)"
+    exit 0
+  fi
+  # Verifying takes a moment; Orca may have been started meanwhile.
+  if app_running; then
+    log 7 "skip: Orca is running"
+    exit 0
+  fi
+  install_deb "$deb" || give_up
+  log 5 "installed $package $new (was $installed)"
+}
+
+# Runs systemctl against the user's own systemd manager.
+user_systemctl() {
+  runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$(id -u "$user")" \
+    systemctl --user "$@"
+}
+
+run_serve() {
+  local url new name deb serve_active=0
+  url=$releases_url/latest/download/$(release_file)
+  fetch_or_exit "$url" "$tmp/release.yml"
+  new=$(awk '$1 == "version:" { print $2; exit }' "$tmp/release.yml")
+  if [[ ! $new =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+    log 3 "no version in $url"
+    exit 1
+  fi
+  if ! dpkg --compare-versions "$new" gt "$installed"; then
+    log 7 "up to date ($installed)"
+    exit 0
+  fi
+  # The supervised unit stays active while the desktop app holds the profile,
+  # so the app is looked for whether or not the unit is up.
+  if app_running; then
+    log 5 "skip: Orca is running"
+    exit 0
+  fi
+  if user_systemctl is-active --quiet "$serve_unit"; then
+    serve_active=1
+  fi
+  if [ "$dry_run" = 1 ]; then
+    log 5 "would install $package $new (installed $installed)"
+    exit 0
+  fi
+
+  name=${package}_${new}_$arch.deb
+  deb=$tmp/$name
+  fetch_or_exit "$releases_url/download/v$new/$name" "$deb"
+  verify_deb "$deb" || exit 1
+
+  # The download takes a while; the app may have been opened meanwhile.
+  if app_running; then
+    log 5 "skip: Orca is running"
+    exit 0
+  fi
+  if [ "$serve_active" = 1 ]; then
+    log 5 "stopping orca-serve"
+    # From here on, every way out starts the unit again (see cleanup).
+    restart_serve=1
+    user_systemctl stop "$serve_unit"
+  fi
+  install_deb "$deb"
+  log 5 "installed $package $new (was $installed)"
+}
+
+cleanup() {
+  if [ "$restart_serve" = 1 ]; then
+    log 5 "starting orca-serve"
+    user_systemctl start "$serve_unit" || log 3 "could not start orca-serve"
+  fi
+  rm -rf "$tmp"
+}
+
+[ $# -ge 2 ] || usage
+mode=$1
+user=$2
+dry_run=0
+case ${3:-} in
+  --dry-run) dry_run=1 ;;
+  "") ;;
+  *) usage ;;
+esac
+[ $# -le 3 ] || usage
+case $mode in
+  desktop | serve) ;;
+  *) usage ;;
+esac
+
+home=$(getent passwd "$user" | cut -d: -f6)
+if [ -z "$home" ]; then
+  log 3 "unknown user: $user"
+  exit 1
+fi
+pending_dir=${ORCA_UPDATE_PENDING_DIR:-$home/.cache/orca-updater/pending}
+arch=$(dpkg --print-architecture)
+
+installed=$(installed_version)
+if [ -z "$installed" ]; then
+  log 7 "skip: $package is not installed"
+  exit 0
+fi
+
+restart_serve=0
+tmp=$(mktemp -d)
+trap cleanup EXIT
+
+"run_$mode"

@@ -9,6 +9,14 @@ dev_gui_claude_desktop_key_fingerprint: 31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
 # Bumped by renovate (see renovate.json).
 dev_gui_orca_version: "1.4.274"
 
+# Orca downloads updates on .deb installs but will not install them, and has no
+# apt repo yet (stablyai/orca#18086). Until it does, a root timer installs them
+# (files/orca-update): on desktops once the app is closed, on serve hosts
+# (dev_gui_orca_serve) nightly, restarting orca-serve, which ends the agent
+# terminals running there. Drop this when upstream ships the apt repo.
+dev_gui_orca_auto_update: true
+dev_gui_orca_auto_update_serve_time: "04:00"
+
 # Headless Orca server (`orca-ide serve`) as a user unit, so another Orca can
 # add this host under Settings -> Remote Orca Servers. Opt in per host.
 dev_gui_orca_serve: false
