@@ -185,6 +185,35 @@
   changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
 
+# A sleeping Mac drops off the tailnet: tailscaled is suspended with everything
+# else, and unlike LAN traffic ("wake for network access"), tailnet traffic
+# can't wake it. `pmset sleep 0` only stops idle sleep - with the lid closed
+# the Mac still slept, so it was reachable through a LAN jump host (whose ssh
+# woke it) but not directly over Tailscale (2026-11-25). disablesleep stops
+# lid-close sleep too. It is system-wide, not per power source: the Mac also
+# stays awake on battery with the lid closed.
+- name: Check whether sleep is disabled (macOS)
+  tags: [tailscale, power]
+  ansible.builtin.command:
+    cmd: pmset -g
+  register: common_cli_pmset
+  changed_when: false
+  check_mode: false
+  when:
+    - ansible_os_family == "Darwin"
+    - common_cli_macos_disable_sleep | bool
+
+- name: Disable sleep so the Mac stays reachable over Tailscale (macOS)
+  become: true
+  tags: [tailscale, power]
+  ansible.builtin.command:
+    cmd: pmset -a disablesleep 1
+  changed_when: true
+  when:
+    - ansible_os_family == "Darwin"
+    - common_cli_macos_disable_sleep | bool
+    - common_cli_pmset.stdout is not search('SleepDisabled\\s+1')
+
 - name: Add the user
   tags: user
   become: true
