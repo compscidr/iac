@@ -1,5 +1,5 @@
 # Mail server DNS and configuration for jasonernst.com
-# Mail runs on the www droplet (consolidated) using Mailu
+# Mail runs on the www droplet (consolidated) using Stalwart
 
 # A record for mail.jasonernst.com -> www droplet
 resource "digitalocean_record" "A-mail" {

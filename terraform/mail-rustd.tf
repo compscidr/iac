@@ -1,11 +1,11 @@
 # Mail DNS records for rustd.xyz
-# Mail is handled by the existing Mailu instance on mail.jasonernst.com
+# Mail is handled by Stalwart on mail.jasonernst.com
 #
 # Note the split: the apex/www records in projects.tf point at the projects
 # droplet (where the app will run), while everything below points at the www
-# droplet (where Mailu runs).
+# droplet (where Stalwart runs).
 
-# A/AAAA records for mail.rustd.xyz -> www droplet (where Mailu runs)
+# A/AAAA records for mail.rustd.xyz -> www droplet (where Stalwart runs)
 resource "digitalocean_record" "rustd-A-mail" {
   domain = digitalocean_domain.rustd-xyz.name
   type   = "A"

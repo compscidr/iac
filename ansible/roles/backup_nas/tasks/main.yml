@@ -252,20 +252,14 @@
       find {{ jasonernst_com_backup_nas_path }}/db -maxdepth 1 -type f -name 'goblog-*.db'
       -mtime +{{ jasonernst_com_backup_nas_keep }} -delete
 
-# Same-shaped prune for the mailu pipeline (push side: mailu role,
-# jasonernst_com.yml). Only the db/ snapshots are pruned - dkim/, data/,
-# mail/, and mailu.env are additive mirrors that must never be aged out.
-# Directory-exists guard for the same first-push reason as above.
-- name: Prune mailu backups older than the retention window
+# Mailu is gone (replaced by stalwart); drop its prune cron so the last
+# snapshots in backups/mailu are kept as an archive instead of aging out.
+# ponytail: delete this task once it has run on the nas.
+- name: Remove the retired mailu prune cron
   become: true
   ansible.builtin.cron:
     name: "prune mailu db backups"
-    minute: "40"
-    hour: "5"
-    job: >-
-      [ -d {{ mailu_backup_nas_path }}/db ] &&
-      find {{ mailu_backup_nas_path }}/db -maxdepth 1 -type f -name 'mailu-*.db'
-      -mtime +{{ mailu_backup_nas_keep }} -delete
+    state: absent
 
 # Same again for stalwart; only db/ ages out (dkim/ and etc/ are additive mirrors).
 - name: Prune stalwart backups older than the retention window

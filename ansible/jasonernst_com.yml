@@ -33,8 +33,8 @@
         # uses; see roles/backup_nas/README.md.
         jasonernst_com_backup_nas_rsync_password: "{{ lookup('community.general.onepassword', 'nas-rsync', field='password', vault=onepassword_vault,
           account_id=onepassword_account_id) }}"
-        # goblog email login: the noreply@jasonernst.com mailu account (created by
-        # the mailu role from the same 1Password item). The item must exist before
+        # goblog email login: the noreply@jasonernst.com stalwart account (created by
+        # the stalwart role from the same 1Password item). The item must exist before
         # this playbook runs - a onepassword lookup for a missing item is a hard
         # failure, not an empty string.
         jasonernst_com_op_item_smtp: "{{ lookup('community.general.onepassword_raw', 'SMTP_USER - goblog', vault=onepassword_vault,
@@ -46,8 +46,7 @@
     - name: Extract fields from the 1Password items
       tags: always
       ansible.builtin.set_fact:
-        # Same credential for the mailu backup pipeline (one daemon on the nas).
-        mailu_backup_nas_rsync_password: "{{ jasonernst_com_backup_nas_rsync_password }}"
+        # Same credential for the stalwart backup pipeline (one daemon on the nas).
         stalwart_backup_nas_rsync_password: "{{ jasonernst_com_backup_nas_rsync_password }}"
         jasonernst_com_smtp_username: "{{ jasonernst_com_op_item_smtp
           | community.general.json_query(\"fields[?label=='username' || id=='username'].value | [0]\") }}"
@@ -68,7 +67,6 @@
     - { role: www_redirect, tags: [www-redirect] }
     - { role: jasonernst_com, tags: [jasonernst-com] }
     - { role: fail2ban, tags: [fail2ban] }
-    # Replaced mailu at the cutover (2026-11-05); roles/mailu and /opt/mailu stay for the
-    # rollback window (stalwart role README "Rollback").
+    # Replaced mailu at the cutover (2026-11-05).
     - { role: stalwart, tags: [stalwart], stalwart_staged: false }
     - { role: uptime_kuma, tags: [uptime-kuma] }

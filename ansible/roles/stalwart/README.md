@@ -107,7 +107,7 @@ DataStore is the declarative plan `templates/plan.ndjson.j2`, applied with `stal
    cert for every mail hostname.
 3. Create the 1Password items, then add the domain to `stalwart_domains` and `stalwart_aliases`
    and its lookups to `tasks/main.yml`. Also add it to `scripts/mail_acceptance.py` and
-   `scripts/mail_acceptance.env`, and to the `rm` list under "Rollback".
+   `scripts/mail_acceptance.env`.
 4. Run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags stalwart`. The plan changes,
    so every app password and API key is deleted ("Consequence of re-applying"). Then run the
    acceptance script with `--mode public`.
@@ -139,8 +139,6 @@ What to expect:
   clients fetch their data once more.
 - Every copied object is queued for search indexing. `stalwart_memory` is 512m and the
   rehearsal's v1 sat at 360 MiB with almost no mail, so watch `docker stats` during the first hour.
-- The "Rollback" to Mailu above still needs step 4 of it, exporting mail with Vandelay, and has
-  not been tried against v1.
 
 ### Before the window
 
@@ -249,9 +247,7 @@ sudo docker run --rm -v "$M/state-rb:/var/lib/stalwart-rb-state" "$IMG" report -
 eight mailboxes imported with matching counts, public acceptance 53 PASS with the two spam
 checks run over the tailnet address (port 25 is blocked outbound from ubuntu-beast and from
 the projects and hermes droplets: `--mode public --connect 100.98.223.44 --only spam_junk
-spam_reject_gtube`). Mailu's cert symlinks were left in place for the rollback window. Kept
-below as the record and for the rollback. Mailu's data stays in `/opt/mailu`, so every step
-before "Follow up" can be undone.
+spam_reject_gtube`). Kept below as the record.
 
 ### Running the acceptance script
 
@@ -316,33 +312,8 @@ OP_ACCOUNT=<account uuid of onepassword_account_id> op run --env-file scripts/ma
 
 ### Rollback
 
-Any time before `/opt/mailu` is deleted:
-
-1. `sudo docker stop stalwart` (keep the container and `/opt/stalwart`).
-2. Remove what the live role wrote for nginx-proxy, vhost.d files first, then the zone they
-   name, then reload:
-
-   ```bash
-   sudo rm /var/lib/docker/volumes/vhost/_data/mail.{jasonernst.com,sair.run,rustd.xyz,darksearch.xyz,2dogs1bun.io}
-   sudo rm /etc/nginx/conf.d/stalwart.conf
-   sudo docker exec nginx-proxy sh -c 'nginx -t && nginx -s reload'
-   ```
-
-   Left in place they would 403 Mailu's own `/admin` and redirect its `/webmail`.
-3. Restore `ansible/jasonernst_com.yml` (the `mailu` role line back, `stalwart_staged: true`)
-   and run `ansible-playbook -i inventory.yml jasonernst_com.yml --tags mailu`. It recreates
-   the cert symlinks and starts Mailu; `sudo docker compose -f /opt/mailu/docker-compose.yml up -d`
-   alone is enough only if the symlinks are still there.
-4. Mail that arrived on Stalwart in the meantime: start it staged again
-   (`--tags stalwart`), export each mailbox with Vandelay (JMAP source) and push it to Mailu
-   with imapsync, using each user's 1Password credentials.
-5. Re-run the acceptance script with `--mode public` and compare with the Mailu baseline in
-   PR #940.
-
-### Follow up
-
-After the rollback window, in a separate PR: delete `/opt/mailu`, `roles/mailu`, the Mailu
-Renovate rules and the Mailu backup and prune entries.
+No longer possible from this repo: `roles/mailu` was deleted after the rollback window. Its
+last state is in git history and its last backup is in `backups/mailu/` on the nas.
 
 ## Local tests
 
