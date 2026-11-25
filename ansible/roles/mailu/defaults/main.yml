@@ -151,37 +151,37 @@ mailu_imaps_port: 993
 mailu_images:
   nginx:
     image: ghcr.io/mailu/nginx:2024.06
-    digest: "sha256:54d38adac90113925b09f046f48df980e354874ee6c09b77735f1f84fff7cf64"
+    digest: "sha256:68aa9f81bef8ac24c404b2b17be031d7e596c488cea5a0b6afdff888404e5d44"
   admin:
     image: ghcr.io/mailu/admin:2024.06
-    digest: "sha256:8effbc9730fa2f8ed33b01f543a8cc67a3bb3367d33ed076985e21fd65137180"
+    digest: "sha256:9275d7c48bfe5d1c30093ef1602c92f488f77a2daba9e56c8ec62c8be5fe32f3"
   dovecot:
     image: ghcr.io/mailu/dovecot:2024.06
-    digest: "sha256:f4276fc5a547bab5ba020f18a6a1126c0ffcb8fa816bb359800d4590f316e57c"
+    digest: "sha256:f2e2a26dde7a29583f5404b9e3f690646b8b71593f2bb33c6a2406828b3a5c5b"
   postfix:
     image: ghcr.io/mailu/postfix:2024.06
-    digest: "sha256:f0ab86ba46b5cbbc97696d8d56924ef6acd5b3117efe4f6ef59647fd918e074f"
+    digest: "sha256:d693ae05caff7ec937ba33878522d97c5a77072ce70032fd73170ee2dfbed3d6"
   unbound:
     image: ghcr.io/mailu/unbound:2024.06
-    digest: "sha256:82ceeff4645e6ea67c008279c87117625fb07f080b8b29cc410f7b182f44b4c4"
+    digest: "sha256:d4f1df2031066b5b8fcf5a6db3be9c820247df4950385efaad62b2b2b69a5e10"
   rspamd:
     image: ghcr.io/mailu/rspamd:2024.06
-    digest: "sha256:08c15b12e4b29f01cb7d4a68f1690cc28f3260e420de774fb2388be5a4510f6c"
+    digest: "sha256:a0d710e3161c6022439cf22adedf0f54db766efbaf5a0de563c0062b9b0b9751"
   clamav:
     image: ghcr.io/mailu/clamav:2.0 # versioned separately from the rest of Mailu
     digest: "sha256:3a255e78332e263d4fbccc87cc1df32a6903013ee5e4170f93aa4d43326db087"
   webmail:
     image: ghcr.io/mailu/webmail:2024.06
-    digest: "sha256:82bc06a4a692fa4a39d6f7a3975357d4a84e8bc5aac327787a48f49fa216df76"
+    digest: "sha256:875198aebeba9a6548b1821924ed4a014225a99f8908c438ca11d3061a2c4dc3"
   oletools:
     image: ghcr.io/mailu/oletools:2024.06
-    digest: "sha256:c99054f03c931f4cc4c4d6d3952c8a71b5c8f79d40bfd8543e686c986b711fb9"
+    digest: "sha256:2a94dba1f7eb2b5e575e0124278059b59a8dd792491a9c07c91a999b0774aa13"
   radicale:
     image: ghcr.io/mailu/radicale:2024.06
-    digest: "sha256:db56c0f9f05e4c438704ead8f2615f386e7758cb4f44c94c19e5d3d4f878ec6a"
+    digest: "sha256:c4167a5d4298a5151e2fc34768f5d7f182b3fc6ab4cb7f4453c440472ac66703"
   fetchmail:
     image: ghcr.io/mailu/fetchmail:2024.06
-    digest: "sha256:7542030694d75ebb8ea626c382824dcb4bdc15ae52c7eb1a8286e823227c8a5a"
+    digest: "sha256:43eb376a6f93ef1c107780890318af6ebe11f0dd99002160eafc7d2ea3168799"
 
 # --- Nightly mailu -> nas backup (issue #479) ------------------------------
 #
