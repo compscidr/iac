@@ -148,7 +148,7 @@ stalwart_aliases:
 
 # Bulwark Lite webmail, served by Stalwart as an Application at /webmail/. Renovate (Task 7)
 # matches the version line; the release tags have no `v`.
-stalwart_bulwark_version: "1.21.3"
+stalwart_bulwark_version: "1.22.0"
 stalwart_bulwark_url: "https://github.com/bulwarkmail/webmail/releases/download/{{ stalwart_bulwark_version }}/bulwark-lite-stalwart.zip"
 
 # Live only (not stalwart_staged): nginx-proxy serves these names from the 8080 listener,
