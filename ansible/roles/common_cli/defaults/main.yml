@@ -60,3 +60,9 @@ common_cli_fail2ban_ignoreip:
 # (group_vars/tailscale.yml): they're managed over the tailnet, and the script
 # can restart tailscaled mid-run.
 common_cli_repair_tailscale_source: true
+
+# Keep a Mac from ever sleeping, lid closed included (pmset disablesleep), so
+# it stays reachable over Tailscale. System-wide: it applies on battery too.
+# Set false in host_vars for a Mac that travels in a bag; the role then leaves
+# the setting alone (undo by hand with `sudo pmset -a disablesleep 0`).
+common_cli_macos_disable_sleep: true
