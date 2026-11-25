@@ -16,19 +16,43 @@
     media_storage_network_name: "media"
     media_server_media_letsencrypt_email: "ernstjason1@gmail.com"
 
-# Initialize media_user facts (UID/GID detection) before other tasks
-# This runs media_storage which depends on media_user
+# media_user only detects the UID/GID (read-only), which every service below
+# needs - so it alone runs under any tag.
 # apply.tags is needed: tags on include_role don't propagate into the
 # included tasks, and the collection tags them with a fixed service list
 # that omits threadfin/slskd/soularr, so --tags <those> left
 # media_user_uid/media_user_gid undefined.
-- name: Initialize media storage and user facts
+- name: Initialize media user facts
   tags: always
+  ansible.builtin.include_role:
+    name: compscidr.media_server.media_user
+    apply:
+      become: true
+      tags: always
+
+# media_storage (docker network + download/library folders) used to be
+# `always` too, so an unrelated `--tags tailscale` run of nas.yml chmod'ed the
+# media tree. It now runs only for the media tags; no apply.tags, so the
+# collection's own per-task tags decide what runs inside.
+#
+# The share root is left out of the directory list on purpose: it always
+# exists, and chmod/chown on it strips its UGOS ugacl ("Linux mode"), which
+# makes the rsync backups fail with EACCES until backup_nas's cron puts the
+# entry back. See roles/backup_nas/defaults/main.yml.
+- name: Initialize media storage
+  tags: [plex, transmission, sabnzbd, sonarr, radarr, lidarr, prowlarr, ombi, jackett, flaresolverr, slskd, soularr]
   ansible.builtin.include_role:
     name: compscidr.media_server.media_storage
     apply:
       become: true
-      tags: always
+  vars:
+    media_storage_directories: >-
+      {{ ['downloads', 'downloads/complete', 'downloads/complete/movies',
+          'downloads/complete/tv', 'downloads/complete/music',
+          'downloads/completed', 'downloads/completed/movies',
+          'downloads/completed/tv', 'downloads/completed/music',
+          'downloads/incomplete', 'tv', 'movies', 'music']
+         | map('regex_replace', '^', media_storage_base_path ~ '/') | list }}
 
 # Nginx reverse proxy + LetsEncrypt for SSL certs
 - name: Create nginx config directory

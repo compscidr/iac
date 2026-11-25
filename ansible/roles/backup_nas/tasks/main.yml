@@ -32,6 +32,41 @@
     creates: /usr/bin/tailscale
     executable: /bin/bash
 
+# UGOS exports GODEBUG=tlskyber=0 to every service (DefaultEnvironment in
+# /etc/systemd/system.conf). Go removed that setting, and a Go >= 1.27 binary
+# refuses to start with it: "fatal error: removed GODEBUG "tlskyber" set to old
+# value". Tailscale 1.104 is built with Go 1.27, so without this drop-in
+# tailscaled crash-loops after the update below and the nas falls off the
+# tailnet. Same fix the sair units on this host carry. Must come before the
+# daemon is started.
+- name: Create the tailscaled drop-in directory
+  become: true
+  tags: [tailscale]
+  ansible.builtin.file:
+    path: /etc/systemd/system/tailscaled.service.d
+    state: directory
+    mode: "0755"
+
+- name: Unset the vendor GODEBUG for tailscaled
+  become: true
+  tags: [tailscale]
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/tailscaled.service.d/godebug.conf
+    mode: "0644"
+    content: |
+      # Managed by ansible (backup_nas). UGOS sets the removed GODEBUG tlskyber=0.
+      [Service]
+      UnsetEnvironment=GODEBUG
+  register: backup_nas_tailscaled_godebug
+
+# Not a handler: the reload has to land before the daemon is started just below.
+- name: Reload systemd for the tailscaled drop-in # noqa: no-handler
+  become: true
+  tags: [tailscale]
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: backup_nas_tailscaled_godebug is changed
+
 # common_cli's install.sh normally starts and enables tailscaled itself;
 # this appliance's install.sh run (whenever the package first landed) never
 # went through that, so the daemon has to be brought up explicitly here.
@@ -87,6 +122,57 @@
     backup_nas_tailscale_status.rc != 0 or
     ((backup_nas_tailscale_status.stdout or '{}') | from_json).BackendState | default('')
     != 'Running'
+
+# Keeping Tailscale current. The appliance never refreshes third-party apt
+# sources, so the package sat at whatever version first landed - and nothing
+# that goes through apt's resolver can fix that: UGOS ships packages with
+# unmet dependencies (ctdb, exiv2, libopengl0), so `apt-get install`, and with
+# it `tailscale update` and Tailscale's auto-update, all stop at "Unmet
+# dependencies". NEVER run `apt --fix-broken install` here: it would "repair"
+# the vendor's own packages.
+#
+# `apt-get download` + `dpkg -i` does not involve the resolver: it fetches the
+# one .deb (still verified against the signed repo metadata) and installs it.
+# The package's only dependency is iptables. tailscaled is restarted after an
+# update, so the tailnet drops for a few seconds.
+- name: Keep Tailscale auto-update off (it cannot work on UGOS)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.command:
+    cmd: tailscale set --auto-update=false
+  changed_when: false
+
+- name: Update Tailscale
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |
+    set -euo pipefail
+    # Refresh only the Tailscale source, not the vendor ones.
+    apt-get update -qq \
+      -o Dir::Etc::sourcelist=sources.list.d/tailscale.list \
+      -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+    installed=$(dpkg-query -W -f='${Version}' tailscale)
+    candidate=$(apt-cache policy tailscale | awk '/Candidate:/ {print $2}')
+    if [ "$installed" != "$candidate" ]; then
+      tmp=$(mktemp -d)
+      trap 'rm -rf "$tmp"' EXIT
+      cd "$tmp"
+      apt-get download -qq tailscale
+      DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i tailscale_*.deb
+      echo "updated $installed -> $candidate"
+    fi
+    # The package postinst does not restart the daemon on this appliance
+    # (1.104.7 installed, tailscaled kept running 1.102.2), so compare what is
+    # actually running and restart it here.
+    running=$(tailscale version --daemon 2>/dev/null | awk '/Daemon:/ {print $2}')
+    if [[ "$running" != "$candidate"* ]]; then
+      systemctl restart tailscaled
+      echo "restarted tailscaled, was running $running"
+    fi
+  args:
+    executable: /bin/bash
+  register: backup_nas_tailscale_update
+  changed_when: backup_nas_tailscale_update.stdout | length > 0
 
 # No user, target-directory, or key task here. The nas' built-in rsync
 # daemon (UGOS UI, port 873) is what actually receives the backups - it
