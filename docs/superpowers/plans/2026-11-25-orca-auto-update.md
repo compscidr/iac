@@ -204,7 +204,7 @@ Expected: ansible-lint reports no violations; syntax check prints the playbook n
 
 - [ ] **Step 5: Render check**
 
-Run: `cd ansible && ansible-playbook dev.yml --tags orca --check --diff --limit ubuntu-work-laptop.local -c local` only if it runs without a sudo prompt; otherwise skip and say so. Molecule runs in CI on the PR (the `dev_gui` path filter triggers it), on both Ubuntu images, where the timer is enabled for real under systemd.
+Run: `cd ansible && ansible-playbook -i inventory.yml dev.yml --tags orca --check --diff --limit ubuntu-work-laptop.local -c local` only if it runs without a sudo prompt; otherwise skip and say so. Molecule runs in CI on the PR (the `dev_gui` path filter triggers it), on both Ubuntu images, where the timer is enabled for real under systemd.
 
 - [ ] **Step 6: Commit**
 
@@ -219,6 +219,6 @@ Deployment needs Jason's sudo password and touches host state, so Claude does no
 
 - [ ] **Step 1:** Push the branch and open a PR (never merge it). Wait for molecule.
 - [ ] **Step 2:** Give Jason the commands:
-  - Laptop: `cd ansible && ansible-playbook dev.yml --tags orca --limit ubuntu-work-laptop.local -K`, then `sudo /usr/local/sbin/orca-update desktop jason --dry-run` (expect `skip: Orca is running` while Orca is open), then quit Orca and check `dpkg -s orca-ide | grep Version` after about a minute (expect `1.4.274` or whatever is pending).
+  - Laptop: `cd ansible && ansible-playbook -i inventory.yml dev.yml --tags orca --limit ubuntu-work-laptop.local -K`, then `sudo /usr/local/sbin/orca-update desktop jason --dry-run` (expect `skip: Orca is running` while Orca is open), then quit Orca and check `dpkg -s orca-ide | grep Version` after about a minute (expect `1.4.274` or whatever is pending).
   - Beast: the same playbook with `--limit ubuntu-beast.local`, then `sudo /usr/local/sbin/orca-update serve jason --dry-run` (expect `would install orca-ide <latest> (installed 1.4.261)`). The real update happens at 04:00, or with `sudo systemctl start orca-update.service` when Jason is ready for `orca-serve` to restart.
 - [ ] **Step 3:** Verify over SSH what Jason reports: `systemctl list-timers orca-update.timer` and `journalctl -u orca-update.service -n 20` on each host.
