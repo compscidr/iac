@@ -209,6 +209,92 @@ expect_rc 0
 expect_no_log "apt-get"
 expect_out "orca-update: would install orca-ide 1.4.274 (installed 1.4.272)"
 
+# --- serve mode -----------------------------------------------------------
+
+stop="stop orca-serve.service"
+start="start orca-serve.service"
+install="apt-get install -y"
+
+setup "serve: stops, installs and restarts"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_order "$stop" "$install" "$start"
+expect_out "orca-update: stopping orca-serve"
+expect_out "orca-update: starting orca-serve"
+expect_out "orca-update: installed orca-ide 1.4.274 (was 1.4.261)"
+
+setup "serve: already current"
+STUB_INSTALLED=1.4.274
+STUB_SERVE_ACTIVE_RC=0
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_no_log "$stop"
+expect_no_log "apt-get"
+expect_out "orca-update: up to date (1.4.274)"
+
+setup "serve: unit inactive and app closed installs without starting it"
+STUB_INSTALLED=1.4.261
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_log "$install"
+expect_no_log "$stop"
+expect_no_log "$start"
+
+setup "serve: unit inactive and app open skips"
+STUB_INSTALLED=1.4.261
+STUB_PGREP_RCS=0
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_no_log "apt-get"
+expect_out "orca-update: skip: Orca is running"
+
+setup "serve: restarts after a failed install"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+STUB_APT_RC=100
+publish 1.4.274
+run serve "$user"
+expect_rc 1
+expect_order "$stop" "$install" "$start"
+expect_out "orca-update: install failed"
+
+setup "serve: rejects a download that differs from the published checksum"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+publish 1.4.274
+echo x >>"$t/releases/download/v1.4.274/$(deb_name 1.4.274)"
+run serve "$user"
+expect_rc 1
+expect_no_log "$stop"
+expect_no_log "apt-get"
+expect_out "orca-update: checksum mismatch for $(deb_name 1.4.274)"
+
+setup "serve: GitHub unreachable"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+ORCA_UPDATE_RELEASES_URL=file:///nonexistent
+run serve "$user"
+expect_rc 0
+expect_no_log "$stop"
+expect_no_log "apt-get"
+expect_out "orca-update: cannot fetch file:///nonexistent/latest/download/$yml"
+
+setup "serve: dry run"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+publish 1.4.274
+run serve "$user" --dry-run
+expect_rc 0
+expect_no_log "$stop"
+expect_no_log "apt-get"
+expect_out "orca-update: would install orca-ide 1.4.274 (installed 1.4.261)"
+
 setup "rejects an unknown mode"
 run bogus "$user"
 expect_rc 1

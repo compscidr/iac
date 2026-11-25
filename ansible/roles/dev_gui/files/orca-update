@@ -7,6 +7,9 @@
 #   orca-update desktop <user> [--dry-run]
 #     Installs the update the Orca app left in <user>'s updater cache, once the
 #     app is closed.
+#   orca-update serve <user> [--dry-run]
+#     Fetches the latest release, stops <user>'s orca-serve.service, installs,
+#     and starts it again. The headless server never downloads updates itself.
 #
 # Nothing is installed unless its sha512 matches the one GitHub publishes for
 # that release. Files under the user's home are untrusted: they are copied to a
@@ -18,12 +21,13 @@ set -euo pipefail
 
 readonly package=orca-ide
 readonly app=/opt/Orca/orca-ide
+readonly serve_unit=orca-serve.service
 releases_url=${ORCA_UPDATE_RELEASES_URL:-https://github.com/stablyai/orca/releases}
 
 log() { echo "<$1>orca-update: $2"; }
 
 usage() {
-  echo "usage: orca-update desktop <user> [--dry-run]" >&2
+  echo "usage: orca-update <desktop|serve> <user> [--dry-run]" >&2
   exit 1
 }
 
@@ -50,15 +54,18 @@ release_file() {
   if [ "$arch" = arm64 ]; then echo latest-linux-arm64.yml; else echo latest-linux.yml; fi
 }
 
-# Checks the package $1 (version $2) against that version's GitHub release.
-# Exits 0 when GitHub cannot be reached: the next run tries again.
-verify_deb() {
-  local url want
-  url=$releases_url/download/v$2/$(release_file)
-  if ! fetch "$url" "$tmp/release.yml"; then
-    log 4 "cannot fetch $url"
+# Fetches $1 to $2. Exits 0 when GitHub cannot be reached: the next run tries
+# again.
+fetch_or_exit() {
+  if ! fetch "$1" "$2"; then
+    log 4 "cannot fetch $1"
     exit 0
   fi
+}
+
+# Checks the package $1 against the release file in $tmp/release.yml.
+verify_deb() {
+  local want
   want=$(expected_sha512 "$tmp/release.yml" "${1##*/}")
   if [ -z "$want" ] || [ "$want" != "$(actual_sha512 "$1")" ]; then
     log 3 "checksum mismatch for ${1##*/}"
@@ -105,7 +112,8 @@ run_desktop() {
 
   deb=$tmp/$name
   cp -- "$pending_dir/$name" "$deb"
-  verify_deb "$deb" "$new"
+  fetch_or_exit "$releases_url/download/v$new/$(release_file)" "$tmp/release.yml"
+  verify_deb "$deb"
   if [ "$dry_run" = 1 ]; then
     log 5 "would install $package $new (installed $installed)"
     exit 0
@@ -119,6 +127,61 @@ run_desktop() {
   log 5 "installed $package $new (was $installed)"
 }
 
+# Runs systemctl against the user's own systemd manager.
+user_systemctl() {
+  runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$(id -u "$user")" \
+    systemctl --user "$@"
+}
+
+run_serve() {
+  local url new name deb serve_active=0
+  url=$releases_url/latest/download/$(release_file)
+  fetch_or_exit "$url" "$tmp/release.yml"
+  new=$(awk '$1 == "version:" { print $2; exit }' "$tmp/release.yml")
+  if [[ ! $new =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+    log 3 "no version in $url"
+    exit 1
+  fi
+  if ! dpkg --compare-versions "$new" gt "$installed"; then
+    log 7 "up to date ($installed)"
+    exit 0
+  fi
+  # The serve unit's own processes look like a running app, so only look for
+  # the desktop app when the unit is down.
+  if user_systemctl is-active --quiet "$serve_unit"; then
+    serve_active=1
+  elif app_running; then
+    log 5 "skip: Orca is running"
+    exit 0
+  fi
+  if [ "$dry_run" = 1 ]; then
+    log 5 "would install $package $new (installed $installed)"
+    exit 0
+  fi
+
+  name=${package}_${new}_$arch.deb
+  deb=$tmp/$name
+  fetch_or_exit "$releases_url/download/v$new/$name" "$deb"
+  verify_deb "$deb"
+
+  if [ "$serve_active" = 1 ]; then
+    log 5 "stopping orca-serve"
+    # From here on, every way out starts the unit again (see cleanup).
+    restart_serve=1
+    user_systemctl stop "$serve_unit"
+  fi
+  install_deb "$deb"
+  log 5 "installed $package $new (was $installed)"
+}
+
+cleanup() {
+  if [ "$restart_serve" = 1 ]; then
+    log 5 "starting orca-serve"
+    user_systemctl start "$serve_unit" || log 3 "could not start orca-serve"
+  fi
+  rm -rf "$tmp"
+}
+
 [ $# -ge 2 ] || usage
 mode=$1
 user=$2
@@ -130,7 +193,7 @@ case ${3:-} in
 esac
 [ $# -le 3 ] || usage
 case $mode in
-  desktop) ;;
+  desktop | serve) ;;
   *) usage ;;
 esac
 
@@ -148,7 +211,8 @@ if [ -z "$installed" ]; then
   exit 0
 fi
 
+restart_serve=0
 tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
+trap cleanup EXIT
 
 "run_$mode"
