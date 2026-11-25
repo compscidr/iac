@@ -1,0 +1,18 @@
+---
+# The lan group is the home machines that are also on the tailnet.
+#
+# inventory.yml names them by mDNS name (ubuntu-beast.local), which works at
+# home even when Tailscale is down. Away from home that name resolves to
+# nothing and the same machine answers only on its Tailscale name
+# (ubuntu-beast). scripts/lan-or-tailscale tries the .local name first and
+# falls back to the Tailscale name, so every play and ad-hoc command works from
+# either place with the same --limit ubuntu-beast.local.
+#
+# Ansible re-evaluates this for every task. The script caches its answer for
+# five minutes, so the check costs about two seconds per host per run when
+# away and nothing noticeable at home. After changing networks mid-session,
+# delete the cache to re-check straight away - the script's header says where
+# it lives.
+#
+# To force one route: -e ansible_host=ubuntu-beast
+ansible_host: "{{ lookup('ansible.builtin.pipe', (inventory_dir ~ '/scripts/lan-or-tailscale') | quote ~ ' ' ~ inventory_hostname | quote) }}"

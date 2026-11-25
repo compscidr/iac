@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""Print the address Ansible should use to reach a LAN host.
+
+    lan-or-tailscale ubuntu-beast.local
+
+inventory.yml names the home machines by their mDNS name (ubuntu-beast.local).
+That works at home even when Tailscale is down, and not at all away from home,
+where the same machine answers only on its Tailscale name (ubuntu-beast).
+
+This tries the .local name first - a real connection to the SSH port, so a
+stale mDNS answer for a host that is not actually there still counts as a miss
+- and prints it if that works. Otherwise it prints the name with .local
+removed. group_vars/lan.yml feeds the result to ansible_host.
+
+Ansible re-evaluates ansible_host for every task, and a failed mDNS lookup
+blocks for about 5 seconds, so the answer is kept in a per-user cache file for
+a few minutes: the check runs once per host per playbook run, not once per
+task. Delete the cache directory to force a fresh check after changing
+networks.
+
+Environment:
+  LAN_OR_TAILSCALE_CACHE_DIR  cache directory
+                              (default $XDG_RUNTIME_DIR/lan-or-tailscale,
+                              else ~/.cache/lan-or-tailscale)
+  LAN_OR_TAILSCALE_TTL        seconds an answer is reused (default 300)
+  LAN_OR_TAILSCALE_TIMEOUT    seconds to wait for the .local name (default 2)
+  LAN_OR_TAILSCALE_PORT       port to try (default 22)
+"""
+
+import os
+import re
+import socket
+import sys
+import tempfile
+import threading
+import time
+
+SUFFIX = ".local"
+HOSTNAME = re.compile(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?")
+
+
+def probe(host, port, timeout):
+    """True if a TCP connection to host:port opens within timeout seconds.
+
+    The attempt runs in a thread because name resolution ignores socket
+    timeouts; the caller stops waiting at the deadline either way.
+    """
+    reached = threading.Event()
+
+    def attempt():
+        try:
+            socket.create_connection((host, port), timeout=timeout).close()
+        except OSError:
+            return
+        reached.set()
+
+    threading.Thread(target=attempt, daemon=True).start()
+    return reached.wait(timeout)
+
+
+def read_cache(path, allowed, ttl, now):
+    try:
+        age = now - os.stat(path).st_mtime
+        if not 0 <= age < ttl:
+            return None
+        with open(path, encoding="utf-8") as handle:
+            answer = handle.read().strip()
+    except OSError:
+        return None
+    return answer if answer in allowed else None
+
+
+def write_cache(path, answer, now):
+    """Best effort: a cache that cannot be written only costs a repeat check."""
+    try:
+        directory = os.path.dirname(path)
+        os.makedirs(directory, mode=0o700, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(dir=directory)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(answer + "\n")
+        os.utime(temporary, (now, now))
+        os.replace(temporary, path)
+    except OSError:
+        pass
+
+
+def choose(name, cache_dir, ttl, probe_fn, now):
+    """Return name if it is reachable, else name without .local."""
+    if not HOSTNAME.fullmatch(name):
+        raise ValueError(f"not a host name: {name!r}")
+    if not name.endswith(SUFFIX):
+        return name
+    fallback = name[: -len(SUFFIX)]
+    path = os.path.join(cache_dir, name)
+    answer = read_cache(path, (name, fallback), ttl, now)
+    if answer is None:
+        answer = name if probe_fn(name) else fallback
+        write_cache(path, answer, now)
+    return answer
+
+
+def default_cache_dir():
+    base = os.environ.get("XDG_RUNTIME_DIR") or os.path.join(os.path.expanduser("~"), ".cache")
+    return os.path.join(base, "lan-or-tailscale")
+
+
+def main(argv):
+    if len(argv) != 2:
+        print("usage: lan-or-tailscale <inventory-hostname>", file=sys.stderr)
+        return 2
+    env = os.environ
+    port = int(env.get("LAN_OR_TAILSCALE_PORT", "22"))
+    timeout = float(env.get("LAN_OR_TAILSCALE_TIMEOUT", "2"))
+    try:
+        answer = choose(
+            argv[1],
+            env.get("LAN_OR_TAILSCALE_CACHE_DIR") or default_cache_dir(),
+            float(env.get("LAN_OR_TAILSCALE_TTL", "300")),
+            lambda host: probe(host, port, timeout),
+            time.time(),
+        )
+    except ValueError as error:
+        print(f"lan-or-tailscale: {error}", file=sys.stderr)
+        return 2
+    print(answer)
+    return 0
+
+
+if __name__ == "__main__":
+    status = main(sys.argv)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # Not sys.exit: a lookup still blocked in the probe thread must not hold
+    # the process open past the deadline.
+    os._exit(status)
