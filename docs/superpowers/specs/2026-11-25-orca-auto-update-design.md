@@ -91,6 +91,23 @@ The mode follows `dev_gui_orca_serve`: true means serve mode, otherwise desktop.
 Stopping `orca-serve` ends every agent terminal on that host. 04:00 was chosen
 by Jason to keep that away from working hours.
 
+### Added after review
+
+- **Desktop app versus serve unit.** The supervised serve unit stays active
+  while the desktop app holds the profile, so "the app is running" means an
+  Orca process with Chromium children (`--type=`) outside the
+  `orca-serve.service` cgroup. Serve mode checks for it whether or not the unit
+  is active, and again after the download.
+- **No repeated failures.** The desktop timer fires every minute, so a rejected
+  file name, a checksum mismatch or a failed install is remembered in
+  `/run/orca-update.failed` and that pending update is skipped until Orca
+  downloads again or the host reboots. Removing the file retries sooner.
+- **Quiet when offline.** A desktop run that cannot reach GitHub logs at debug
+  level and exits 0; the nightly serve run warns.
+- **Logging.** Routine skips are debug level and the desktop unit sets
+  `LogLevelMax=notice`, so the journal shows installs, warnings and errors
+  only. `--dry-run` shows what a run would do.
+
 ### Other changes
 
 - Fix the comment on the existing install task: Orca does not update itself on
@@ -110,7 +127,7 @@ by Jason to keep that away from working hours.
 - `shellcheck` and `ansible-lint` clean; molecule converges.
 - ubuntu-work-laptop has a pending 1.4.274 over installed 1.4.272: after the
   playbook runs, closing Orca should leave 1.4.274 installed within about a
-  minute, and the unit's journal should show a skip while Orca is open.
+  minute, and a `--dry-run` should report a skip while Orca is open.
 - ubuntu-beast: a dry run reports it would go from 1.4.261 to the latest; the
   real run is the 04:00 timer, or a manual start with Jason's go-ahead.
 

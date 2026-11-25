@@ -9,6 +9,8 @@ arch=$(dpkg --print-architecture)
 yml=latest-linux.yml
 [ "$arch" = arm64 ] && yml=latest-linux-arm64.yml
 user=$(id -un)
+app_pid=100
+serve_pid=200
 
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
@@ -29,22 +31,33 @@ setup() {
   case_name=$1
   case_failed=0
   t=$root/$cases
-  mkdir -p "$t/bin" "$t/pending" "$t/releases/latest/download"
+  mkdir -p "$t/bin" "$t/pending" "$t/releases/latest/download" "$t/state"
   export STUB_DIR=$t STUB_LOG=$t/log
-  export STUB_INSTALLED=1.4.272 STUB_APT_RC=0 STUB_PGREP_RCS=1 STUB_SERVE_ACTIVE_RC=3
+  export STUB_INSTALLED=1.4.272 STUB_APT_RC=0 STUB_PGREP_PIDS=- STUB_SERVE_ACTIVE_RC=3
   export ORCA_UPDATE_PENDING_DIR=$t/pending
   export ORCA_UPDATE_RELEASES_URL=file://$t/releases
+  export ORCA_UPDATE_PROC=$t/proc
+  export ORCA_UPDATE_STATE_DIR=$t/state
   : >"$STUB_LOG"
+  # Two Orca processes pgrep can report: the desktop app and the serve unit's.
+  mkdir -p "$t/proc/$app_pid" "$t/proc/$serve_pid"
+  echo "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-orca-1.scope" \
+    >"$t/proc/$app_pid/cgroup"
+  echo "0::/user.slice/user-1000.slice/user@1000.service/app.slice/orca-serve.service" \
+    >"$t/proc/$serve_pid/cgroup"
   # shellcheck disable=SC2016  # the stub bodies expand when the stubs run
   {
     stub dpkg-query '[ -n "$STUB_INSTALLED" ] || exit 1; printf "%s" "$STUB_INSTALLED"'
     stub apt-get 'echo "apt-get $*" >>"$STUB_LOG"; exit "$STUB_APT_RC"'
-    # One return code is consumed per call; the last one repeats.
-    stub pgrep 'n=$(cat "$STUB_DIR/pgrep.n" 2>/dev/null || echo 0)
-read -r -a rcs <<<"$STUB_PGREP_RCS"
-i=$n; [ "$i" -ge "${#rcs[@]}" ] && i=$((${#rcs[@]} - 1))
+    # STUB_PGREP_PIDS holds one word per call, the last one repeating: a
+    # comma-separated list of the pids found, or - for none.
+    stub pgrep 'echo "pgrep $*" >>"$STUB_LOG"
+n=$(cat "$STUB_DIR/pgrep.n" 2>/dev/null || echo 0)
+read -r -a calls <<<"$STUB_PGREP_PIDS"
+i=$n; [ "$i" -ge "${#calls[@]}" ] && i=$((${#calls[@]} - 1))
 echo $((n + 1)) >"$STUB_DIR/pgrep.n"
-exit "${rcs[$i]}"'
+[ "${calls[$i]}" = - ] && exit 1
+tr "," "\n" <<<"${calls[$i]}"'
     stub runuser 'echo "runuser $*" >>"$STUB_LOG"
 case " $* " in *" is-active "*) exit "$STUB_SERVE_ACTIVE_RC" ;; esac
 exit 0'
@@ -144,16 +157,18 @@ expect_out "orca-update: up to date (1.4.272)"
 setup "desktop: skips while Orca is running"
 pending 1.4.274
 publish 1.4.274
-STUB_PGREP_RCS=0
+STUB_PGREP_PIDS=$app_pid
 run desktop "$user"
 expect_rc 0
 expect_no_log "apt-get"
 expect_out "orca-update: skip: Orca is running"
+# Chromium children only: the background daemon must not count as running.
+expect_log "pgrep -f ^/opt/Orca/orca-ide .*--type="
 
 setup "desktop: skips when Orca starts during the run"
 pending 1.4.274
 publish 1.4.274
-STUB_PGREP_RCS="1 0"
+STUB_PGREP_PIDS="- $app_pid"
 run desktop "$user"
 expect_rc 0
 expect_no_log "apt-get"
@@ -166,6 +181,42 @@ run desktop "$user"
 expect_rc 1
 expect_no_log "apt-get"
 expect_out "orca-update: checksum mismatch for $(deb_name 1.4.274)"
+
+# The timer fires every minute: a failure must not repeat until Orca downloads
+# again, which rewrites update-info.json.
+setup "desktop: a failed update is not retried on the next run"
+pending 1.4.274
+publish 1.4.274
+echo x >>"$t/pending/$(deb_name 1.4.274)"
+run desktop "$user"
+expect_rc 1
+run desktop "$user"
+expect_rc 0
+expect_no_log "apt-get"
+expect_out "<7>orca-update: skip: this update failed before"
+
+setup "desktop: a failed update is retried once Orca downloads it again"
+pending 1.4.274
+publish 1.4.274
+echo x >>"$t/pending/$(deb_name 1.4.274)"
+run desktop "$user"
+expect_rc 1
+pending 1.4.274
+touch -d "+1 minute" "$t/pending/update-info.json"
+run desktop "$user"
+expect_rc 0
+expect_out "orca-update: installed orca-ide 1.4.274 (was 1.4.272)"
+
+setup "desktop: a failed install is not retried on the next run"
+pending 1.4.274
+publish 1.4.274
+STUB_APT_RC=100
+run desktop "$user"
+expect_rc 1
+: >"$STUB_LOG"
+run desktop "$user"
+expect_rc 0
+expect_no_log "apt-get"
 
 setup "desktop: rejects a file name outside the pending directory"
 pending 1.4.274
@@ -183,7 +234,8 @@ ORCA_UPDATE_RELEASES_URL=file:///nonexistent
 run desktop "$user"
 expect_rc 0
 expect_no_log "apt-get"
-expect_out "orca-update: cannot fetch file:///nonexistent/download/v1.4.274/$yml"
+# Debug level: a laptop that is offline must not warn every minute.
+expect_out "<7>orca-update: cannot fetch file:///nonexistent/download/v1.4.274/$yml"
 
 setup "desktop: install fails"
 pending 1.4.274
@@ -218,6 +270,7 @@ install="apt-get install -y"
 setup "serve: stops, installs and restarts"
 STUB_INSTALLED=1.4.261
 STUB_SERVE_ACTIVE_RC=0
+STUB_PGREP_PIDS=$serve_pid
 publish 1.4.274
 run serve "$user"
 expect_rc 0
@@ -247,12 +300,34 @@ expect_no_log "$start"
 
 setup "serve: unit inactive and app open skips"
 STUB_INSTALLED=1.4.261
-STUB_PGREP_RCS=0
+STUB_PGREP_PIDS=$app_pid
 publish 1.4.274
 run serve "$user"
 expect_rc 0
 expect_no_log "apt-get"
 expect_out "orca-update: skip: Orca is running"
+
+# The supervised unit stays active while the desktop app holds the profile.
+setup "serve: unit active and desktop app open skips"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+STUB_PGREP_PIDS=$serve_pid,$app_pid
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_no_log "$stop"
+expect_no_log "apt-get"
+expect_out "orca-update: skip: Orca is running"
+
+setup "serve: skips when the desktop app opens during the download"
+STUB_INSTALLED=1.4.261
+STUB_SERVE_ACTIVE_RC=0
+STUB_PGREP_PIDS="$serve_pid $serve_pid,$app_pid"
+publish 1.4.274
+run serve "$user"
+expect_rc 0
+expect_no_log "$stop"
+expect_no_log "apt-get"
 
 setup "serve: restarts after a failed install"
 STUB_INSTALLED=1.4.261
@@ -283,7 +358,7 @@ run serve "$user"
 expect_rc 0
 expect_no_log "$stop"
 expect_no_log "apt-get"
-expect_out "orca-update: cannot fetch file:///nonexistent/latest/download/$yml"
+expect_out "<4>orca-update: cannot fetch file:///nonexistent/latest/download/$yml"
 
 setup "serve: dry run"
 STUB_INSTALLED=1.4.261

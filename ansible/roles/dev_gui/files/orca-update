@@ -23,6 +23,10 @@ readonly package=orca-ide
 readonly app=/opt/Orca/orca-ide
 readonly serve_unit=orca-serve.service
 releases_url=${ORCA_UPDATE_RELEASES_URL:-https://github.com/stablyai/orca/releases}
+proc=${ORCA_UPDATE_PROC:-/proc}
+# Names the pending update that last failed, so the every-minute desktop timer
+# does not repeat the failure. /run empties at boot, which allows one retry.
+failed_stamp=${ORCA_UPDATE_STATE_DIR:-/run}/orca-update.failed
 
 log() { echo "<$1>orca-update: $2"; }
 
@@ -33,9 +37,18 @@ usage() {
 
 installed_version() { dpkg-query -W -f='${Version}' "$package" 2>/dev/null || true; }
 
-# Chromium child processes (--type=...) exist only while an Orca app is up.
-# The background terminal daemon has none, so it does not count.
-app_running() { pgrep -f "^$app .*--type=" >/dev/null; }
+# True while the Orca desktop app is open. Chromium child processes
+# (--type=...) exist only while an Orca app is up; the background terminal
+# daemon has none, so it does not count. Neither do the serve unit's own
+# processes, which are told apart by their cgroup. A process that cannot be
+# inspected counts as the app.
+app_running() {
+  local pid
+  for pid in $(pgrep -f "^$app .*--type=" || true); do
+    grep -qsF "/$serve_unit" "$proc/$pid/cgroup" || return 0
+  done
+  return 1
+}
 
 fetch() { curl -fsSL --connect-timeout 20 --max-time 900 --retry 2 -o "$2" "$1"; }
 
@@ -55,10 +68,11 @@ release_file() {
 }
 
 # Fetches $1 to $2. Exits 0 when GitHub cannot be reached: the next run tries
-# again.
+# again. That is a warning for the nightly serve run, and debug for the desktop
+# run, which would otherwise warn every minute while offline.
 fetch_or_exit() {
   if ! fetch "$1" "$2"; then
-    log 4 "cannot fetch $1"
+    if [ "$mode" = serve ]; then log 4 "cannot fetch $1"; else log 7 "cannot fetch $1"; fi
     exit 0
   fi
 }
@@ -69,8 +83,17 @@ verify_deb() {
   want=$(expected_sha512 "$tmp/release.yml" "${1##*/}")
   if [ -z "$want" ] || [ "$want" != "$(actual_sha512 "$1")" ]; then
     log 3 "checksum mismatch for ${1##*/}"
-    exit 1
+    return 1
   fi
+}
+
+# Fails the run and remembers the pending update, so later runs skip it until
+# Orca downloads again (which rewrites update-info.json).
+give_up() {
+  if [ "$dry_run" = 0 ] && echo "$pending_id" >"$failed_stamp"; then
+    log 3 "not retrying until Orca downloads the update again; remove $failed_stamp to retry sooner"
+  fi
+  exit 1
 }
 
 install_deb() {
@@ -90,11 +113,16 @@ run_desktop() {
     log 7 "skip: no pending update"
     exit 0
   fi
+  pending_id=$(stat -c '%s %Y' -- "$info")
+  if [ "$(cat "$failed_stamp" 2>/dev/null)" = "$pending_id" ]; then
+    log 7 "skip: this update failed before"
+    exit 0
+  fi
   name=$(sed -n 's/.*"fileName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$info" | head -n1)
   if [[ ! $name =~ ^orca-ide_([0-9]+(\.[0-9]+)*)_(amd64|arm64)\.deb$ ]] ||
     [ "${BASH_REMATCH[3]}" != "$arch" ]; then
     log 3 "rejected pending file name: $name"
-    exit 1
+    give_up
   fi
   new=${BASH_REMATCH[1]}
   if [ ! -f "$pending_dir/$name" ]; then
@@ -110,10 +138,11 @@ run_desktop() {
     exit 0
   fi
 
+  # Fetch first: offline, this run then costs one request, not a large copy.
+  fetch_or_exit "$releases_url/download/v$new/$(release_file)" "$tmp/release.yml"
   deb=$tmp/$name
   cp -- "$pending_dir/$name" "$deb"
-  fetch_or_exit "$releases_url/download/v$new/$(release_file)" "$tmp/release.yml"
-  verify_deb "$deb"
+  verify_deb "$deb" || give_up
   if [ "$dry_run" = 1 ]; then
     log 5 "would install $package $new (installed $installed)"
     exit 0
@@ -123,7 +152,7 @@ run_desktop() {
     log 7 "skip: Orca is running"
     exit 0
   fi
-  install_deb "$deb"
+  install_deb "$deb" || give_up
   log 5 "installed $package $new (was $installed)"
 }
 
@@ -146,13 +175,14 @@ run_serve() {
     log 7 "up to date ($installed)"
     exit 0
   fi
-  # The serve unit's own processes look like a running app, so only look for
-  # the desktop app when the unit is down.
-  if user_systemctl is-active --quiet "$serve_unit"; then
-    serve_active=1
-  elif app_running; then
+  # The supervised unit stays active while the desktop app holds the profile,
+  # so the app is looked for whether or not the unit is up.
+  if app_running; then
     log 5 "skip: Orca is running"
     exit 0
+  fi
+  if user_systemctl is-active --quiet "$serve_unit"; then
+    serve_active=1
   fi
   if [ "$dry_run" = 1 ]; then
     log 5 "would install $package $new (installed $installed)"
@@ -162,8 +192,13 @@ run_serve() {
   name=${package}_${new}_$arch.deb
   deb=$tmp/$name
   fetch_or_exit "$releases_url/download/v$new/$name" "$deb"
-  verify_deb "$deb"
+  verify_deb "$deb" || exit 1
 
+  # The download takes a while; the app may have been opened meanwhile.
+  if app_running; then
+    log 5 "skip: Orca is running"
+    exit 0
+  fi
   if [ "$serve_active" = 1 ]; then
     log 5 "stopping orca-serve"
     # From here on, every way out starts the unit again (see cleanup).
