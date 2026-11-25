@@ -2,6 +2,11 @@
 # Local hosts use .local (mDNS) - works on LAN even if Tailscale is down
 # Cloud hosts use Tailscale short names (www, projects, hermes)
 #
+# Hosts in the `lan` group are also on the tailnet: Ansible tries the .local
+# name first and falls back to the Tailscale name (the same name without
+# .local), so they are reachable away from home too. Keep using the .local
+# inventory name in --limit either way. See group_vars/lan.yml.
+#
 # There is no `mail` host: mail and the website are the same droplet.
 # Terraform names it mail.jasonernst.com (for the PTR record) but joins
 # the tailnet as `www`, and jasonernst_com.yml runs the stalwart role
@@ -63,6 +68,15 @@ tailscale:
     www:
     projects:
     hermes:
+# Home machines that are also on the tailnet (group_vars/lan.yml). The asus and
+# toshiba laptops and nas.local are not on the tailnet, so they are not here.
+lan:
+  hosts:
+    jasons-macbook-air.local:
+    ubuntu-beast.local:
+    ubuntu-silverstone.local:
+    ubuntu-cube.local:
+    ubuntu-work-laptop.local:
 linux:
   hosts:
     ubuntu-beast.local:

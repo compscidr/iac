@@ -44,6 +44,9 @@ jobs:
           shellcheck ansible/roles/dev_gui/files/orca-update ansible/roles/dev_gui/tests/orca-update-test.sh
           bash ansible/roles/dev_gui/tests/orca-update-test.sh
 
+      - name: Test the lan-or-tailscale script
+        run: python3 ansible/scripts/test_lan_or_tailscale.py
+
   # Molecule only converges common.yml and dev.yml, so on pull requests it is
   # skipped unless something those playbooks reach changed. The filter is
   # deliberately broad (shared vars/config, every role they reach directly or
