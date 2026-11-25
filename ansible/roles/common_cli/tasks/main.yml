@@ -81,6 +81,63 @@
   args:
     creates: /usr/bin/tailscale
     executable: /bin/bash
+  # On macOS the script only opens the App Store page - see the tasks below.
+  when: ansible_os_family != "Darwin"
+
+# macOS runs the open-source tailscaled from Homebrew, not the App Store /
+# standalone GUI app: it installs headlessly, and it is the only macOS variant
+# that can act as a Tailscale SSH server (`--ssh` below).
+- name: Install Tailscale (macOS)
+  # brew refuses to run as root, and common.yml sets `become: true` play-wide
+  become: false
+  tags: [tailscale]
+  community.general.homebrew:
+    name: tailscale
+    # latest: there is no apt-style unattended upgrade on the Mac, so this
+    # play is what keeps it current.
+    state: latest
+    # The module disables brew's auto-update, so Homebrew itself goes stale;
+    # a months-old brew cannot parse today's cask definitions and exits
+    # non-zero ("Unexpected method ... called on Cask ...") even though the
+    # tailscale upgrade went through.
+    update_homebrew: true
+  when: ansible_os_family == "Darwin"
+
+# tailscaled needs root, so it runs as a system LaunchDaemon (starts at boot).
+# Installed with tailscaled's own installer, not `sudo brew services start`:
+# under Ansible's sudo brew has root's HOME, finds no formula API cache there,
+# and refuses to download one as root.
+# The installer COPIES the binary to /usr/local/bin/tailscaled, so it is re-run
+# whenever that copy differs from brew's (i.e. after an upgrade). It restarts
+# the daemon; login state survives.
+- name: Create /usr/local/bin for tailscaled (macOS)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: "0755"
+  when: ansible_os_family == "Darwin"
+
+- name: Start tailscaled at boot (macOS)
+  become: true
+  tags: [tailscale]
+  ansible.builtin.shell: |
+    brew_bin=/opt/homebrew/opt/tailscale/bin/tailscaled
+    test -f /Library/LaunchDaemons/com.tailscale.tailscaled.plist &&
+      cmp -s "$brew_bin" /usr/local/bin/tailscaled && exit 0
+    "$brew_bin" install-system-daemon && echo installed
+  register: common_cli_tailscaled_install
+  changed_when: "'installed' in common_cli_tailscaled_install.stdout"
+  when: ansible_os_family == "Darwin"
+
+# `tailscale up` below ignores failure, so don't race the daemon's startup.
+- name: Wait for tailscaled (macOS)
+  tags: [tailscale]
+  ansible.builtin.wait_for:
+    path: /var/run/tailscaled.socket
+    timeout: 30
+  when: ansible_os_family == "Darwin"
 
 # The install above only runs when tailscale is missing. After
 # do-release-upgrade the Tailscale apt source is left behind: it couldn't be
@@ -119,9 +176,11 @@
   become: true
   tags: [tailscale]
   ansible.builtin.command:
-    cmd: "tailscale up --authkey={{ tailscale_authkey }} --ssh"
+    cmd: "{{ tailscale_bin }} up --authkey={{ tailscale_authkey }} --ssh"
   vars:
     tailscale_authkey: "{{ common_cli_op_tailscale_authkey }}"
+    # sudo's PATH on macOS does not include Homebrew
+    tailscale_bin: "{{ '/opt/homebrew/bin/tailscale' if ansible_os_family == 'Darwin' else 'tailscale' }}"
   register: common_cli_tailscale_up
   changed_when: "'Success' in common_cli_tailscale_up.stdout or common_cli_tailscale_up.rc == 0"
   failed_when: false
