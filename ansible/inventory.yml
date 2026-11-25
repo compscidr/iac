@@ -4,7 +4,7 @@
 #
 # There is no `mail` host: mail and the website are the same droplet.
 # Terraform names it mail.jasonernst.com (for the PTR record) but joins
-# the tailnet as `www`, and jasonernst_com.yml runs the mailu role
+# the tailnet as `www`, and jasonernst_com.yml runs the stalwart role
 # there. A `mail` entry used to sit in the groups below and resolved to
 # nothing, so every `hosts: all` play logged an unreachable host.
 # Use --limit 'ubuntu-beast*' to match by prefix

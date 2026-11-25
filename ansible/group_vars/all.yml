@@ -79,20 +79,12 @@ jasonernst_com_backup_nas_keep: 30
 goblog_admin_login: compscidr
 goblog_admin_github_id: 23049896
 
-# mailu nightly backup -> nas (issue #479): dkim keys, admin db snapshots,
-# mailboxes, mailu.env from the www droplet. Same pipeline shape and daemon
-# as the two above; here for the same split-playbook reason. Only the db/
-# snapshots get pruned - dkim/, data/, mail/, and mailu.env are additive
-# mirrors that must never be aged out.
-mailu_backup_nas_path: /volume1/storage/backups/mailu
-mailu_backup_nas_keep: 30
-
 # listmonk nightly pg_dump -> nas (2dogs1bun.io waitlist). Same pipeline and daemon as
 # rustd.xyz above; here for the same split-playbook reason.
 listmonk_backup_nas_path: /volume1/storage/backups/listmonk-db
 listmonk_backup_nas_keep: 30
 
-# stalwart nightly backup -> nas (replaces mailu's at cutover): dkim keys, etc/
+# stalwart nightly backup -> nas (replaced mailu's at the 2026-11-05 cutover): dkim keys, etc/
 # (config, no plans/env/logs), and a tar.gz snapshot of the RocksDB store in db/.
 # Only db/ is pruned; dkim/ and etc/ are additive mirrors.
 stalwart_backup_nas_path: /volume1/storage/backups/stalwart

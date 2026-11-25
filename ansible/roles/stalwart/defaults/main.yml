@@ -174,7 +174,7 @@ stalwart_send_limit_per_day: 200
 
 # --- Nightly NAS backup (Task 6) ---------------------------------------------
 #
-# Same pipeline as the mailu role's: additive rsync to the nas' built-in rsync daemon
+# Same pipeline as the retired mailu role had: additive rsync to the nas' built-in rsync daemon
 # (port 873) over the tailnet. The nas-side path and keep count live in group_vars/all.yml
 # (backup_nas' prune cron reads them too). The snapshot is a tar.gz of data/ taken with the
 # container paused (README "Backup and restore of the RocksDB store").

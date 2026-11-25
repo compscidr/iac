@@ -1,12 +1,12 @@
 # Mail DNS records for darksearch.xyz
-# Mail is handled by the existing Mailu instance on mail.jasonernst.com
+# Mail is handled by Stalwart on mail.jasonernst.com
 #
 # Note the split: the apex/www records in projects.tf point at the projects
 # droplet (where the site runs), while everything below points at the www
-# droplet (where Mailu runs). Addresses: jason@ (mailbox), and the abuse@,
-# dmca@ and postmaster@ aliases into it (ansible/roles/mailu/defaults).
+# droplet (where Stalwart runs). Addresses: jason@ (mailbox), and the abuse@,
+# dmca@ and postmaster@ aliases into it (ansible/roles/stalwart/defaults).
 
-# A/AAAA records for mail.darksearch.xyz -> www droplet (where Mailu runs)
+# A/AAAA records for mail.darksearch.xyz -> www droplet (where Stalwart runs)
 resource "digitalocean_record" "darksearch-A-mail" {
   domain = digitalocean_domain.darksearch-xyz.name
   type   = "A"

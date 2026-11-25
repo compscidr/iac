@@ -109,17 +109,6 @@
     },
     {
       "customType": "regex",
-      "description": "Track the digests of the pinned Mailu images in the mailu role (image: <name>:<tag> followed by digest:)",
-      "managerFilePatterns": [
-        "/^ansible/roles/mailu/defaults/main\\.yml$/"
-      ],
-      "matchStrings": [
-        "image: (?<depName>ghcr\\.io/mailu/[a-z]+):(?<currentValue>[^\\s#]+).*\\n\\s+digest: \"(?<currentDigest>sha256:[a-f0-9]+)\""
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
       "description": "Track the stalwart image (tag + digest) in the stalwart role (stalwart_image: followed by stalwart_image_digest:)",
       "managerFilePatterns": [
         "/^ansible/roles/stalwart/defaults/main\\.yml$/"
@@ -197,14 +186,6 @@
       "matchDepNames": [
         "compscidr/sair-orchestrator"
       ],
-      "automerge": false
-    },
-    {
-      "description": "Merging a Mailu digest bump doesn't deploy it and restarts mail when it does. One PR for all images; keep it open until jasonernst_com.yml (--tags mailu) has been run, then merge it by hand.",
-      "matchDepNames": [
-        "ghcr.io/mailu/**"
-      ],
-      "groupName": "mailu images",
       "automerge": false
     },
     {

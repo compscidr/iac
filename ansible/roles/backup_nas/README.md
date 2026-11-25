@@ -1,8 +1,8 @@
 # backup_nas Role
 
 Receiving end of the nightly backup pipelines (rustd.xyz `pg_dump`, jasonernst.com
-goblog, mailu). Runs in `nas.yml`, against `nas.local`. The pushing ends are the
-`rustd_xyz` (`projects.yml`), `jasonernst_com` and `mailu` (`jasonernst_com.yml`) roles —
+goblog, stalwart). Runs in `nas.yml`, against `nas.local`. The pushing ends are the
+`rustd_xyz` (`projects.yml`), `jasonernst_com` and `stalwart` (`jasonernst_com.yml`) roles —
 see each role's README / task comments for the same pipeline from the other side, and
 "Restoring" below for how to put any of it back.
 
@@ -16,11 +16,12 @@ That's it.
   job — the nas is the **sole owner** of nas-side retention. The push script
   (`rustd-db-backup.sh.j2`, in `rustd_xyz`) never deletes anything remote; it only prunes
   its own local copy. There is exactly one place backups on the nas get deleted from.
-- Same-shaped prunes for the jasonernst.com goblog and mailu pipelines (push sides:
-  `jasonernst_com` and `mailu` roles, both in `jasonernst_com.yml`): db snapshots older
-  than `jasonernst_com_backup_nas_keep` / `mailu_backup_nas_keep` under each pipeline's
-  `db/` directory. The sibling mirrors (goblog `uploads/`; mailu `dkim/`, `data/`,
-  `mail/`, `mailu.env`) are never pruned.
+- Same-shaped prunes for the jasonernst.com goblog and stalwart pipelines (push sides:
+  `jasonernst_com` and `stalwart` roles, both in `jasonernst_com.yml`): db snapshots older
+  than `jasonernst_com_backup_nas_keep` / `stalwart_backup_nas_keep` under each pipeline's
+  `db/` directory. The sibling mirrors (goblog `uploads/`; stalwart `dkim/`, `etc/`) are
+  never pruned. `backups/mailu/` is the retired Mailu pipeline's last state, kept as an
+  archive and no longer pruned.
 
 - Daily backup freshness check (08:00 cron) — a dead-man's switch for **all three**
   pipelines: if a pipeline's newest db snapshot on the nas is older than
@@ -106,7 +107,7 @@ leaked the whole nas, not one backup directory.
 Fixed in #502: all three push sides authenticate as `svcbackup`, a dedicated non-admin UGOS
 user whose only share is `storage` (1Password `nas-rsync` item). A compromised droplet now
 gets write into `/volume1/storage` and nothing else. The `*_backup_nas_rsync_user`
-defaults in `rustd_xyz`, `jasonernst_com` and `mailu` name that account; if it's ever
+defaults in `rustd_xyz`, `jasonernst_com` and `stalwart` name that account; if it's ever
 renamed in the UGOS UI, change all three.
 
 Field notes from the cutover (2026-09-20): UGOS regenerated `rsyncd.conf` with
@@ -153,7 +154,7 @@ share be created there.
 Everything lands under `/volume1/storage/backups/<pipeline>/` on the nas. The droplet
 side pulls it back through the same rsync daemon it pushes to — reverse the source and
 destination of the push script's command, using the password file the role already
-wrote (`/opt/goblog/.rsync-nas-pass`, `/opt/mailu/.rsync-nas-pass`). On a fresh droplet,
+wrote (`/opt/goblog/.rsync-nas-pass`, `/opt/stalwart/.rsync-nas-pass`). On a fresh droplet,
 run the normal play first so the directories, containers and password files exist, then
 restore over the top, then run the play once more.
 
@@ -183,38 +184,9 @@ docker start goblog-prod
 The db is a plain bind mount, so a file swap while the container is stopped is the
 whole restore. Verify: the site renders the posts, and an image from `uploads/` loads.
 
-### mailu
+### stalwart
 
-`backups/mailu/db/mailu-<date>.db` (admin sqlite snapshots, 30 days) plus additive
-mirrors of `dkim/`, `data/` (minus the live db), `mail/` and `mailu.env`.
-
-**`dkim/` first, before the admin container has ever started on the new host.** Mailu
-generates fresh signing keys on first start if none exist; the April wipe restored
-everything except these, DNS kept the old public keys, and outbound mail failed
-DKIM/DMARC for three months (#478). If the play has already been run and keys were
-regenerated, the pull below overwrites them — just make sure to restart the stack
-afterwards so rspamd picks the restored keys up.
-
-```bash
-cd /opt/mailu
-R="rsync -a --password-file=/opt/mailu/.rsync-nas-pass rsync://svcbackup@nas:873/storage/backups/mailu"
-docker compose down
-$R/dkim/ dkim/
-$R/data/ data/                                # instance keys etc; live db excluded on push
-$R/db/mailu-YYYY-MM-DD.db data/main.db        # accounts, domains, aliases
-rm -f data/main.db-wal data/main.db-shm       # journals belong to the old db, not this one
-$R/mail/ mail/                                # maildirs; dovecot rebuilds its indexes
-docker compose up -d
-```
-
-`mailu.env` is on the nas too but is templated by the role, so only pull it if the
-controller is what you lost. Then re-run `jasonernst_com.yml`: the role's "Display DKIM
-key for DNS" task prints the public key derived from the restored `dkim/` — it must
-match the `dkim._domainkey` TXT records in `terraform/mail*.tf`. If it doesn't, the
-restore didn't take and outbound mail is about to fail signature checks again.
-
-Verify: log into webmail as an existing user, and send one outbound message to a Gmail
-address and check "show original" reports `dkim=pass`.
+See `roles/stalwart/README.md` "The nightly backup and restoring it".
 
 ## Tailnet membership
 

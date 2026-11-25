@@ -1,7 +1,7 @@
 # Mail DNS records for sair.run
-# Mail is handled by the existing Mailu instance on mail.jasonernst.com
+# Mail is handled by Stalwart on mail.jasonernst.com
 
-# A/AAAA records for mail.sair.run -> www droplet (where Mailu runs)
+# A/AAAA records for mail.sair.run -> www droplet (where Stalwart runs)
 resource "digitalocean_record" "sair-A-mail" {
   domain = digitalocean_domain.sair-run.name
   type   = "A"
