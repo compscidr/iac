@@ -1,0 +1,15 @@
+---
+# Hosts that ssh reaches through the 1Password agent (ssh_config `Host` patterns).
+# Only work machines: their keys live in 1Password, under the work account. Every
+# other host gets the fleet key (~/.ssh/id_rsa) with the agent off, so a personal
+# login never pops a 1Password prompt or offers a work key. See tasks/main.yml.
+common_gui_ssh_onepassword_hosts:
+  - "*.bumpapp.xyz"
+  - jason-nuc
+  - jason-nuc.local
+
+# Remote accounts that also go through the agent on ANY host. bump's deploy key
+# (compscidr/bump infra, ansible_user: bump) exists only in 1Password, and that
+# account lives on LAN hosts that otherwise use the fleet key.
+common_gui_ssh_onepassword_users:
+  - bump

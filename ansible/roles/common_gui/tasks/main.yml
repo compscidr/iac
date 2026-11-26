@@ -43,20 +43,31 @@
   register: common_gui_cli_integration_result
   changed_when: '"1Password CLI integration enabled" in common_gui_cli_integration_result.stdout'
 
-# Route ssh through the 1Password agent, except for logging in to LAN hosts
-# as ourselves: our account there accepts the fleet deploy key
-# (~/.ssh/id_rsa, dev group), and asking the agent first pops a 1Password
-# approval on every `ssh host.local` and every ansible run. First match wins
-# in ssh_config, so the override goes first.
+# Keep the 1Password agent for work machines only. Everything else (LAN, the
+# tailnet, the droplets) logs in with the fleet deploy key (~/.ssh/id_rsa,
+# dev group) and never asks the agent: asking it first popped a 1Password
+# approval on every personal ssh and ansible run, offering the work account's
+# keys. The old rule exempted only `*.local`, so once hosts started being
+# reached by Tailscale name (nas, ubuntu-cube) they all fell through to it.
 #
-# Only for our own login (`Match ... user`): other accounts on those hosts
-# accept other keys. bump's deploy key (compscidr/bump infra, ansible_user:
-# bump) lives only in the 1Password agent, so a blanket `Host *.local` with
-# IdentityAgent none / IdentitiesOnly broke every bump play against the LAN.
-- name: Configure ssh to use 1Password agent except for .local hosts
+# First match wins per option in ssh_config, so the 1Password stanzas go
+# first and `Host *` is the fallback. They must also pin `IdentitiesOnly no`:
+# `Host *` still applies to them, and its `IdentitiesOnly yes` would hide
+# every agent key that is not ~/.ssh/id_rsa.
+#
+# Bootstrapping a machine that does not have the fleet key yet is the one
+# time a personal host needs the agent (the "SSH bootstrap key" item); opt in
+# for that run only:
+#   -e "ansible_ssh_common_args='-o IdentityAgent=~/.1password/agent.sock'"
+# Servers bootstrapped over Tailscale SSH (bootstrap.yml, -u root) need no key.
+- name: Configure ssh to use the 1Password agent for work hosts only
   tags: [1password, ssh]
   become: true
   become_user: "{{ username }}"
+  vars:
+    common_gui_onepassword_agent: >-
+      {{ '"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"'
+      if ansible_os_family == 'Darwin' else '~/.1password/agent.sock' }}
   ansible.builtin.blockinfile:
     path: ~/.ssh/config
     create: true
@@ -64,14 +75,18 @@
     insertbefore: BOF
     marker: "# {mark} ANSIBLE MANAGED: 1Password ssh agent"
     block: |
-      Match host *.local user {{ username }}
+      Host {{ common_gui_ssh_onepassword_hosts | join(' ') }}
+        IdentityAgent {{ common_gui_onepassword_agent }}
+        IdentitiesOnly no
+
+      Match user {{ common_gui_ssh_onepassword_users | join(',') }}
+        IdentityAgent {{ common_gui_onepassword_agent }}
+        IdentitiesOnly no
+
+      Host *
         IdentityAgent none
         IdentityFile ~/.ssh/id_rsa
         IdentitiesOnly yes
-
-      Host *
-        IdentityAgent {{ '"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"'
-          if ansible_os_family == 'Darwin' else '~/.1password/agent.sock' }}
 
 - name: Install discord apt repo (Ubuntu/Debian)
   tags: discord
