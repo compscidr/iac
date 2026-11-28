@@ -167,7 +167,7 @@ stalwart_ban_exempt_networks: "{{ stalwart_nginx_proxy_subnets | default([]) }}"
 stalwart_spam_score_junk: 5.0
 stalwart_spam_score_reject: 15.0
 # Pinned release, not releases/latest, so a rules update is a reviewed change (Task 7).
-stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.4/spam-filter-rules.json.gz"
+stalwart_spam_rules_url: "https://github.com/stalwartlabs/spam-filter/releases/download/v3.0.5/spam-filter-rules.json.gz"
 
 # Outbound limit per authenticated login, counted per RCPT (README "Per-account send limit").
 stalwart_send_limit_per_day: 200
